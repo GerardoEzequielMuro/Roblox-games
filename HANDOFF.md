@@ -93,6 +93,23 @@ Base: `docs/research/top-juegos-y-precios.md`. Son precios de juegos reales saca
 
 **Todos los IDs de pases y productos siguen en 0.** Hay que crearlos en el Creator Dashboard y pegar los IDs en el `Config.luau` de cada juego.
 
+
+## 4d. Ronda 3: espacios para modelos 3D
+
+- Cada juego tiene entre 10 y 14 ranuras (78 en total) para sus props principales: árboles, rocas, edificios, estaciones, estatuas de jefes, landmarks.
+- Para usar un modelo: en Studio, Toolbox → insertar → revisar que no tenga scripts → click derecho → Save to File (.rbxm) → guardarlo en `<juego>/assets/models/<ranura>.rbxm` → `rojo build`.
+- Si la ranura está vacía se usan las piezas de siempre. Los scripts que traiga el modelo se borran solos, y si el modelo tiene demasiadas partes se descarta.
+- La lista de ranuras de cada juego, con tamaño y qué buscar en el Creator Store, está en `docs/modelos/<juego>.md`.
+- Las plataformas del obby y todo lo que afecta al gameplay no se tocaron.
+
+## 4e. Ronda 4: interfaz revisada con la vista previa
+
+- **Herramienta nueva, `tools/uipreview`:** arranca server y cliente de cada juego en un Roblox simulado (Lune), valida cada propiedad contra la API de Roblox y dibuja la interfaz en PC, laptop, tablet y celular. Se corre con `python3 tools/uipreview/preview.py <juego> --all`. Los límites están en su README: fuentes aproximadas y sin 3D.
+- **Resultado del primer pase:** ningún juego tira errores al arrancar ni al abrir sus ventanas. Sí había muchos problemas de pantalla, sobre todo en celular: en 4 juegos el HUD quedaba a escala 0,55, con botones de 14 a 31 px y textos de 5 a 8 px.
+- **Después de la ronda 4:** el HUD de celular de los 6 juegos queda sin hallazgos, con botones de al menos 44 px y textos de al menos 11 px, y las ventanas scrollean. Solo quedan avisos menores de contenido de ventanas que pasa por la zona del joystick; la herramienta marca esa zona entera aunque el joystick real aparece solo donde tocás. También se arreglaron plurales ("1 Ascensions", "Deleted 1 pets") y, en el obby, botones sin texto.
+- **Capturas actuales:** `docs/previews/<juego>/`, con el detalle en cada `.txt`.
+- **Para confirmar en un celular real:** que nada choque con el notch ni con la barra de Roblox, y la posición real del joystick y del botón de salto.
+
 ## 4c. Hasta dónde conviene seguir sin Studio
 
 Después de 2 rondas, todo lo que se puede verificar sin Studio está hecho. Lo que falta necesita ver el juego andando:
