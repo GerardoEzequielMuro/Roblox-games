@@ -110,8 +110,7 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		ZIndex = 23,
 		Parent = frame,
 	}, { Theme.corner(35), Theme.stroke(4), Theme.gradient(Theme.White, Theme.lighten(color, 0.55)) })
-	local medalIcon = Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = medal })
-	medalIcon.ZIndex = 24
+	Theme.icon(icon, { Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 24, Parent = medal })
 	local titleLabel = Theme.text({
 		Text = "",
 		Size = UDim2.new(1, -210, 0, 42),

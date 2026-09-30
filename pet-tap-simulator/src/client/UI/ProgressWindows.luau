@@ -31,6 +31,7 @@ local function request(action: string, payload: { [string]: any }?, successText:
 end
 
 local UPGRADE_ICONS = { TapPower = "👆", Luck = "🍀", PetSlots = "🐾", WalkSpeed = "👟", AutoTap = "🤖" }
+local UPGRADE_ICON_NAMES = { TapPower = "fist", Luck = "luck", PetSlots = "paw", WalkSpeed = "rocket", AutoTap = "auto" }
 
 local function upgrades()
 	local w = Windows.create("Upgrades", "⬆️", "win.upgrades", Theme.Teal, Vector2.new(640, 500))
@@ -39,7 +40,7 @@ local function upgrades()
 	local rows: { [string]: Row } = {}
 	for i, u in Config.Upgrades do
 		local row = Theme.panel({ Size = UDim2.new(1, 0, 0, 76), LayoutOrder = i, BackgroundColor3 = Color3.new(1, 1, 1), Parent = list })
-		Theme.text({ Text = UPGRADE_ICONS[u.id] or "⭐", Stroke = false, Size = UDim2.fromOffset(54, 54), Position = UDim2.fromOffset(14, 11), Parent = row })
+		Theme.icon(UPGRADE_ICONS[u.id] or "⭐", { Size = UDim2.fromOffset(54, 54), Position = UDim2.fromOffset(14, 11), Parent = row }, UPGRADE_ICON_NAMES[u.id])
 		Theme.text({ Key = "upgrade." .. u.id .. ".name", Size = UDim2.new(1, -380, 0, 28), Position = UDim2.fromOffset(84, 6), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = row })
 		Theme.text({ Key = "upgrade." .. u.id .. ".desc", Size = UDim2.new(1, -380, 0, 20), Position = UDim2.fromOffset(84, 34), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 19, Parent = row })
 		local barBg = Theme.new("Frame", { Size = UDim2.new(1, -380, 0, 10), Position = UDim2.fromOffset(84, 58), BackgroundColor3 = Theme.PaperDark, Parent = row }, { Theme.corner(5) })
@@ -71,10 +72,11 @@ local function upgrades()
 			r.level.Text = Lang.t("upgrades.level", { lvl = lvl, max = u.maxLevel })
 			r.bar.Size = UDim2.fromScale(lvl / u.maxLevel, 1)
 			if lvl >= u.maxLevel then
+				Theme.clearLead(r.buy:FindFirstChild("Label") :: TextLabel)
 				Theme.setButton(r.buy, Lang.t("upgrades.max"), Theme.Grey)
 			else
 				local cost = Formulas.upgradeCost(u.id, lvl)
-				Theme.setButton(r.buy, "💎 " .. Format.abbrev(cost), if s.gems >= cost then Theme.Teal else Theme.Grey)
+				Theme.setButton(r.buy, Theme.lead(r.buy:FindFirstChild("Label") :: TextLabel, "💎") .. Format.abbrev(cost), if s.gems >= cost then Theme.Teal else Theme.Grey)
 			end
 		end
 	end

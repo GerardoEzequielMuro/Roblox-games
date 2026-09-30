@@ -50,6 +50,8 @@ src/shared/
   Config.luau                all content and numbers (pure data, no Roblox APIs)
   Formulas.luau              economy math (pure; also loaded by the simulation)
   Format.luau, Palette.luau  number formatting, Color3/material helpers
+  Icons.luau                 shared icon pack ids (empty until uploaded: the UI falls back to emoji)
+  HudUnlock.luau             which HUD buttons a player sees (the HUD grows with progress)
   PetModel.luau              PetModel.build(petId, tier, opts): procedural pets. Three rigs (quadruped,
                              cube, upright) and a species family per pet (face, ears, tail, wings);
                              rarity aura / orbs / trail in the world, `lite` builds for icons
@@ -106,6 +108,7 @@ sim/
 ```
 ../huerta-tycoon/tools/luau.exe tests/unit_p0.luau        # live events, offline, referral, quests
 ../huerta-tycoon/tools/luau.exe tests/locale_check.luau   # every key + placeholder in every language
+../huerta-tycoon/tools/luau.exe tests/policy_hud.luau     # paid random items flags/odds, progressive HUD
 ```
 
 Studio playtests (they open Studio on the second monitor through the shared runner):

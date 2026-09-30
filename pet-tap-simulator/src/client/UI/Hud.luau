@@ -14,6 +14,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local HudUnlock = require(ReplicatedStorage.Shared.HudUnlock)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Windows = require(script.Parent.Windows)
@@ -33,7 +34,8 @@ local target = { taps = 0, gems = 0 }
 local EVENT_COLORS = { LuckyHour = Theme.Green, GoldenWeekend = Theme.Yellow }
 local EVENT_ICONS = { LuckyHour = "🍀", GoldenWeekend = "⭐" }
 
-local function pill(parent: Instance, icon: string, color: Color3, width: number, height: number): (Frame, TextLabel)
+-- iconName: image from the shared icon pack (Theme.setIcon); the emoji is the fallback.
+local function pill(parent: Instance, icon: string, iconName: string, color: Color3, width: number, height: number): (Frame, TextLabel)
 	local f = Theme.new("Frame", {
 		Size = UDim2.fromOffset(width, height),
 		BackgroundColor3 = Color3.new(1, 1, 1),
@@ -47,7 +49,7 @@ local function pill(parent: Instance, icon: string, color: Color3, width: number
 		BackgroundColor3 = Theme.Paper,
 		Parent = f,
 	}, { Theme.corner((height + 8) // 2), Theme.stroke(3), Theme.gradient(Theme.White, Theme.lighten(color, 0.6)) })
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.75, 0.75), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = iconFrame })
+	Theme.icon(icon, { Size = UDim2.fromScale(0.75, 0.75), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = iconFrame }, iconName)
 	local label = Theme.text({ Text = "0", Size = UDim2.new(1, -(height + 18), 1, -8), Position = UDim2.new(0, height + 10, 0, 4), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 34, Stroke = 3, Parent = f })
 	label.AutoLocalize = false
 	Theme.new("UIScale", { Parent = f })
@@ -87,6 +89,10 @@ local MENU: { { any } } = {
 function Hud.init()
 	local gui = Root.gui
 	local touch = Root.isTouch
+	-- icon in front of a button's text (see Theme.lead)
+	local function lead(b: TextButton, emoji: string, name: string?): string
+		return Theme.lead(b:FindFirstChild("Label") :: TextLabel, emoji, name)
+	end
 	local badges: { [string]: Frame } = {}
 	local badgeText: { [string]: TextLabel } = {}
 
@@ -101,7 +107,7 @@ function Hud.init()
 			Parent = parent,
 		})
 		local label = b:FindFirstChild("Label") :: TextLabel
-		label.Text = icon
+		Theme.setIcon(label, icon)
 		label.Size = UDim2.new(1, -16, 0.58, 0)
 		label.Position = UDim2.new(0.5, 0, 0.36, 0)
 		local st = label:FindFirstChildOfClass("UIStroke")
@@ -142,8 +148,8 @@ function Hud.init()
 		Visible = not touch,
 		Parent = currencies,
 	})
-	local gemsPill, gemsLabel = pill(currencies, "💎", Theme.Teal, if touch then 170 else 214, if touch then 42 else 44)
-	local tapsPill, tapsLabel = pill(currencies, "👆", Theme.Blue, 250, 50)
+	local gemsPill, gemsLabel = pill(currencies, "💎", "gem", Theme.Teal, if touch then 170 else 214, if touch then 42 else 44)
+	local tapsPill, tapsLabel = pill(currencies, "👆", "coin", Theme.Blue, 250, 50)
 	if touch then
 		tapsPill.Position = UDim2.fromOffset(4, 0)
 		gemsPill.Position = UDim2.fromOffset(4, 58)
@@ -166,9 +172,11 @@ function Hud.init()
 		}),
 	})
 	table.insert(sides, Root.mount(left))
+	-- buttons that appear as the player progresses (HudUnlock), keyed by HudUnlock name
+	local unlockables: { [string]: GuiObject } = {}
 	for i, e in MENU do
 		local name = e[1]
-		iconButton(menu, name, e[2], e[3], i, function()
+		unlockables[name] = iconButton(menu, name, e[2], e[3], i, function()
 			Windows.toggle(name)
 		end)
 	end
@@ -212,6 +220,7 @@ function Hud.init()
 		Parent = dock,
 	})
 	local tapIcon = tapB:FindFirstChild("Label") :: TextLabel
+	Theme.setIcon(tapIcon, "👆", "tap")
 	local tapIconStroke = tapIcon:FindFirstChildOfClass("UIStroke")
 	if tapIconStroke then
 		tapIconStroke.Enabled = false
@@ -229,6 +238,37 @@ function Hud.init()
 		TextColor3 = Theme.Yellow,
 		Parent = dock,
 	})
+	-- First-session hint over the TAP button (it was lost in the HUD rewrite): wobbles until
+	-- the player has tapped a bit, then fades out for good.
+	local hint = Theme.text({
+		Name = "TapHint",
+		Key = "hint.tap",
+		Size = UDim2.fromOffset(460, 40),
+		Position = UDim2.new(0.5, 0, 0, -12),
+		AnchorPoint = Vector2.new(0.5, 1),
+		MaxTextSize = 34,
+		Stroke = 3,
+		TextColor3 = Theme.Yellow,
+		Parent = dock,
+	})
+	local hintStroke = hint:FindFirstChildOfClass("UIStroke")
+	task.spawn(function()
+		local t = 0
+		while hint.Parent do
+			t += task.wait()
+			hint.Rotation = math.sin(t * 3) * 3
+			local s = Net.state
+			if (s and (s.totalTaps or 0) > 60) or t > 90 then
+				local info = TweenInfo.new(0.5)
+				TweenService:Create(hint, info, { TextTransparency = 1 }):Play()
+				if hintStroke then
+					TweenService:Create(hintStroke, info, { Transparency = 1 }):Play()
+				end
+				task.wait(0.6)
+				hint:Destroy()
+			end
+		end
+	end)
 
 	---------------------------------------------------------------------------
 	-- Objective (top-centre): what to do next, with a progress bar
@@ -321,9 +361,24 @@ function Hud.init()
 	eventGradient.Parent = eventPill
 	local eventText = Theme.text({ Text = "", Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4), MaxTextSize = 22, Parent = eventPill })
 
-	local luckLabel = Theme.text({ Text = "", Size = UDim2.fromOffset(200, 26), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Green, MaxTextSize = 22, LayoutOrder = 3, Visible = false, Parent = right })
-	local boostLabel = Theme.text({ Text = "", Size = UDim2.fromOffset(200, 26), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Red, MaxTextSize = 22, LayoutOrder = 4, Visible = false, Parent = right })
-	local friendLabel = Theme.text({ Text = "", Size = UDim2.fromOffset(200, 24), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, MaxTextSize = 22, LayoutOrder = 5, Visible = false, Parent = right })
+	-- Boost status: small dark chips (icon + timer) instead of loose coloured text.
+	local function statusChip(name: string, emoji: string, color: Color3, order: number): (Frame, TextLabel)
+		local f = Theme.new("Frame", {
+			Name = name,
+			Size = UDim2.fromOffset(200, 32),
+			BackgroundColor3 = Theme.Ink,
+			BackgroundTransparency = 0.25,
+			LayoutOrder = order,
+			Visible = false,
+			Parent = right,
+		}, { Theme.corner(16), Theme.stroke(2, Theme.darken(color, 0.35)) })
+		Theme.icon(emoji, { Size = UDim2.fromOffset(26, 26), Position = UDim2.new(0, 5, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Parent = f })
+		local t = Theme.text({ Name = "Text", Text = "", Size = UDim2.new(1, -44, 1, -6), Position = UDim2.fromOffset(36, 3), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.lighten(color, 0.25), MaxTextSize = 20, Parent = f })
+		return f, t
+	end
+	local luckChip, luckLabel = statusChip("SuperLuck", "🍀", Theme.Green, 3)
+	local boostChip, boostLabel = statusChip("TapBoost", "⚡", Theme.Red, 4)
+	local friendChip, friendLabel = statusChip("FriendBoost", "👥", Theme.Yellow, 5)
 
 	local starterButton = Theme.button({
 		Name = "StarterPack",
@@ -408,8 +463,10 @@ function Hud.init()
 			end,
 		})
 		local top = b:FindFirstChild("Label") :: TextLabel
-		top.Size = UDim2.new(1, -8, 0.5, -2)
-		top.Position = UDim2.new(0.5, 0, 0.3, 0)
+		top.Size = UDim2.new(1, -34, 0.5, -2)
+		top.Position = UDim2.new(0.5, 13, 0.3, 0)
+		local iconHolder = Theme.icon(icon, { Name = "ChipIcon", Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 0.3, 0), AnchorPoint = Vector2.new(0, 0.5), Parent = b })
+		iconHolder.ZIndex = top.ZIndex
 		local topLimit = top:FindFirstChildOfClass("UITextSizeConstraint")
 		if topLimit then
 			topLimit.MaxTextSize = 18
@@ -417,11 +474,12 @@ function Hud.init()
 		local state = Theme.text({ Name = "State", Text = "", Size = UDim2.new(1, -8, 0.42, 0), Position = UDim2.new(0.5, 0, 0.72, 0), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = 17, Parent = b })
 		state.ZIndex = top.ZIndex
 		chips[key] = { button = b, name = top, state = state, key = key, icon = icon }
+		unlockables[name] = b
 	end
 	local function refreshChips()
 		for key, chip in chips do
 			local on = autoState(key)
-			local label = chip.icon .. " " .. Lang.t("hud.auto." .. key)
+			local label = Lang.t("hud.auto." .. key)
 			if chip.name.Text ~= label then
 				chip.name.Text = label
 			end
@@ -481,6 +539,35 @@ function Hud.init()
 		end
 	end)
 
+	-- Progressive HUD: a new player sees Rewards, TAP, Pets and the Store; the other buttons
+	-- and auto chips appear (with a pop) as they are reached, and never hide again.
+	local unlocked: { [string]: boolean } = {}
+	local firstUnlock = true
+	local function applyUnlocks(s: any)
+		local vis = HudUnlock.visible(s)
+		local anyChip = false
+		for name, obj in unlockables do
+			local show = vis[name] == true or unlocked[name] == true
+			if show and not unlocked[name] then
+				unlocked[name] = true
+				if not firstUnlock then
+					task.defer(function()
+						Theme.pop(obj, 1.35)
+					end)
+					Theme.play("open", 0.35, 1.3)
+				end
+			end
+			if obj.Visible ~= show then
+				obj.Visible = show
+			end
+			if show and obj.Parent == autoGrid then
+				anyChip = true
+			end
+		end
+		autoGrid.Visible = anyChip
+		firstUnlock = false
+	end
+
 	local lastTaps, lastGems = nil :: number?, nil :: number?
 	local lastFull = 0
 	local function refresh(kind: string?)
@@ -508,7 +595,7 @@ function Hud.init()
 		if perTap.Text ~= perTapText then
 			perTap.Text = perTapText
 		end
-		local rebirthText = "🔁 " .. Lang.t("rebirth.count", { n = s.rebirths }) .. "  ·  x" .. tostring(Formulas.rebirthMult(s.rebirths))
+		local rebirthText = Theme.lead(rebirthLabel, "🔁") .. Lang.t("rebirth.count", { n = s.rebirths }) .. "  ·  x" .. tostring(Formulas.rebirthMult(s.rebirths))
 		if rebirthLabel.Text ~= rebirthText then
 			rebirthLabel.Text = rebirthText
 		end
@@ -519,9 +606,10 @@ function Hud.init()
 		petsCountText.Text = tostring(petCount)
 
 		refreshChips()
+		applyUnlocks(s)
 		refreshObjective()
-		friendLabel.Text = if (s.friends or 0) > 0 then ("👥 " .. Lang.t("hud.friend_boost", { pct = math.floor(Formulas.friendBoost(s.friends) * 100) })) else ""
-		friendLabel.Visible = friendLabel.Text ~= ""
+		friendLabel.Text = if (s.friends or 0) > 0 then Lang.t("hud.friend_boost", { pct = math.floor(Formulas.friendBoost(s.friends) * 100) }) else ""
+		friendChip.Visible = friendLabel.Text ~= ""
 
 		-- badges
 		badges.Rebirth.Visible = s.taps >= s.rebirthCost
@@ -602,13 +690,14 @@ function Hud.init()
 		local dailyReady = serverNow - s.daily.last >= Config.DailyCooldown
 		badges.Rewards.Visible = ready or dailyReady
 		giftButton.Visible = ready or nextIn ~= nil
-		Theme.setButton(giftButton, if ready then ("🎁 " .. Lang.t("hud.gift_ready")) elseif nextIn then ("🎁 " .. Format.time(nextIn)) else "", if ready then Theme.Pink else Theme.Purple)
+		local giftLead = lead(giftButton, "🎁")
+		Theme.setButton(giftButton, if ready then (giftLead .. Lang.t("hud.gift_ready")) elseif nextIn then (giftLead .. Format.time(nextIn)) else "", if ready then Theme.Pink else Theme.Purple)
 		local luckLeft = math.max(0, (s.luckBoostLeft or 0) - since)
-		luckLabel.Text = if luckLeft > 0 then ("🍀 " .. Lang.t("hud.super_luck", { time = Format.time(luckLeft) })) else ""
-		luckLabel.Visible = luckLeft > 0
+		luckLabel.Text = if luckLeft > 0 then Lang.t("hud.super_luck", { time = Format.time(luckLeft) }) else ""
+		luckChip.Visible = luckLeft > 0
 		local boostLeft = math.max(0, (s.tapBoostLeft or 0) - since)
-		boostLabel.Text = if boostLeft > 0 then ("⚡ " .. Lang.t("hud.tap_boost", { time = Format.time(boostLeft) })) else ""
-		boostLabel.Visible = boostLeft > 0
+		boostLabel.Text = if boostLeft > 0 then Lang.t("hud.tap_boost", { time = Format.time(boostLeft) }) else ""
+		boostChip.Visible = boostLeft > 0
 
 		-- live event
 		local active = LiveEventClient.active()
@@ -617,19 +706,19 @@ function Hud.init()
 		if ev then
 			local c = EVENT_COLORS[ev.id] or Theme.Green
 			eventGradient.Color = ColorSequence.new(Theme.lighten(c, 0.3), c)
-			eventText.Text = (EVENT_ICONS[ev.id] or "✨") .. " " .. Lang.t("event." .. ev.id) .. " " .. Format.time(ev.endsAt - LiveEventClient.now())
+			eventText.Text = Theme.lead(eventText, EVENT_ICONS[ev.id] or "✨") .. Lang.t("event." .. ev.id) .. " " .. Format.time(ev.endsAt - LiveEventClient.now())
 		end
 
 		-- starter pack
 		local st = s.starter
 		starterButton.Visible = st ~= nil and st.available and serverNow < st.endsAt
 		if starterButton.Visible then
-			Theme.setButton(starterButton, "🎉 " .. Lang.t("starter.button") .. " " .. Format.time(st.endsAt - serverNow))
+			Theme.setButton(starterButton, lead(starterButton, "🎉") .. Lang.t("starter.button") .. " " .. Format.time(st.endsAt - serverNow))
 		end
 		-- rewarded video boost
 		adButton.Visible = boostLeft <= 0 and Ads.canShow("AdBoost")
 		if adButton.Visible then
-			Theme.setButton(adButton, "📺 " .. Lang.t("ads.boost_button", { n = Config.AdBoostMinutes }))
+			Theme.setButton(adButton, lead(adButton, "📺") .. Lang.t("ads.boost_button", { n = Config.AdBoostMinutes }))
 		end
 		-- the beam follows the player, so re-aim it as they walk
 		refreshObjective()

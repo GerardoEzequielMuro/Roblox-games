@@ -21,8 +21,9 @@ type Card = { frame: Frame, holder: Frame, close: () -> () }
 
 local current: Card? = nil
 
--- A centered card with an icon, title, rich body text and up to 2 buttons.
-function Popups.card(icon: string, title: string, body: string, buttons: { ButtonSpec }, extra: ((Frame) -> ())?): Card
+-- A centered card with an icon, title, rich body text and up to 2 buttons. odds: a line of
+-- numeric odds shown on a plate above the buttons (offers that contain a random item).
+function Popups.card(icon: string, title: string, body: string, buttons: { ButtonSpec }, extra: ((Frame) -> ())?, odds: string?): Card
 	if current then
 		current.close()
 	end
@@ -49,9 +50,15 @@ function Popups.card(icon: string, title: string, body: string, buttons: { Butto
 	end
 	card = { frame = frame, holder = holder, close = close }
 	current = card
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 61, Parent = frame })
+	Theme.icon(icon, { Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 61, Parent = frame })
 	Theme.text({ Text = title, Size = UDim2.new(1, -40, 0, 40), Position = UDim2.fromOffset(20, 74), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 34, ZIndex = 61, Parent = frame })
-	Theme.text({ Text = body, RichText = true, TextWrapped = true, Size = UDim2.new(1, -48, 0, 96), Position = UDim2.fromOffset(24, 118), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, ZIndex = 61, Parent = frame })
+	Theme.text({ Text = body, RichText = true, TextWrapped = true, Size = UDim2.new(1, -48, 0, if odds then 58 else 96), Position = UDim2.fromOffset(24, 118), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, ZIndex = 61, Parent = frame })
+	if odds then
+		local plate = Theme.new("Frame", { Name = "OddsPlate", Size = UDim2.new(1, -48, 0, 50), Position = UDim2.fromOffset(24, 180), BackgroundColor3 = Theme.PaperDark, ZIndex = 61, Parent = frame }, { Theme.corner(10), Theme.stroke(2, Theme.lighten(Theme.Ink, 0.5)) })
+		local t = Theme.text({ Name = "Odds", Text = odds, TextWrapped = true, Size = UDim2.new(1, -12, 1, -6), Position = UDim2.fromOffset(6, 3), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 17, Parent = plate })
+		t.ZIndex = 62
+		t.AutoLocalize = false
+	end
 	local row = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -32, 0, 64), Position = UDim2.new(0, 16, 1, -80), ZIndex = 61, Parent = frame }, {
 		Theme.list(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
@@ -156,7 +163,7 @@ local function showStarter()
 		local tag = Theme.new("Frame", { Size = UDim2.fromOffset(96, 44), Position = UDim2.fromOffset(-12, 16), Rotation = -10, BackgroundColor3 = Theme.Red, ZIndex = 63, Parent = frame }, { Theme.corner(12), Theme.stroke(3) })
 		local t = Theme.text({ Text = Lang.t("starter.discount", { pct = pct }), ZIndex = 64, Parent = tag })
 		t.ZIndex = 64
-	end)
+	end, Purchase.oddsText("StarterPack"))
 end
 
 function Popups.init()

@@ -96,6 +96,21 @@ Config.CraftCost = 5 -- pets of the same id+tier needed to craft the next tier
 Config.BaseGoldenHatchChance = 0.01 -- 1% of hatches come out Golden
 Config.MagicEggsGoldenChance = 0.10 -- with the Magic Eggs pass
 
+-- Traits: a grade rolled onto one pet, multiplying that pet's power. Rolls cost Trait Dice,
+-- a currency that is ONLY earned by playing (rebirths, daily quests, index pages) and is
+-- never sold, so a trait roll is not a paid random item. Every roll gives a grade.
+-- chance values are percentages and must sum to 100.
+export type TraitGrade = { name: string, mult: number, chance: number, color: { number } }
+Config.TraitGrades = {
+	{ name = "D", mult = 1.05, chance = 45, color = { 170, 170, 185 } },
+	{ name = "C", mult = 1.10, chance = 30, color = { 95, 210, 95 } },
+	{ name = "B", mult = 1.20, chance = 17, color = { 70, 155, 255 } },
+	{ name = "A", mult = 1.35, chance = 7, color = { 175, 95, 255 } },
+	{ name = "S", mult = 1.60, chance = 1, color = { 255, 190, 40 } },
+} :: { TraitGrade }
+Config.TraitRollCost = 1 -- Trait Dice per roll
+Config.TraitDice = { rebirth = 3, quest = 1, questBonus = 3, index = 5, start = 2 }
+
 Config.BaseEquipSlots = 3
 Config.MaxInventory = 150
 Config.StartingPet = "dog"
@@ -622,8 +637,28 @@ function Formulas.tierMult(tier: number): number
 	return if t then t.mult else 1
 end
 
+-- Power multiplier of a trait grade (index into Config.TraitGrades; nil / 0 = no trait).
+function Formulas.traitMult(grade: number?): number
+	local g = if grade then Config.TraitGrades[grade] else nil
+	return if g then g.mult else 1
+end
+
+-- r in [0, 1). Returns the grade index rolled.
+function Formulas.rollTrait(r: number): number
+	local acc = 0
+	local target = r * 100
+	for i, g in Config.TraitGrades do
+		acc += g.chance
+		if target < acc then
+			return i
+		end
+	end
+	return #Config.TraitGrades
+end
+
 -- maxZone: highest zone the owner has unlocked (exclusive pets scale with it).
-function Formulas.petPower(petId: string, tier: number, maxZone: number): number
+-- trait: grade index of the pet's trait, if it has one.
+function Formulas.petPower(petId: string, tier: number, maxZone: number, trait: number?): number
 	local pet = PetById[petId]
 	if not pet then
 		return 0
@@ -633,7 +668,7 @@ function Formulas.petPower(petId: string, tier: number, maxZone: number): number
 	if factor then
 		base = factor * bestPowerByZone[math.clamp(maxZone, 1, #Config.Zones)]
 	end
-	return base * Formulas.tierMult(tier)
+	return base * Formulas.tierMult(tier) * Formulas.traitMult(trait)
 end
 
 function Formulas.maxEquip(slotLevel: number, passes: Owned): number
@@ -744,6 +779,21 @@ end
 function Formulas.isPaidRandomProduct(key: string): boolean
 	local product = Config.ProductByKey[key]
 	return product ~= nil and Config.PaidRandomProductKinds[product.kind] == true
+end
+
+-- The egg a Robux product hatches, if it hatches one (Magic Egg products and the Starter
+-- Pack): the store and the offer card show that egg's odds before the purchase prompt.
+function Formulas.productEgg(key: string): string?
+	local product = Config.ProductByKey[key]
+	if not product or (product.kind ~= "egg" and product.kind ~= "starter") then
+		return nil
+	end
+	for _, egg in Config.Eggs do
+		if egg.exclusive then
+			return egg.id
+		end
+	end
+	return nil
 end
 
 export type Odds = { pet: string, chance: number } -- chance in percent
@@ -865,6 +915,142 @@ return Formulas
       </Item>
       <Item class="ModuleScript" referent="7">
         <Properties>
+          <string name="Name">HudUnlock</string>
+          <string name="Source"><![CDATA[--!strict
+-- Which HUD buttons a player sees. Top simulators open with 2-4 buttons and add the rest as
+-- the player reaches them, so the first minute reads "tap, hatch" and nothing else.
+-- Pure (state in, set out): the client HUD uses it and tests/hud_unlock.luau checks it.
+-- Only counters that never go down are used (hatches, zones, rebirths), so a rebirth that
+-- resets Taps never hides a button again. The HUD also latches what it has shown.
+-- No Roblox APIs in here.
+local Config: typeof(require(script.Parent.Config)) = if script then require(script.Parent.Config) :: any else (require :: any)("./Config")
+
+local HudUnlock = {}
+
+export type Snapshot = {
+	totalHatched: number?,
+	zones: { number }?,
+	rebirths: number?,
+	taps: number?,
+	rebirthCost: number?,
+}
+
+-- Always there: the dock (Rewards, TAP, Pets) and the Store.
+HudUnlock.ALWAYS = { "Rewards", "Pets", "Store" }
+
+-- name -> true when it should be visible for this snapshot.
+function HudUnlock.visible(s: Snapshot): { [string]: boolean }
+	local hatched = s.totalHatched or 0
+	local zones = if s.zones then #s.zones else 1
+	local rebirths = s.rebirths or 0
+	local veteran = rebirths > 0 or zones >= 2
+	local out: { [string]: boolean } = {}
+	for _, name in HudUnlock.ALWAYS do
+		out[name] = true
+	end
+	-- first egg: gems start to matter, quests and auto tap show up
+	out.Upgrades = hatched >= 1 or veteran
+	out.Quests = hatched >= 1 or veteran
+	out.AutoTap = hatched >= 1 or veteran
+	-- a few eggs in: the index, the settings/codes window and the other auto switches
+	out.Index = hatched >= 3 or veteran
+	out.Codes = hatched >= 3 or veteran
+	out.AutoHatch = hatched >= 3 or veteran
+	out.AutoEquip = hatched >= 3 or veteran
+	-- the objective moves on to the next zone after 5 eggs
+	out.Teleport = hatched >= 5 or veteran
+	out.Invite = hatched >= 10 or veteran
+	-- rebirth: once it is near (zone 3+, or affordable) and forever after the first one
+	local rebirthCost = s.rebirthCost or Config.RebirthBaseCost
+	out.Rebirth = rebirths > 0 or zones >= 3 or (s.taps or 0) >= rebirthCost
+	-- the server refuses Auto Rebirth before the first manual rebirth
+	out.AutoRebirth = rebirths > 0
+	return out
+end
+
+-- Every name visible() can return (the HUD asserts it builds a button for each).
+HudUnlock.NAMES = { "Rewards", "Pets", "Store", "Upgrades", "Quests", "Index", "Codes", "Teleport", "Invite", "Rebirth", "AutoTap", "AutoHatch", "AutoEquip", "AutoRebirth" }
+
+return HudUnlock
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="8">
+        <Properties>
+          <string name="Name">Icons</string>
+          <string name="Source"><![CDATA[--!strict
+-- HUD icon images (shared pack in assets/icons, drawn by tools/icons/make_icons.py at the repo root).
+-- The ids between the GENERATED markers are written by tools/icons/upload_assets.py; do not edit by hand.
+-- An empty id means "not uploaded yet": callers must fall back to their emoji glyph, so the game
+-- keeps working before the upload.
+local Icons = {}
+
+Icons.ids = {
+	-- BEGIN GENERATED
+	aura = "",
+	auto = "",
+	bolt = "",
+	book = "",
+	calendar = "",
+	cash = "",
+	check = "",
+	clock = "",
+	close = "",
+	cloud = "",
+	coin = "",
+	crown = "",
+	egg = "",
+	fist = "",
+	flame = "",
+	gem = "",
+	gift = "",
+	group = "",
+	heart = "",
+	invite = "",
+	lock = "",
+	luck = "",
+	magnet = "",
+	map = "",
+	orb = "",
+	paw = "",
+	pickaxe = "",
+	planet = "",
+	quest = "",
+	rebirth = "",
+	rocket = "",
+	settings = "",
+	shield = "",
+	shop = "",
+	skull = "",
+	sound = "",
+	sprout = "",
+	star = "",
+	sword = "",
+	tap = "",
+	target = "",
+	teleport = "",
+	ticket = "",
+	trophy = "",
+	upgrade = "",
+	wheel = "",
+	-- END GENERATED
+} :: { [string]: string }
+
+-- "rbxassetid://<id>" when the icon is uploaded, nil otherwise.
+function Icons.get(name: string): string?
+	local id = Icons.ids[name]
+	if id and id ~= "" then
+		return "rbxassetid://" .. id
+	end
+	return nil
+end
+
+return Icons
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="9">
+        <Properties>
           <string name="Name">LiveEvents</string>
           <string name="Source"><![CDATA[--!strict
 -- Live event schedule (pure; unit-tested with luau.exe). Times are UTC unix seconds.
@@ -954,7 +1140,7 @@ return LiveEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="10">
         <Properties>
           <string name="Name">Locale</string>
           <string name="Source"><![CDATA[--!strict
@@ -1064,11 +1250,11 @@ return Locale
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="9">
+      <Item class="Folder" referent="11">
         <Properties>
           <string name="Name">Locales</string>
         </Properties>
-        <Item class="ModuleScript" referent="10">
+        <Item class="ModuleScript" referent="12">
           <Properties>
             <string name="Name">de</string>
             <string name="Source"><![CDATA[-- German (de). Keys must match en.luau; keep {placeholders}.
@@ -1077,11 +1263,6 @@ return {
 	["hint.tap"] = "Tippe irgendwo für Taps!",
 	["hud.per_tap"] = "+{n} pro Tap",
 	["hud.gift_ready"] = "Geschenk bereit!",
-	["hud.autotap_on"] = "Auto-Tap: AN",
-	["hud.autotap_off"] = "Auto-Tap: AUS",
-	["hud.autotap_locked"] = "Auto-Tap",
-	["hud.autohatch_on"] = "Auto-Schlüpfen: AN",
-	["hud.autohatch_off"] = "Auto-Schlüpfen: AUS",
 	["hud.friend_boost"] = "Freundesbonus +{pct}%",
 	["hud.super_luck"] = "Superglück {time}",
 	["menu.Pets"] = "Haustiere",
@@ -1126,7 +1307,6 @@ return {
 	["pets.unequip"] = "Ablegen",
 	["pets.lock"] = "Sperren",
 	["pets.unlock"] = "Entsperren",
-	["pets.delete"] = "Löschen",
 	["pets.craft_gold"] = "Gold {have}/{need}",
 	["pets.craft_rainbow"] = "Regenbogen {have}/{need}",
 	["pets.select"] = "Haustier wählen",
@@ -1140,7 +1320,6 @@ return {
 	["egg.x3_locked"] = "3x schlüpfen",
 	["egg.auto_on"] = "Auto: AN",
 	["egg.auto_off"] = "Auto: AUS",
-	["egg.auto_locked"] = "Auto",
 	["egg.buy1"] = "1 kaufen",
 	["egg.buy3"] = "3 kaufen",
 	["egg.coming_soon"] = "Demnächst",
@@ -1156,7 +1335,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "Wiedergeburten: {n}",
 	["rebirth.mult"] = "Tap-Multiplikator: {from} → {to}",
-	["rebirth.reward"] = "Belohnung: +{gems} Gems",
 	["rebirth.progress"] = "{have} / {need} Taps",
 	["rebirth.note"] = "Wiedergeburt setzt deine Taps zurück. Haustiere, Zonen, Gems und Upgrades bleiben erhalten.",
 	["rebirth.button"] = "WIEDERGEBURT",
@@ -1463,11 +1641,32 @@ return {
 	["msg.not_your_chest"] = "Diese Truhe gehört einem anderen Spieler",
 	["msg.no_plot"] = "Kein freier Platz auf diesem Server",
 	["teleport.park"] = "Mein Haustierpark",
+
+	-- traits
+	["pets.trait"] = "Merkmal {grade} · +{pct}% Kraft",
+	["pets.no_trait"] = "Noch kein Merkmal",
+	["pets.roll"] = "Merkmal ({n})",
+	["pets.trait_rolled"] = "Merkmal {grade}: +{pct}% Kraft!",
+	["msg.no_dice"] = "Keine Merkmalswürfel. Verdiene sie durch Wiedergeburt, Quests oder Indexseiten",
+	["msg.got_dice"] = "+{n} Merkmalswürfel!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Sammle {n} Taps für dein erstes Ei",
+	["goal.hatch1"] = "Brüte dein erstes Ei aus!",
+	["goal.hatchN"] = "Brüte {n} Eier aus ({have}/{n})",
+	["goal.zone"] = "Als Nächstes: {zone}",
+	["goal.gate"] = "Öffne das Tor nach {zone}!",
+	["goal.rebirth"] = "Wiedergeburt für x{mult} Taps",
+	["goal.rebirth_ready"] = "Wiedergeburt bereit!",
+	["rebirth.lose"] = "Du verlierst",
+	["rebirth.get"] = "Du bekommst",
+	["rebirth.lose_taps"] = "Deine {n} Taps",
+	["store.best"] = "BESTER WERT",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="11">
+        <Item class="ModuleScript" referent="13">
           <Properties>
             <string name="Name">en</string>
             <string name="Source"><![CDATA[-- English (default). Keys are stable; {name} placeholders must survive translation.
@@ -1476,11 +1675,6 @@ return {
 	["hint.tap"] = "Tap anywhere to earn Taps!",
 	["hud.per_tap"] = "+{n} per tap",
 	["hud.gift_ready"] = "Gift ready!",
-	["hud.autotap_on"] = "Auto Tap: ON",
-	["hud.autotap_off"] = "Auto Tap: OFF",
-	["hud.autotap_locked"] = "Auto Tap",
-	["hud.autohatch_on"] = "Auto Hatch: ON",
-	["hud.autohatch_off"] = "Auto Hatch: OFF",
 	["hud.friend_boost"] = "Friend boost +{pct}%",
 	["hud.super_luck"] = "Super Luck {time}",
 	["menu.Pets"] = "Pets",
@@ -1525,7 +1719,6 @@ return {
 	["pets.unequip"] = "Unequip",
 	["pets.lock"] = "Lock",
 	["pets.unlock"] = "Unlock",
-	["pets.delete"] = "Delete",
 	["pets.craft_gold"] = "Gold {have}/{need}",
 	["pets.craft_rainbow"] = "Rainbow {have}/{need}",
 	["pets.select"] = "Select a pet",
@@ -1539,7 +1732,6 @@ return {
 	["egg.x3_locked"] = "x3 Hatch",
 	["egg.auto_on"] = "Auto: ON",
 	["egg.auto_off"] = "Auto: OFF",
-	["egg.auto_locked"] = "Auto",
 	["egg.buy1"] = "Buy 1",
 	["egg.buy3"] = "Buy 3",
 	["egg.coming_soon"] = "Coming soon",
@@ -1555,7 +1747,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "Rebirths: {n}",
 	["rebirth.mult"] = "Tap multiplier: {from} → {to}",
-	["rebirth.reward"] = "Reward: +{gems} Gems",
 	["rebirth.progress"] = "{have} / {need} Taps",
 	["rebirth.note"] = "Rebirthing resets your Taps. You keep pets, zones, gems and upgrades.",
 	["rebirth.button"] = "REBIRTH",
@@ -1862,11 +2053,32 @@ return {
 	["msg.not_your_chest"] = "That chest belongs to another player",
 	["msg.no_plot"] = "No free plot in this server",
 	["teleport.park"] = "My Pet Park",
+
+	-- traits
+	["pets.trait"] = "Trait {grade} · +{pct}% power",
+	["pets.no_trait"] = "No trait yet",
+	["pets.roll"] = "Trait ({n})",
+	["pets.trait_rolled"] = "Trait {grade}: +{pct}% power!",
+	["msg.no_dice"] = "No Trait Dice. Rebirth, finish quests or complete an index page to earn them",
+	["msg.got_dice"] = "+{n} Trait Dice!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Earn {n} Taps for your first egg",
+	["goal.hatch1"] = "Hatch your first egg!",
+	["goal.hatchN"] = "Hatch {n} eggs ({have}/{n})",
+	["goal.zone"] = "Next: {zone}",
+	["goal.gate"] = "Open the gate to {zone}!",
+	["goal.rebirth"] = "Rebirth for x{mult} Taps",
+	["goal.rebirth_ready"] = "Rebirth is ready!",
+	["rebirth.lose"] = "You lose",
+	["rebirth.get"] = "You get",
+	["rebirth.lose_taps"] = "Your {n} Taps",
+	["store.best"] = "BEST VALUE",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="14">
           <Properties>
             <string name="Name">es</string>
             <string name="Source"><![CDATA[-- Spanish (es). Keys must match en.luau; keep {placeholders}.
@@ -1875,11 +2087,6 @@ return {
 	["hint.tap"] = "¡Toca donde sea para ganar Taps!",
 	["hud.per_tap"] = "+{n} por toque",
 	["hud.gift_ready"] = "¡Regalo listo!",
-	["hud.autotap_on"] = "Auto Tap: ON",
-	["hud.autotap_off"] = "Auto Tap: OFF",
-	["hud.autotap_locked"] = "Auto Tap",
-	["hud.autohatch_on"] = "Auto Eclosión: ON",
-	["hud.autohatch_off"] = "Auto Eclosión: OFF",
 	["hud.friend_boost"] = "Bono de amigos +{pct}%",
 	["hud.super_luck"] = "Super Suerte {time}",
 	["menu.Pets"] = "Mascotas",
@@ -1924,7 +2131,6 @@ return {
 	["pets.unequip"] = "Desequipar",
 	["pets.lock"] = "Bloquear",
 	["pets.unlock"] = "Desbloquear",
-	["pets.delete"] = "Eliminar",
 	["pets.craft_gold"] = "Dorado {have}/{need}",
 	["pets.craft_rainbow"] = "Arcoíris {have}/{need}",
 	["pets.select"] = "Selecciona una mascota",
@@ -1938,7 +2144,6 @@ return {
 	["egg.x3_locked"] = "Abrir x3",
 	["egg.auto_on"] = "Auto: ON",
 	["egg.auto_off"] = "Auto: OFF",
-	["egg.auto_locked"] = "Auto",
 	["egg.buy1"] = "Comprar 1",
 	["egg.buy3"] = "Comprar 3",
 	["egg.coming_soon"] = "Próximamente",
@@ -1954,7 +2159,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "Renacimientos: {n}",
 	["rebirth.mult"] = "Multiplicador de toque: {from} → {to}",
-	["rebirth.reward"] = "Recompensa: +{gems} Gemas",
 	["rebirth.progress"] = "{have} / {need} Taps",
 	["rebirth.note"] = "Renacer reinicia tus Taps. Conservas mascotas, zonas, gemas y mejoras.",
 	["rebirth.button"] = "RENACER",
@@ -2261,11 +2465,32 @@ return {
 	["msg.not_your_chest"] = "Ese cofre es de otro jugador",
 	["msg.no_plot"] = "No hay parcela libre en este servidor",
 	["teleport.park"] = "Mi Parque de Mascotas",
+
+	-- traits
+	["pets.trait"] = "Rasgo {grade} · +{pct}% de poder",
+	["pets.no_trait"] = "Sin rasgo todavía",
+	["pets.roll"] = "Rasgo ({n})",
+	["pets.trait_rolled"] = "¡Rasgo {grade}: +{pct}% de poder!",
+	["msg.no_dice"] = "No tenés Dados de Rasgo. Se ganan renaciendo, con misiones o completando páginas del índice",
+	["msg.got_dice"] = "¡+{n} Dados de Rasgo!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Juntá {n} Taps para tu primer huevo",
+	["goal.hatch1"] = "¡Abrí tu primer huevo!",
+	["goal.hatchN"] = "Abrí {n} huevos ({have}/{n})",
+	["goal.zone"] = "Siguiente: {zone}",
+	["goal.gate"] = "¡Abrí el portal a {zone}!",
+	["goal.rebirth"] = "Renacé para x{mult} Taps",
+	["goal.rebirth_ready"] = "¡Ya podés renacer!",
+	["rebirth.lose"] = "Perdés",
+	["rebirth.get"] = "Ganás",
+	["rebirth.lose_taps"] = "Tus {n} Taps",
+	["store.best"] = "MEJOR PRECIO",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="15">
           <Properties>
             <string name="Name">fr</string>
             <string name="Source"><![CDATA[-- French (fr). Keys must match en.luau; keep {placeholders}.
@@ -2274,11 +2499,6 @@ return {
 	["hint.tap"] = "Touche n'importe où pour gagner des Taps !",
 	["hud.per_tap"] = "+{n} par touche",
 	["hud.gift_ready"] = "Cadeau prêt !",
-	["hud.autotap_on"] = "Auto Tap : ACTIVÉ",
-	["hud.autotap_off"] = "Auto Tap : DÉSACTIVÉ",
-	["hud.autotap_locked"] = "Auto Tap",
-	["hud.autohatch_on"] = "Auto Éclosion : ACTIVÉ",
-	["hud.autohatch_off"] = "Auto Éclosion : DÉSACTIVÉ",
 	["hud.friend_boost"] = "Bonus d'amis +{pct}%",
 	["hud.super_luck"] = "Super Chance {time}",
 	["menu.Pets"] = "Compagnons",
@@ -2323,7 +2543,6 @@ return {
 	["pets.unequip"] = "Déséquiper",
 	["pets.lock"] = "Verrouiller",
 	["pets.unlock"] = "Déverrouiller",
-	["pets.delete"] = "Supprimer",
 	["pets.craft_gold"] = "Doré {have}/{need}",
 	["pets.craft_rainbow"] = "Arc-en-ciel {have}/{need}",
 	["pets.select"] = "Choisis un compagnon",
@@ -2337,7 +2556,6 @@ return {
 	["egg.x3_locked"] = "Éclosion x3",
 	["egg.auto_on"] = "Auto : ACTIVÉ",
 	["egg.auto_off"] = "Auto : DÉSACTIVÉ",
-	["egg.auto_locked"] = "Auto",
 	["egg.buy1"] = "Acheter 1",
 	["egg.buy3"] = "Acheter 3",
 	["egg.coming_soon"] = "Bientôt disponible",
@@ -2353,7 +2571,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "Renaissances : {n}",
 	["rebirth.mult"] = "Multiplicateur de toucher : {from} → {to}",
-	["rebirth.reward"] = "Récompense : +{gems} Gemmes",
 	["rebirth.progress"] = "{have} / {need} Taps",
 	["rebirth.note"] = "Renaître réinitialise tes Taps. Tu gardes tes compagnons, zones, gemmes et améliorations.",
 	["rebirth.button"] = "RENAISSANCE",
@@ -2660,11 +2877,32 @@ return {
 	["msg.not_your_chest"] = "Ce coffre appartient à un autre joueur",
 	["msg.no_plot"] = "Aucune parcelle libre sur ce serveur",
 	["teleport.park"] = "Mon Parc des Familiers",
+
+	-- traits
+	["pets.trait"] = "Trait {grade} · +{pct}% de puissance",
+	["pets.no_trait"] = "Pas encore de trait",
+	["pets.roll"] = "Trait ({n})",
+	["pets.trait_rolled"] = "Trait {grade} : +{pct}% de puissance !",
+	["msg.no_dice"] = "Pas de Dés de Trait. Renais, termine des quêtes ou complète une page de l'index pour en gagner",
+	["msg.got_dice"] = "+{n} Dés de Trait !",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Gagne {n} Taps pour ton premier œuf",
+	["goal.hatch1"] = "Fais éclore ton premier œuf !",
+	["goal.hatchN"] = "Fais éclore {n} œufs ({have}/{n})",
+	["goal.zone"] = "Suivant : {zone}",
+	["goal.gate"] = "Ouvre la porte vers {zone} !",
+	["goal.rebirth"] = "Renais pour x{mult} Taps",
+	["goal.rebirth_ready"] = "Tu peux renaître !",
+	["rebirth.lose"] = "Tu perds",
+	["rebirth.get"] = "Tu gagnes",
+	["rebirth.lose_taps"] = "Tes {n} Taps",
+	["store.best"] = "MEILLEURE OFFRE",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="14">
+        <Item class="ModuleScript" referent="16">
           <Properties>
             <string name="Name">id</string>
             <string name="Source"><![CDATA[-- Indonesian (id). Keys must match en.luau; keep {placeholders}.
@@ -2673,11 +2911,6 @@ return {
 	["hint.tap"] = "Tap di mana saja untuk dapat Tap!",
 	["hud.per_tap"] = "+{n} per tap",
 	["hud.gift_ready"] = "Hadiah siap!",
-	["hud.autotap_on"] = "Auto Tap: AKTIF",
-	["hud.autotap_off"] = "Auto Tap: NONAKTIF",
-	["hud.autotap_locked"] = "Auto Tap",
-	["hud.autohatch_on"] = "Auto Tetas: AKTIF",
-	["hud.autohatch_off"] = "Auto Tetas: NONAKTIF",
 	["hud.friend_boost"] = "Boost teman +{pct}%",
 	["hud.super_luck"] = "Keberuntungan Super {time}",
 	["menu.Pets"] = "Hewan",
@@ -2722,7 +2955,6 @@ return {
 	["pets.unequip"] = "Lepas",
 	["pets.lock"] = "Kunci",
 	["pets.unlock"] = "Buka Kunci",
-	["pets.delete"] = "Hapus",
 	["pets.craft_gold"] = "Emas {have}/{need}",
 	["pets.craft_rainbow"] = "Pelangi {have}/{need}",
 	["pets.select"] = "Pilih hewan",
@@ -2736,7 +2968,6 @@ return {
 	["egg.x3_locked"] = "Tetas x3",
 	["egg.auto_on"] = "Auto: AKTIF",
 	["egg.auto_off"] = "Auto: NONAKTIF",
-	["egg.auto_locked"] = "Auto",
 	["egg.buy1"] = "Beli 1",
 	["egg.buy3"] = "Beli 3",
 	["egg.coming_soon"] = "Segera hadir",
@@ -2752,7 +2983,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "Rebirth: {n}",
 	["rebirth.mult"] = "Pengali tap: {from} → {to}",
-	["rebirth.reward"] = "Hadiah: +{gems} Gems",
 	["rebirth.progress"] = "{have} / {need} Tap",
 	["rebirth.note"] = "Rebirth mereset Tap kamu. Hewan, zona, Gems, dan upgrade tetap tersimpan.",
 	["rebirth.button"] = "REBIRTH",
@@ -3059,11 +3289,32 @@ return {
 	["msg.not_your_chest"] = "Peti itu milik pemain lain",
 	["msg.no_plot"] = "Tidak ada petak kosong di server ini",
 	["teleport.park"] = "Taman Pet-ku",
+
+	-- traits
+	["pets.trait"] = "Sifat {grade} · +{pct}% kekuatan",
+	["pets.no_trait"] = "Belum ada sifat",
+	["pets.roll"] = "Sifat ({n})",
+	["pets.trait_rolled"] = "Sifat {grade}: +{pct}% kekuatan!",
+	["msg.no_dice"] = "Tidak ada Dadu Sifat. Dapatkan dari rebirth, quest, atau melengkapi halaman indeks",
+	["msg.got_dice"] = "+{n} Dadu Sifat!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Kumpulkan {n} Taps untuk telur pertamamu",
+	["goal.hatch1"] = "Tetaskan telur pertamamu!",
+	["goal.hatchN"] = "Tetaskan {n} telur ({have}/{n})",
+	["goal.zone"] = "Berikutnya: {zone}",
+	["goal.gate"] = "Buka gerbang ke {zone}!",
+	["goal.rebirth"] = "Rebirth untuk x{mult} Taps",
+	["goal.rebirth_ready"] = "Rebirth sudah siap!",
+	["rebirth.lose"] = "Kamu kehilangan",
+	["rebirth.get"] = "Kamu dapat",
+	["rebirth.lose_taps"] = "{n} Taps milikmu",
+	["store.best"] = "PALING UNTUNG",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="15">
+        <Item class="ModuleScript" referent="17">
           <Properties>
             <string name="Name">ja</string>
             <string name="Source"><![CDATA[-- Japanese (ja). Keys must match en.luau; keep {placeholders}.
@@ -3072,11 +3323,6 @@ return {
 	["hint.tap"] = "どこでもタップしてタップをゲット！",
 	["hud.per_tap"] = "1タップで+{n}",
 	["hud.gift_ready"] = "ギフトの準備完了！",
-	["hud.autotap_on"] = "オートタップ：ON",
-	["hud.autotap_off"] = "オートタップ：OFF",
-	["hud.autotap_locked"] = "オートタップ",
-	["hud.autohatch_on"] = "オートハッチ：ON",
-	["hud.autohatch_off"] = "オートハッチ：OFF",
 	["hud.friend_boost"] = "フレンドブースト+{pct}%",
 	["hud.super_luck"] = "スーパーラック {time}",
 	["menu.Pets"] = "ペット",
@@ -3121,7 +3367,6 @@ return {
 	["pets.unequip"] = "装備解除",
 	["pets.lock"] = "ロック",
 	["pets.unlock"] = "ロック解除",
-	["pets.delete"] = "削除",
 	["pets.craft_gold"] = "ゴールド {have}/{need}",
 	["pets.craft_rainbow"] = "レインボー {have}/{need}",
 	["pets.select"] = "ペットを選択",
@@ -3135,7 +3380,6 @@ return {
 	["egg.x3_locked"] = "x3ふ化",
 	["egg.auto_on"] = "オート：ON",
 	["egg.auto_off"] = "オート：OFF",
-	["egg.auto_locked"] = "オート",
 	["egg.buy1"] = "1個購入",
 	["egg.buy3"] = "3個購入",
 	["egg.coming_soon"] = "近日公開",
@@ -3151,7 +3395,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "転生回数：{n}",
 	["rebirth.mult"] = "タップ倍率：{from} → {to}",
-	["rebirth.reward"] = "報酬：+{gems} ジェム",
 	["rebirth.progress"] = "{have} / {need} タップ",
 	["rebirth.note"] = "転生するとタップはリセットされます。ペット、ゾーン、ジェム、アップグレードはそのまま残ります。",
 	["rebirth.button"] = "転生する",
@@ -3458,11 +3701,32 @@ return {
 	["msg.not_your_chest"] = "その宝箱は他のプレイヤーのものです",
 	["msg.no_plot"] = "このサーバーに空き区画がありません",
 	["teleport.park"] = "マイペットパーク",
+
+	-- traits
+	["pets.trait"] = "特性 {grade} · パワー+{pct}%",
+	["pets.no_trait"] = "特性なし",
+	["pets.roll"] = "特性 ({n})",
+	["pets.trait_rolled"] = "特性 {grade}：パワー+{pct}%！",
+	["msg.no_dice"] = "特性ダイスがありません。転生、クエスト、図鑑ページの完成で手に入ります",
+	["msg.got_dice"] = "特性ダイス +{n}！",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "最初のタマゴのために {n} Taps 集めよう",
+	["goal.hatch1"] = "最初のタマゴをかえそう！",
+	["goal.hatchN"] = "タマゴを{n}個かえそう ({have}/{n})",
+	["goal.zone"] = "次：{zone}",
+	["goal.gate"] = "{zone}へのゲートを開けよう！",
+	["goal.rebirth"] = "転生して Taps x{mult}",
+	["goal.rebirth_ready"] = "転生できます！",
+	["rebirth.lose"] = "失うもの",
+	["rebirth.get"] = "得られるもの",
+	["rebirth.lose_taps"] = "{n} Taps",
+	["store.best"] = "お得！",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="16">
+        <Item class="ModuleScript" referent="18">
           <Properties>
             <string name="Name">ko</string>
             <string name="Source"><![CDATA[-- Korean (ko). Keys must match en.luau; keep {placeholders}.
@@ -3471,11 +3735,6 @@ return {
 	["hint.tap"] = "아무 곳이나 탭해서 탭을 모으세요!",
 	["hud.per_tap"] = "탭당 +{n}",
 	["hud.gift_ready"] = "선물 준비 완료!",
-	["hud.autotap_on"] = "오토탭: ON",
-	["hud.autotap_off"] = "오토탭: OFF",
-	["hud.autotap_locked"] = "오토탭",
-	["hud.autohatch_on"] = "오토부화: ON",
-	["hud.autohatch_off"] = "오토부화: OFF",
 	["hud.friend_boost"] = "친구 부스트 +{pct}%",
 	["hud.super_luck"] = "슈퍼 행운 {time}",
 	["menu.Pets"] = "펫",
@@ -3520,7 +3779,6 @@ return {
 	["pets.unequip"] = "장착 해제",
 	["pets.lock"] = "잠금",
 	["pets.unlock"] = "잠금 해제",
-	["pets.delete"] = "삭제",
 	["pets.craft_gold"] = "골드 {have}/{need}",
 	["pets.craft_rainbow"] = "레인보우 {have}/{need}",
 	["pets.select"] = "펫을 선택하세요",
@@ -3534,7 +3792,6 @@ return {
 	["egg.x3_locked"] = "x3 부화",
 	["egg.auto_on"] = "오토: ON",
 	["egg.auto_off"] = "오토: OFF",
-	["egg.auto_locked"] = "오토",
 	["egg.buy1"] = "1개 구매",
 	["egg.buy3"] = "3개 구매",
 	["egg.coming_soon"] = "곧 공개",
@@ -3550,7 +3807,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "환생 횟수: {n}",
 	["rebirth.mult"] = "탭 배율: {from} → {to}",
-	["rebirth.reward"] = "보상: +{gems} 젬",
 	["rebirth.progress"] = "{have} / {need} 탭",
 	["rebirth.note"] = "환생하면 탭이 초기화돼요. 펫, 구역, 젬, 업그레이드는 그대로 유지돼요.",
 	["rebirth.button"] = "환생하기",
@@ -3857,11 +4113,32 @@ return {
 	["msg.not_your_chest"] = "그 상자는 다른 플레이어의 것이에요",
 	["msg.no_plot"] = "이 서버에 빈 구역이 없어요",
 	["teleport.park"] = "내 펫 파크",
+
+	-- traits
+	["pets.trait"] = "특성 {grade} · 파워 +{pct}%",
+	["pets.no_trait"] = "아직 특성 없음",
+	["pets.roll"] = "특성 ({n})",
+	["pets.trait_rolled"] = "특성 {grade}: 파워 +{pct}%!",
+	["msg.no_dice"] = "특성 주사위가 없어요. 환생, 퀘스트, 도감 페이지 완성으로 얻을 수 있어요",
+	["msg.got_dice"] = "특성 주사위 +{n}!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "첫 알을 위해 {n} Taps를 모으세요",
+	["goal.hatch1"] = "첫 알을 부화하세요!",
+	["goal.hatchN"] = "알 {n}개 부화하기 ({have}/{n})",
+	["goal.zone"] = "다음: {zone}",
+	["goal.gate"] = "{zone} 문을 여세요!",
+	["goal.rebirth"] = "환생하고 Taps x{mult}",
+	["goal.rebirth_ready"] = "환생할 수 있어요!",
+	["rebirth.lose"] = "잃는 것",
+	["rebirth.get"] = "얻는 것",
+	["rebirth.lose_taps"] = "내 {n} Taps",
+	["store.best"] = "최고 가성비",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="17">
+        <Item class="ModuleScript" referent="19">
           <Properties>
             <string name="Name">pt</string>
             <string name="Source"><![CDATA[-- Brazilian Portuguese (pt). Keys must match en.luau; keep {placeholders}.
@@ -3870,11 +4147,6 @@ return {
 	["hint.tap"] = "Toque em qualquer lugar para ganhar Taps!",
 	["hud.per_tap"] = "+{n} por toque",
 	["hud.gift_ready"] = "Presente pronto!",
-	["hud.autotap_on"] = "Auto Tap: LIGADO",
-	["hud.autotap_off"] = "Auto Tap: DESLIGADO",
-	["hud.autotap_locked"] = "Auto Tap",
-	["hud.autohatch_on"] = "Auto Choco: LIGADO",
-	["hud.autohatch_off"] = "Auto Choco: DESLIGADO",
 	["hud.friend_boost"] = "Bônus de amigos +{pct}%",
 	["hud.super_luck"] = "Super Sorte {time}",
 	["menu.Pets"] = "Pets",
@@ -3919,7 +4191,6 @@ return {
 	["pets.unequip"] = "Desequipar",
 	["pets.lock"] = "Bloquear",
 	["pets.unlock"] = "Desbloquear",
-	["pets.delete"] = "Excluir",
 	["pets.craft_gold"] = "Dourado {have}/{need}",
 	["pets.craft_rainbow"] = "Arco-íris {have}/{need}",
 	["pets.select"] = "Selecione um pet",
@@ -3933,7 +4204,6 @@ return {
 	["egg.x3_locked"] = "Chocar x3",
 	["egg.auto_on"] = "Auto: LIGADO",
 	["egg.auto_off"] = "Auto: DESLIGADO",
-	["egg.auto_locked"] = "Auto",
 	["egg.buy1"] = "Comprar 1",
 	["egg.buy3"] = "Comprar 3",
 	["egg.coming_soon"] = "Em breve",
@@ -3949,7 +4219,6 @@ return {
 	["upgrades.max"] = "MÁX",
 	["rebirth.count"] = "Renascimentos: {n}",
 	["rebirth.mult"] = "Multiplicador de toque: {from} → {to}",
-	["rebirth.reward"] = "Recompensa: +{gems} Gemas",
 	["rebirth.progress"] = "{have} / {need} Taps",
 	["rebirth.note"] = "Renascer reinicia seus Taps. Você mantém pets, zonas, gemas e melhorias.",
 	["rebirth.button"] = "RENASCER",
@@ -4256,11 +4525,32 @@ return {
 	["msg.not_your_chest"] = "Esse baú é de outro jogador",
 	["msg.no_plot"] = "Não há lote livre neste servidor",
 	["teleport.park"] = "Meu Parque dos Pets",
+
+	-- traits
+	["pets.trait"] = "Traço {grade} · +{pct}% de poder",
+	["pets.no_trait"] = "Ainda sem traço",
+	["pets.roll"] = "Traço ({n})",
+	["pets.trait_rolled"] = "Traço {grade}: +{pct}% de poder!",
+	["msg.no_dice"] = "Sem Dados de Traço. Ganhe renascendo, com missões ou completando páginas do índice",
+	["msg.got_dice"] = "+{n} Dados de Traço!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Junte {n} Taps para o seu primeiro ovo",
+	["goal.hatch1"] = "Choque seu primeiro ovo!",
+	["goal.hatchN"] = "Choque {n} ovos ({have}/{n})",
+	["goal.zone"] = "Próximo: {zone}",
+	["goal.gate"] = "Abra o portão para {zone}!",
+	["goal.rebirth"] = "Renasça para x{mult} Taps",
+	["goal.rebirth_ready"] = "Você já pode renascer!",
+	["rebirth.lose"] = "Você perde",
+	["rebirth.get"] = "Você ganha",
+	["rebirth.lose_taps"] = "Seus {n} Taps",
+	["store.best"] = "MELHOR VALOR",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="18">
+        <Item class="ModuleScript" referent="20">
           <Properties>
             <string name="Name">ru</string>
             <string name="Source"><![CDATA[-- Russian (ru). Keys must match en.luau; keep {placeholders}.
@@ -4269,11 +4559,6 @@ return {
 	["hint.tap"] = "Тапай где угодно, чтобы получать Тапы!",
 	["hud.per_tap"] = "+{n} за тап",
 	["hud.gift_ready"] = "Подарок готов!",
-	["hud.autotap_on"] = "Автотап: ВКЛ",
-	["hud.autotap_off"] = "Автотап: ВЫКЛ",
-	["hud.autotap_locked"] = "Автотап",
-	["hud.autohatch_on"] = "Автовылуп: ВКЛ",
-	["hud.autohatch_off"] = "Автовылуп: ВЫКЛ",
 	["hud.friend_boost"] = "Бонус друзей +{pct}%",
 	["hud.super_luck"] = "Суперудача {time}",
 	["menu.Pets"] = "Питомцы",
@@ -4318,7 +4603,6 @@ return {
 	["pets.unequip"] = "Снять",
 	["pets.lock"] = "Закрыть",
 	["pets.unlock"] = "Открыть",
-	["pets.delete"] = "Удалить",
 	["pets.craft_gold"] = "Золото {have}/{need}",
 	["pets.craft_rainbow"] = "Радуга {have}/{need}",
 	["pets.select"] = "Выбери питомца",
@@ -4332,7 +4616,6 @@ return {
 	["egg.x3_locked"] = "Вылуп x3",
 	["egg.auto_on"] = "Авто: ВКЛ",
 	["egg.auto_off"] = "Авто: ВЫКЛ",
-	["egg.auto_locked"] = "Авто",
 	["egg.buy1"] = "Купить 1",
 	["egg.buy3"] = "Купить 3",
 	["egg.coming_soon"] = "Скоро",
@@ -4348,7 +4631,6 @@ return {
 	["upgrades.max"] = "МАКС",
 	["rebirth.count"] = "Ребёрнов: {n}",
 	["rebirth.mult"] = "Множитель тапа: {from} → {to}",
-	["rebirth.reward"] = "Награда: +{gems} Гемов",
 	["rebirth.progress"] = "{have} / {need} Тапов",
 	["rebirth.note"] = "Реберн обнуляет твои Тапы. Питомцы, зоны, гемы и улучшения остаются.",
 	["rebirth.button"] = "РЕБЁРН",
@@ -4655,11 +4937,32 @@ return {
 	["msg.not_your_chest"] = "Этот сундук принадлежит другому игроку",
 	["msg.no_plot"] = "На этом сервере нет свободных участков",
 	["teleport.park"] = "Мой парк питомцев",
+
+	-- traits
+	["pets.trait"] = "Черта {grade} · +{pct}% силы",
+	["pets.no_trait"] = "Черты пока нет",
+	["pets.roll"] = "Черта ({n})",
+	["pets.trait_rolled"] = "Черта {grade}: +{pct}% силы!",
+	["msg.no_dice"] = "Нет кубиков черт. Их дают перерождения, задания и страницы индекса",
+	["msg.got_dice"] = "+{n} кубиков черт!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Заработай {n} Taps на первое яйцо",
+	["goal.hatch1"] = "Открой своё первое яйцо!",
+	["goal.hatchN"] = "Открой {n} яиц ({have}/{n})",
+	["goal.zone"] = "Дальше: {zone}",
+	["goal.gate"] = "Открой ворота в {zone}!",
+	["goal.rebirth"] = "Переродись ради x{mult} Taps",
+	["goal.rebirth_ready"] = "Можно перерождаться!",
+	["rebirth.lose"] = "Ты теряешь",
+	["rebirth.get"] = "Ты получаешь",
+	["rebirth.lose_taps"] = "Твои {n} Taps",
+	["store.best"] = "ВЫГОДНО",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="19">
+        <Item class="ModuleScript" referent="21">
           <Properties>
             <string name="Name">th</string>
             <string name="Source"><![CDATA[-- Thai (th). Keys must match en.luau; keep {placeholders}.
@@ -4668,11 +4971,6 @@ return {
 	["hint.tap"] = "แตะที่ไหนก็ได้เพื่อรับแตะ!",
 	["hud.per_tap"] = "+{n} ต่อการแตะ",
 	["hud.gift_ready"] = "ของขวัญพร้อมแล้ว!",
-	["hud.autotap_on"] = "แตะอัตโนมัติ: เปิด",
-	["hud.autotap_off"] = "แตะอัตโนมัติ: ปิด",
-	["hud.autotap_locked"] = "แตะอัตโนมัติ",
-	["hud.autohatch_on"] = "ฟักอัตโนมัติ: เปิด",
-	["hud.autohatch_off"] = "ฟักอัตโนมัติ: ปิด",
 	["hud.friend_boost"] = "โบนัสเพื่อน +{pct}%",
 	["hud.super_luck"] = "โชคพิเศษ {time}",
 	["menu.Pets"] = "สัตว์เลี้ยง",
@@ -4717,7 +5015,6 @@ return {
 	["pets.unequip"] = "ถอด",
 	["pets.lock"] = "ล็อก",
 	["pets.unlock"] = "ปลดล็อก",
-	["pets.delete"] = "ลบ",
 	["pets.craft_gold"] = "ทองคำ {have}/{need}",
 	["pets.craft_rainbow"] = "สายรุ้ง {have}/{need}",
 	["pets.select"] = "เลือกสัตว์เลี้ยง",
@@ -4731,7 +5028,6 @@ return {
 	["egg.x3_locked"] = "ฟัก x3",
 	["egg.auto_on"] = "อัตโนมัติ: เปิด",
 	["egg.auto_off"] = "อัตโนมัติ: ปิด",
-	["egg.auto_locked"] = "อัตโนมัติ",
 	["egg.buy1"] = "ซื้อ 1",
 	["egg.buy3"] = "ซื้อ 3",
 	["egg.coming_soon"] = "เร็วๆ นี้",
@@ -4747,7 +5043,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "รีเบิร์ธ: {n}",
 	["rebirth.mult"] = "ตัวคูณแตะ: {from} → {to}",
-	["rebirth.reward"] = "รางวัล: +{gems} เพชร",
 	["rebirth.progress"] = "{have} / {need} แตะ",
 	["rebirth.note"] = "รีเบิร์ธจะรีเซ็ตแตะของคุณ แต่สัตว์เลี้ยง โซน เพชร และอัปเกรดยังอยู่เหมือนเดิม",
 	["rebirth.button"] = "รีเบิร์ธ",
@@ -5054,11 +5349,32 @@ return {
 	["msg.not_your_chest"] = "หีบนั้นเป็นของผู้เล่นอื่น",
 	["msg.no_plot"] = "ไม่มีแปลงว่างในเซิร์ฟเวอร์นี้",
 	["teleport.park"] = "สวนสัตว์เลี้ยงของฉัน",
+
+	-- traits
+	["pets.trait"] = "คุณสมบัติ {grade} · พลัง +{pct}%",
+	["pets.no_trait"] = "ยังไม่มีคุณสมบัติ",
+	["pets.roll"] = "คุณสมบัติ ({n})",
+	["pets.trait_rolled"] = "คุณสมบัติ {grade}: พลัง +{pct}%!",
+	["msg.no_dice"] = "ไม่มีลูกเต๋าคุณสมบัติ รับได้จากการเกิดใหม่ ทำเควสต์ หรือสะสมดัชนีให้ครบหน้า",
+	["msg.got_dice"] = "ลูกเต๋าคุณสมบัติ +{n}!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "สะสม {n} Taps เพื่อไข่ฟองแรก",
+	["goal.hatch1"] = "ฟักไข่ฟองแรกเลย!",
+	["goal.hatchN"] = "ฟักไข่ {n} ฟอง ({have}/{n})",
+	["goal.zone"] = "ถัดไป: {zone}",
+	["goal.gate"] = "เปิดประตูสู่ {zone}!",
+	["goal.rebirth"] = "เกิดใหม่เพื่อ Taps x{mult}",
+	["goal.rebirth_ready"] = "เกิดใหม่ได้แล้ว!",
+	["rebirth.lose"] = "คุณเสีย",
+	["rebirth.get"] = "คุณได้",
+	["rebirth.lose_taps"] = "{n} Taps ของคุณ",
+	["store.best"] = "คุ้มที่สุด",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="20">
+        <Item class="ModuleScript" referent="22">
           <Properties>
             <string name="Name">tr</string>
             <string name="Source"><![CDATA[-- Turkish (tr). Keys must match en.luau; keep {placeholders}.
@@ -5067,11 +5383,6 @@ return {
 	["hint.tap"] = "Tık kazanmak için her yere dokun!",
 	["hud.per_tap"] = "Her dokunuşta +{n}",
 	["hud.gift_ready"] = "Hediye hazır!",
-	["hud.autotap_on"] = "Oto Tık: AÇIK",
-	["hud.autotap_off"] = "Oto Tık: KAPALI",
-	["hud.autotap_locked"] = "Oto Tık",
-	["hud.autohatch_on"] = "Oto Açma: AÇIK",
-	["hud.autohatch_off"] = "Oto Açma: KAPALI",
 	["hud.friend_boost"] = "Arkadaş bonusu +{pct}%",
 	["hud.super_luck"] = "Süper Şans {time}",
 	["menu.Pets"] = "Evcil Hayvanlar",
@@ -5116,7 +5427,6 @@ return {
 	["pets.unequip"] = "Çıkar",
 	["pets.lock"] = "Kilitle",
 	["pets.unlock"] = "Kilidi Aç",
-	["pets.delete"] = "Sil",
 	["pets.craft_gold"] = "Altın {have}/{need}",
 	["pets.craft_rainbow"] = "Gökkuşağı {have}/{need}",
 	["pets.select"] = "Bir evcil hayvan seç",
@@ -5130,7 +5440,6 @@ return {
 	["egg.x3_locked"] = "3x Açma",
 	["egg.auto_on"] = "Oto: AÇIK",
 	["egg.auto_off"] = "Oto: KAPALI",
-	["egg.auto_locked"] = "Oto",
 	["egg.buy1"] = "1 Al",
 	["egg.buy3"] = "3 Al",
 	["egg.coming_soon"] = "Yakında",
@@ -5146,7 +5455,6 @@ return {
 	["upgrades.max"] = "MAKS",
 	["rebirth.count"] = "Yeniden doğuş: {n}",
 	["rebirth.mult"] = "Dokunuş çarpanı: {from} → {to}",
-	["rebirth.reward"] = "Ödül: +{gems} Elmas",
 	["rebirth.progress"] = "{have} / {need} Tık",
 	["rebirth.note"] = "Yeniden doğuş Tık'larını sıfırlar. Evcil hayvanların, bölgelerin, elmasların ve yükseltmelerin kalır.",
 	["rebirth.button"] = "YENİDEN DOĞ",
@@ -5453,11 +5761,32 @@ return {
 	["msg.not_your_chest"] = "O sandık başka bir oyuncunun",
 	["msg.no_plot"] = "Bu sunucuda boş parsel yok",
 	["teleport.park"] = "Evcil Parkım",
+
+	-- traits
+	["pets.trait"] = "Özellik {grade} · +%{pct} güç",
+	["pets.no_trait"] = "Henüz özellik yok",
+	["pets.roll"] = "Özellik ({n})",
+	["pets.trait_rolled"] = "Özellik {grade}: +%{pct} güç!",
+	["msg.no_dice"] = "Özellik Zarın yok. Yeniden doğarak, görevlerle veya dizin sayfalarını tamamlayarak kazan",
+	["msg.got_dice"] = "+{n} Özellik Zarı!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "İlk yumurtan için {n} Taps kazan",
+	["goal.hatch1"] = "İlk yumurtanı çıkar!",
+	["goal.hatchN"] = "{n} yumurta çıkar ({have}/{n})",
+	["goal.zone"] = "Sıradaki: {zone}",
+	["goal.gate"] = "{zone} kapısını aç!",
+	["goal.rebirth"] = "x{mult} Taps için yeniden doğ",
+	["goal.rebirth_ready"] = "Yeniden doğuş hazır!",
+	["rebirth.lose"] = "Kaybedersin",
+	["rebirth.get"] = "Kazanırsın",
+	["rebirth.lose_taps"] = "{n} Taps'in",
+	["store.best"] = "EN İYİ FİYAT",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">vi</string>
             <string name="Source"><![CDATA[-- Vietnamese (vi). Keys must match en.luau; keep {placeholders}.
@@ -5466,11 +5795,6 @@ return {
 	["hint.tap"] = "Chạm bất cứ đâu để nhận Chạm!",
 	["hud.per_tap"] = "+{n} mỗi lần chạm",
 	["hud.gift_ready"] = "Quà đã sẵn sàng!",
-	["hud.autotap_on"] = "Tự Chạm: BẬT",
-	["hud.autotap_off"] = "Tự Chạm: TẮT",
-	["hud.autotap_locked"] = "Tự Chạm",
-	["hud.autohatch_on"] = "Tự Ấp: BẬT",
-	["hud.autohatch_off"] = "Tự Ấp: TẮT",
 	["hud.friend_boost"] = "Thưởng bạn bè +{pct}%",
 	["hud.super_luck"] = "Siêu May Mắn {time}",
 	["menu.Pets"] = "Thú Cưng",
@@ -5515,7 +5839,6 @@ return {
 	["pets.unequip"] = "Gỡ",
 	["pets.lock"] = "Khóa",
 	["pets.unlock"] = "Mở Khóa",
-	["pets.delete"] = "Xóa",
 	["pets.craft_gold"] = "Vàng {have}/{need}",
 	["pets.craft_rainbow"] = "Cầu Vồng {have}/{need}",
 	["pets.select"] = "Chọn một thú cưng",
@@ -5529,7 +5852,6 @@ return {
 	["egg.x3_locked"] = "Ấp x3",
 	["egg.auto_on"] = "Tự Động: BẬT",
 	["egg.auto_off"] = "Tự Động: TẮT",
-	["egg.auto_locked"] = "Tự Động",
 	["egg.buy1"] = "Mua 1",
 	["egg.buy3"] = "Mua 3",
 	["egg.coming_soon"] = "Sắp ra mắt",
@@ -5545,7 +5867,6 @@ return {
 	["upgrades.max"] = "MAX",
 	["rebirth.count"] = "Tái Sinh: {n}",
 	["rebirth.mult"] = "Hệ số chạm: {from} → {to}",
-	["rebirth.reward"] = "Phần thưởng: +{gems} Đá Quý",
 	["rebirth.progress"] = "{have} / {need} Chạm",
 	["rebirth.note"] = "Tái Sinh sẽ reset Chạm của bạn. Thú cưng, khu vực, Đá Quý và nâng cấp vẫn được giữ lại.",
 	["rebirth.button"] = "TÁI SINH",
@@ -5852,12 +6173,33 @@ return {
 	["msg.not_your_chest"] = "Rương đó là của người chơi khác",
 	["msg.no_plot"] = "Máy chủ này không còn ô trống",
 	["teleport.park"] = "Công viên thú cưng của tôi",
+
+	-- traits
+	["pets.trait"] = "Đặc tính {grade} · +{pct}% sức mạnh",
+	["pets.no_trait"] = "Chưa có đặc tính",
+	["pets.roll"] = "Đặc tính ({n})",
+	["pets.trait_rolled"] = "Đặc tính {grade}: +{pct}% sức mạnh!",
+	["msg.no_dice"] = "Không có Xúc xắc Đặc tính. Nhận bằng cách tái sinh, làm nhiệm vụ hoặc hoàn thành trang chỉ mục",
+	["msg.got_dice"] = "+{n} Xúc xắc Đặc tính!",
+
+	-- objective line, rebirth window
+	["goal.earn"] = "Kiếm {n} Taps cho quả trứng đầu tiên",
+	["goal.hatch1"] = "Ấp quả trứng đầu tiên nào!",
+	["goal.hatchN"] = "Ấp {n} quả trứng ({have}/{n})",
+	["goal.zone"] = "Tiếp theo: {zone}",
+	["goal.gate"] = "Mở cổng tới {zone}!",
+	["goal.rebirth"] = "Tái sinh để được x{mult} Taps",
+	["goal.rebirth_ready"] = "Đã có thể tái sinh!",
+	["rebirth.lose"] = "Bạn mất",
+	["rebirth.get"] = "Bạn nhận",
+	["rebirth.lose_taps"] = "{n} Taps của bạn",
+	["store.best"] = "GIÁ TỐT NHẤT",
 }
 ]]></string>
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="22">
+      <Item class="ModuleScript" referent="24">
         <Properties>
           <string name="Name">Palette</string>
           <string name="Source"><![CDATA[--!strict
@@ -5901,7 +6243,7 @@ return Palette
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="23">
+      <Item class="ModuleScript" referent="25">
         <Properties>
           <string name="Name">PetModel</string>
           <string name="Source"><![CDATA[--!strict
@@ -6720,7 +7062,7 @@ return PetModel
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">Quests</string>
           <string name="Source"><![CDATA[--!strict
@@ -6770,7 +7112,7 @@ return Quests
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">Referral</string>
           <string name="Source"><![CDATA[--!strict
@@ -6800,15 +7142,15 @@ return Referral
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="26">
+  <Item class="ServerScriptService" referent="28">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="27">
+    <Item class="Folder" referent="29">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="Script" referent="28">
+      <Item class="Script" referent="30">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -6981,11 +7323,11 @@ end
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="29">
+      <Item class="Folder" referent="31">
         <Properties>
           <string name="Name">Services</string>
         </Properties>
-        <Item class="ModuleScript" referent="30">
+        <Item class="ModuleScript" referent="32">
           <Properties>
             <string name="Name">Auto</string>
             <string name="Source"><![CDATA[--!strict
@@ -7082,7 +7424,7 @@ return Auto
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="31">
+        <Item class="ModuleScript" referent="33">
           <Properties>
             <string name="Name">Data</string>
             <string name="Source"><![CDATA[--!strict
@@ -7098,12 +7440,13 @@ local Formulas = require(ReplicatedStorage.Shared.Formulas)
 
 local Data = {}
 
-export type PetEntry = { id: string, tier: number, locked: boolean }
+export type PetEntry = { id: string, tier: number, locked: boolean, trait: number? }
 
 export type Profile = {
 	version: number,
 	taps: number,
 	gems: number,
+	dice: number, -- Trait Dice (earned by playing, never sold)
 	totalTaps: number,
 	rebirths: number,
 	zones: { number }, -- unlocked zone indexes
@@ -7165,6 +7508,7 @@ local function defaultProfile(): Profile
 		version = 1,
 		taps = 0,
 		gems = 0,
+		dice = Config.TraitDice.start,
 		totalTaps = 0,
 		rebirths = 0,
 		zones = { 1 },
@@ -7224,6 +7568,8 @@ local function reconcile(p: any): Profile
 		else
 			pet.tier = math.clamp(tonumber(pet.tier) or 0, 0, 2)
 			pet.locked = pet.locked == true
+			local trait = tonumber(pet.trait)
+			pet.trait = if trait and Config.TraitGrades[trait] then trait else nil
 		end
 	end
 	local eq = {}
@@ -7398,7 +7744,7 @@ return Data
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="32">
+        <Item class="ModuleScript" referent="34">
           <Properties>
             <string name="Name">Eggs</string>
             <string name="Source"><![CDATA[--!strict
@@ -7570,7 +7916,7 @@ return Eggs
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="33">
+        <Item class="ModuleScript" referent="35">
           <Properties>
             <string name="Name">Hooks</string>
             <string name="Source"><![CDATA[--!strict
@@ -7607,7 +7953,7 @@ return Hooks
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="34">
+        <Item class="ModuleScript" referent="36">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -7792,7 +8138,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="35">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">LiveEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -7935,7 +8281,7 @@ return LiveEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">Monetization</string>
             <string name="Source"><![CDATA[--!strict
@@ -8163,7 +8509,7 @@ return Monetization
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Offline</string>
             <string name="Source"><![CDATA[--!strict
@@ -8238,7 +8584,7 @@ return Offline
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Pets</string>
             <string name="Source"><![CDATA[--!strict
@@ -8255,13 +8601,15 @@ local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
 
 local Pets = {}
+Pets.giveDice = function(_player: Player, _n: number) end
+local traitRng = Random.new()
 
 local function power(profile: Data.Profile, uid: string): number
 	local pet = profile.pets[uid]
 	if not pet then
 		return 0
 	end
-	return Formulas.petPower(pet.id, pet.tier, State.maxZone(profile))
+	return Formulas.petPower(pet.id, pet.tier, State.maxZone(profile), pet.trait)
 end
 
 function Pets.hasRoom(profile: Data.Profile, count: number): boolean
@@ -8405,6 +8753,44 @@ function Pets.init()
 		return true, n
 	end)
 
+	-- Trait roll: spends Trait Dice, always gives a grade (it replaces the old one).
+	Remotes.handle("RollTrait", function(player, payload)
+		local p = Data.get(player)
+		local pet = if p and type(payload.uid) == "string" then p.pets[payload.uid] else nil
+		if not p or not pet then
+			return false, M("msg.unknown_pet")
+		end
+		if p.dice < Config.TraitRollCost then
+			return false, M("msg.no_dice")
+		end
+		p.dice -= Config.TraitRollCost
+		local grade = Formulas.rollTrait(traitRng:NextNumber())
+		pet.trait = grade
+		State.dirty(player)
+		Hooks.fire("traitRolled", player, grade)
+		return true, grade
+	end)
+
+	-- Trait Dice come from playing: rebirths, daily quests, index pages
+	local function giveDice(player: Player, n: number)
+		local p = Data.get(player)
+		if p and n > 0 then
+			p.dice += n
+			State.dirty(player)
+			Remotes.notify(player, M("msg.got_dice", { n = n }), "success")
+		end
+	end
+	Pets.giveDice = giveDice
+	Hooks.on("rebirth", function(player: Player)
+		giveDice(player, Config.TraitDice.rebirth)
+	end)
+	Hooks.on("questClaimed", function(player: Player, bonus: boolean)
+		giveDice(player, if bonus then Config.TraitDice.questBonus else Config.TraitDice.quest)
+	end)
+	Hooks.on("indexClaimed", function(player: Player)
+		giveDice(player, Config.TraitDice.index)
+	end)
+
 	-- Craft: consumes CraftCost unlocked pets with the same id+tier as payload.uid.
 	Remotes.handle("Craft", function(player, payload)
 		local p = Data.get(player)
@@ -8466,7 +8852,7 @@ return Pets
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Plots</string>
             <string name="Source"><![CDATA[--!strict
@@ -8579,7 +8965,7 @@ return Plots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Progression</string>
             <string name="Source"><![CDATA[--!strict
@@ -8750,7 +9136,7 @@ return Progression
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">QuestService</string>
             <string name="Source"><![CDATA[--!strict
@@ -8879,6 +9265,7 @@ function QuestService.init()
 		end
 		p.quests.claimed[i] = true
 		dirty[player] = true
+		Hooks.fire("questClaimed", player, false)
 		return true, Rewards.grant(player, { kind = "gems", amount = q.gems })
 	end)
 
@@ -8897,6 +9284,7 @@ function QuestService.init()
 		end
 		p.quests.bonusClaimed = true
 		dirty[player] = true
+		Hooks.fire("questClaimed", player, true)
 		return true, Rewards.grant(player, Config.QuestBonus :: any)
 	end)
 
@@ -8937,7 +9325,7 @@ return QuestService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -9043,7 +9431,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Rewards</string>
             <string name="Source"><![CDATA[--!strict
@@ -9060,6 +9448,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
+local Hooks = require(script.Parent.Hooks)
 local Eggs = require(script.Parent.Eggs)
 
 local Rewards = {}
@@ -9222,6 +9611,7 @@ function Rewards.init()
 			end
 		end
 		p.indexClaimed[key] = true
+		Hooks.fire("indexClaimed", player, zone)
 		local gems = Config.IndexRewardGems[zone] or 0
 		State.addGems(player, gems)
 		State.dirty(player)
@@ -9240,7 +9630,7 @@ return Rewards
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Social</string>
             <string name="Source"><![CDATA[--!strict
@@ -9539,7 +9929,7 @@ return Social
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -9639,7 +10029,7 @@ function State.petPowerSum(profile: Data.Profile): number
 	for _, uid in profile.equipped do
 		local pet = profile.pets[uid]
 		if pet then
-			sum += Formulas.petPower(pet.id, pet.tier, maxZone)
+			sum += Formulas.petPower(pet.id, pet.tier, maxZone, pet.trait)
 		end
 	end
 	return sum
@@ -9764,6 +10154,7 @@ function State.snapshot(player: Player): { [string]: any }?
 	local snap: { [string]: any } = {
 		taps = p.taps,
 		gems = p.gems,
+		dice = p.dice,
 		totalTaps = p.totalTaps,
 		rebirths = p.rebirths,
 		zones = p.zones,
@@ -9852,7 +10243,7 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Tapping</string>
             <string name="Source"><![CDATA[--!strict
@@ -10000,11 +10391,11 @@ return Tapping
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="47">
+      <Item class="Folder" referent="49">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">WorldBuilder</string>
             <string name="Source"><![CDATA[--!strict
@@ -11525,6 +11916,16 @@ function WorldBuilder.build(): WorldInfo
 		rays.Spread = 0.7
 		rays.Parent = Lighting
 	end
+	-- a soft far blur: the horizon props melt into the sky and the play area reads sharper
+	-- (the client switches it off on the lite profile, like bloom and sun rays)
+	if not Lighting:FindFirstChildOfClass("DepthOfFieldEffect") then
+		local dof = Instance.new("DepthOfFieldEffect")
+		dof.FarIntensity = 0.12
+		dof.NearIntensity = 0
+		dof.FocusDistance = 70
+		dof.InFocusRadius = 90
+		dof.Parent = Lighting
+	end
 	if not Lighting:FindFirstChildOfClass("Sky") then
 		local sky = Instance.new("Sky")
 		sky.StarCount = 5000
@@ -11555,20 +11956,20 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="49">
+  <Item class="StarterPlayer" referent="51">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">90</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="50">
+    <Item class="StarterPlayerScripts" referent="52">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="51">
+      <Item class="Folder" referent="53">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">Ads</string>
             <string name="Source"><![CDATA[--!strict
@@ -11640,7 +12041,143 @@ return Ads
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="55">
+          <Properties>
+            <string name="Name">Guide</string>
+            <string name="Source"><![CDATA[--!strict
+-- The "what do I do next" line at the top of the screen, with a progress bar, plus a beam
+-- of light from the player to the thing they should walk to (first egg, next gate).
+-- Guide.current is pure (state in, objective out) so the playtest can check every step.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Workspace = game:GetService("Workspace")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
+local Formulas = require(ReplicatedStorage.Shared.Formulas)
+
+local Guide = {}
+
+export type Objective = {
+	key: string, -- translation key
+	args: { [string]: any },
+	zoneArg: number?, -- args.zone is filled with this zone's translated name
+	progress: number, -- 0..1
+	target: Vector3?, -- where the beam points
+	window: string?, -- window opened when the objective is clicked
+}
+
+local FIRST_EGG = Config.Eggs[1]
+local HATCH_GOAL = 5
+
+local function eggPosition(egg: typeof(Config.Eggs[1])): Vector3
+	local zone = if egg.zone == 0 then 1 else egg.zone
+	return Vector3.new(egg.offsetX, 6, (zone - 1) * Config.ZoneLength + egg.offsetZ)
+end
+
+local function gatePosition(zone: number): Vector3
+	return Vector3.new(0, 6, (zone - 1) * Config.ZoneLength - Config.ZoneLength / 2)
+end
+
+function Guide.current(s: { [string]: any }): Objective
+	local hatched = s.totalHatched or 0
+	local taps = s.taps or 0
+	if hatched < 1 then
+		if taps < FIRST_EGG.price then
+			return { key = "goal.earn", args = { n = Format.abbrev(FIRST_EGG.price) }, progress = taps / FIRST_EGG.price }
+		end
+		return { key = "goal.hatch1", args = {}, progress = 1, target = eggPosition(FIRST_EGG) }
+	end
+	if hatched < HATCH_GOAL then
+		return { key = "goal.hatchN", args = { n = HATCH_GOAL, have = hatched }, progress = hatched / HATCH_GOAL, target = if taps >= FIRST_EGG.price then eggPosition(FIRST_EGG) else nil }
+	end
+	-- next gate or rebirth, whichever is cheaper
+	local nextZone = #(s.zones or { 1 }) + 1
+	local zone = Config.Zones[nextZone]
+	local rebirthCost = s.rebirthCost or Formulas.rebirthCost(s.rebirths or 0)
+	if zone and zone.cost <= rebirthCost then
+		if taps >= zone.cost then
+			return { key = "goal.gate", args = {}, zoneArg = nextZone, progress = 1, target = gatePosition(nextZone), window = "Teleport" }
+		end
+		return { key = "goal.zone", args = {}, zoneArg = nextZone, progress = taps / zone.cost, window = "Teleport" }
+	end
+	if taps >= rebirthCost then
+		return { key = "goal.rebirth_ready", args = {}, progress = 1, window = "Rebirth" }
+	end
+	return { key = "goal.rebirth", args = { mult = tostring(Formulas.rebirthMult((s.rebirths or 0) + 1)) }, progress = taps / rebirthCost, window = "Rebirth" }
+end
+
+---------------------------------------------------------------------------
+-- Beam to the target
+---------------------------------------------------------------------------
+local anchor: BasePart? = nil
+local beam: Beam? = nil
+local a0: Attachment? = nil
+
+local function ensure()
+	if anchor then
+		return
+	end
+	local p = Instance.new("Part")
+	p.Name = "GuideTarget"
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.Transparency = 1
+	p.Size = Vector3.new(1, 1, 1)
+	p.Parent = Workspace
+	anchor = p
+	local at = Instance.new("Attachment")
+	at.Parent = p
+	local b = Instance.new("Beam")
+	b.Name = "GuideBeam"
+	b.Color = ColorSequence.new(Color3.fromRGB(255, 225, 90), Color3.fromRGB(255, 255, 255))
+	b.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.75), NumberSequenceKeypoint.new(0.2, 0.25), NumberSequenceKeypoint.new(1, 0.15) })
+	b.Width0 = 1.2
+	b.Width1 = 2.2
+	b.FaceCamera = true
+	b.LightEmission = 0.6
+	b.Segments = 1
+	b.Attachment1 = at
+	b.Enabled = false
+	b.Parent = p
+	beam = b
+end
+
+-- Points the beam at target (nil hides it). Hidden when the player is already there.
+function Guide.point(target: Vector3?)
+	ensure()
+	local b = beam :: Beam
+	local char = Players.LocalPlayer.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not target or not root or (root.Position - target).Magnitude < 20 then
+		b.Enabled = false
+		return
+	end
+	if not a0 or a0.Parent ~= root then
+		if a0 then
+			a0:Destroy()
+		end
+		local at = Instance.new("Attachment")
+		at.Name = "GuideFrom"
+		at.Parent = root
+		a0 = at
+		b.Attachment0 = at
+	end
+	(anchor :: BasePart).Position = target
+	b.Enabled = true
+end
+
+function Guide.beamOn(): boolean
+	return beam ~= nil and beam.Enabled
+end
+
+return Guide
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -11758,7 +12295,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">LiveEventClient</string>
             <string name="Source"><![CDATA[--!strict
@@ -11806,13 +12343,12 @@ return LiveEventClient
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="55">
+        <Item class="LocalScript" referent="58">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
 -- Tap Pets Simulator: client bootstrap.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
 
 ReplicatedStorage:WaitForChild("Remotes")
 
@@ -11825,7 +12361,6 @@ local WorldText = require(script.Parent.WorldText)
 local ParkFx = require(script.Parent.ParkFx)
 local UI = script.Parent.UI
 local Theme = require(UI.Theme)
-local Root = require(UI.Root)
 local Toasts = require(UI.Toasts)
 local Hud = require(UI.Hud)
 local HatchCinematic = require(UI.HatchCinematic)
@@ -11873,37 +12408,10 @@ end
 Net.event("Hatched").OnClientEvent:Connect(function(data)
 	HatchCinematic.play(data.egg, data.results, data.auto)
 end)
-
--- First-session hint
--- (touch: right of the menu, between the thumbstick and jump areas)
-local hint = Theme.text({
-	Key = "hint.tap",
-	Size = if Root.isTouch then UDim2.fromOffset(420, 50) else UDim2.fromOffset(620, 50),
-	Position = if Root.isTouch then UDim2.fromScale(0.58, 0.55) else UDim2.new(0.5, 0, 1, -40),
-	AnchorPoint = if Root.isTouch then Vector2.new(0.5, 0.5) else Vector2.new(0.5, 1),
-	MaxTextSize = 40,
-	Stroke = 3,
-	TextColor3 = Theme.Yellow,
-	Parent = Root.gui,
-})
-local hintHolder = Root.mount(hint)
-task.spawn(function()
-	local t = 0
-	while hint.Parent do
-		t += task.wait()
-		hint.Rotation = math.sin(t * 3) * 3
-		local s = Net.state
-		if s and (s.totalTaps > 60 or t > 90) then
-			TweenService:Create(hint, TweenInfo.new(0.5), { TextTransparency = 1 }):Play()
-			task.wait(0.6)
-			hintHolder:Destroy()
-		end
-	end
-end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -11995,7 +12503,7 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">ParkFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -12166,7 +12674,7 @@ return ParkFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">PetFollow</string>
             <string name="Source"><![CDATA[--!strict
@@ -12532,7 +13040,7 @@ return PetFollow
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="62">
           <Properties>
             <string name="Name">Purchase</string>
             <string name="Source"><![CDATA[--!strict
@@ -12542,6 +13050,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Format = require(ReplicatedStorage.Shared.Format)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Lang = require(script.Parent.Lang)
 local Net = require(script.Parent.Net)
@@ -12593,6 +13102,72 @@ function Purchase.product(key: string)
 	MarketplaceService:PromptProductPurchase(Players.LocalPlayer, product.id)
 end
 
+-- Odds of the random item a product gives, as numeric percentages that add up to 100 plus
+-- the Golden chance, localized: "Sparkle Cat 70% · Crystal Unicorn 29% · ... · Golden 1%".
+-- nil for products with a fixed reward. Shown on the store card and the offer card, before
+-- the purchase prompt (paid random items rule). The exclusive egg's entries are all Rare+,
+-- so luck scales every weight equally and the odds do not depend on the buyer's luck.
+function Purchase.oddsText(key: string): string?
+	local eggId = Formulas.productEgg(key)
+	if not eggId then
+		return nil
+	end
+	local parts = {}
+	for _, o in Formulas.displayOdds(eggId, 1) do
+		table.insert(parts, Lang.pet(o.pet) .. " " .. o.text)
+	end
+	local golden = (Net.get("goldenChance") :: number?) or 0
+	if golden > 0 then
+		-- same text as the egg panel's Golden line
+		local pct = Format.chance(golden * 100):gsub("%%", "")
+		table.insert(parts, Lang.t("egg.golden", { pct = pct }))
+	end
+	return table.concat(parts, " · ")
+end
+
+-- What a paid probability modifier does to the odds, with this player's numbers:
+-- "Luck x1.10 → x1.60" (Lucky, VIP, Super Luck) or "Golden 1% → 10%" (Magic Eggs).
+-- The exact odds after luck are on every egg panel. nil for items that change no odds.
+function Purchase.effectText(key: string): string?
+	local s = Net.state
+	if not s then
+		return nil
+	end
+	if key == "MagicEggs" then
+		-- the live-event multiplier (Golden Weekend) is whatever the server's number implies
+		local owns = Net.owns("MagicEggs")
+		local plain = Formulas.goldenChance(owns, 1)
+		local ev = if plain > 0 and s.goldenChance then s.goldenChance / plain else 1
+		local before = Formulas.goldenChance(owns, ev)
+		local after = Formulas.goldenChance(true, ev)
+		local function pct(c: number): string
+			return (Format.chance(c * 100):gsub("%%", ""))
+		end
+		return Lang.t("egg.golden", { pct = pct(before) }) .. " → " .. pct(after) .. "%"
+	end
+	if key ~= "Lucky" and key ~= "VIP" and key ~= "SuperLuck" then
+		return nil
+	end
+	local level = (s.upgrades and s.upgrades.Luck) or 0
+	local passes = table.clone((Net.get("passes") :: { [string]: boolean }?) or {})
+	local boosted = (s.luckBoostLeft or 0) > 0
+	local base = Formulas.luck(level, passes, boosted, 1)
+	local eventLuck = if base > 0 and s.luck then s.luck / base else 1
+	local before = Formulas.luck(level, passes, boosted, eventLuck)
+	if key == "SuperLuck" then
+		boosted = true -- stacks time if it is already running
+	else
+		passes[key] = true
+	end
+	local after = Formulas.luck(level, passes, boosted, eventLuck)
+	return Lang.t("egg.luck", { luck = string.format("%.2f", before) }) .. " → x" .. string.format("%.2f", after)
+end
+
+-- Text for a store card: the odds of a random reward, or the odds change of a luck item.
+function Purchase.cardOdds(key: string): string?
+	return Purchase.oddsText(key) or Purchase.effectText(key)
+end
+
 function Purchase.passAvailable(key: string): boolean
 	local pass = Config.PassByKey[key]
 	return pass ~= nil and pass.id ~= 0 and not Purchase.passBlocked(key)
@@ -12607,7 +13182,7 @@ return Purchase
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="63">
           <Properties>
             <string name="Name">Quality</string>
             <string name="Source"><![CDATA[--!strict
@@ -12698,7 +13273,7 @@ return Quality
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">Tapper</string>
             <string name="Source"><![CDATA[--!strict
@@ -13145,11 +13720,11 @@ return Tapper
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="62">
+        <Item class="Folder" referent="65">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="63">
+          <Item class="ModuleScript" referent="66">
             <Properties>
               <string name="Name">EggPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -13160,6 +13735,7 @@ local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -13354,6 +13930,7 @@ function EggPanel.init()
 		buildOdds()
 		refreshButtons()
 		panel.Visible = true
+		Hud.setDockVisible(false)
 		if Root.isTouch then
 			Hud.setSidesVisible(false)
 		end
@@ -13364,16 +13941,63 @@ function EggPanel.init()
 		currentEgg = nil
 		eggPos = nil
 		panel.Visible = false
+		Hud.setDockVisible(true)
 		if Root.isTouch then
 			Hud.setSidesVisible(true)
 		end
 	end
+
+	-- Paid random items policy: players PolicyService restricts (and everyone until the
+	-- answer arrives) don't get the Robux-only egg at all: its prompt and sign are switched
+	-- off on this client, and a stray trigger only explains why.
+	local function isExclusive(eggId: any): boolean
+		local def = if type(eggId) == "string" then Formulas.EggById[eggId] else nil
+		return def ~= nil and def.exclusive == true
+	end
+	local function syncExclusive(inst: Instance)
+		if inst:IsA("ProximityPrompt") and isExclusive(inst:GetAttribute("EggId")) then
+			inst.Enabled = not Purchase.restricted()
+		elseif inst:IsA("BillboardGui") then
+			local model = inst:FindFirstAncestorOfClass("Model")
+			if model and isExclusive(model:GetAttribute("EggId")) then
+				inst.Enabled = not Purchase.restricted()
+			end
+		end
+	end
+	local eggsFolder: Instance? = nil
+	local function syncAllExclusive()
+		if eggsFolder then
+			for _, d in eggsFolder:GetDescendants() do
+				syncExclusive(d)
+			end
+		end
+	end
+	task.spawn(function()
+		local world = Workspace:WaitForChild("World", 60)
+		local eggs = world and world:WaitForChild("Eggs", 60)
+		if eggs then
+			eggsFolder = eggs
+			eggs.DescendantAdded:Connect(syncExclusive)
+			syncAllExclusive()
+		end
+	end)
+	local lastRestricted: boolean? = nil
+	Net.Changed:Connect(function(kind)
+		if kind == "full" and Purchase.restricted() ~= lastRestricted then
+			lastRestricted = Purchase.restricted()
+			syncAllExclusive()
+		end
+	end)
 
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
 		if player ~= Players.LocalPlayer then
 			return
 		end
 		local eggId = prompt:GetAttribute("EggId")
+		if isExclusive(eggId) and Purchase.restricted() then
+			Toasts.show(Lang.t("egg.restricted"), "info")
+			return
+		end
 		if type(eggId) == "string" then
 			local parent = prompt.Parent
 			local pos = if parent and parent:IsA("BasePart") then parent.Position else Vector3.zero
@@ -13434,7 +14058,7 @@ return EggPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="64">
+          <Item class="ModuleScript" referent="67">
             <Properties>
               <string name="Name">HatchCinematic</string>
               <string name="Source"><![CDATA[--!strict
@@ -13990,15 +14614,18 @@ return HatchCinematic
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="65">
+          <Item class="ModuleScript" referent="68">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
--- HUD: currencies with count-up, menu, live event pill, offers, boosts, auto toggles, gifts.
--- PC: currencies top-center (the Roblox chat window owns the top-left), a 3-column menu on the
---     left, boosts/offers centered on the right.
--- Touch: everything sits in the top half (currencies + a 5x2 menu top-left, boosts top-right)
---     so the thumbstick (bottom-left) and jump button (bottom-right) areas stay free.
+-- HUD, laid out the way the top simulators do it (see docs: ROBLOX-HUD-GUIA).
+--
+-- PC:    top-centre   objective with a progress bar (what to do next)
+--        left         rebirth line, Gems and Taps as bars with an icon, then the menu grid
+--        bottom-centre dock: Rewards · the big TAP button (with +N per tap) · Pets (count badge)
+--        right        gift timer, live event, boosts, offers, the four auto chips
+-- Touch: currencies + menu top-left and the right column at the top, so the thumbstick
+--        (bottom-left) and jump button (bottom-right) stay free; the dock sits between them.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -14006,6 +14633,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local HudUnlock = require(ReplicatedStorage.Shared.HudUnlock)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Windows = require(script.Parent.Windows)
@@ -14014,6 +14642,8 @@ local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
 local LiveEventClient = require(script.Parent.Parent.LiveEventClient)
 local Ads = require(script.Parent.Parent.Ads)
+local Guide = require(script.Parent.Parent.Guide)
+local Tapper = require(script.Parent.Parent.Tapper)
 
 local Hud = {}
 
@@ -14023,7 +14653,8 @@ local target = { taps = 0, gems = 0 }
 local EVENT_COLORS = { LuckyHour = Theme.Green, GoldenWeekend = Theme.Yellow }
 local EVENT_ICONS = { LuckyHour = "🍀", GoldenWeekend = "⭐" }
 
-local function pill(parent: Instance, icon: string, color: Color3, width: number, height: number): (Frame, TextLabel)
+-- iconName: image from the shared icon pack (Theme.setIcon); the emoji is the fallback.
+local function pill(parent: Instance, icon: string, iconName: string, color: Color3, width: number, height: number): (Frame, TextLabel)
 	local f = Theme.new("Frame", {
 		Size = UDim2.fromOffset(width, height),
 		BackgroundColor3 = Color3.new(1, 1, 1),
@@ -14037,7 +14668,7 @@ local function pill(parent: Instance, icon: string, color: Color3, width: number
 		BackgroundColor3 = Theme.Paper,
 		Parent = f,
 	}, { Theme.corner((height + 8) // 2), Theme.stroke(3), Theme.gradient(Theme.White, Theme.lighten(color, 0.6)) })
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.75, 0.75), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = iconFrame })
+	Theme.icon(icon, { Size = UDim2.fromScale(0.75, 0.75), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = iconFrame }, iconName)
 	local label = Theme.text({ Text = "0", Size = UDim2.new(1, -(height + 18), 1, -8), Position = UDim2.new(0, height + 10, 0, 4), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 34, Stroke = 3, Parent = f })
 	label.AutoLocalize = false
 	Theme.new("UIScale", { Parent = f })
@@ -14046,6 +14677,7 @@ end
 
 Hud.tapsPill = nil :: Frame?
 local sides: { GuiObject } = {}
+local dockHolder: GuiObject? = nil
 
 -- Touch layout hides the side columns while a top panel (egg panel) is open.
 function Hud.setSidesVisible(visible: boolean)
@@ -14054,12 +14686,18 @@ function Hud.setSidesVisible(visible: boolean)
 	end
 end
 
+-- The egg panel (PC: bottom-centre) takes the dock's place while it is open.
+function Hud.setDockVisible(visible: boolean)
+	if dockHolder then
+		dockHolder.Visible = visible
+	end
+end
+
+-- Pets and Rewards live in the bottom dock; everything else is in the menu grid.
 local MENU: { { any } } = {
-	{ "Pets", "🐾", Theme.Orange },
 	{ "Upgrades", "⬆️", Theme.Teal },
 	{ "Rebirth", "🔁", Theme.Purple },
 	{ "Quests", "📜", Theme.Orange },
-	{ "Rewards", "🎁", Theme.Pink },
 	{ "Store", "🛒", Theme.Green },
 	{ "Index", "📖", Theme.Blue },
 	{ "Teleport", "🌀", Theme.Yellow },
@@ -14070,83 +14708,25 @@ local MENU: { { any } } = {
 function Hud.init()
 	local gui = Root.gui
 	local touch = Root.isTouch
-
-	---------------------------------------------------------------------------
-	-- Currencies
-	---------------------------------------------------------------------------
-	local currencies = Theme.new("Frame", {
-		Name = "Currencies",
-		BackgroundTransparency = 1,
-		Size = if touch then UDim2.fromOffset(382, 100) else UDim2.fromOffset(484, 80),
-		Position = if touch then UDim2.fromOffset(14, 8) else UDim2.new(0.5, 0, 0, 6),
-		AnchorPoint = if touch then Vector2.zero else Vector2.new(0.5, 0),
-		Parent = gui,
-	})
-	local tapsPill, tapsLabel = pill(currencies, "👆", Theme.Blue, 250, 50)
-	local gemsPill, gemsLabel = pill(currencies, "💎", Theme.Teal, if touch then 170 else 214, if touch then 42 else 50)
-	gemsPill.Position = if touch then UDim2.fromOffset(4, 58) else UDim2.fromOffset(270, 0)
-	tapsPill.Position = UDim2.fromOffset(4, 0)
-	local perTap = Theme.text({
-		Text = "",
-		Size = if touch then UDim2.fromOffset(200, 42) else UDim2.fromOffset(250, 26),
-		Position = if touch then UDim2.fromOffset(182, 58) else UDim2.fromOffset(60, 54),
-		TextXAlignment = Enum.TextXAlignment.Left,
-		MaxTextSize = 22,
-		TextColor3 = Theme.Yellow,
-		Parent = currencies,
-	})
-	Hud.tapsPill = tapsPill
-	local currenciesHolder = Root.mount(currencies)
-	if touch then
-		table.insert(sides, currenciesHolder)
-	end
-
-	---------------------------------------------------------------------------
-	-- Menu
-	---------------------------------------------------------------------------
-	local COLS, CELL, GAP = if touch then 5 else 3, if touch then 70 else 80, if touch then 8 else 10
-	local rows = math.ceil(#MENU / COLS)
-	local menuW, menuH = COLS * CELL + (COLS - 1) * GAP, rows * CELL + (rows - 1) * GAP
-	local menu = Theme.new("Frame", {
-		Name = "Menu",
-		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(menuW, menuH),
-		Position = if touch then UDim2.fromOffset(14, 8 + 112) else UDim2.new(0, 14, 0.58, 0),
-		AnchorPoint = if touch then Vector2.zero else Vector2.new(0, 0.5),
-		Parent = gui,
-	}, {
-		Theme.new("UIGridLayout", {
-			CellSize = UDim2.fromOffset(CELL, CELL),
-			CellPadding = UDim2.fromOffset(GAP, GAP),
-			SortOrder = Enum.SortOrder.LayoutOrder,
-		}),
-	})
-	local menuHolder = Root.mount(menu)
-	table.insert(sides, menuHolder)
-	if touch then
-		-- the holder scales around its top-left, so keep the menu right under the scaled currencies
-		local function place()
-			menuHolder.Position = UDim2.fromOffset(14, 8 + math.floor(112 * Root.scale))
-		end
-		place()
-		Root.Changed:Connect(place)
+	-- icon in front of a button's text (see Theme.lead)
+	local function lead(b: TextButton, emoji: string, name: string?): string
+		return Theme.lead(b:FindFirstChild("Label") :: TextLabel, emoji, name)
 	end
 	local badges: { [string]: Frame } = {}
 	local badgeText: { [string]: TextLabel } = {}
-	for i, e in MENU do
-		local name, icon, color = e[1], e[2], e[3]
+
+	-- Square icon button with a label underneath (menu grid and dock).
+	local function iconButton(parent: Instance, name: string, icon: string, color: Color3, order: number, onClick: () -> ()): TextButton
 		local b = Theme.button({
 			Name = name,
 			Color = color,
-			LayoutOrder = i,
+			LayoutOrder = order,
 			Corner = 18,
-			OnClick = function()
-				Windows.toggle(name)
-			end,
-			Parent = menu,
+			OnClick = onClick,
+			Parent = parent,
 		})
 		local label = b:FindFirstChild("Label") :: TextLabel
-		label.Text = icon
+		Theme.setIcon(label, icon)
 		label.Size = UDim2.new(1, -16, 0.58, 0)
 		label.Position = UDim2.new(0.5, 0, 0.36, 0)
 		local st = label:FindFirstChildOfClass("UIStroke")
@@ -14156,6 +14736,211 @@ function Hud.init()
 		Theme.text({ Key = "menu." .. name, Size = UDim2.new(1, -8, 0.28, 0), Position = UDim2.new(0.5, 0, 0.84, 0), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = 17, Parent = b })
 		badges[name] = Theme.badge(b)
 		badgeText[name] = (badges[name] :: any):FindFirstChildOfClass("TextLabel")
+		return b
+	end
+
+	---------------------------------------------------------------------------
+	-- Currencies + menu (left)
+	---------------------------------------------------------------------------
+	local COLS, CELL, GAP = if touch then 4 else 3, if touch then 70 else 80, if touch then 8 else 10
+	local rows = math.ceil(#MENU / COLS)
+	local menuW, menuH = COLS * CELL + (COLS - 1) * GAP, rows * CELL + (rows - 1) * GAP
+	local CUR_H = if touch then 104 else 142 -- currency block height
+	local left = Theme.new("Frame", {
+		Name = "Left",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(math.max(menuW, 264), CUR_H + menuH),
+		Position = if touch then UDim2.fromOffset(14, 8) else UDim2.new(0, 14, 0.6, 0),
+		AnchorPoint = if touch then Vector2.zero else Vector2.new(0, 0.5),
+		Parent = gui,
+	})
+	local currencies = Theme.new("Frame", { Name = "Currencies", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, CUR_H), Parent = left })
+	-- rebirth line
+	local rebirthLabel = Theme.text({
+		Name = "Rebirths",
+		Text = "",
+		Size = UDim2.fromOffset(250, 24),
+		Position = UDim2.fromOffset(6, 0),
+		TextXAlignment = Enum.TextXAlignment.Left,
+		MaxTextSize = 20,
+		TextColor3 = Theme.lighten(Theme.Purple, 0.45),
+		Visible = not touch,
+		Parent = currencies,
+	})
+	local gemsPill, gemsLabel = pill(currencies, "💎", "gem", Theme.Teal, if touch then 170 else 214, if touch then 42 else 44)
+	local tapsPill, tapsLabel = pill(currencies, "👆", "coin", Theme.Blue, 250, 50)
+	if touch then
+		tapsPill.Position = UDim2.fromOffset(4, 0)
+		gemsPill.Position = UDim2.fromOffset(4, 58)
+	else
+		gemsPill.Position = UDim2.fromOffset(4, 30)
+		tapsPill.Position = UDim2.fromOffset(4, 84)
+	end
+	Hud.tapsPill = tapsPill
+	local menu = Theme.new("Frame", {
+		Name = "Menu",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(menuW, menuH),
+		Position = UDim2.fromOffset(0, CUR_H),
+		Parent = left,
+	}, {
+		Theme.new("UIGridLayout", {
+			CellSize = UDim2.fromOffset(CELL, CELL),
+			CellPadding = UDim2.fromOffset(GAP, GAP),
+			SortOrder = Enum.SortOrder.LayoutOrder,
+		}),
+	})
+	table.insert(sides, Root.mount(left))
+	-- buttons that appear as the player progresses (HudUnlock), keyed by HudUnlock name
+	local unlockables: { [string]: GuiObject } = {}
+	for i, e in MENU do
+		local name = e[1]
+		unlockables[name] = iconButton(menu, name, e[2], e[3], i, function()
+			Windows.toggle(name)
+		end)
+	end
+
+	---------------------------------------------------------------------------
+	-- Dock (bottom-centre): Rewards · TAP · Pets
+	---------------------------------------------------------------------------
+	local dock = Theme.new("Frame", {
+		Name = "Dock",
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(300, 128),
+		Position = UDim2.new(if touch then 0.56 else 0.5, 0, 1, -8),
+		AnchorPoint = Vector2.new(0.5, 1),
+		Parent = gui,
+	})
+	dockHolder = Root.mount(dock)
+	local rewardsB = iconButton(dock, "Rewards", "🎁", Theme.Pink, 1, function()
+		Windows.toggle("Rewards")
+	end)
+	rewardsB.Size = UDim2.fromOffset(84, 84)
+	rewardsB.Position = UDim2.fromOffset(0, 36)
+	local petsB = iconButton(dock, "Pets", "🐾", Theme.Orange, 3, function()
+		Windows.toggle("Pets")
+	end)
+	petsB.Size = UDim2.fromOffset(84, 84)
+	petsB.Position = UDim2.fromOffset(216, 36)
+	-- the pets badge shows how many you own (blue, not an alert)
+	local petsCount = Theme.new("Frame", { Name = "Count", Size = UDim2.fromOffset(40, 26), Position = UDim2.new(1, -30, 0, -10), BackgroundColor3 = Theme.Blue, ZIndex = 10, Parent = petsB }, { Theme.corner(13), Theme.stroke(2) })
+	local petsCountText = Theme.text({ Text = "0", Size = UDim2.new(1, -6, 1, -4), Position = UDim2.fromOffset(3, 2), MaxTextSize = 18, Parent = petsCount })
+	petsCountText.ZIndex = 11
+	petsCountText.AutoLocalize = false
+	-- the big tap button: same thing as tapping the world, always under the thumb
+	local tapB = Theme.button({
+		Name = "TapButton",
+		Text = "👆",
+		Color = Theme.Yellow,
+		Size = UDim2.fromOffset(112, 96),
+		Position = UDim2.fromOffset(94, 0),
+		Corner = 30,
+		TextSize = 60,
+		Parent = dock,
+	})
+	local tapIcon = tapB:FindFirstChild("Label") :: TextLabel
+	Theme.setIcon(tapIcon, "👆", "tap")
+	local tapIconStroke = tapIcon:FindFirstChildOfClass("UIStroke")
+	if tapIconStroke then
+		tapIconStroke.Enabled = false
+	end
+	tapB.Activated:Connect(function()
+		Tapper.simulate(tapB.AbsolutePosition + Vector2.new(tapB.AbsoluteSize.X / 2, -6 * Root.scale))
+	end)
+	local perTap = Theme.text({
+		Name = "PerTap",
+		Text = "",
+		Size = UDim2.fromOffset(200, 28),
+		Position = UDim2.fromOffset(50, 98),
+		MaxTextSize = 24,
+		Stroke = 3,
+		TextColor3 = Theme.Yellow,
+		Parent = dock,
+	})
+	-- First-session hint over the TAP button (it was lost in the HUD rewrite): wobbles until
+	-- the player has tapped a bit, then fades out for good.
+	local hint = Theme.text({
+		Name = "TapHint",
+		Key = "hint.tap",
+		Size = UDim2.fromOffset(460, 40),
+		Position = UDim2.new(0.5, 0, 0, -12),
+		AnchorPoint = Vector2.new(0.5, 1),
+		MaxTextSize = 34,
+		Stroke = 3,
+		TextColor3 = Theme.Yellow,
+		Parent = dock,
+	})
+	local hintStroke = hint:FindFirstChildOfClass("UIStroke")
+	task.spawn(function()
+		local t = 0
+		while hint.Parent do
+			t += task.wait()
+			hint.Rotation = math.sin(t * 3) * 3
+			local s = Net.state
+			if (s and (s.totalTaps or 0) > 60) or t > 90 then
+				local info = TweenInfo.new(0.5)
+				TweenService:Create(hint, info, { TextTransparency = 1 }):Play()
+				if hintStroke then
+					TweenService:Create(hintStroke, info, { Transparency = 1 }):Play()
+				end
+				task.wait(0.6)
+				hint:Destroy()
+			end
+		end
+	end)
+
+	---------------------------------------------------------------------------
+	-- Objective (top-centre): what to do next, with a progress bar
+	---------------------------------------------------------------------------
+	local objective = Theme.new("TextButton", {
+		Name = "Objective",
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1,
+		Size = UDim2.fromOffset(380, 60),
+		Position = UDim2.new(if touch then 0.53 else 0.5, 0, 0, 4),
+		AnchorPoint = Vector2.new(0.5, 0),
+		Parent = gui,
+	})
+	local objectiveHolder = Root.mount(objective)
+	if touch then
+		table.insert(sides, objectiveHolder)
+	end
+	local objectiveText = Theme.text({ Name = "Text", Text = "", Size = UDim2.new(1, 0, 0, 30), MaxTextSize = 26, Stroke = 3, Parent = objective })
+	local objBarBg = Theme.new("Frame", { Name = "Bar", Size = UDim2.new(1, -40, 0, 20), Position = UDim2.fromOffset(20, 34), BackgroundColor3 = Theme.Ink, BackgroundTransparency = 0.35, Parent = objective }, { Theme.corner(10), Theme.stroke(3) })
+	local objBar = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = objBarBg }, { Theme.corner(10), Theme.gradient(Theme.lighten(Theme.Green, 0.35), Theme.Green) })
+	local objPct = Theme.text({ Name = "Pct", Text = "", Size = UDim2.new(1, 0, 1, -2), Position = UDim2.fromOffset(0, 1), MaxTextSize = 16, Parent = objBarBg })
+	objPct.AutoLocalize = false
+	local objWindow: string? = nil
+	objective.Activated:Connect(function()
+		if objWindow then
+			Windows.open(objWindow)
+		end
+	end)
+	local function refreshObjective()
+		local s = Net.state
+		if not s then
+			return
+		end
+		local o = Guide.current(s)
+		local args = table.clone(o.args)
+		if o.zoneArg then
+			args.zone = Lang.zone(o.zoneArg)
+		end
+		local text = Lang.t(o.key, args)
+		if objectiveText.Text ~= text then
+			objectiveText.Text = text
+			Theme.pop(objective, 1.12)
+		end
+		local p = math.clamp(o.progress, 0, 1)
+		objBar.Size = UDim2.fromScale(math.max(p, 0.03), 1)
+		objBar.BackgroundColor3 = if p >= 1 then Theme.Yellow else Color3.new(1, 1, 1)
+		local pct = math.floor(p * 100) .. "%"
+		if objPct.Text ~= pct then
+			objPct.Text = pct
+		end
+		objWindow = o.window
+		Guide.point(o.target)
 	end
 
 	---------------------------------------------------------------------------
@@ -14195,9 +14980,24 @@ function Hud.init()
 	eventGradient.Parent = eventPill
 	local eventText = Theme.text({ Text = "", Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4), MaxTextSize = 22, Parent = eventPill })
 
-	local luckLabel = Theme.text({ Text = "", Size = UDim2.fromOffset(200, 26), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Green, MaxTextSize = 22, LayoutOrder = 3, Visible = false, Parent = right })
-	local boostLabel = Theme.text({ Text = "", Size = UDim2.fromOffset(200, 26), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Red, MaxTextSize = 22, LayoutOrder = 4, Visible = false, Parent = right })
-	local friendLabel = Theme.text({ Text = "", Size = UDim2.fromOffset(200, 24), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, MaxTextSize = 22, LayoutOrder = 5, Visible = false, Parent = right })
+	-- Boost status: small dark chips (icon + timer) instead of loose coloured text.
+	local function statusChip(name: string, emoji: string, color: Color3, order: number): (Frame, TextLabel)
+		local f = Theme.new("Frame", {
+			Name = name,
+			Size = UDim2.fromOffset(200, 32),
+			BackgroundColor3 = Theme.Ink,
+			BackgroundTransparency = 0.25,
+			LayoutOrder = order,
+			Visible = false,
+			Parent = right,
+		}, { Theme.corner(16), Theme.stroke(2, Theme.darken(color, 0.35)) })
+		Theme.icon(emoji, { Size = UDim2.fromOffset(26, 26), Position = UDim2.new(0, 5, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), Parent = f })
+		local t = Theme.text({ Name = "Text", Text = "", Size = UDim2.new(1, -44, 1, -6), Position = UDim2.fromOffset(36, 3), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.lighten(color, 0.25), MaxTextSize = 20, Parent = f })
+		return f, t
+	end
+	local luckChip, luckLabel = statusChip("SuperLuck", "🍀", Theme.Green, 3)
+	local boostChip, boostLabel = statusChip("TapBoost", "⚡", Theme.Red, 4)
+	local friendChip, friendLabel = statusChip("FriendBoost", "👥", Theme.Yellow, 5)
 
 	local starterButton = Theme.button({
 		Name = "StarterPack",
@@ -14282,8 +15082,10 @@ function Hud.init()
 			end,
 		})
 		local top = b:FindFirstChild("Label") :: TextLabel
-		top.Size = UDim2.new(1, -8, 0.5, -2)
-		top.Position = UDim2.new(0.5, 0, 0.3, 0)
+		top.Size = UDim2.new(1, -34, 0.5, -2)
+		top.Position = UDim2.new(0.5, 13, 0.3, 0)
+		local iconHolder = Theme.icon(icon, { Name = "ChipIcon", Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 0.3, 0), AnchorPoint = Vector2.new(0, 0.5), Parent = b })
+		iconHolder.ZIndex = top.ZIndex
 		local topLimit = top:FindFirstChildOfClass("UITextSizeConstraint")
 		if topLimit then
 			topLimit.MaxTextSize = 18
@@ -14291,11 +15093,12 @@ function Hud.init()
 		local state = Theme.text({ Name = "State", Text = "", Size = UDim2.new(1, -8, 0.42, 0), Position = UDim2.new(0.5, 0, 0.72, 0), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = 17, Parent = b })
 		state.ZIndex = top.ZIndex
 		chips[key] = { button = b, name = top, state = state, key = key, icon = icon }
+		unlockables[name] = b
 	end
 	local function refreshChips()
 		for key, chip in chips do
 			local on = autoState(key)
-			local label = chip.icon .. " " .. Lang.t("hud.auto." .. key)
+			local label = Lang.t("hud.auto." .. key)
 			if chip.name.Text ~= label then
 				chip.name.Text = label
 			end
@@ -14355,8 +15158,38 @@ function Hud.init()
 		end
 	end)
 
+	-- Progressive HUD: a new player sees Rewards, TAP, Pets and the Store; the other buttons
+	-- and auto chips appear (with a pop) as they are reached, and never hide again.
+	local unlocked: { [string]: boolean } = {}
+	local firstUnlock = true
+	local function applyUnlocks(s: any)
+		local vis = HudUnlock.visible(s)
+		local anyChip = false
+		for name, obj in unlockables do
+			local show = vis[name] == true or unlocked[name] == true
+			if show and not unlocked[name] then
+				unlocked[name] = true
+				if not firstUnlock then
+					task.defer(function()
+						Theme.pop(obj, 1.35)
+					end)
+					Theme.play("open", 0.35, 1.3)
+				end
+			end
+			if obj.Visible ~= show then
+				obj.Visible = show
+			end
+			if show and obj.Parent == autoGrid then
+				anyChip = true
+			end
+		end
+		autoGrid.Visible = anyChip
+		firstUnlock = false
+	end
+
 	local lastTaps, lastGems = nil :: number?, nil :: number?
-	local function refresh()
+	local lastFull = 0
+	local function refresh(kind: string?)
 		local s = Net.state
 		if not s then
 			return
@@ -14370,11 +15203,32 @@ function Hud.init()
 			Theme.pop(tapsPill, 1.12)
 		end
 		lastTaps, lastGems = s.taps, s.gems
-		perTap.Text = Lang.t("hud.per_tap", { n = Format.abbrev(math.max(1, s.tapValue or 1)) })
+		-- currency-only updates arrive several times a second: the rest is refreshed on full
+		-- snapshots, and at most twice a second in between (objective progress, badges)
+		local now = os.clock()
+		if kind ~= "full" and now - lastFull < 0.5 then
+			return
+		end
+		lastFull = now
+		local perTapText = "+" .. Format.abbrev(math.max(1, s.tapValue or 1))
+		if perTap.Text ~= perTapText then
+			perTap.Text = perTapText
+		end
+		local rebirthText = Theme.lead(rebirthLabel, "🔁") .. Lang.t("rebirth.count", { n = s.rebirths }) .. "  ·  x" .. tostring(Formulas.rebirthMult(s.rebirths))
+		if rebirthLabel.Text ~= rebirthText then
+			rebirthLabel.Text = rebirthText
+		end
+		local petCount = 0
+		for _ in s.pets do
+			petCount += 1
+		end
+		petsCountText.Text = tostring(petCount)
 
 		refreshChips()
-		friendLabel.Text = if (s.friends or 0) > 0 then ("👥 " .. Lang.t("hud.friend_boost", { pct = math.floor(Formulas.friendBoost(s.friends) * 100) })) else ""
-		friendLabel.Visible = friendLabel.Text ~= ""
+		applyUnlocks(s)
+		refreshObjective()
+		friendLabel.Text = if (s.friends or 0) > 0 then Lang.t("hud.friend_boost", { pct = math.floor(Formulas.friendBoost(s.friends) * 100) }) else ""
+		friendChip.Visible = friendLabel.Text ~= ""
 
 		-- badges
 		badges.Rebirth.Visible = s.taps >= s.rebirthCost
@@ -14425,7 +15279,7 @@ function Hud.init()
 	end
 
 	Net.Changed:Connect(refresh)
-	refresh()
+	refresh("full")
 
 	-- Timers (gifts, daily, luck, events, offers) once per second
 	local function tick()
@@ -14455,13 +15309,14 @@ function Hud.init()
 		local dailyReady = serverNow - s.daily.last >= Config.DailyCooldown
 		badges.Rewards.Visible = ready or dailyReady
 		giftButton.Visible = ready or nextIn ~= nil
-		Theme.setButton(giftButton, if ready then ("🎁 " .. Lang.t("hud.gift_ready")) elseif nextIn then ("🎁 " .. Format.time(nextIn)) else "", if ready then Theme.Pink else Theme.Purple)
+		local giftLead = lead(giftButton, "🎁")
+		Theme.setButton(giftButton, if ready then (giftLead .. Lang.t("hud.gift_ready")) elseif nextIn then (giftLead .. Format.time(nextIn)) else "", if ready then Theme.Pink else Theme.Purple)
 		local luckLeft = math.max(0, (s.luckBoostLeft or 0) - since)
-		luckLabel.Text = if luckLeft > 0 then ("🍀 " .. Lang.t("hud.super_luck", { time = Format.time(luckLeft) })) else ""
-		luckLabel.Visible = luckLeft > 0
+		luckLabel.Text = if luckLeft > 0 then Lang.t("hud.super_luck", { time = Format.time(luckLeft) }) else ""
+		luckChip.Visible = luckLeft > 0
 		local boostLeft = math.max(0, (s.tapBoostLeft or 0) - since)
-		boostLabel.Text = if boostLeft > 0 then ("⚡ " .. Lang.t("hud.tap_boost", { time = Format.time(boostLeft) })) else ""
-		boostLabel.Visible = boostLeft > 0
+		boostLabel.Text = if boostLeft > 0 then Lang.t("hud.tap_boost", { time = Format.time(boostLeft) }) else ""
+		boostChip.Visible = boostLeft > 0
 
 		-- live event
 		local active = LiveEventClient.active()
@@ -14470,20 +15325,22 @@ function Hud.init()
 		if ev then
 			local c = EVENT_COLORS[ev.id] or Theme.Green
 			eventGradient.Color = ColorSequence.new(Theme.lighten(c, 0.3), c)
-			eventText.Text = (EVENT_ICONS[ev.id] or "✨") .. " " .. Lang.t("event." .. ev.id) .. " " .. Format.time(ev.endsAt - LiveEventClient.now())
+			eventText.Text = Theme.lead(eventText, EVENT_ICONS[ev.id] or "✨") .. Lang.t("event." .. ev.id) .. " " .. Format.time(ev.endsAt - LiveEventClient.now())
 		end
 
 		-- starter pack
 		local st = s.starter
 		starterButton.Visible = st ~= nil and st.available and serverNow < st.endsAt
 		if starterButton.Visible then
-			Theme.setButton(starterButton, "🎉 " .. Lang.t("starter.button") .. " " .. Format.time(st.endsAt - serverNow))
+			Theme.setButton(starterButton, lead(starterButton, "🎉") .. Lang.t("starter.button") .. " " .. Format.time(st.endsAt - serverNow))
 		end
 		-- rewarded video boost
 		adButton.Visible = boostLeft <= 0 and Ads.canShow("AdBoost")
 		if adButton.Visible then
-			Theme.setButton(adButton, "📺 " .. Lang.t("ads.boost_button", { n = Config.AdBoostMinutes }))
+			Theme.setButton(adButton, lead(adButton, "📺") .. Lang.t("ads.boost_button", { n = Config.AdBoostMinutes }))
 		end
+		-- the beam follows the player, so re-aim it as they walk
+		refreshObjective()
 	end
 	Lang.Changed:Connect(tick)
 	LiveEventClient.Changed:Connect(function(data, started)
@@ -14521,7 +15378,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="66">
+          <Item class="ModuleScript" referent="69">
             <Properties>
               <string name="Name">IndexWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -14684,7 +15541,7 @@ return IndexWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="67">
+          <Item class="ModuleScript" referent="70">
             <Properties>
               <string name="Name">InviteWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -14789,7 +15646,7 @@ return InviteWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="68">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">PetIcon</string>
               <string name="Source"><![CDATA[--!strict
@@ -14836,7 +15693,7 @@ return PetIcon
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="69">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">PetsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -14864,7 +15721,7 @@ PetsWindow.iconCount = function(): (number, number)
 	return 0, 0
 end
 
-type Cell = { button: TextButton, key: string, power: TextLabel, equipped: Frame, lock: TextLabel, check: Frame, stroke: UIStroke, ring: Frame, petId: string, tier: number, icon: ViewportFrame? }
+type Cell = { button: TextButton, trait: Frame, traitText: TextLabel, key: string, power: TextLabel, equipped: Frame, lock: TextLabel, check: Frame, stroke: UIStroke, ring: Frame, petId: string, tier: number, icon: ViewportFrame? }
 
 local SECRET = Color3.fromRGB(190, 90, 255)
 
@@ -14873,7 +15730,21 @@ function PetsWindow.init()
 	local body = w.body
 
 	local top = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 54), Parent = body })
-	local countLabel = Theme.text({ Text = "", Size = UDim2.new(1, -350, 1, -8), Position = UDim2.fromOffset(0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = top })
+	-- "+" next to the caps: more equip slots are an upgrade away
+	Theme.button({
+		Name = "MoreSlots",
+		Text = "+",
+		Color = Theme.Green,
+		Size = UDim2.fromOffset(44, 44),
+		Position = UDim2.new(1, -394, 0, 5),
+		Corner = 22,
+		TextSize = 30,
+		Parent = top,
+		OnClick = function()
+			Windows.open("Upgrades")
+		end,
+	})
+	local countLabel = Theme.text({ Text = "", Size = UDim2.new(1, -404, 1, -8), Position = UDim2.fromOffset(0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = top })
 	local deleteMode = false
 	local selected: { [string]: boolean } = {}
 	local selectedUid: string? = nil
@@ -14940,7 +15811,7 @@ function PetsWindow.init()
 	-- Detail panel
 	local detail = Theme.panel({ Size = UDim2.new(0, 266, 1, -64), Position = UDim2.new(1, -266, 0, 64), BackgroundColor3 = Color3.fromRGB(255, 255, 255), Parent = body })
 	-- stage: rarity-coloured backdrop with turning rays behind a slowly spinning pet
-	local stage = Theme.new("Frame", { Name = "Stage", Size = UDim2.new(1, -16, 0, 142), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.new(1, 1, 1), ClipsDescendants = true, Parent = detail }, { Theme.corner(12), Theme.stroke(3) })
+	local stage = Theme.new("Frame", { Name = "Stage", Size = UDim2.new(1, -16, 0, 112), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.new(1, 1, 1), ClipsDescendants = true, Parent = detail }, { Theme.corner(12), Theme.stroke(3) })
 	local stageGradient = Theme.gradient(Theme.lighten(Theme.Grey, 0.55), Theme.lighten(Theme.Grey, 0.2))
 	stageGradient.Parent = stage
 	local stageRays = Theme.new("Frame", { Size = UDim2.fromOffset(340, 340), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Parent = stage })
@@ -14948,21 +15819,33 @@ function PetsWindow.init()
 		Theme.new("Frame", { Size = UDim2.new(0, 30, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Rotation = k * 30, BackgroundColor3 = Theme.White, BackgroundTransparency = 0.72, BorderSizePixel = 0, Parent = stageRays })
 	end
 	TweenService:Create(stageRays, TweenInfo.new(16, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), { Rotation = 360 }):Play()
-	local detailIcon = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(170, 136), Position = UDim2.new(0.5, 0, 0, 3), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 2, Parent = stage })
+	local detailIcon = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromOffset(150, 108), Position = UDim2.new(0.5, 0, 0, 3), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 2, Parent = stage })
 	local emptyIcon = Theme.text({ Text = "🐾", Stroke = false, Size = UDim2.fromOffset(84, 84), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), TextTransparency = 0.45, ZIndex = 2, Parent = stage })
-	local detailName = Theme.text({ Key = "pets.select", Size = UDim2.new(1, -16, 0, 32), Position = UDim2.fromOffset(8, 154), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = detail })
-	local ribbon = Theme.new("Frame", { Size = UDim2.new(1, -60, 0, 28), Position = UDim2.fromOffset(30, 188), BackgroundColor3 = Color3.new(1, 1, 1), Visible = false, Parent = detail }, { Theme.corner(14), Theme.stroke(2) })
+	local detailName = Theme.text({ Key = "pets.select", Size = UDim2.new(1, -16, 0, 32), Position = UDim2.fromOffset(8, 122), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = detail })
+	local ribbon = Theme.new("Frame", { Size = UDim2.new(1, -60, 0, 26), Position = UDim2.fromOffset(30, 154), BackgroundColor3 = Color3.new(1, 1, 1), Visible = false, Parent = detail }, { Theme.corner(14), Theme.stroke(2) })
 	local ribbonGradient = Theme.gradient(Theme.White, Theme.Grey)
 	ribbonGradient.Parent = ribbon
 	local detailRarity = Theme.text({ Text = "", Size = UDim2.new(1, -12, 1, -4), Position = UDim2.fromOffset(6, 2), MaxTextSize = 20, Parent = ribbon })
-	local detailPower = Theme.text({ Text = "", Size = UDim2.new(1, -16, 0, 26), Position = UDim2.fromOffset(8, 218), TextColor3 = Theme.Orange, MaxTextSize = 22, Parent = detail })
+	local detailPower = Theme.text({ Text = "", Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 181), TextColor3 = Theme.Orange, MaxTextSize = 22, Parent = detail })
+	-- trait: grade + bonus, and the roll odds (numeric %, shown before rolling)
+	local detailTrait = Theme.text({ Name = "Trait", Text = "", Size = UDim2.new(1, -16, 0, 22), Position = UDim2.fromOffset(8, 205), MaxTextSize = 20, Parent = detail })
+	local detailOdds = Theme.text({ Name = "TraitOdds", Text = "", Size = UDim2.new(1, -12, 0, 18), Position = UDim2.fromOffset(6, 227), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 14, Visible = false, Parent = detail })
+	detailOdds.AutoLocalize = false
+	do
+		local parts = {}
+		for _, g in Config.TraitGrades do
+			table.insert(parts, g.name .. " " .. Format.chance(g.chance))
+		end
+		detailOdds.Text = table.concat(parts, "  ")
+	end
 	local buttons = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -20, 0, 122), Position = UDim2.new(0, 10, 1, -130), Parent = detail }, {
 		Theme.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 56), CellPadding = UDim2.fromOffset(10, 10), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
 	local equipB = Theme.button({ Key = "pets.equip", Color = Theme.Green, LayoutOrder = 1, Parent = buttons, TextSize = 24 })
 	local lockB = Theme.button({ Key = "pets.lock", Color = Theme.Blue, LayoutOrder = 2, Parent = buttons, TextSize = 24 })
 	local craftB = Theme.button({ Text = "", Color = Theme.Yellow, LayoutOrder = 3, Parent = buttons, TextSize = 22 })
-	local deleteB = Theme.button({ Key = "pets.delete", Color = Theme.Red, LayoutOrder = 4, Parent = buttons, TextSize = 24 })
+	-- (single deletes go through Delete Mode; this slot rolls a trait)
+	local traitB = Theme.button({ Name = "RollTrait", Text = "", Color = Theme.Purple, LayoutOrder = 4, Parent = buttons, TextSize = 22 })
 
 	local function act(action: string, payload: { [string]: any })
 		local ok, res = Net.request(action, payload)
@@ -14992,11 +15875,14 @@ function PetsWindow.init()
 			end
 		end
 	end)
-	deleteB.Activated:Connect(function()
+	traitB.Activated:Connect(function()
 		if selectedUid then
-			local ok = act("Delete", { uids = { selectedUid } })
-			if ok then
-				selectedUid = nil
+			local ok, grade = act("RollTrait", { uid = selectedUid })
+			local g = if ok and type(grade) == "number" then Config.TraitGrades[grade] else nil
+			if g then
+				Toasts.show(Lang.t("pets.trait_rolled", { grade = g.name, pct = math.floor((g.mult - 1) * 100 + 0.5) }), "success")
+				Theme.pop(detailTrait, 1.5)
+				Theme.play("buy", 0.45, 0.9 + grade * 0.12)
 			end
 		end
 	end)
@@ -15059,7 +15945,11 @@ function PetsWindow.init()
 			refresh()
 		end)
 		b.Parent = grid
-		return { button = b, key = pet.id .. ":" .. pet.tier, power = power, equipped = equipped, lock = lock, check = check, stroke = stroke, ring = ring, petId = pet.id, tier = pet.tier, icon = nil }
+		-- trait grade badge (top-left, under the equipped tick)
+		local traitBadge = Theme.new("Frame", { Name = "TraitBadge", Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 3, 1, -54), BackgroundColor3 = Theme.Grey, Visible = false, Parent = b }, { Theme.corner(8), Theme.stroke(2) }) :: Frame
+		local traitText = Theme.text({ Text = "", Size = UDim2.new(1, -4, 1, -2), Position = UDim2.fromOffset(2, 1), MaxTextSize = 18, Parent = traitBadge })
+		traitText.AutoLocalize = false
+		return { button = b, trait = traitBadge, traitText = traitText, key = pet.id .. ":" .. pet.tier, power = power, equipped = equipped, lock = lock, check = check, stroke = stroke, ring = ring, petId = pet.id, tier = pet.tier, icon = nil }
 	end
 
 	-- Virtualized grid: a full inventory is 150 pets, and every icon is a ViewportFrame with
@@ -15140,8 +16030,8 @@ function PetsWindow.init()
 			if ea ~= eb then
 				return ea
 			end
-			local pa = Formulas.petPower(pets[a].id, pets[a].tier, mz)
-			local pb = Formulas.petPower(pets[b].id, pets[b].tier, mz)
+			local pa = Formulas.petPower(pets[a].id, pets[a].tier, mz, pets[a].trait)
+			local pb = Formulas.petPower(pets[b].id, pets[b].tier, mz, pets[b].trait)
 			if pa ~= pb then
 				return pa > pb
 			end
@@ -15152,7 +16042,13 @@ function PetsWindow.init()
 			local c = cells[uid] or makeCell(uid, pet)
 			cells[uid] = c
 			c.button.LayoutOrder = i
-			c.power.Text = "+" .. Format.abbrev(Formulas.petPower(pet.id, pet.tier, mz))
+			c.power.Text = "+" .. Format.abbrev(Formulas.petPower(pet.id, pet.tier, mz, pet.trait))
+			local tg = if pet.trait then Config.TraitGrades[pet.trait] else nil
+			c.trait.Visible = tg ~= nil
+			if tg then
+				c.traitText.Text = tg.name
+				c.trait.BackgroundColor3 = Palette.rgb(tg.color)
+			end
 			c.equipped.Visible = eqSet[uid] == true
 			c.stroke.Color = if eqSet[uid] then Theme.darken(Theme.Green, 0.35) else Theme.Ink
 			c.stroke.Thickness = if eqSet[uid] then 4 else 3
@@ -15194,7 +16090,12 @@ function PetsWindow.init()
 			detailRarity.Text = Lang.upper(Lang.rarity(def.rarity))
 			ribbonGradient.Color = ColorSequence.new(Theme.lighten(rc, 0.3), Theme.darken(rc, 0.08))
 			stageGradient.Color = ColorSequence.new(Theme.lighten(rc, 0.6), Theme.lighten(rc, 0.12))
-			detailPower.Text = Lang.t("pets.power", { n = Format.abbrev(Formulas.petPower(sel.id, sel.tier, mz)) })
+			detailPower.Text = Lang.t("pets.power", { n = Format.abbrev(Formulas.petPower(sel.id, sel.tier, mz, sel.trait)) })
+			local tg = if sel.trait then Config.TraitGrades[sel.trait] else nil
+			detailTrait.Text = if tg then Lang.t("pets.trait", { grade = tg.name, pct = math.floor((tg.mult - 1) * 100 + 0.5) }) else Lang.t("pets.no_trait")
+			detailTrait.TextColor3 = if tg then Palette.rgb(tg.color) else Theme.Grey
+			detailOdds.Visible = true
+			Theme.setButton(traitB, "🎲 " .. Lang.t("pets.roll", { n = s.dice or 0 }), if (s.dice or 0) >= Config.TraitRollCost then Theme.Purple else Theme.Grey)
 			Theme.setButton(equipB, Lang.t(if eqSet[selectedUid] then "pets.unequip" else "pets.equip"), if eqSet[selectedUid] then Theme.Grey else Theme.Green)
 			Theme.setButton(lockB, Lang.t(if sel.locked then "pets.unlock" else "pets.lock"))
 			local same = 0
@@ -15208,12 +16109,13 @@ function PetsWindow.init()
 			end
 			craftB.Visible = sel.tier < 2
 			Theme.setButton(craftB, Lang.t(if sel.tier == 0 then "pets.craft_gold" else "pets.craft_rainbow", { have = math.min(same, Config.CraftCost), need = Config.CraftCost }), if same >= Config.CraftCost then Theme.Yellow else Theme.Grey)
-			deleteB.Visible = not sel.locked
 		else
 			Lang.unbind(detailName)
 			detailName.Text = Lang.t(if deleteMode then "pets.select_delete" else "pets.select")
 			detailRarity.Text = ""
 			detailPower.Text = ""
+			detailTrait.Text = ""
+			detailOdds.Visible = false
 			stageGradient.Color = ColorSequence.new(Theme.lighten(Theme.Grey, 0.55), Theme.lighten(Theme.Grey, 0.2))
 		end
 	end
@@ -15260,7 +16162,7 @@ return PetsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">Popups</string>
               <string name="Source"><![CDATA[--!strict
@@ -15286,8 +16188,9 @@ type Card = { frame: Frame, holder: Frame, close: () -> () }
 
 local current: Card? = nil
 
--- A centered card with an icon, title, rich body text and up to 2 buttons.
-function Popups.card(icon: string, title: string, body: string, buttons: { ButtonSpec }, extra: ((Frame) -> ())?): Card
+-- A centered card with an icon, title, rich body text and up to 2 buttons. odds: a line of
+-- numeric odds shown on a plate above the buttons (offers that contain a random item).
+function Popups.card(icon: string, title: string, body: string, buttons: { ButtonSpec }, extra: ((Frame) -> ())?, odds: string?): Card
 	if current then
 		current.close()
 	end
@@ -15314,9 +16217,15 @@ function Popups.card(icon: string, title: string, body: string, buttons: { Butto
 	end
 	card = { frame = frame, holder = holder, close = close }
 	current = card
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 61, Parent = frame })
+	Theme.icon(icon, { Size = UDim2.fromOffset(64, 64), Position = UDim2.new(0.5, 0, 0, 8), AnchorPoint = Vector2.new(0.5, 0), ZIndex = 61, Parent = frame })
 	Theme.text({ Text = title, Size = UDim2.new(1, -40, 0, 40), Position = UDim2.fromOffset(20, 74), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 34, ZIndex = 61, Parent = frame })
-	Theme.text({ Text = body, RichText = true, TextWrapped = true, Size = UDim2.new(1, -48, 0, 96), Position = UDim2.fromOffset(24, 118), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, ZIndex = 61, Parent = frame })
+	Theme.text({ Text = body, RichText = true, TextWrapped = true, Size = UDim2.new(1, -48, 0, if odds then 58 else 96), Position = UDim2.fromOffset(24, 118), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, ZIndex = 61, Parent = frame })
+	if odds then
+		local plate = Theme.new("Frame", { Name = "OddsPlate", Size = UDim2.new(1, -48, 0, 50), Position = UDim2.fromOffset(24, 180), BackgroundColor3 = Theme.PaperDark, ZIndex = 61, Parent = frame }, { Theme.corner(10), Theme.stroke(2, Theme.lighten(Theme.Ink, 0.5)) })
+		local t = Theme.text({ Name = "Odds", Text = odds, TextWrapped = true, Size = UDim2.new(1, -12, 1, -6), Position = UDim2.fromOffset(6, 3), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 17, Parent = plate })
+		t.ZIndex = 62
+		t.AutoLocalize = false
+	end
 	local row = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -32, 0, 64), Position = UDim2.new(0, 16, 1, -80), ZIndex = 61, Parent = frame }, {
 		Theme.list(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
@@ -15421,7 +16330,7 @@ local function showStarter()
 		local tag = Theme.new("Frame", { Size = UDim2.fromOffset(96, 44), Position = UDim2.fromOffset(-12, 16), Rotation = -10, BackgroundColor3 = Theme.Red, ZIndex = 63, Parent = frame }, { Theme.corner(12), Theme.stroke(3) })
 		local t = Theme.text({ Text = Lang.t("starter.discount", { pct = pct }), ZIndex = 64, Parent = tag })
 		t.ZIndex = 64
-	end)
+	end, Purchase.oddsText("StarterPack"))
 end
 
 function Popups.init()
@@ -15484,7 +16393,7 @@ return Popups
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="74">
             <Properties>
               <string name="Name">ProgressWindows</string>
               <string name="Source"><![CDATA[--!strict
@@ -15520,6 +16429,7 @@ local function request(action: string, payload: { [string]: any }?, successText:
 end
 
 local UPGRADE_ICONS = { TapPower = "👆", Luck = "🍀", PetSlots = "🐾", WalkSpeed = "👟", AutoTap = "🤖" }
+local UPGRADE_ICON_NAMES = { TapPower = "fist", Luck = "luck", PetSlots = "paw", WalkSpeed = "rocket", AutoTap = "auto" }
 
 local function upgrades()
 	local w = Windows.create("Upgrades", "⬆️", "win.upgrades", Theme.Teal, Vector2.new(640, 500))
@@ -15528,7 +16438,7 @@ local function upgrades()
 	local rows: { [string]: Row } = {}
 	for i, u in Config.Upgrades do
 		local row = Theme.panel({ Size = UDim2.new(1, 0, 0, 76), LayoutOrder = i, BackgroundColor3 = Color3.new(1, 1, 1), Parent = list })
-		Theme.text({ Text = UPGRADE_ICONS[u.id] or "⭐", Stroke = false, Size = UDim2.fromOffset(54, 54), Position = UDim2.fromOffset(14, 11), Parent = row })
+		Theme.icon(UPGRADE_ICONS[u.id] or "⭐", { Size = UDim2.fromOffset(54, 54), Position = UDim2.fromOffset(14, 11), Parent = row }, UPGRADE_ICON_NAMES[u.id])
 		Theme.text({ Key = "upgrade." .. u.id .. ".name", Size = UDim2.new(1, -380, 0, 28), Position = UDim2.fromOffset(84, 6), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = row })
 		Theme.text({ Key = "upgrade." .. u.id .. ".desc", Size = UDim2.new(1, -380, 0, 20), Position = UDim2.fromOffset(84, 34), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 19, Parent = row })
 		local barBg = Theme.new("Frame", { Size = UDim2.new(1, -380, 0, 10), Position = UDim2.fromOffset(84, 58), BackgroundColor3 = Theme.PaperDark, Parent = row }, { Theme.corner(5) })
@@ -15560,10 +16470,11 @@ local function upgrades()
 			r.level.Text = Lang.t("upgrades.level", { lvl = lvl, max = u.maxLevel })
 			r.bar.Size = UDim2.fromScale(lvl / u.maxLevel, 1)
 			if lvl >= u.maxLevel then
+				Theme.clearLead(r.buy:FindFirstChild("Label") :: TextLabel)
 				Theme.setButton(r.buy, Lang.t("upgrades.max"), Theme.Grey)
 			else
 				local cost = Formulas.upgradeCost(u.id, lvl)
-				Theme.setButton(r.buy, "💎 " .. Format.abbrev(cost), if s.gems >= cost then Theme.Teal else Theme.Grey)
+				Theme.setButton(r.buy, Theme.lead(r.buy:FindFirstChild("Label") :: TextLabel, "💎") .. Format.abbrev(cost), if s.gems >= cost then Theme.Teal else Theme.Grey)
 			end
 		end
 	end
@@ -15578,12 +16489,20 @@ end
 local function rebirth()
 	local w = Windows.create("Rebirth", "🔁", "win.rebirth", Theme.Purple, Vector2.new(600, 440))
 	local body = w.body
-	local info = Theme.text({ Text = "", RichText = true, Size = UDim2.new(1, -20, 0, 150), Position = UDim2.fromOffset(10, 0), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 28, Parent = body })
-	local barBg = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 36), Position = UDim2.fromOffset(20, 166), BackgroundColor3 = Theme.PaperDark, Parent = body }, { Theme.corner(18), Theme.stroke(3) })
+	local info = Theme.text({ Text = "", RichText = true, Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 0), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 28, Parent = body })
+	-- two cards: what a rebirth takes (red) and what it gives (green)
+	local function column(x: number, titleKey: string, color: Color3): TextLabel
+		local card = Theme.panel({ Size = UDim2.new(0.5, -16, 0, 116), Position = UDim2.new(x, if x == 0 then 10 else 6, 0, 36), BackgroundColor3 = Theme.lighten(color, 0.82), Parent = body })
+		Theme.text({ Key = titleKey, Size = UDim2.new(1, -12, 0, 28), Position = UDim2.fromOffset(6, 4), TextColor3 = Theme.darken(color, 0.15), Stroke = false, MaxTextSize = 24, Parent = card })
+		return Theme.text({ Text = "", RichText = true, TextWrapped = true, Size = UDim2.new(1, -16, 1, -38), Position = UDim2.fromOffset(8, 34), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 21, Parent = card })
+	end
+	local loseText = column(0, "rebirth.lose", Theme.Red)
+	local getText = column(0.5, "rebirth.get", Theme.Green)
+	local barBg = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 162), BackgroundColor3 = Theme.PaperDark, Parent = body }, { Theme.corner(17), Theme.stroke(3) })
 	local bar = Theme.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = barBg }, { Theme.corner(18), Theme.gradient(Theme.lighten(Theme.Purple, 0.3), Theme.Purple) })
 	local barText = Theme.text({ Text = "", Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, 0.1), MaxTextSize = 22, Parent = barBg })
 	barText.AutoLocalize = false
-	Theme.text({ Key = "rebirth.note", TextWrapped = true, Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 210), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 20, Parent = body })
+	Theme.text({ Key = "rebirth.note", TextWrapped = true, Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 202), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 19, Parent = body })
 	local confirm = false
 	local button: TextButton
 	button = Theme.button({
@@ -15626,10 +16545,11 @@ local function rebirth()
 		end
 		local now = Formulas.rebirthMult(s.rebirths)
 		local nxt = Formulas.rebirthMult(s.rebirths + 1)
-		info.Text = table.concat({
-			Lang.t("rebirth.count", { n = "<b>" .. s.rebirths .. "</b>" }),
-			'<font color="#A569FF"><b>' .. Lang.t("rebirth.mult", { from = "x" .. tostring(now), to = "x" .. tostring(nxt) }) .. "</b></font>",
-			'<font color="#2FB5A0"><b>' .. Lang.t("rebirth.reward", { gems = s.rebirthGems }) .. "</b></font>",
+		info.Text = Lang.t("rebirth.count", { n = "<b>" .. s.rebirths .. "</b>" })
+		loseText.Text = "<b>" .. Lang.t("rebirth.lose_taps", { n = Format.abbrev(s.taps) }) .. "</b>"
+		getText.Text = table.concat({
+			"<b>" .. Lang.t("rebirth.mult", { from = "x" .. tostring(now), to = "x" .. tostring(nxt) }) .. "</b>",
+			"💎 +" .. s.rebirthGems .. "   🎲 +" .. Config.TraitDice.rebirth,
 		}, "\n")
 		local pct = math.clamp(s.taps / s.rebirthCost, 0, 1)
 		bar.Size = UDim2.fromScale(math.max(pct, 0.04), 1)
@@ -15801,7 +16721,7 @@ return ProgressWindows
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="75">
             <Properties>
               <string name="Name">QuestsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -15851,6 +16771,9 @@ function QuestsWindow.init()
 		claimResult(Net.request("ClaimQuestBonus"))
 	end)
 
+	local function gemLead(b: TextButton): string
+		return Theme.lead(b:FindFirstChild("Label") :: TextLabel, "💎")
+	end
 	local function refresh()
 		Hud.refreshQuestBadge()
 		if not Windows.isOpen("Quests") then
@@ -15866,16 +16789,17 @@ function QuestsWindow.init()
 			local quest = q.list[i]
 			row.frame.Visible = quest ~= nil
 			if quest then
-				row.icon.Text = ICONS[quest.kind] or "⭐"
+				Theme.setIcon(row.icon, ICONS[quest.kind] or "⭐")
 				row.text.Text = Lang.t("quest." .. quest.kind, { n = Format.abbrev(quest.target) })
 				row.bar.Size = UDim2.fromScale(math.clamp(quest.progress / quest.target, 0.03, 1), 1)
 				row.barText.Text = Format.abbrev(quest.progress) .. " / " .. Format.abbrev(quest.target)
 				if quest.claimed then
+					Theme.clearLead(row.button:FindFirstChild("Label") :: TextLabel)
 					Theme.setButton(row.button, "✓ " .. Lang.t("quests.done"), Theme.Grey)
 				elseif quest.progress >= quest.target then
-					Theme.setButton(row.button, "💎 " .. quest.gems .. "  " .. Lang.t("quests.claim"), Theme.Green)
+					Theme.setButton(row.button, gemLead(row.button) .. quest.gems .. "  " .. Lang.t("quests.claim"), Theme.Green)
 				else
-					Theme.setButton(row.button, "💎 " .. quest.gems, Theme.Grey)
+					Theme.setButton(row.button, gemLead(row.button) .. quest.gems, Theme.Grey)
 				end
 				if not quest.claimed then
 					allClaimed = false
@@ -15888,7 +16812,7 @@ function QuestsWindow.init()
 				done += 1
 			end
 		end
-		bonus.icon.Text = "🔮"
+		Theme.setIcon(bonus.icon, "🔮", "egg")
 		bonus.text.Text = Lang.t("quests.bonus")
 		bonus.bar.Size = UDim2.fromScale(math.clamp(done / math.max(1, #q.list), 0.03, 1), 1)
 		bonus.barText.Text = done .. " / " .. #q.list
@@ -15898,7 +16822,7 @@ function QuestsWindow.init()
 			Theme.setButton(bonus.button, Lang.t("quests.claim"), if allClaimed then Theme.Purple else Theme.Grey)
 		end
 		local now = q.serverTime + (os.clock() - Net.receivedAt)
-		resets.Text = "⏰ " .. Lang.t("quests.resets", { time = Format.time(q.resetsAt - now) })
+		resets.Text = Theme.lead(resets, "⏰") .. Lang.t("quests.resets", { time = Format.time(q.resetsAt - now) })
 	end
 	w.onOpen = refresh
 	Net.Changed:Connect(function(kind)
@@ -15928,7 +16852,7 @@ return QuestsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="76">
             <Properties>
               <string name="Name">RewardsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -15946,6 +16870,8 @@ local Lang = require(script.Parent.Parent.Lang)
 local RewardsWindow = {}
 
 local ICONS = { taps = "👆", gems = "💎", luck = "🍀", egg = "🔮" }
+-- icon pack names (Taps as a currency are the coin, the Magic Egg is the egg)
+local ICON_NAMES = { taps = "coin", gems = "gem", luck = "luck", egg = "egg" }
 
 function RewardsWindow.init()
 	local w = Windows.create("Rewards", "🎁", "win.rewards", Theme.Pink, Vector2.new(820, 520))
@@ -15961,7 +16887,7 @@ function RewardsWindow.init()
 	for i, r in Config.DailyRewards do
 		local f = Theme.panel({ Size = UDim2.fromOffset(100, 116), LayoutOrder = i, BackgroundColor3 = Color3.new(1, 1, 1), Parent = dailyRow })
 		Theme.text({ Key = "rewards.day", Args = { n = i }, Size = UDim2.new(1, -8, 0, 22), Position = UDim2.fromOffset(4, 4), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 20, Parent = f })
-		Theme.text({ Text = ICONS[r.kind] or "⭐", Stroke = false, Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 26), AnchorPoint = Vector2.new(0.5, 0), Parent = f })
+		Theme.icon(ICONS[r.kind] or "⭐", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 26), AnchorPoint = Vector2.new(0.5, 0), Parent = f }, ICON_NAMES[r.kind])
 		Theme.text({ Key = "rewardlabel." .. r.kind, Args = { n = r.amount }, TextWrapped = true, Size = UDim2.new(1, -8, 0, 34), Position = UDim2.fromOffset(4, 76), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 15, Parent = f })
 		local check = Theme.text({ Text = "✓", TextColor3 = Theme.Green, Size = UDim2.fromOffset(34, 34), Position = UDim2.new(1, -30, 0, -8), Visible = false, Parent = f })
 		days[i] = { frame = f, stroke = f:FindFirstChildOfClass("UIStroke") :: UIStroke, check = check }
@@ -16065,7 +16991,7 @@ return RewardsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="74">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">Root</string>
               <string name="Source"><![CDATA[--!strict
@@ -16181,12 +17107,15 @@ return Root
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">StoreWindow</string>
               <string name="Source"><![CDATA[--!strict
--- Robux store: game passes and developer products. Items with id 0 in Config are hidden.
+-- Robux store: game passes and developer products. Items with id 0 in Config are hidden,
+-- and so are paid random items for players PolicyService restricts. The cards are rebuilt
+-- when that flag arrives or changes (it is unknown until the first state snapshot).
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Palette = require(ReplicatedStorage.Shared.Palette)
@@ -16200,6 +17129,16 @@ local StoreWindow = {}
 
 local PASS_ICONS = { AutoTap = "🤖", TripleHatch = "🥚", AutoHatch = "🔄", Lucky = "🍀", VIP = "👑", PetSlots = "🐾", DoubleTaps = "✌️", MagicEggs = "✨" }
 local PRODUCT_ICONS = { taps = "👆", gems = "💎", luck = "🍀", egg = "🔮" }
+-- icon pack names where the emoji's default mapping is not the right picture
+local PRODUCT_ICON_NAMES = { taps = "coin", egg = "egg" }
+-- ribbon on the biggest pack of each kind
+local BEST = { TapsLarge = true, GemsMedium = true, MagicEgg3 = true }
+
+-- Cards on screen: passes, products (playtest).
+StoreWindow.counts = function(): (number, number)
+	return 0, 0
+end
+StoreWindow.rebuild = function() end
 
 function StoreWindow.init()
 	local w = Windows.create("Store", "🛒", "win.store", Theme.Green, Vector2.new(820, 520))
@@ -16222,7 +17161,7 @@ function StoreWindow.init()
 			AutomaticSize = Enum.AutomaticSize.Y,
 			LayoutOrder = order + 1,
 			Parent = scroll,
-		}, { Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(180, 204), CellPadding = UDim2.fromOffset(12, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
+		}, { Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(180, 236), CellPadding = UDim2.fromOffset(12, 12), SortOrder = Enum.SortOrder.LayoutOrder }) })
 		return grid, label
 	end
 
@@ -16231,61 +17170,116 @@ function StoreWindow.init()
 	-- empty state (no product IDs configured yet): big cart + message, centred
 	local empty = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 380), LayoutOrder = 10, Visible = false, Parent = scroll }) :: Frame
 	local emptyDisc = Theme.new("Frame", { Size = UDim2.fromOffset(150, 150), Position = UDim2.new(0.5, 0, 0, 70), AnchorPoint = Vector2.new(0.5, 0), BackgroundColor3 = Color3.new(1, 1, 1), Parent = empty }, { Theme.corner(75), Theme.stroke(4), Theme.gradient(Theme.White, Theme.lighten(Theme.Green, 0.55)) })
-	Theme.text({ Text = "\u{1F6D2}", Stroke = false, Size = UDim2.fromScale(0.62, 0.62), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = emptyDisc })
+	Theme.icon("\u{1F6D2}", { Size = UDim2.fromScale(0.62, 0.62), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = emptyDisc })
 	Theme.text({ Key = "store.soon", Size = UDim2.new(1, -40, 0, 44), Position = UDim2.fromOffset(20, 236), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 32, Parent = empty })
 
 	type Card = { frame: Frame, buy: TextButton, key: string }
 	local passCards: { Card } = {}
+	local productCards = 0
 
-	local function card(parent: Instance, order: number, color: Color3, icon: string, nameKey: string, descKey: string, price: number, onBuy: () -> ()): (Frame, TextButton)
+	-- One icon template for every pass and product: a disc in the item's colour with turning
+	-- rays behind the emoji (the look every simulator uses for its pass icons).
+	-- oddsKey: product whose random reward's odds are printed on the card (paid random items
+	-- show numeric odds before the purchase prompt).
+	local oddsLabels: { [TextLabel]: string } = {}
+	local function card(parent: Instance, order: number, color: Color3, icon: string, iconName: string?, nameKey: string, descKey: string, price: number, best: boolean, onBuy: () -> (), oddsKey: string?): (Frame, TextButton)
 		local f = Theme.panel({ LayoutOrder = order, BackgroundColor3 = Color3.new(1, 1, 1), Parent = parent })
-		local top = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 70), BackgroundColor3 = Color3.new(1, 1, 1), Parent = f }, { Theme.corner(16), Theme.gradient(Theme.lighten(color, 0.3), color) })
-		Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromOffset(56, 56), Position = UDim2.new(0.5, 0, 0, 7), AnchorPoint = Vector2.new(0.5, 0), Parent = top })
-		Theme.text({ Key = nameKey, Size = UDim2.new(1, -12, 0, 26), Position = UDim2.fromOffset(6, 74), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 22, Parent = f })
-		Theme.text({ Key = descKey, TextWrapped = true, Size = UDim2.new(1, -12, 0, 40), Position = UDim2.fromOffset(6, 100), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 16, Parent = f })
-		local b = Theme.button({ Text = "R$ " .. price, Color = Theme.Green, Size = UDim2.new(1, -20, 0, 50), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1), TextSize = 24, Parent = f, OnClick = onBuy })
+		local top = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 78), BackgroundColor3 = Color3.new(1, 1, 1), ClipsDescendants = true, Parent = f }, { Theme.corner(16), Theme.gradient(Theme.lighten(color, 0.35), Theme.darken(color, 0.05)) })
+		local rays = Theme.new("Frame", { Size = UDim2.fromOffset(230, 230), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundTransparency = 1, Parent = top })
+		for k = 0, 5 do
+			Theme.new("Frame", { Size = UDim2.new(0, 22, 1, 0), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Rotation = k * 30, BackgroundColor3 = Theme.White, BackgroundTransparency = 0.78, BorderSizePixel = 0, Parent = rays })
+		end
+		TweenService:Create(rays, TweenInfo.new(20, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1), { Rotation = 360 }):Play()
+		local disc = Theme.new("Frame", { Size = UDim2.fromOffset(64, 64), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), Parent = top }, { Theme.corner(32), Theme.stroke(3), Theme.gradient(Theme.White, Theme.lighten(color, 0.6)) })
+		Theme.icon(icon, { Size = UDim2.fromScale(0.7, 0.7), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = disc }, iconName)
+		if best then
+			local ribbon = Theme.new("Frame", { Size = UDim2.fromOffset(96, 24), Position = UDim2.new(1, -6, 0, 6), AnchorPoint = Vector2.new(1, 0), Rotation = 6, BackgroundColor3 = Theme.Red, ZIndex = 3, Parent = f }, { Theme.corner(8), Theme.stroke(2) })
+			local t = Theme.text({ Key = "store.best", Size = UDim2.new(1, -6, 1, -2), Position = UDim2.fromOffset(3, 1), MaxTextSize = 15, Parent = ribbon })
+			t.ZIndex = 4
+		end
+		Theme.text({ Key = nameKey, Size = UDim2.new(1, -12, 0, 24), Position = UDim2.fromOffset(6, 80), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 22, Parent = f })
+		Theme.text({ Key = descKey, TextWrapped = true, Size = UDim2.new(1, -12, 0, if oddsKey then 30 else 64), Position = UDim2.fromOffset(6, 104), TextColor3 = Theme.darken(Theme.Grey, 0.25), Stroke = false, MaxTextSize = 16, Parent = f })
+		if oddsKey then
+			local plate = Theme.new("Frame", { Name = "OddsPlate", Size = UDim2.new(1, -12, 0, 40), Position = UDim2.fromOffset(6, 134), BackgroundColor3 = Theme.lighten(color, 0.8), Parent = f }, { Theme.corner(8) })
+			local odds = Theme.text({ Name = "Odds", Text = Purchase.cardOdds(oddsKey) or "", TextWrapped = true, Size = UDim2.new(1, -8, 1, -4), Position = UDim2.fromOffset(4, 2), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 14, Parent = plate })
+			odds.AutoLocalize = false
+			oddsLabels[odds] = oddsKey
+		end
+		-- Robux prices are purple everywhere
+		local b = Theme.button({ Text = "R$ " .. price, Color = Theme.Purple, Size = UDim2.new(1, -20, 0, 50), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1), TextSize = 24, Parent = f, OnClick = onBuy })
 		return f, b
 	end
 
-	local visible = 0
-	local passCount, productCount = 0, 0
-	for i, pass in Config.Passes do
-		if Purchase.passAvailable(pass.key) then
-			visible += 1
-			passCount += 1
-			local key = pass.key
-			local f, b = card(passGrid, i, Palette.rgb(pass.color), PASS_ICONS[pass.key] or "⭐", "pass." .. pass.key .. ".name", "pass." .. pass.key .. ".desc", pass.price, function()
-				if not Net.owns(key) then
-					Purchase.pass(key)
-				end
-			end)
-			table.insert(passCards, { frame = f, buy = b, key = key })
-		end
-	end
-	for i, product in Config.Products do
-		if Purchase.productAvailable(product.key) and not Config.HiddenProductKinds[product.kind] then
-			visible += 1
-			productCount += 1
-			local key = product.key
-			card(productGrid, i, Palette.rgb(product.color), PRODUCT_ICONS[product.kind] or "⭐", "product." .. product.key .. ".name", "product." .. product.key .. ".desc", product.price, function()
-				Purchase.product(key)
-			end)
-		end
-	end
-	empty.Visible = visible == 0
-	passTitle.Visible, passGrid.Visible = passCount > 0, passCount > 0
-	productTitle.Visible, productGrid.Visible = productCount > 0, productCount > 0
-
 	local function refresh()
+		-- the Golden chance in the odds changes with the Magic Eggs pass and Golden Weekend
+		for label, key in oddsLabels do
+			if label.Parent then
+				label.Text = Purchase.cardOdds(key) or ""
+			else
+				oddsLabels[label] = nil
+			end
+		end
 		for _, c in passCards do
 			if Net.owns(c.key) then
 				Theme.setButton(c.buy, Lang.t("store.owned") .. " ✓", Theme.Grey)
 			end
 		end
 	end
+
+	local function build()
+		for _, grid in { passGrid, productGrid } do
+			for _, c in grid:GetChildren() do
+				if c:IsA("Frame") then
+					c:Destroy()
+				end
+			end
+		end
+		table.clear(passCards)
+		table.clear(oddsLabels)
+		productCards = 0
+		for i, pass in Config.Passes do
+			if Purchase.passAvailable(pass.key) then
+				local key = pass.key
+				local f, b = card(passGrid, i, Palette.rgb(pass.color), PASS_ICONS[pass.key] or "⭐", nil, "pass." .. pass.key .. ".name", "pass." .. pass.key .. ".desc", pass.price, false, function()
+					if not Net.owns(key) then
+						Purchase.pass(key)
+					end
+				end, if Purchase.cardOdds(key) then key else nil)
+				table.insert(passCards, { frame = f, buy = b, key = key })
+			end
+		end
+		for i, product in Config.Products do
+			if Purchase.productAvailable(product.key) and not Config.HiddenProductKinds[product.kind] then
+				productCards += 1
+				local key = product.key
+				card(productGrid, i, Palette.rgb(product.color), PRODUCT_ICONS[product.kind] or "⭐", PRODUCT_ICON_NAMES[product.kind], "product." .. product.key .. ".name", "product." .. product.key .. ".desc", product.price, BEST[product.key] == true, function()
+					Purchase.product(key)
+				end, if Purchase.cardOdds(key) then key else nil)
+			end
+		end
+		empty.Visible = #passCards + productCards == 0
+		passTitle.Visible, passGrid.Visible = #passCards > 0, #passCards > 0
+		productTitle.Visible, productGrid.Visible = productCards > 0, productCards > 0
+		refresh()
+	end
+	StoreWindow.rebuild = build
+	StoreWindow.counts = function(): (number, number)
+		return #passCards, productCards
+	end
+
+	build()
 	w.onOpen = refresh
+	Lang.Changed:Connect(refresh)
+	local lastRestricted: any = "unset"
 	Net.Changed:Connect(function(kind)
-		if kind == "full" and Windows.isOpen("Store") then
+		if kind ~= "full" then
+			return
+		end
+		local restricted = Purchase.restricted()
+		if restricted ~= lastRestricted then
+			lastRestricted = restricted
+			build()
+		elseif Windows.isOpen("Store") then
 			refresh()
 		end
 	end)
@@ -16295,14 +17289,16 @@ return StoreWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
 -- Bright cartoony UI kit: colors, a tiny instance factory and reusable widgets.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
+local Icons = require(ReplicatedStorage.Shared.Icons)
 local Lang = require(script.Parent.Parent.Lang)
 
 local Theme = {}
@@ -16413,11 +17409,155 @@ function Theme.text(props: { [string]: any }): TextLabel
 	return t
 end
 
+---------------------------------------------------------------------------
+-- Icons: the shared image pack (Shared/Icons) when it is uploaded, the emoji otherwise.
+-- Every icon slot is a TextLabel "holder": with no image id it shows the emoji exactly as
+-- before; with an id the text is cleared and an ImageLabel (ScaleType Fit) fills it.
+---------------------------------------------------------------------------
+Theme.EMOJI_ICONS = {
+	["⬆️"] = "upgrade",
+	["🔁"] = "rebirth",
+	["📜"] = "quest",
+	["🛒"] = "shop",
+	["📖"] = "book",
+	["🌀"] = "teleport",
+	["💌"] = "invite",
+	["🎟️"] = "ticket",
+	["🎁"] = "gift",
+	["🐾"] = "paw",
+	["👆"] = "tap",
+	["💎"] = "gem",
+	["🤖"] = "auto",
+	["🔄"] = "auto",
+	["🥚"] = "egg",
+	["🍀"] = "luck",
+	["⚡"] = "bolt",
+	["⭐"] = "star",
+	["👑"] = "crown",
+	["⏱️"] = "clock",
+	["⏰"] = "clock",
+	["🔮"] = "orb",
+	["👥"] = "group",
+	["✨"] = "aura",
+	["🔒"] = "lock",
+	["✌️"] = "fist",
+	["👟"] = "rocket",
+	["🎉"] = "gift",
+	["🌐"] = "planet",
+	["🟣"] = "orb",
+} :: { [string]: string }
+
+-- Image for an emoji (or an explicit pack name), nil while the pack is not uploaded.
+function Theme.iconImage(emoji: string, name: string?): string?
+	local n = name or Theme.EMOJI_ICONS[emoji]
+	return if n then Icons.get(n) else nil
+end
+
+-- Shows `emoji` (or the pack image `name`, defaulting to the emoji's mapping) in a holder label.
+function Theme.setIcon(holder: TextLabel, emoji: string, name: string?)
+	local img = Theme.iconImage(emoji, name)
+	local image = holder:FindFirstChild("IconImage") :: ImageLabel?
+	if not img then
+		if image then
+			image:Destroy()
+		end
+		if holder.Text ~= emoji then
+			holder.Text = emoji
+		end
+		return
+	end
+	holder.Text = ""
+	if not image then
+		local created = Instance.new("ImageLabel")
+		created.Name = "IconImage"
+		created.BackgroundTransparency = 1
+		created.ScaleType = Enum.ScaleType.Fit
+		created.Size = UDim2.fromScale(1, 1)
+		created.ZIndex = holder.ZIndex
+		created.Parent = holder
+		image = created
+	end
+	(image :: ImageLabel).Image = img
+end
+
+-- A new icon holder. props are TextLabel props (Size, Position, AnchorPoint, ZIndex, Parent...).
+function Theme.icon(emoji: string, props: { [string]: any }?, name: string?): TextLabel
+	local p = table.clone(props or {})
+	p.Text = emoji
+	p.Stroke = false
+	p.Name = p.Name or "Icon"
+	local zIndex = p.ZIndex
+	p.ZIndex = nil
+	local t = Theme.text(p)
+	if zIndex then
+		t.ZIndex = zIndex
+	end
+	Theme.setIcon(t, emoji, name)
+	return t
+end
+
+-- Icon in front of a text: returns the prefix to put before the text. Without an image it is
+-- the emoji and a space (the text looks exactly as before); with one, an image sits at the
+-- label's left edge (the label gets a left padding for it) and the prefix is empty.
+function Theme.lead(label: TextLabel, emoji: string, name: string?): string
+	local img = Theme.iconImage(emoji, name)
+	local image = label:FindFirstChild("LeadIcon") :: ImageLabel?
+	if not img then
+		if image then
+			image:Destroy()
+			local pad = label:FindFirstChild("LeadPad")
+			if pad then
+				pad:Destroy()
+			end
+		end
+		return emoji .. " "
+	end
+	if not image then
+		local h = label.AbsoluteSize.Y
+		if h < 4 then
+			local parent = label.Parent
+			local parentH = if parent and parent:IsA("GuiObject") then parent.Size.Y.Offset else 0
+			h = label.Size.Y.Offset + label.Size.Y.Scale * parentH
+		end
+		h = math.clamp(if h > 0 then h else 28, 14, 64)
+		Theme.new("UIPadding", { Name = "LeadPad", PaddingLeft = UDim.new(0, h + 4), Parent = label })
+		image = Theme.new("ImageLabel", {
+			Name = "LeadIcon",
+			BackgroundTransparency = 1,
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.fromOffset(h, h),
+			Position = UDim2.new(0, -(h + 4), 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			ZIndex = label.ZIndex,
+			Parent = label,
+		})
+	end
+	(image :: ImageLabel).Image = img
+	return ""
+end
+
+-- Removes a lead icon (for states of the same label that have no icon, like "✓ Done").
+function Theme.clearLead(label: TextLabel)
+	local image = label:FindFirstChild("LeadIcon")
+	if image then
+		image:Destroy()
+	end
+	local pad = label:FindFirstChild("LeadPad")
+	if pad then
+		pad:Destroy()
+	end
+end
+
 function Theme.panel(props: { [string]: any }): Frame
 	local f = Theme.new("Frame", {
 		BackgroundColor3 = Theme.Paper,
 		BorderSizePixel = 0,
-	}, { Theme.corner(props.Corner or 16), Theme.stroke(props.StrokeThickness or 3) })
+	}, {
+		Theme.corner(props.Corner or 16),
+		Theme.stroke(props.StrokeThickness or 3),
+		-- soft top-to-bottom shade: multiplies whatever background colour the caller sets
+		Theme.new("UIGradient", { Name = "Shade", Color = ColorSequence.new(Theme.White, Color3.fromRGB(232, 228, 242)), Rotation = 90 }),
+	})
 	for k, v in props do
 		if k ~= "Parent" and k ~= "Corner" and k ~= "StrokeThickness" then
 			(f :: any)[k] = v
@@ -16626,7 +17766,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">Toasts</string>
               <string name="Source"><![CDATA[--!strict
@@ -16647,7 +17787,7 @@ local stack = Theme.new("Frame", {
 	Name = "Toasts",
 	BackgroundTransparency = 1,
 	Size = UDim2.fromOffset(560, 300),
-	-- PC: below the currency bar and the banner; touch: between the HUD columns
+	-- PC: below the objective line and the banner; touch: between the HUD columns
 	Position = if Root.isTouch then UDim2.new(0.5, 0, 0, 84) else UDim2.new(0.5, 0, 0, 176),
 	AnchorPoint = Vector2.new(0.5, 0),
 	ZIndex = 40,
@@ -16779,7 +17919,7 @@ return Toasts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">Windows</string>
               <string name="Source"><![CDATA[--!strict
@@ -16894,8 +18034,7 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		ZIndex = 23,
 		Parent = frame,
 	}, { Theme.corner(35), Theme.stroke(4), Theme.gradient(Theme.White, Theme.lighten(color, 0.55)) })
-	local medalIcon = Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = medal })
-	medalIcon.ZIndex = 24
+	Theme.icon(icon, { Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), ZIndex = 24, Parent = medal })
 	local titleLabel = Theme.text({
 		Text = "",
 		Size = UDim2.new(1, -210, 0, 42),
@@ -17016,7 +18155,7 @@ return Windows
             </Properties>
           </Item>
         </Item>
-        <Item class="ModuleScript" referent="79">
+        <Item class="ModuleScript" referent="82">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -17422,7 +18561,7 @@ function WorldFx.init()
 	local function applyProfile()
 		Lighting.GlobalShadows = Quality.shadows
 		for _, fx in Lighting:GetChildren() do
-			if fx:IsA("BloomEffect") or fx:IsA("SunRaysEffect") then
+			if fx:IsA("BloomEffect") or fx:IsA("SunRaysEffect") or fx:IsA("DepthOfFieldEffect") then
 				fx.Enabled = Quality.shadows
 			end
 		end
@@ -17519,7 +18658,7 @@ return WorldFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="80">
+        <Item class="ModuleScript" referent="83">
           <Properties>
             <string name="Name">WorldText</string>
             <string name="Source"><![CDATA[--!strict
@@ -17600,7 +18739,7 @@ return WorldText
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="81">
+  <Item class="Workspace" referent="84">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

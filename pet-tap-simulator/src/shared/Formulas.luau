@@ -198,6 +198,21 @@ function Formulas.isPaidRandomProduct(key: string): boolean
 	return product ~= nil and Config.PaidRandomProductKinds[product.kind] == true
 end
 
+-- The egg a Robux product hatches, if it hatches one (Magic Egg products and the Starter
+-- Pack): the store and the offer card show that egg's odds before the purchase prompt.
+function Formulas.productEgg(key: string): string?
+	local product = Config.ProductByKey[key]
+	if not product or (product.kind ~= "egg" and product.kind ~= "starter") then
+		return nil
+	end
+	for _, egg in Config.Eggs do
+		if egg.exclusive then
+			return egg.id
+		end
+	end
+	return nil
+end
+
 export type Odds = { pet: string, chance: number } -- chance in percent
 
 -- Egg odds after luck: every Rare+ weight is multiplied by luck, then renormalised.

@@ -45,6 +45,9 @@ function QuestsWindow.init()
 		claimResult(Net.request("ClaimQuestBonus"))
 	end)
 
+	local function gemLead(b: TextButton): string
+		return Theme.lead(b:FindFirstChild("Label") :: TextLabel, "💎")
+	end
 	local function refresh()
 		Hud.refreshQuestBadge()
 		if not Windows.isOpen("Quests") then
@@ -60,16 +63,17 @@ function QuestsWindow.init()
 			local quest = q.list[i]
 			row.frame.Visible = quest ~= nil
 			if quest then
-				row.icon.Text = ICONS[quest.kind] or "⭐"
+				Theme.setIcon(row.icon, ICONS[quest.kind] or "⭐")
 				row.text.Text = Lang.t("quest." .. quest.kind, { n = Format.abbrev(quest.target) })
 				row.bar.Size = UDim2.fromScale(math.clamp(quest.progress / quest.target, 0.03, 1), 1)
 				row.barText.Text = Format.abbrev(quest.progress) .. " / " .. Format.abbrev(quest.target)
 				if quest.claimed then
+					Theme.clearLead(row.button:FindFirstChild("Label") :: TextLabel)
 					Theme.setButton(row.button, "✓ " .. Lang.t("quests.done"), Theme.Grey)
 				elseif quest.progress >= quest.target then
-					Theme.setButton(row.button, "💎 " .. quest.gems .. "  " .. Lang.t("quests.claim"), Theme.Green)
+					Theme.setButton(row.button, gemLead(row.button) .. quest.gems .. "  " .. Lang.t("quests.claim"), Theme.Green)
 				else
-					Theme.setButton(row.button, "💎 " .. quest.gems, Theme.Grey)
+					Theme.setButton(row.button, gemLead(row.button) .. quest.gems, Theme.Grey)
 				end
 				if not quest.claimed then
 					allClaimed = false
@@ -82,7 +86,7 @@ function QuestsWindow.init()
 				done += 1
 			end
 		end
-		bonus.icon.Text = "🔮"
+		Theme.setIcon(bonus.icon, "🔮", "egg")
 		bonus.text.Text = Lang.t("quests.bonus")
 		bonus.bar.Size = UDim2.fromScale(math.clamp(done / math.max(1, #q.list), 0.03, 1), 1)
 		bonus.barText.Text = done .. " / " .. #q.list
@@ -92,7 +96,7 @@ function QuestsWindow.init()
 			Theme.setButton(bonus.button, Lang.t("quests.claim"), if allClaimed then Theme.Purple else Theme.Grey)
 		end
 		local now = q.serverTime + (os.clock() - Net.receivedAt)
-		resets.Text = "⏰ " .. Lang.t("quests.resets", { time = Format.time(q.resetsAt - now) })
+		resets.Text = Theme.lead(resets, "⏰") .. Lang.t("quests.resets", { time = Format.time(q.resetsAt - now) })
 	end
 	w.onOpen = refresh
 	Net.Changed:Connect(function(kind)

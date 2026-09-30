@@ -1,8 +1,10 @@
 --!strict
 -- Bright cartoony UI kit: colors, a tiny instance factory and reusable widgets.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
+local Icons = require(ReplicatedStorage.Shared.Icons)
 local Lang = require(script.Parent.Parent.Lang)
 
 local Theme = {}
@@ -113,11 +115,155 @@ function Theme.text(props: { [string]: any }): TextLabel
 	return t
 end
 
+---------------------------------------------------------------------------
+-- Icons: the shared image pack (Shared/Icons) when it is uploaded, the emoji otherwise.
+-- Every icon slot is a TextLabel "holder": with no image id it shows the emoji exactly as
+-- before; with an id the text is cleared and an ImageLabel (ScaleType Fit) fills it.
+---------------------------------------------------------------------------
+Theme.EMOJI_ICONS = {
+	["⬆️"] = "upgrade",
+	["🔁"] = "rebirth",
+	["📜"] = "quest",
+	["🛒"] = "shop",
+	["📖"] = "book",
+	["🌀"] = "teleport",
+	["💌"] = "invite",
+	["🎟️"] = "ticket",
+	["🎁"] = "gift",
+	["🐾"] = "paw",
+	["👆"] = "tap",
+	["💎"] = "gem",
+	["🤖"] = "auto",
+	["🔄"] = "auto",
+	["🥚"] = "egg",
+	["🍀"] = "luck",
+	["⚡"] = "bolt",
+	["⭐"] = "star",
+	["👑"] = "crown",
+	["⏱️"] = "clock",
+	["⏰"] = "clock",
+	["🔮"] = "orb",
+	["👥"] = "group",
+	["✨"] = "aura",
+	["🔒"] = "lock",
+	["✌️"] = "fist",
+	["👟"] = "rocket",
+	["🎉"] = "gift",
+	["🌐"] = "planet",
+	["🟣"] = "orb",
+} :: { [string]: string }
+
+-- Image for an emoji (or an explicit pack name), nil while the pack is not uploaded.
+function Theme.iconImage(emoji: string, name: string?): string?
+	local n = name or Theme.EMOJI_ICONS[emoji]
+	return if n then Icons.get(n) else nil
+end
+
+-- Shows `emoji` (or the pack image `name`, defaulting to the emoji's mapping) in a holder label.
+function Theme.setIcon(holder: TextLabel, emoji: string, name: string?)
+	local img = Theme.iconImage(emoji, name)
+	local image = holder:FindFirstChild("IconImage") :: ImageLabel?
+	if not img then
+		if image then
+			image:Destroy()
+		end
+		if holder.Text ~= emoji then
+			holder.Text = emoji
+		end
+		return
+	end
+	holder.Text = ""
+	if not image then
+		local created = Instance.new("ImageLabel")
+		created.Name = "IconImage"
+		created.BackgroundTransparency = 1
+		created.ScaleType = Enum.ScaleType.Fit
+		created.Size = UDim2.fromScale(1, 1)
+		created.ZIndex = holder.ZIndex
+		created.Parent = holder
+		image = created
+	end
+	(image :: ImageLabel).Image = img
+end
+
+-- A new icon holder. props are TextLabel props (Size, Position, AnchorPoint, ZIndex, Parent...).
+function Theme.icon(emoji: string, props: { [string]: any }?, name: string?): TextLabel
+	local p = table.clone(props or {})
+	p.Text = emoji
+	p.Stroke = false
+	p.Name = p.Name or "Icon"
+	local zIndex = p.ZIndex
+	p.ZIndex = nil
+	local t = Theme.text(p)
+	if zIndex then
+		t.ZIndex = zIndex
+	end
+	Theme.setIcon(t, emoji, name)
+	return t
+end
+
+-- Icon in front of a text: returns the prefix to put before the text. Without an image it is
+-- the emoji and a space (the text looks exactly as before); with one, an image sits at the
+-- label's left edge (the label gets a left padding for it) and the prefix is empty.
+function Theme.lead(label: TextLabel, emoji: string, name: string?): string
+	local img = Theme.iconImage(emoji, name)
+	local image = label:FindFirstChild("LeadIcon") :: ImageLabel?
+	if not img then
+		if image then
+			image:Destroy()
+			local pad = label:FindFirstChild("LeadPad")
+			if pad then
+				pad:Destroy()
+			end
+		end
+		return emoji .. " "
+	end
+	if not image then
+		local h = label.AbsoluteSize.Y
+		if h < 4 then
+			local parent = label.Parent
+			local parentH = if parent and parent:IsA("GuiObject") then parent.Size.Y.Offset else 0
+			h = label.Size.Y.Offset + label.Size.Y.Scale * parentH
+		end
+		h = math.clamp(if h > 0 then h else 28, 14, 64)
+		Theme.new("UIPadding", { Name = "LeadPad", PaddingLeft = UDim.new(0, h + 4), Parent = label })
+		image = Theme.new("ImageLabel", {
+			Name = "LeadIcon",
+			BackgroundTransparency = 1,
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.fromOffset(h, h),
+			Position = UDim2.new(0, -(h + 4), 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			ZIndex = label.ZIndex,
+			Parent = label,
+		})
+	end
+	(image :: ImageLabel).Image = img
+	return ""
+end
+
+-- Removes a lead icon (for states of the same label that have no icon, like "✓ Done").
+function Theme.clearLead(label: TextLabel)
+	local image = label:FindFirstChild("LeadIcon")
+	if image then
+		image:Destroy()
+	end
+	local pad = label:FindFirstChild("LeadPad")
+	if pad then
+		pad:Destroy()
+	end
+end
+
 function Theme.panel(props: { [string]: any }): Frame
 	local f = Theme.new("Frame", {
 		BackgroundColor3 = Theme.Paper,
 		BorderSizePixel = 0,
-	}, { Theme.corner(props.Corner or 16), Theme.stroke(props.StrokeThickness or 3) })
+	}, {
+		Theme.corner(props.Corner or 16),
+		Theme.stroke(props.StrokeThickness or 3),
+		-- soft top-to-bottom shade: multiplies whatever background colour the caller sets
+		Theme.new("UIGradient", { Name = "Shade", Color = ColorSequence.new(Theme.White, Color3.fromRGB(232, 228, 242)), Rotation = 90 }),
+	})
 	for k, v in props do
 		if k ~= "Parent" and k ~= "Corner" and k ~= "StrokeThickness" then
 			(f :: any)[k] = v

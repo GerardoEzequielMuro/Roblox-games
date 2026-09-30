@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -217,11 +218,57 @@ function EggPanel.init()
 		end
 	end
 
+	-- Paid random items policy: players PolicyService restricts (and everyone until the
+	-- answer arrives) don't get the Robux-only egg at all: its prompt and sign are switched
+	-- off on this client, and a stray trigger only explains why.
+	local function isExclusive(eggId: any): boolean
+		local def = if type(eggId) == "string" then Formulas.EggById[eggId] else nil
+		return def ~= nil and def.exclusive == true
+	end
+	local function syncExclusive(inst: Instance)
+		if inst:IsA("ProximityPrompt") and isExclusive(inst:GetAttribute("EggId")) then
+			inst.Enabled = not Purchase.restricted()
+		elseif inst:IsA("BillboardGui") then
+			local model = inst:FindFirstAncestorOfClass("Model")
+			if model and isExclusive(model:GetAttribute("EggId")) then
+				inst.Enabled = not Purchase.restricted()
+			end
+		end
+	end
+	local eggsFolder: Instance? = nil
+	local function syncAllExclusive()
+		if eggsFolder then
+			for _, d in eggsFolder:GetDescendants() do
+				syncExclusive(d)
+			end
+		end
+	end
+	task.spawn(function()
+		local world = Workspace:WaitForChild("World", 60)
+		local eggs = world and world:WaitForChild("Eggs", 60)
+		if eggs then
+			eggsFolder = eggs
+			eggs.DescendantAdded:Connect(syncExclusive)
+			syncAllExclusive()
+		end
+	end)
+	local lastRestricted: boolean? = nil
+	Net.Changed:Connect(function(kind)
+		if kind == "full" and Purchase.restricted() ~= lastRestricted then
+			lastRestricted = Purchase.restricted()
+			syncAllExclusive()
+		end
+	end)
+
 	ProximityPromptService.PromptTriggered:Connect(function(prompt, player)
 		if player ~= Players.LocalPlayer then
 			return
 		end
 		local eggId = prompt:GetAttribute("EggId")
+		if isExclusive(eggId) and Purchase.restricted() then
+			Toasts.show(Lang.t("egg.restricted"), "info")
+			return
+		end
 		if type(eggId) == "string" then
 			local parent = prompt.Parent
 			local pos = if parent and parent:IsA("BasePart") then parent.Position else Vector3.zero

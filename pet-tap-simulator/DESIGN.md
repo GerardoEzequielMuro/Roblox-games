@@ -74,6 +74,20 @@ earn Taps for the first egg → hatch it → hatch 5 → next zone (or rebirth, 
 When the step is a place (first egg, a gate you can afford) a beam of light runs from the player
 to it. Clicking the objective opens the matching window.
 
+The HUD grows with the player (`shared/HudUnlock.luau`, pure, checked by `tests/policy_hud.luau`).
+A new player sees only Rewards · TAP · Pets and the Store, plus a wobbling "Tap anywhere" hint
+over the TAP button until the first 60 taps. The rest pops in when it becomes useful: first egg →
+Upgrades, Quests, Auto Tap chip; 3 eggs → Index, Codes & Language, Auto Hatch / Auto Equip;
+5 eggs → Teleport; 10 eggs → Invite; zone 3 or an affordable rebirth → Rebirth; the first
+rebirth → Auto Rebirth. Having reached zone 2 or rebirthed opens everything. Only counters
+that never go down are used, and the HUD keeps whatever it has shown, so a rebirth never hides
+a button.
+
+Icons come from the shared pack (`shared/Icons.luau`, images in `assets/icons` at the repo
+root). While an icon has no uploaded id, `Theme.setIcon` / `Theme.icon` / `Theme.lead` show the
+same emoji as before; once `tools/icons/upload_assets.py` writes the ids, the menu, dock, pills,
+auto chips, window medallions, store/reward/quest/upgrade icons switch to images by themselves.
+
 ## Traits
 
 Any pet can carry a trait grade that multiplies that pet's power. Rolling costs 1 **Trait Die**
@@ -109,12 +123,20 @@ Eggs cost Taps and Taps can be bought with Robux, so every egg counts as a paid 
   (`Formulas.displayOdds`, largest-remainder rounding to 0.0001%), before anything is spent,
   and it is rebuilt whenever luck changes (upgrades, passes, Super Luck, Lucky Hour). The
   Golden chance is on the same panel.
+* The Robux offers that hatch the Magic Egg (Magic Egg x1 / x3 cards in the store, the Starter
+  Pack card) print the same numeric odds, plus the Golden chance, **on the card, before the
+  purchase prompt** (`Formulas.productEgg`, `Purchase.oddsText`). The Magic Egg's entries are all
+  Rare+, so luck cannot change its odds (checked in `tests/policy_hud.luau`). Luck items (Lucky,
+  VIP, Super Luck) and the Magic Eggs pass show what they change with the player's own numbers
+  ("Luck x1.10 → x1.60", "Golden 1% → 10%"); the full odds after luck are on every egg panel.
 * No outcome is "nothing": every hatch gives a pet, and a full inventory is refused before paying.
 * `PolicyService:GetPolicyInfoForPlayerAsync` → `ArePaidRandomItemsRestricted`. For those players
   (and until the lookup answers) the game does not sell: Magic Eggs, the Starter Pack (it contains
   an egg), Super Luck, Taps packs (so Taps are not purchasable and the world eggs stop being
   "paid"), and the Lucky / Magic Eggs / VIP passes (paid luck modifiers). Gems and the utility
   passes stay. `Config.PaidRandomProductKinds` / `Config.PaidRandomPasses`.
+  The Robux-only Magic Egg in spawn is hidden from them too: its prompt and sign are switched
+  off on their client (`EggPanel`), so it can't even be opened.
 * There is no trading, so `IsPaidItemTradingAllowed` does not apply yet.
 
 ## Performance budget

@@ -13,6 +13,8 @@ local Lang = require(script.Parent.Parent.Lang)
 local RewardsWindow = {}
 
 local ICONS = { taps = "👆", gems = "💎", luck = "🍀", egg = "🔮" }
+-- icon pack names (Taps as a currency are the coin, the Magic Egg is the egg)
+local ICON_NAMES = { taps = "coin", gems = "gem", luck = "luck", egg = "egg" }
 
 function RewardsWindow.init()
 	local w = Windows.create("Rewards", "🎁", "win.rewards", Theme.Pink, Vector2.new(820, 520))
@@ -28,7 +30,7 @@ function RewardsWindow.init()
 	for i, r in Config.DailyRewards do
 		local f = Theme.panel({ Size = UDim2.fromOffset(100, 116), LayoutOrder = i, BackgroundColor3 = Color3.new(1, 1, 1), Parent = dailyRow })
 		Theme.text({ Key = "rewards.day", Args = { n = i }, Size = UDim2.new(1, -8, 0, 22), Position = UDim2.fromOffset(4, 4), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 20, Parent = f })
-		Theme.text({ Text = ICONS[r.kind] or "⭐", Stroke = false, Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 26), AnchorPoint = Vector2.new(0.5, 0), Parent = f })
+		Theme.icon(ICONS[r.kind] or "⭐", { Size = UDim2.fromOffset(46, 46), Position = UDim2.new(0.5, 0, 0, 26), AnchorPoint = Vector2.new(0.5, 0), Parent = f }, ICON_NAMES[r.kind])
 		Theme.text({ Key = "rewardlabel." .. r.kind, Args = { n = r.amount }, TextWrapped = true, Size = UDim2.new(1, -8, 0, 34), Position = UDim2.fromOffset(4, 76), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 15, Parent = f })
 		local check = Theme.text({ Text = "✓", TextColor3 = Theme.Green, Size = UDim2.fromOffset(34, 34), Position = UDim2.new(1, -30, 0, -8), Visible = false, Parent = f })
 		days[i] = { frame = f, stroke = f:FindFirstChildOfClass("UIStroke") :: UIStroke, check = check }

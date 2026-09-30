@@ -16,7 +16,7 @@ local stack = Theme.new("Frame", {
 	Name = "Toasts",
 	BackgroundTransparency = 1,
 	Size = UDim2.fromOffset(560, 300),
-	-- PC: below the currency bar and the banner; touch: between the HUD columns
+	-- PC: below the objective line and the banner; touch: between the HUD columns
 	Position = if Root.isTouch then UDim2.new(0.5, 0, 0, 84) else UDim2.new(0.5, 0, 0, 176),
 	AnchorPoint = Vector2.new(0.5, 0),
 	ZIndex = 40,

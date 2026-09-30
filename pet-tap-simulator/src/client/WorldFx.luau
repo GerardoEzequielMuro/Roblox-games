@@ -401,7 +401,7 @@ function WorldFx.init()
 	local function applyProfile()
 		Lighting.GlobalShadows = Quality.shadows
 		for _, fx in Lighting:GetChildren() do
-			if fx:IsA("BloomEffect") or fx:IsA("SunRaysEffect") then
+			if fx:IsA("BloomEffect") or fx:IsA("SunRaysEffect") or fx:IsA("DepthOfFieldEffect") then
 				fx.Enabled = Quality.shadows
 			end
 		end

@@ -226,15 +226,25 @@ do
 	local RootT = require(player.PlayerScripts.Client.UI.Root)
 	local chipNames = { "AutoTap", "AutoHatch", "AutoEquip", "AutoRebirth" }
 	local chipsBad = {}
+	-- progressive HUD: a chip is only on screen once HudUnlock opens it (Auto Rebirth after
+	-- the first rebirth); the ones on screen must be full size
+	local HudUnlockT = require(ReplicatedStorage.Shared.HudUnlock)
+	local _, stU = req("GetState")
+	local shouldShow = HudUnlockT.visible(stU)
+	task.wait(0.6)
 	for _, name in chipNames do
 		local chip = mainGui:FindFirstChild(name, true)
 		if not chip or not chip:IsA("GuiButton") then
 			table.insert(chipsBad, name .. " missing")
-		elseif chip.AbsoluteSize.Y < 54 * RootT.scale or chip.AbsoluteSize.X < 90 * RootT.scale then
+		elseif shouldShow[name] and not chip.Visible then
+			table.insert(chipsBad, name .. " should be unlocked")
+		elseif name == "AutoRebirth" and (stU.rebirths or 0) == 0 and chip.Visible then
+			table.insert(chipsBad, "AutoRebirth shown before the first rebirth")
+		elseif chip.Visible and (chip.AbsoluteSize.Y < 54 * RootT.scale or chip.AbsoluteSize.X < 90 * RootT.scale) then
 			table.insert(chipsBad, string.format("%s %dx%d at scale %.2f", name, chip.AbsoluteSize.X, chip.AbsoluteSize.Y, RootT.scale))
 		end
 	end
-	check("HUD has the four auto chips at full cell size", #chipsBad == 0, table.concat(chipsBad, ", "))
+	check("HUD auto chips: unlocked ones at full cell size", #chipsBad == 0, table.concat(chipsBad, ", "))
 	task.wait(0.6)
 	local tapChip = mainGui:FindFirstChild("AutoTap", true)
 	local stateLabel = tapChip and tapChip:FindFirstChild("State") :: TextLabel?
@@ -1073,11 +1083,34 @@ do
 	check("restricted: state flag, starter pack off", stR.paidRandomRestricted == true and stR.starter.available == false)
 	check("restricted: eggs, luck, taps and luck passes blocked", Purchase.productBlocked("MagicEgg1") and Purchase.productBlocked("SuperLuck") and Purchase.productBlocked("TapsSmall") and Purchase.productBlocked("StarterPack") and Purchase.passBlocked("Lucky") and Purchase.passBlocked("VIP") and not Purchase.productAvailable("MagicEgg1") and not Purchase.passAvailable("Lucky"))
 	check("restricted: gems and utility passes still fine", not Purchase.productBlocked("GemsSmall") and not Purchase.passBlocked("AutoTap") and not Purchase.passBlocked("PetSlots"))
+	local function magicPrompt(): ProximityPrompt?
+		for _, d in workspace.World.Eggs:GetDescendants() do
+			if d:IsA("ProximityPrompt") and d:GetAttribute("EggId") == "magic" then
+				return d
+			end
+		end
+		return nil
+	end
+	local mp = magicPrompt()
+	check("restricted: the Robux egg's prompt is off", mp == nil or mp.Enabled == false, mp and mp.Enabled)
 	srv("setRestricted", false)
 	task.wait(0.6)
+	mp = magicPrompt()
+	check("unrestricted: the Robux egg's prompt is back", mp == nil or mp.Enabled == true, mp and mp.Enabled)
 	check("unrestricted: purchases available again", not Purchase.productBlocked("MagicEgg1") and Purchase.productAvailable("MagicEgg1") and Purchase.passAvailable("Lucky"))
 	storePasses, storeProducts = StoreT.counts()
 	check("unrestricted: the store rebuilt itself with everything", storePasses == 2 and storeProducts == 2, storePasses .. " passes, " .. storeProducts .. " products")
+	local storeOdds = mainGui:FindFirstChild("StoreWindow", true)
+	local oddsText: string? = nil
+	if storeOdds then
+		for _, d in storeOdds:GetDescendants() do
+			if d:IsA("TextLabel") and d.Name == "Odds" and d.Text:find("%", 1, true) then
+				oddsText = d.Text
+			end
+		end
+	end
+	check("store: the Magic Egg card shows its odds in % before buying", oddsText ~= nil, oddsText)
+	check("offer odds: Starter Pack and Magic Egg list every pet", Purchase.oddsText("StarterPack") ~= nil and Purchase.oddsText("MagicEgg3") ~= nil and Purchase.oddsText("GemsSmall") == nil)
 	Config.ProductByKey.MagicEgg1.id = 0
 	Config.PassByKey.Lucky.id = 0
 	Config.ProductByKey.GemsSmall.id = 0

@@ -1516,6 +1516,16 @@ function WorldBuilder.build(): WorldInfo
 		rays.Spread = 0.7
 		rays.Parent = Lighting
 	end
+	-- a soft far blur: the horizon props melt into the sky and the play area reads sharper
+	-- (the client switches it off on the lite profile, like bloom and sun rays)
+	if not Lighting:FindFirstChildOfClass("DepthOfFieldEffect") then
+		local dof = Instance.new("DepthOfFieldEffect")
+		dof.FarIntensity = 0.12
+		dof.NearIntensity = 0
+		dof.FocusDistance = 70
+		dof.InFocusRadius = 90
+		dof.Parent = Lighting
+	end
 	if not Lighting:FindFirstChildOfClass("Sky") then
 		local sky = Instance.new("Sky")
 		sky.StarCount = 5000
