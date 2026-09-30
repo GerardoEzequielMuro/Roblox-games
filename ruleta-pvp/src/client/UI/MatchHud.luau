@@ -155,7 +155,7 @@ local cardDesc = Theme.text({ Text = "", Size = UDim2.new(1, -20, 0.22, 0), Posi
 local cardWho = Theme.text({ Text = "", Size = UDim2.new(1, -16, 0.09, 0), Position = UDim2.new(0, 8, 0.9, 0), MaxTextSize = 16, TextColor3 = Theme.Yellow, ZIndex = 33, Parent = cardShow })
 
 -- results
-local results = Theme.panel({ Name = "Results", Size = UDim2.fromOffset(500, 370), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Corner = 24, StrokeThickness = 5, Visible = false, ZIndex = 40, Parent = Root.gui })
+local results = Theme.panel({ Name = "Results", Size = UDim2.fromOffset(500, 414), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Corner = 24, StrokeThickness = 5, Visible = false, ZIndex = 40, Parent = Root.gui })
 -- lives outside the match HUD: it stays up after the table sends you back to the lobby
 Root.mount(results)
 Theme.shadow(results, 24)
@@ -163,7 +163,7 @@ local resultsScale = Theme.new("UIScale", { Parent = results }) :: UIScale
 local resultsHead = Theme.new("Frame", { Name = "Head", Size = UDim2.new(1, 0, 0, 96), BackgroundColor3 = Theme.Yellow, BorderSizePixel = 0, ZIndex = 40, Parent = results }, { Theme.corner(24) }) :: Frame
 local resultsTitle = Theme.text({ Name = "Title", Text = "", Title = true, Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 8), MaxTextSize = 50, Stroke = 4, ZIndex = 41, Parent = results })
 local resultsSub = Theme.text({ Name = "Sub", Text = "", Size = UDim2.new(1, -30, 0, 26), Position = UDim2.fromOffset(15, 62), MaxTextSize = 22, ZIndex = 41, Parent = results })
-local resultRows = Theme.new("Frame", { Name = "Rows", Size = UDim2.new(1, -40, 0, 170), Position = UDim2.fromOffset(20, 108), BackgroundTransparency = 1, ZIndex = 41, Parent = results }, { Theme.list(Enum.FillDirection.Vertical, 6) }) :: Frame
+local resultRows = Theme.new("Frame", { Name = "Rows", Size = UDim2.new(1, -40, 0, 216), Position = UDim2.fromOffset(20, 108), BackgroundTransparency = 1, ZIndex = 41, Parent = results }, { Theme.list(Enum.FillDirection.Vertical, 6) }) :: Frame
 local againButton = Theme.button({ Name = "Again", Key = "match.play_again", Prefix = "▶ ", Color = Theme.Green, Size = UDim2.fromOffset(250, 60), Position = UDim2.new(0, 20, 1, -76), TextSize = 28, Title = true, ZIndex = 41, Parent = results })
 local lobbyButton = Theme.button({ Name = "Lobby", Key = "match.to_lobby", Color = Theme.Blue, Size = UDim2.fromOffset(196, 60), Position = UDim2.new(1, -20, 1, -76), AnchorPoint = Vector2.new(1, 0), TextSize = 22, ZIndex = 41, Parent = results })
 local lastResult: { [string]: any }? = nil
@@ -796,8 +796,11 @@ function MatchHud.showResult(r: { [string]: any }, final: boolean)
 	resultRow("🪙", Lang.t("result.coins"), "+" .. Format.commas(r.coins) .. (if (r.eventCoin or 1) > 1 then "  ×" .. r.eventCoin else ""), Theme.Yellow, 1)
 	resultRow("⭐", Lang.t("result.xp"), "+" .. Format.commas(r.xp) .. (if r.levelUp then "  ⬆ " .. Lang.t("result.level", { n = r.level }) else ""), Theme.Cyan, 2)
 	resultRow("🏆", Lang.t("result.trophies"), "+" .. r.trophies, Theme.Pink, 3)
+	if (r.seasonPoints or 0) > 0 then
+		resultRow("🏅", Lang.t("result.season"), "+" .. r.seasonPoints, Theme.Green, 4)
+	end
 	if r.tutorial then
-		resultRow("🎓", Lang.t("result.tutorial"), "+" .. Format.commas(r.tutorialCoins), Theme.Green, 4)
+		resultRow("🎓", Lang.t("result.tutorial"), "+" .. Format.commas(r.tutorialCoins), Theme.Green, 5)
 	end
 	Theme.setButton(againButton, (if final then "▶ " .. Lang.t("match.play_again") else "👁 " .. Lang.t("match.keep_watching")), if final then Theme.Green else Theme.Purple)
 	results.Visible = true

@@ -934,13 +934,27 @@ do
 	check("server party: everyone gets coins and confetti", d == "PurchaseGranted" and srv("profile").coins == c0 + Config.ProductByKey.ServerParty.amount and waitFor(function()
 		return parties >= 1
 	end, 2) == true)
+	-- season pass: points -> free claim, premium receipt (idempotent) -> premium claim
+	srv("seasonAdd", Config.SeasonPass.pointsPerTier * 2)
+	local okFree = Net.request("ClaimSeason", { track = "free", tier = 1 })
+	check("season: free tier claim works once", okFree == true and (Net.request("ClaimSeason", { track = "free", tier = 1 })) == false)
+	check("season: premium claim locked without the pass", (Net.request("ClaimSeason", { track = "premium", tier = 1 })) == false)
+	check("season: a tier not reached cannot be claimed", (Net.request("ClaimSeason", { track = "free", tier = 9 })) == false)
+	d = srv("receipt", "SeasonPass", "test-purchase-season")
+	local _, premium = srv("seasonState")
+	check("season: premium receipt unlocks the track", d == "PurchaseGranted" and premium == true, d)
+	c0 = srv("profile").coins
+	d = srv("receipt", "SeasonPass", "test-purchase-season")
+	check("season: same receipt is not granted twice", d == "PurchaseGranted" and srv("profile").coins == c0)
+	check("season: premium claim works after the pass", (Net.request("ClaimSeason", { track = "premium", tier = 1 })) == true)
+	check("season: claim all pays the rest", (Net.request("ClaimSeasonAll")) == true)
 	-- policy: nothing sold reaches into a match
 	local clean = true
 	for _, p in Config.Passes do
 		clean = clean and p.affectsMatch == false
 	end
 	for _, p in Config.Products do
-		clean = clean and p.affectsMatch == false and (p.kind == "coins" or p.kind == "starter" or p.kind == "party")
+		clean = clean and p.affectsMatch == false and (p.kind == "coins" or p.kind == "starter" or p.kind == "party" or p.kind == "season" or p.kind == "tier")
 	end
 	check("policy: no pass or product affects a match, none is a random item", clean)
 	check("policy: shop items with id 0 are not purchasable yet", Config.PassByKey.VIP.id == 0 and Config.ProductByKey.CoinsS.id == 0)
@@ -1053,7 +1067,7 @@ end
 ---------------------------------------------------------------------------
 do
 	local okAll, detail = true, ""
-	for _, name in { "Play", "Shop", "Locker", "Rewards", "Quests", "Ranking", "Invite", "Settings" } do
+	for _, name in { "Play", "Shop", "Season", "Locker", "Rewards", "Quests", "Ranking", "Invite", "Settings" } do
 		Windows.open(name)
 		task.wait(0.25)
 		local w = Windows.get(name)

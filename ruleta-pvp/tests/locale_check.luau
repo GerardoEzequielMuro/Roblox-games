@@ -65,7 +65,7 @@ end
 for _, q in Config.QuestPool do
 	table.insert(needed, "quest." .. q.kind)
 end
-for _, name in { "Shop", "Locker", "Rewards", "Quests", "Ranking", "Invite", "Settings" } do
+for _, name in { "Shop", "Season", "Locker", "Rewards", "Quests", "Ranking", "Invite", "Settings" } do
 	table.insert(needed, "menu." .. name)
 	table.insert(needed, "win." .. name)
 end
@@ -74,6 +74,12 @@ for _, key in { "music", "sfx", "shake", "flashes", "lite", "autoQueue", "autoPl
 end
 for _, kind in { "season", "wins", "weekly" } do
 	table.insert(needed, "rank." .. kind)
+end
+for _, k in { "title", "shop_desc", "open", "tier", "ends", "maxed", "next", "how", "fair", "claim_all", "buy_premium", "premium", "skip", "tier_up", "cannot_claim", "claimed_n" } do
+	table.insert(needed, "season." .. k)
+end
+for _, k in { "result.season", "shop.bonus", "unlock.season", "goal.league", "goal.top_league", "goal.season" } do
+	table.insert(needed, k)
 end
 for _, k in needed do
 	if not en[k] then

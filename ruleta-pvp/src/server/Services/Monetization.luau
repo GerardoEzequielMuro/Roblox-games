@@ -15,6 +15,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Cosmetics = require(script.Parent.Cosmetics)
+local SeasonService = require(script.Parent.SeasonService)
 
 local Monetization = {}
 
@@ -83,6 +84,14 @@ function Monetization.grantProduct(player: Player, key: string): boolean
 			Cosmetics.grant(player, id)
 		end
 		Cosmetics.refresh(player, true)
+	elseif product.kind == "season" then
+		if not SeasonService.grantPremium(player) then
+			return false
+		end
+	elseif product.kind == "tier" then
+		if not SeasonService.grantTier(player) then
+			return false
+		end
 	elseif product.kind == "party" then
 		-- a gift to the whole server: confetti for everyone and a few coins each
 		for _, other in Players:GetPlayers() do

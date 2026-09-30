@@ -58,3 +58,74 @@ También confirmé que el rbxlx trae `StreamingEnabled=false`.
 - Audio real: los ids de `Config.Audio` los tiene que cargar el dueño.
 - El chip de jugador del HUD de partido (corazones) y los botones con texto dinámico (Auto-queue, Auto-charge) siguen con emoji aunque haya ícono subido.
 - IDs de passes y productos (siguen en 0).
+
+## Ronda 2
+
+Aviso: nada de esto se vio corriendo. Sin Studio, todo se verificó con build, type checker y tests puros.
+
+### Precios
+Fuente: `docs/research/top-juegos-y-precios.md` sección 4.6. Todos los precios están en `src/shared/Config.luau`. Los IDs siguen en 0.
+
+| Ítem | Antes | Ahora | Por qué |
+|---|---|---|---|
+| Double Coins (pass) | 149 | 199 | Rango recomendado 199-249; Epic Minigames cobra 299 |
+| Emote Pack (pass) | 79 | 99 | Rango 79-99; "Second Effect" de Epic Minigames es 99 |
+| VIP / Legend Skins / Finisher Pack / Auto Charge | 299 / 199 / 149 / 99 | igual | Ya estaban en el precio recomendado |
+| CoinsS / M / L / XL | 49 / 99 / 249 / 499 | igual | Escalera buena (+0 / +24 / +48 / +77 %) |
+| CoinsMega (nuevo, 40.000 monedas) | no existía | 999 | Escalón que faltaba; +96 % de bonus, siempre mejor valor por R$ (test) |
+| Starter Pack | 49 (tachado 199, 1.500 monedas) | 49 (tachado 147, 3.000 monedas) | El 199 tachado no era el precio de nada. Ahora el tachado es lo que cuestan las mismas monedas en 3 bolsas CoinsS (147) y se calcula solo en Config; un test lo verifica |
+| Server Party | 25 | 25 | Recomendado |
+| Season Pass Premium (nuevo, producto) | no existía | 399 | Recomendado 399 (RIVALS 599) |
+| Season Tier Skip (nuevo, producto) | no existía | 39 | Recomendado 29-49 |
+| Kill sound (pass nuevo 99) | no existía | NO agregado | Necesita ids de audio que tiene que subir el dueño; con ids en 0 sería un pass que no suena. Queda en Pendiente |
+
+Regla: nada pago cambia partidas, giros ni odds. Todos los pases y productos tienen `affectsMatch = false` y hay tests puros que lo verifican (ver abajo). No hay ítems random pagos, así que no hace falta UI de odds ni PolicyService.
+
+### Season pass (nuevo)
+- Mensual (mismo id que la temporada de trofeos), 30 niveles de 60 puntos. Puntos solo por jugar: 20 por partida, +10 si quedás top 3 (mesa de 4+), +25 si ganás, mitad en mesa solo con bots. Nada comprado los multiplica.
+- Pista gratis: monedas, título, emote, aura. Pista premium: monedas, título, emote, mesa, aura y dos ruedas. 9 cosméticos nuevos (`unlock.type = "season"`). Todo fijo y visible antes de comprar.
+- Comprar premium es retroactivo a los niveles ya alcanzados. El reloj de fin de temporada se ve en la ventana (es un cierre real). Lo no reclamado se pierde al cambiar el mes.
+- Archivos: `src/shared/SeasonPass.luau` (reglas puras), `src/server/Services/SeasonService.luau` (puntos, reclamo, productos), `MatchRewards.luau` suma los puntos, `Monetization.luau` (kinds `season` y `tier`, recibos idempotentes por PurchaseId), `Data.luau` (campo `sp` con reconcile), UI en `UI/MenuWindows.luau` (ventana "Season" con las dos pistas, reclamar, reclamar todo, comprar premium, saltar nivel) y botón con badge en `UI/Hud.luau`.
+- Compras duplicadas: un segundo Premium en la misma temporada o un skip en el último nivel pagan monedas en vez de perderse (`Config.SeasonPass.duplicatePremiumCoins` / `maxTierSkipCoins`).
+
+### Retención
+| Punto | Estado | Dónde |
+|---|---|---|
+| 1. Bucle de segundos | Ya estaba | Core (`CoreService`, `Hud.coreProgress`), partida (`MatchHud`, `Fx`, `Audio`) |
+| 2. Próxima meta visible | Agregado | Chip "goals" en `UI/Hud.luau`: trofeos a la próxima liga y puntos al próximo nivel de temporada. La barra de XP ya estaba |
+| 3. Metas de sesión y largas | Ya estaba + agregado | Quests, ligas, leaderboards (`Leaderboard.luau`); ahora también season pass |
+| 4. Volver mañana | Ya estaba (+ season) | Diario con racha (`Rewards.luau`), regalos por tiempo, códigos, grupo, eventos con reloj (`LiveEventService`, chip en Hud; DoubleXP cada 3 h, Chaos Weekend). Offline y "restock" no aplican a este juego, y no se inventó escasez |
+| 5. Social | Ya estaba | Referidos (`Social.luau`), tableros en el mundo (`LobbyBuilder`), party de servidor. Anuncios de "hallazgos raros" y regalos no aplican (no hay drops) |
+| 6. Primer minuto | Ya estaba | Tutorial con bonus (`Config.Tutorial`), tip "Jugá" y primera partida con bots |
+
+Además: la pantalla de resultados muestra "Season points" ganados (`MatchHud.luau`, el panel creció de 370 a 414 px).
+
+### Otros cambios
+- Tienda: tarjeta que abre la ventana Season, línea "+N% extra" en cada bolsa de monedas calculada con los precios reales, etiqueta "Best value" pasó a CoinsMega, 6 columnas de monedas.
+- 39 claves de idioma nuevas en los 12 idiomas (en/es/pt/fr/de/id/tr/ru/ja/ko/th/vi).
+- `DESIGN.md` y `LANZAMIENTO.md` actualizados con precios y productos nuevos.
+- Tests: `AutoTest` y `AutoTestClient` ahora cubren el flujo del pass (reclamo gratis, bloqueo premium, recibo, recibo repetido, reclamar todo). No se corrieron (requieren Studio).
+- Pendiente de round 1 que era seguro en código: no había nada más que fuera solo código (íconos, audio e IDs dependen del dueño).
+
+### Cómo lo verifiqué
+```
+rojo build (default, showcase, showcase_low, showcase_touch, test)  -> los 5 "Built project"
+luau-lsp analyze src                                                -> sin salida (0 errores)
+luau-lsp analyze tests/AutoTest*.luau (con test.project.json)       -> sin salida
+luau tests/unit_core.luau                                           -> 1017 checks, 0 failures / UNIT CORE PASSED (antes 659)
+luau tests/locale_check.luau                                        -> 12 idiomas con 431/431 claves / LOCALE CHECKS PASSED
+```
+Tests nuevos de `unit_core.luau`: `affectsMatch == false` explícito en cada pass y producto, kinds permitidos, precios recomendados, escalera de monedas, ancla honesta del Starter Pack, y toda la lógica del season pass (puntos, niveles, reclamo, doble reclamo, premium retroactivo, skip, tope, reset de temporada, cada cosmético alcanzable una sola vez).
+
+### Qué mirar en Studio
+- Ventana Season: que las 30 columnas scrolleen en horizontal, el badge del botón y que reclamar/reclamar todo actualicen la vista.
+- Con IDs en 0, los botones de comprar avisan "coming soon". Probar con IDs reales en un place de test.
+- Chip de metas en el HUD (esquina superior derecha, debajo del chip de evento): que no tape otros elementos en pantallas chicas y en touch.
+- Panel de resultados (más alto ahora) y el menú de la izquierda (8 botones en 4 filas).
+- Correr `test.project.json` para el playtest automático con los checks nuevos del pass.
+
+### Pendiente
+- Crear en el Creator Dashboard: CoinsMega, SeasonPass, SeasonTier y cargar los IDs en Config (pases existentes con los precios nuevos: Double Coins 199, Emote Pack 99).
+- Pass de kill sound: requiere audios propios/licenciados.
+- Subir íconos y audio (igual que en ronda 1).
+- Revisar el balance del season pass con datos reales (puntos por partida, 60 por nivel).

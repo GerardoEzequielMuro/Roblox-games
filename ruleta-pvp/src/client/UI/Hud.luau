@@ -68,14 +68,21 @@ local eventChip = Theme.panel({ Name = "Event", Size = UDim2.fromOffset(250, 32)
 Root.mount(eventChip, root)
 local eventText = Theme.text({ Name = "Text", Text = "", Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4), MaxTextSize = 16, Parent = eventChip })
 
+-- next goals: trophies to the next league and points to the next season tier
+local goalChip = Theme.panel({ Name = "Goals", Size = UDim2.fromOffset(250, 46), Position = UDim2.new(1, -8, 0, 86), AnchorPoint = Vector2.new(1, 0), Corner = 14, Visible = false, Parent = root })
+Root.mount(goalChip, root)
+local goalLeague = Theme.text({ Name = "League", Text = "", Size = UDim2.new(1, -16, 0, 19), Position = UDim2.fromOffset(8, 3), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 14, TextColor3 = Theme.Dim, Parent = goalChip })
+local goalSeason = Theme.text({ Name = "Season", Text = "", Size = UDim2.new(1, -16, 0, 19), Position = UDim2.fromOffset(8, 24), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 14, TextColor3 = Theme.Dim, Parent = goalChip })
+
 ---------------------------------------------------------------------------
 -- Menu (left)
 ---------------------------------------------------------------------------
-local menu = Theme.new("Frame", { Name = "Menu", Size = UDim2.fromOffset(140, 270), Position = UDim2.new(0, 8, 0, 76), BackgroundTransparency = 1, Parent = root }) :: Frame
+local menu = Theme.new("Frame", { Name = "Menu", Size = UDim2.fromOffset(140, 276), Position = UDim2.new(0, 8, 0, 76), BackgroundTransparency = 1, Parent = root }) :: Frame
 Root.mount(menu, root)
 Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(64, 62), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
 local MENU: { { any } } = {
 	{ "Shop", "🛒", Theme.Green },
+	{ "Season", "🏅", Theme.Blue },
 	{ "Locker", "🎨", Theme.Purple },
 	{ "Rewards", "🎁", Theme.Pink },
 	{ "Quests", "📜", Theme.Orange },
@@ -238,6 +245,16 @@ local function refresh()
 	end
 	leagueText.Text = icon .. " " .. Lang.t("league." .. s.league) .. (if s.streak > 1 then "   🔥" .. s.streak else "")
 	trophyValue.Text = Format.abbrev(s.trophies)
+	-- next goals (always close and visible)
+	local nextLeague = s.nextLeague
+	local season = s.season
+	goalLeague.Text = if type(nextLeague) == "table" then "🏆 " .. Lang.t("goal.league", { n = math.max(0, nextLeague.trophies - s.trophies), league = Lang.t("league." .. nextLeague.id) }) else "👑 " .. Lang.t("goal.top_league")
+	if type(season) == "table" then
+		goalSeason.Text = if season.tier >= Config.SeasonPass.tiers then "🏅 " .. Lang.t("season.maxed") else "🏅 " .. Lang.t("goal.season", { n = season.need - season.into, tier = season.tier + 1 })
+	else
+		goalSeason.Text = ""
+	end
+	goalChip.Visible = true
 	if shownCoins ~= s.coins then
 		if shownCoins >= 0 and s.coins > shownCoins then
 			Theme.pop(coinPill, 1.12)
@@ -267,6 +284,8 @@ local function refresh()
 			giftReady = true
 		end
 	end
+	local seasonNow = s.season
+	Hud.badges.Season.Visible = type(seasonNow) == "table" and (seasonNow.claimable or 0) > 0
 	Hud.badges.Rewards.Visible = (type(daily) == "table" and daily.canClaim == true) or giftReady
 	local quests = s.quests
 	local questReady = false

@@ -49,7 +49,7 @@ Roblox.
 | No casino look | It is a game-show spinner with effect icons (zap, shield, heal). No numbers, no red/black, no chips, no felt, no ball | `LobbyBuilder`, `Wheel` |
 | No casino words | No "bet", "casino", "jackpot", "chips", "roulette", "lottery" in any of the 12 languages | `tests/locale_check.luau` (banned-word list) |
 | No pay-to-win | Every pass and product has `affectsMatch = false`; cards are dealt free inside the match and are never sold | `tests/unit_core.luau` and the Studio playtest assert it |
-| No paid random items | The shop sells fixed things: passes, coin packs, a Starter Pack with listed contents, a server party. No crates, no spins for sale, no luck boosts | `Config.Products` kinds are `coins`, `starter`, `party` only (asserted) |
+| No paid random items | The shop sells fixed things: passes, coin packs, a Starter Pack with listed contents, a server party. No crates, no spins for sale, no luck boosts | `Config.Products` kinds are `coins`, `starter`, `party`, `season`, `tier` only; every pass and product has `affectsMatch = false` (asserted) |
 | Cartoon violence only | Bolts, hammers, slime, UFOs. No firearms, no blood | `Finishers` |
 
 Grey areas I chose the safe side on:
@@ -209,17 +209,31 @@ IDs are 0 until they are created in the Creator Dashboard; items with id 0 canno
 | Pass | R$ | What it gives |
 |---|---|---|
 | VIP | 299 | x1.5 coins and XP, gold wheel, gold aura, VIP title, faster Auto Charge |
-| Double Coins | 149 | x2 coins from matches |
+| Double Coins | 199 | x2 coins from matches |
 | Legend Skins | 199 | 3 wheel skins + 2 table skins |
 | Finisher Pack | 149 | UFO, black hole, lightning |
-| Emote Pack | 79 | 6 emotes and 8 emote slots |
+| Emote Pack | 99 | 6 emotes and 8 emote slots |
 | Auto Charge | 99 | Auto Charge from level 1 |
 
 | Product | R$ | What it gives |
 |---|---|---|
-| Coin bag / sack / vault / mountain | 49 / 99 / 249 / 499 | 1,000 / 2,500 / 7,500 / 18,000 coins |
-| Starter Pack (first 24 h) | 49 | 1,500 coins + Arcade wheel + Confetti finisher + Founder title |
+| Coin bag / sack / vault / mountain / treasury | 49 / 99 / 249 / 499 / 999 | 1,000 / 2,500 / 7,500 / 18,000 / 40,000 coins (+0 / +24 / +48 / +77 / +96 %) |
+| Starter Pack (first 24 h) | 49 | 3,000 coins + Arcade wheel + Confetti finisher + Founder title. Crossed-out price = 3 coin bags (147), the real price of the same coins |
 | Server party | 25 | 50 coins for everyone in the server and confetti |
+| Season pass: Premium | 399 | Premium reward track of the current month (cosmetics + coins), retroactive to the tiers already reached |
+| Season tier skip | 39 | +1 season tier |
+
+### Season pass
+
+Monthly (same id as the trophy season), 30 tiers of 60 points. Points come only from playing
+(`SeasonPass.matchPoints`: 20 per match, +10 top 3, +25 win, half on a table with bots only);
+nothing bought multiplies them. Free track: coins, a title, an emote, an aura. Premium track:
+coins plus title, emote, table, aura and two wheels. Every reward is fixed and shown before
+buying, so there is nothing random. The pass resets on the 1st (unclaimed rewards are lost; the
+season clock is shown in the window). Server: `Services/SeasonService.luau`; pure rules:
+`shared/SeasonPass.luau`; UI: the Season window (`UI/MenuWindows.luau`).
+
+A "kill sound" pass was not added: it needs audio ids the owner has to upload.
 
 Prices follow the party-game ladder in `ROBLOX-HUD-GUIA.md` (impulse 25–99, core 99–299).
 

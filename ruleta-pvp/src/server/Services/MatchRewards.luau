@@ -14,6 +14,7 @@ local QuestService = require(script.Parent.QuestService)
 local LiveEventService = require(script.Parent.LiveEventService)
 local Leaderboard = require(script.Parent.Leaderboard)
 local Social = require(script.Parent.Social)
+local SeasonService = require(script.Parent.SeasonService)
 
 local MatchRewards = {}
 
@@ -60,6 +61,7 @@ function MatchRewards.pay(player: Player, info: Info): { [string]: any }?
 	State.addXp(player, r.xp)
 	State.addTrophies(player, r.trophies)
 
+	local seasonPoints = SeasonService.onMatch(player, info.place, info.n, info.humans)
 	QuestService.add(player, "play", 1)
 	if won then
 		QuestService.add(player, "win", 1)
@@ -106,6 +108,7 @@ function MatchRewards.pay(player: Player, info: Info): { [string]: any }?
 		tutorialCoins = if tutorialReward then Config.Tutorial.coins else 0,
 		eventCoin = event.coinMult,
 		eventXp = event.xpMult,
+		seasonPoints = seasonPoints,
 	}
 	Remotes.fire("Result", player, result)
 	return result

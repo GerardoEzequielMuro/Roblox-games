@@ -25,10 +25,10 @@ no se puede comprar.
 | Pass | R$ |
 |---|---|
 | VIP | 299 |
-| Double Coins | 149 |
+| Double Coins | 199 |
 | Legend Skins | 199 |
 | Finisher Pack | 149 |
-| Emote Pack | 79 |
+| Emote Pack | 99 |
 | Auto Charge | 99 |
 
 | Producto | R$ |
@@ -37,6 +37,9 @@ no se puede comprar.
 | Coin sack (2.500) | 99 |
 | Coin vault (7.500) | 249 |
 | Coin mountain (18.000) | 499 |
+| Coin treasury (40.000) | 999 |
+| Season pass: Premium (producto, se compra una vez por temporada) | 399 |
+| Season tier skip (producto) | 39 |
 | Starter Pack | 49 |
 | Server party | 25 |
 

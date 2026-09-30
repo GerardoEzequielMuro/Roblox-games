@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local SeasonPass = require(ReplicatedStorage.Shared.SeasonPass)
 
 local Data = {}
 
@@ -44,6 +45,7 @@ export type Profile = {
 	lang: string, -- UI language code, "" = use the account locale
 	quests: { day: number, list: { { kind: string, target: number, coins: number, xp: number } }, progress: { number }, claimed: { boolean }, bonusClaimed: boolean },
 	weekly: { week: number, wins: number },
+	sp: SeasonPass.State, -- season pass of the current season
 	core: { taps: number, charges: number },
 	referredBy: number,
 	referralPaid: boolean,
@@ -104,6 +106,7 @@ local function defaultProfile(): Profile
 		lang = "",
 		quests = { day = -1, list = {}, progress = {}, claimed = {}, bonusClaimed = false },
 		weekly = { week = 0, wins = 0 },
+		sp = SeasonPass.fresh(0),
 		core = { taps = 0, charges = 0 },
 		referredBy = 0,
 		referralPaid = false,
@@ -151,6 +154,13 @@ local function reconcile(p: any): Profile
 		end
 	end
 	p.emotes = emotes
+	local sp = p.sp
+	sp.season = math.floor(tonumber(sp.season) or 0)
+	sp.points = math.clamp(math.floor(tonumber(sp.points) or 0), 0, SeasonPass.maxPoints())
+	sp.premium = sp.premium == true
+	if type(sp.claimed) ~= "table" then
+		sp.claimed = {}
+	end
 	p.level = math.clamp(math.floor(tonumber(p.level) or 1), 1, Config.MaxLevel)
 	p.coins = math.max(0, math.floor(tonumber(p.coins) or 0))
 	p.trophies = math.max(0, math.floor(tonumber(p.trophies) or 0))

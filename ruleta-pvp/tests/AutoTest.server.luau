@@ -38,6 +38,7 @@ local LiveEventService = require(Services.LiveEventService)
 local QuestService = require(Services.QuestService)
 local Cosmetics = require(Services.Cosmetics)
 local CoreService = require(Services.CoreService)
+local SeasonService = require(Services.SeasonService)
 local Leaderboard = require(Services.Leaderboard)
 
 local player = Players:GetPlayers()[1] or Players.PlayerAdded:Wait()
@@ -264,6 +265,13 @@ rf.OnServerInvoke = function(plr, cmd, a, b)
 		local decision = Monetization.processReceipt({ PlayerId = plr.UserId, PurchaseId = b, ProductId = 990001 })
 		product.id = saved
 		return decision.Name
+	elseif cmd == "seasonAdd" then
+		SeasonService.current(prof)
+		prof.sp.points = math.min(Config.SeasonPass.tiers * Config.SeasonPass.pointsPerTier, prof.sp.points + (a :: number))
+		return prof.sp.points
+	elseif cmd == "seasonState" then
+		local sp = SeasonService.current(prof)
+		return sp.points, sp.premium, sp.claimed
 	elseif cmd == "unknownReceipt" then
 		local decision = Monetization.processReceipt({ PlayerId = plr.UserId, PurchaseId = "p-unknown", ProductId = 424242 })
 		return decision.Name

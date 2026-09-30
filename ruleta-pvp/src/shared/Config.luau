@@ -192,7 +192,7 @@ Config.StreakBonusCap = 5
 
 ---------------------------------------------------------------------------
 -- Cosmetics. unlock.type: default | coins | level | league | wins | streak | pass | code |
--- starter | daily | event
+-- starter | daily | event | season
 ---------------------------------------------------------------------------
 export type Cosmetic = { id: string, kind: string, icon: string, rarity: string, unlock: { type: string, n: number?, key: string? }, look: { [string]: any }? }
 local function c(kind: string, id: string, icon: string, rarity: string, unlock: { type: string, n: number?, key: string? }, look: { [string]: any }?): Cosmetic
@@ -286,6 +286,17 @@ Config.Cosmetics = {
 	c("aura", "a_stars", "🌟", "epic", { type = "league", key = "platinum" }, { color = { 200, 160, 255 }, shape = "orbit" }),
 	c("aura", "a_gold", "👑", "legendary", { type = "pass", key = "VIP" }, { color = { 255, 215, 90 }, shape = "orbit" }),
 	c("aura", "a_core", "🔋", "rare", { type = "event", key = "core" }, { color = { 0, 240, 255 }, shape = "sparks" }),
+
+	-- season pass rewards (granted by the pass only; see Config.SeasonPass)
+	c("wheel", "w_aurora", "🌠", "epic", { type = "season", key = "premium" }, { rim = { 18, 40, 70 }, hub = { 120, 255, 200 }, trim = { 180, 140, 255 }, material = "Neon", tint = { 120, 230, 255 }, mix = 0.3 }),
+	c("wheel", "w_prism", "🔮", "legendary", { type = "season", key = "premium" }, { rim = { 40, 20, 80 }, hub = { 255, 255, 255 }, trim = { 255, 120, 220 }, material = "Glass", tint = { 255, 190, 255 }, mix = 0.35 }),
+	c("table", "t_prism", "💠", "epic", { type = "season", key = "premium" }, { base = { 50, 30, 100 }, accent = { 255, 140, 230 }, material = "Glass" }),
+	c("aura", "a_prism", "🌈", "legendary", { type = "season", key = "premium" }, { color = { 255, 170, 240 }, shape = "orbit" }),
+	c("aura", "a_season", "🍃", "rare", { type = "season", key = "free" }, { color = { 150, 235, 140 }, shape = "rise" }),
+	c("emote", "e_star", "🤩", "epic", { type = "season", key = "premium" }, { move = "spin" }),
+	c("emote", "e_party", "🥳", "rare", { type = "season", key = "free" }, { move = "hop" }),
+	c("title", "ti_passholder", "🏅", "epic", { type = "season", key = "premium" }),
+	c("title", "ti_seasoned", "🍂", "common", { type = "season", key = "free" }),
 } :: { Cosmetic }
 Config.CosmeticById = {} :: { [string]: Cosmetic }
 for _, item in Config.Cosmetics do
@@ -303,10 +314,10 @@ Config.EmoteCooldown = 2.5
 ---------------------------------------------------------------------------
 Config.Passes = {
 	{ key = "VIP", id = 0, price = 299, icon = "⭐", affectsMatch = false, coinMult = 1.5, xpMult = 1.5 },
-	{ key = "DoubleCoins", id = 0, price = 149, icon = "🪙", affectsMatch = false, coinMult = 2, xpMult = 1 },
+	{ key = "DoubleCoins", id = 0, price = 199, icon = "🪙", affectsMatch = false, coinMult = 2, xpMult = 1 },
 	{ key = "LegendSkins", id = 0, price = 199, icon = "🎨", affectsMatch = false, coinMult = 1, xpMult = 1 },
 	{ key = "FinisherPack", id = 0, price = 149, icon = "🛸", affectsMatch = false, coinMult = 1, xpMult = 1 },
-	{ key = "EmotePack", id = 0, price = 79, icon = "🕺", affectsMatch = false, coinMult = 1, xpMult = 1 },
+	{ key = "EmotePack", id = 0, price = 99, icon = "🕺", affectsMatch = false, coinMult = 1, xpMult = 1 },
 	{ key = "AutoCharge", id = 0, price = 99, icon = "🔋", affectsMatch = false, coinMult = 1, xpMult = 1 },
 }
 Config.PassByKey = {} :: { [string]: typeof(Config.Passes[1]) }
@@ -318,14 +329,21 @@ Config.Products = {
 	{ key = "CoinsM", id = 0, price = 99, icon = "💰", kind = "coins", amount = 2500, affectsMatch = false },
 	{ key = "CoinsL", id = 0, price = 249, icon = "🏦", kind = "coins", amount = 7500, affectsMatch = false },
 	{ key = "CoinsXL", id = 0, price = 499, icon = "💎", kind = "coins", amount = 18000, affectsMatch = false },
+	{ key = "CoinsMega", id = 0, price = 999, icon = "👑", kind = "coins", amount = 40000, affectsMatch = false },
 	{ key = "StarterPack", id = 0, price = 49, icon = "🎁", kind = "starter", amount = 1, affectsMatch = false },
 	{ key = "ServerParty", id = 0, price = 25, icon = "🎉", kind = "party", amount = 50, affectsMatch = false },
+	-- Season pass: premium track for the current season (fixed, visible rewards) and a one-tier skip.
+	{ key = "SeasonPass", id = 0, price = 399, icon = "🏅", kind = "season", amount = 1, affectsMatch = false },
+	{ key = "SeasonTier", id = 0, price = 39, icon = "⏩", kind = "tier", amount = 1, affectsMatch = false },
 }
 Config.ProductByKey = {} :: { [string]: typeof(Config.Products[1]) }
 for _, p in Config.Products do
 	Config.ProductByKey[p.key] = p
 end
-Config.StarterPack = { windowSeconds = 86400, fullPrice = 199, coins = 1500, items = { "w_arcade", "ti_founder", "f_confetti" } }
+-- fullPrice (the crossed-out number) is what the same coins cost in the regular coin bags
+-- (3 x CoinsS); the items are exclusive and have no separate price, so they are not counted.
+Config.StarterPack = { windowSeconds = 86400, fullPrice = 0, coins = 3000, items = { "w_arcade", "ti_founder", "f_confetti" } }
+Config.StarterPack.fullPrice = math.ceil(Config.StarterPack.coins / Config.ProductByKey.CoinsS.amount) * Config.ProductByKey.CoinsS.price
 
 ---------------------------------------------------------------------------
 -- Rewards
@@ -373,6 +391,45 @@ Config.QuestPool = {
 Config.Tutorial = { coins = 200, item = "ti_graduate" }
 Config.Referral = { invitedCoins = 300, inviterCoins = 500, maxRewards = 25 }
 Config.GroupGift = { coins = 400 }
+
+---------------------------------------------------------------------------
+-- Season pass (monthly, same season id as the trophy season). Points come from playing
+-- matches only (never sold, never boosted by a pass), so the free track is always fully
+-- reachable. The premium track adds cosmetics and coins; every reward is fixed and visible
+-- before buying. Nothing here touches a match.
+---------------------------------------------------------------------------
+export type SeasonReward = { kind: string, amount: number, item: string? }
+Config.SeasonPass = {
+	tiers = 30,
+	pointsPerTier = 60,
+	points = { base = 20, top3 = 10, win = 25, minPlayersForTop3 = 4, practiceDivisor = 2 }, -- practice = table with bots only
+	duplicatePremiumCoins = 600, -- a second premium purchase in one season pays coins instead
+	maxTierSkipCoins = 100, -- a tier skip bought when already at the last tier pays coins instead
+	free = {} :: { [number]: SeasonReward },
+	premium = {} :: { [number]: SeasonReward },
+}
+do
+	local sp = Config.SeasonPass
+	for t = 1, sp.tiers do
+		sp.free[t] = { kind = "coins", amount = 50 }
+		sp.premium[t] = { kind = "coins", amount = 100 }
+	end
+	local function item(track: { [number]: SeasonReward }, tier: number, id: string, fallback: number)
+		track[tier] = { kind = "item", amount = fallback, item = id }
+	end
+	sp.free[10] = { kind = "coins", amount = 300 }
+	sp.free[20] = { kind = "coins", amount = 400 }
+	sp.free[30] = { kind = "coins", amount = 600 }
+	item(sp.free, 5, "ti_seasoned", 100)
+	item(sp.free, 15, "e_party", 150)
+	item(sp.free, 25, "a_season", 200)
+	item(sp.premium, 4, "ti_passholder", 200)
+	item(sp.premium, 10, "e_star", 300)
+	item(sp.premium, 15, "t_prism", 400)
+	item(sp.premium, 20, "a_prism", 500)
+	item(sp.premium, 25, "w_aurora", 500)
+	item(sp.premium, 30, "w_prism", 800)
+end
 
 ---------------------------------------------------------------------------
 -- Lobby clicker: the Power Core. Tapping charges it; a full charge pays cosmetic coins.

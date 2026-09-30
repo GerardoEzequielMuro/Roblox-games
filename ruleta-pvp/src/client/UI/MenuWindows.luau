@@ -11,6 +11,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Referral = require(ReplicatedStorage.Shared.Referral)
+local SeasonPass = require(ReplicatedStorage.Shared.SeasonPass)
 local Theme = require(script.Parent.Theme)
 local Windows = require(script.Parent.Windows)
 local Toasts = require(script.Parent.Toasts)
@@ -252,6 +253,16 @@ local function buildShop()
 				buyProduct("StarterPack")
 			end })
 		end
+		local seasonInfo = Net.get("season")
+		if type(seasonInfo) == "table" then
+			local c = card(scroll, UDim2.new(1, 0, 0, 64), 2, Theme.Green:Lerp(Theme.Panel, 0.6))
+			label(c, { Text = "🏅", Stroke = false, Size = UDim2.fromOffset(48, 48), Position = UDim2.fromOffset(10, 8) })
+			label(c, { Key = "season.title", Title = true, Size = UDim2.new(1, -240, 0, 24), Position = UDim2.fromOffset(66, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20 })
+			label(c, { Key = "season.shop_desc", Args = { tier = seasonInfo.tier, tiers = Config.SeasonPass.tiers }, Size = UDim2.new(1, -240, 0, 30), Position = UDim2.fromOffset(66, 30), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, MaxTextSize = 14, TextColor3 = Theme.Dim, TextWrapped = true })
+			button(c, { Name = "Open_Season", Key = "season.open", Color = Theme.Green, Size = UDim2.fromOffset(150, 40), Position = UDim2.new(1, -10, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = 17, OnClick = function()
+				Windows.open("Season")
+			end })
+		end
 		section(scroll, "shop.passes", 10)
 		local grid = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 11, ZIndex = Z, Parent = scroll }) :: Frame
 		Theme.new("UIGridLayout", { CellSize = UDim2.new(0.5, -5, 0, 92), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
@@ -269,16 +280,22 @@ local function buildShop()
 		end
 		section(scroll, "shop.coins", 20)
 		local row = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 21, ZIndex = Z, Parent = scroll }) :: Frame
-		Theme.new("UIGridLayout", { CellSize = UDim2.new(0.2, -8, 0, 118), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
+		Theme.new("UIGridLayout", { CellSize = UDim2.new(1 / 6, -9, 0, 118), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		local n = 0
 		for _, product in Config.Products do
-			if product.kind ~= "starter" then
+			if product.kind == "coins" or product.kind == "party" then
 				n += 1
 				local c = card(row, UDim2.new(), n)
 				label(c, { Text = product.icon, Stroke = false, Size = UDim2.new(1, 0, 0, 36), Position = UDim2.fromOffset(0, 4) })
 				label(c, { Key = "product." .. product.key .. ".name", Title = true, Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 42), MaxTextSize = 15 })
 				label(c, { Text = if product.kind == "coins" then "🪙 " .. Format.commas(product.amount) else Lang.t("product." .. product.key .. ".desc", { n = product.amount }), Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 62), MaxTextSize = 13, TextColor3 = Theme.Yellow, TextWrapped = true })
-				local tagKey = if product.key == "CoinsM" then "shop.popular" elseif product.key == "CoinsXL" then "shop.best" else nil
+				if product.kind == "coins" and product.key ~= "CoinsS" then
+					-- extra coins versus the smallest bag, computed from the real prices
+					local base = Config.ProductByKey.CoinsS
+					local bonus = math.floor((product.amount / product.price) / (base.amount / base.price) * 100 + 0.5) - 100
+					label(c, { Key = "shop.bonus", Args = { n = bonus }, Size = UDim2.new(1, -8, 0, 16), Position = UDim2.fromOffset(4, 80), MaxTextSize = 12, TextColor3 = Theme.Green })
+				end
+				local tagKey = if product.key == "CoinsM" then "shop.popular" elseif product.key == "CoinsMega" then "shop.best" else nil
 				if tagKey then
 					local tag = Theme.new("Frame", { Size = UDim2.new(1, -16, 0, 18), Position = UDim2.new(0, 8, 0, -9), BackgroundColor3 = if tagKey == "shop.best" then Theme.Red else Theme.Orange, ZIndex = Z + 3, Parent = c }, { Theme.corner(9), Theme.stroke(2) })
 					label(tag, { Key = tagKey, Size = UDim2.new(1, -6, 1, -2), Position = UDim2.fromOffset(3, 1), MaxTextSize = 12, ZIndex = Z + 4 })
@@ -287,6 +304,103 @@ local function buildShop()
 					buyProduct(product.key)
 				end })
 			end
+		end
+	end)
+end
+
+
+---------------------------------------------------------------------------
+-- Season pass: fixed, visible tracks. Points come from playing; buying only unlocks the
+-- premium track or skips a tier, and never changes a match.
+---------------------------------------------------------------------------
+local function buildSeason()
+	local w = Windows.create("Season", "🏅", "win.Season", Theme.Green, Vector2.new(820, 470))
+	local top = Theme.new("Frame", { Name = "Top", Size = UDim2.new(1, 0, 0, 132), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }) :: Frame
+	local track = Theme.new("ScrollingFrame", {
+		Name = "Track",
+		Size = UDim2.new(1, 0, 1, -140),
+		Position = UDim2.fromOffset(0, 140),
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		ScrollBarThickness = 8,
+		ScrollBarImageColor3 = Theme.Line,
+		CanvasSize = UDim2.new(),
+		AutomaticCanvasSize = Enum.AutomaticSize.X,
+		ScrollingDirection = Enum.ScrollingDirection.X,
+		ZIndex = Z,
+		Parent = w.body,
+	}, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: ScrollingFrame
+	local centered = false
+	hook("Season", w, function()
+		clear(top)
+		clear(track)
+		local s = Net.state
+		local info = Net.get("season")
+		if not s or type(info) ~= "table" then
+			return
+		end
+		local cfg = Config.SeasonPass
+		-- header: tier, bar, clock, buttons
+		label(top, { Key = "season.tier", Args = { n = info.tier, total = cfg.tiers }, Title = true, Size = UDim2.new(0.5, 0, 0, 30), Position = UDim2.fromOffset(4, 0), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 26, TextColor3 = Theme.Yellow })
+		label(top, { Key = "season.ends", Args = { time = Format.time(math.max(0, info.endsAt - Net.serverTime())) }, Size = UDim2.new(0.5, -8, 0, 22), Position = UDim2.new(0.5, 0, 0, 4), TextXAlignment = Enum.TextXAlignment.Right, MaxTextSize = 15, TextColor3 = Theme.Dim })
+		local back = Theme.new("Frame", { Name = "Bar", Size = UDim2.new(1, -8, 0, 18), Position = UDim2.fromOffset(4, 36), BackgroundColor3 = Theme.Ink, ZIndex = Z, Parent = top }, { Theme.corner(9) })
+		Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(math.clamp(info.into / math.max(1, info.need), 0, 1), 1), BackgroundColor3 = Theme.Green, ZIndex = Z + 1, Parent = back }, { Theme.corner(9) })
+		if info.tier >= cfg.tiers then
+			label(top, { Key = "season.maxed", Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 58), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 15, TextColor3 = Theme.Green })
+		else
+			label(top, { Key = "season.next", Args = { n = info.need - info.into, tier = info.tier + 1 }, Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 58), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 15, TextColor3 = Theme.Dim })
+		end
+		label(top, { Key = "season.how", Args = { win = SeasonPass.matchPoints(1, 5, 2), play = SeasonPass.matchPoints(5, 5, 2) }, Size = UDim2.new(0.5, 0, 0, 18), Position = UDim2.fromOffset(4, 82), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 13, TextColor3 = Theme.Dim })
+		label(top, { Key = "season.fair", Size = UDim2.new(0.5, 0, 0, 34), Position = UDim2.fromOffset(4, 98), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, MaxTextSize = 12, TextColor3 = Theme.Green, TextWrapped = true })
+		local claimable = info.claimable or 0
+		button(top, { Name = "ClaimAll", Key = "season.claim_all", Args = { n = claimable }, Color = if claimable > 0 then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(170, 38), Position = UDim2.new(1, -4, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 16, OnClick = function()
+			if claimable > 0 then
+				task.spawn(call, "ClaimSeasonAll", nil, "heal")
+			end
+		end })
+		local premium = Config.ProductByKey.SeasonPass
+		button(top, { Name = "Buy_SeasonPass", Text = if info.premium then "✔ " .. Lang.t("season.premium") else Lang.t("season.buy_premium", { price = premium.price }), Color = if info.premium then Theme.Grey else Theme.Purple, Size = UDim2.fromOffset(220, 38), Position = UDim2.new(1, -182, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 16, OnClick = function()
+			if not info.premium then
+				buyProduct("SeasonPass")
+			end
+		end })
+		local skip = Config.ProductByKey.SeasonTier
+		if info.tier < cfg.tiers then
+			button(top, { Name = "Buy_SeasonTier", Text = Lang.t("season.skip", { price = skip.price }), Color = Theme.Orange, Size = UDim2.fromOffset(150, 38), Position = UDim2.new(1, -406, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 14, OnClick = function()
+				buyProduct("SeasonTier")
+			end })
+		end
+		-- the two tracks, one column per tier
+		local function cell(parent: Instance, trackName: string, tier: number, y: number, locked: boolean)
+			local reward = SeasonPass.reward(trackName, tier)
+			local key = SeasonPass.key(trackName, tier)
+			local reached = tier <= info.tier
+			local claimed = info.claimed[key] == true
+			local can = reached and not claimed and not locked
+			local c = Theme.new("Frame", { Name = key, Size = UDim2.new(1, 0, 0, 92), Position = UDim2.fromOffset(0, y), BackgroundColor3 = if can then Theme.Green:Lerp(Theme.Panel, 0.5) else Theme.Panel2, ZIndex = Z, Parent = parent }, { Theme.corner(10), Theme.stroke(2, if can then Theme.Yellow else Theme.Ink) })
+			if reward then
+				label(c, { Text = if claimed then "✅" else MenuWindows.rewardText(reward), Size = UDim2.new(1, -6, 0, 44), Position = UDim2.fromOffset(3, 4), MaxTextSize = 16, TextWrapped = true })
+			end
+			if can then
+				button(c, { Name = "Claim_" .. key, Key = "rewards.claim", Color = Theme.Green, Size = UDim2.new(1, -8, 0, 26), Position = UDim2.new(0, 4, 1, -30), TextSize = 13, OnClick = function()
+					task.spawn(call, "ClaimSeason", { track = trackName, tier = tier }, "heal")
+				end })
+			elseif locked then
+				label(c, { Text = "🔒", Stroke = false, Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0, 0, 1, -28), MaxTextSize = 18 })
+			elseif not claimed then
+				label(c, { Text = "⏳", Stroke = false, Size = UDim2.new(1, 0, 0, 24), Position = UDim2.new(0, 0, 1, -28), MaxTextSize = 16, TextColor3 = Theme.Dim })
+			end
+		end
+		for tier = 1, cfg.tiers do
+			local col = Theme.new("Frame", { Name = "Tier" .. tier, Size = UDim2.new(0, 92, 1, -8), BackgroundTransparency = 1, LayoutOrder = tier, ZIndex = Z, Parent = track }) :: Frame
+			label(col, { Text = tostring(tier), Title = true, Size = UDim2.new(1, 0, 0, 20), MaxTextSize = 18, TextColor3 = if tier <= info.tier then Theme.Yellow else Theme.Dim })
+			local holder = Theme.new("Frame", { Size = UDim2.new(1, 0, 1, -24), Position = UDim2.fromOffset(0, 24), BackgroundTransparency = 1, ZIndex = Z, Parent = col }) :: Frame
+			cell(holder, "free", tier, 0, false)
+			cell(holder, "premium", tier, 98, not info.premium)
+		end
+		if not centered then
+			centered = true
+			track.CanvasPosition = Vector2.new(math.max(0, (info.tier - 2) * 98), 0)
 		end
 	end)
 end
@@ -675,6 +789,7 @@ end
 function MenuWindows.init()
 	buildPlay()
 	buildShop()
+	buildSeason()
 	buildLocker()
 	buildRewards()
 	buildQuests()

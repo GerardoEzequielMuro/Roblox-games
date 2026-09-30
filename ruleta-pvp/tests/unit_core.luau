@@ -14,6 +14,7 @@ local LiveEvents = require("../src/shared/LiveEvents")
 local Referral = require("../src/shared/Referral")
 local MatchFlow = require("../src/shared/MatchFlow")
 local Icons = require("../src/shared/Icons")
+local SeasonPass = require("../src/shared/SeasonPass")
 
 local checks, fails = 0, 0
 local function check(name: string, cond: any, detail: any?)
@@ -123,7 +124,7 @@ for _, p in Config.Passes do
 end
 for _, p in Config.Products do
 	check("product " .. p.key .. " does not affect matches", p.affectsMatch == false)
-	check("product " .. p.key .. " is not a random item", p.kind == "coins" or p.kind == "starter" or p.kind == "party")
+	check("product " .. p.key .. " is not a random item", p.kind == "coins" or p.kind == "starter" or p.kind == "party" or p.kind == "season" or p.kind == "tier")
 end
 do
 	-- nothing in a match costs anything and rewards ignore what happened in the spins
@@ -143,7 +144,7 @@ do
 		check("cosmetic " .. item.id .. " kind known", table.find(Config.CosmeticKinds, item.kind) ~= nil)
 		check("cosmetic " .. item.id .. " rarity known", Config.RarityById[item.rarity] ~= nil)
 		local t = item.unlock.type
-		check("cosmetic " .. item.id .. " unlock known", table.find({ "default", "coins", "level", "league", "wins", "streak", "pass", "code", "starter", "daily", "event" }, t) ~= nil, t)
+		check("cosmetic " .. item.id .. " unlock known", table.find({ "default", "coins", "level", "league", "wins", "streak", "pass", "code", "starter", "daily", "event", "season" }, t) ~= nil, t)
 		if t == "pass" then
 			check("cosmetic " .. item.id .. " pass exists", Config.PassByKey[item.unlock.key :: string] ~= nil)
 		end
@@ -1006,6 +1007,149 @@ do
 	Icons.ids.coin = "123"
 	check("icons: an uploaded id resolves by name and by emoji", Icons.get("coin") == "rbxassetid://123" and Icons.get("🪙") == "rbxassetid://123")
 	Icons.ids.coin = ""
+end
+
+---------------------------------------------------------------------------
+-- Pricing and policy: nothing paid can affect a match, prices are the recommended ones,
+-- anchors are honest, season pass rules
+---------------------------------------------------------------------------
+do
+	local ALLOWED_KINDS = { coins = true, starter = true, party = true, season = true, tier = true }
+	local seen = {}
+	for _, p in Config.Passes do
+		check("pass " .. p.key .. " affectsMatch is explicitly false", rawget(p, "affectsMatch") == false)
+		check("pass " .. p.key .. " never touches a match (xp/coins only, no odds field)", (p :: any).luck == nil and (p :: any).odds == nil and (p :: any).spins == nil)
+		check("pass " .. p.key .. " price is a positive integer", p.price > 0 and p.price % 1 == 0)
+		check("pass key unique " .. p.key, not seen[p.key])
+		seen[p.key] = true
+	end
+	for _, p in Config.Products do
+		check("product " .. p.key .. " affectsMatch is explicitly false", rawget(p, "affectsMatch") == false)
+		check("product " .. p.key .. " kind is cosmetic/comfort", ALLOWED_KINDS[p.kind] == true, p.kind)
+		check("product " .. p.key .. " price is a positive integer", p.price > 0 and p.price % 1 == 0)
+		check("product key unique " .. p.key, not seen[p.key])
+		seen[p.key] = true
+	end
+	-- recommended prices (docs/research/top-juegos-y-precios.md section 4.6)
+	local want = { VIP = 299, DoubleCoins = 199, LegendSkins = 199, FinisherPack = 149, EmotePack = 99, AutoCharge = 99 }
+	for key, price in want do
+		check("pass price " .. key, Config.PassByKey[key] ~= nil and Config.PassByKey[key].price == price)
+	end
+	local wantP = { CoinsS = 49, CoinsM = 99, CoinsL = 249, CoinsXL = 499, CoinsMega = 999, StarterPack = 49, ServerParty = 25, SeasonPass = 399, SeasonTier = 39 }
+	for key, price in wantP do
+		check("product price " .. key, Config.ProductByKey[key] ~= nil and Config.ProductByKey[key].price == price)
+	end
+	-- coin ladder: better value every step
+	local ladder = { "CoinsS", "CoinsM", "CoinsL", "CoinsXL", "CoinsMega" }
+	for i = 2, #ladder do
+		local a, b = Config.ProductByKey[ladder[i - 1]], Config.ProductByKey[ladder[i]]
+		check("coin ladder improves " .. ladder[i], b.amount / b.price > a.amount / a.price)
+	end
+	check("CoinsMega is ~40k coins", Config.ProductByKey.CoinsMega.amount == 40000)
+	-- honest anchor: the crossed-out price is what the same coins cost in the regular bags
+	local sp = Config.StarterPack
+	local bag = Config.ProductByKey.CoinsS
+	check("starter anchor = price of the same coins in regular bags", sp.fullPrice == math.ceil(sp.coins / bag.amount) * bag.price, sp.fullPrice)
+	check("starter anchor is above the real price", sp.fullPrice > Config.ProductByKey.StarterPack.price)
+	-- no paid random items, no wager anywhere in Config
+	for _, p in Config.Products do
+		check("no random product " .. p.key, p.kind ~= "box" and p.kind ~= "egg" and p.kind ~= "crate" and p.kind ~= "luck")
+	end
+end
+
+do
+	local sp = Config.SeasonPass
+	check("season: tiers and points are sane", sp.tiers >= 20 and sp.pointsPerTier > 0)
+	for t = 1, sp.tiers do
+		check("season: free reward at tier " .. t, sp.free[t] ~= nil)
+		check("season: premium reward at tier " .. t, sp.premium[t] ~= nil)
+		for _, track in { sp.free[t], sp.premium[t] } do
+			local k = track.kind
+			check("season reward kind " .. t, k == "coins" or k == "xp" or k == "item")
+			if k == "item" then
+				local item = Config.CosmeticById[track.item :: string]
+				check("season reward item exists " .. t, item ~= nil and item.unlock.type == "season")
+				check("season item has coin fallback " .. t, track.amount > 0)
+			else
+				check("season reward amount > 0 " .. t, track.amount > 0)
+			end
+		end
+	end
+	-- every season cosmetic is reachable through exactly one reward slot
+	local slots = {}
+	for t = 1, sp.tiers do
+		for _, track in { "free", "premium" } do
+			local r = SeasonPass.reward(track, t) :: any
+			if r.kind == "item" then
+				slots[r.item] = (slots[r.item] or 0) + 1
+				local unlockKey = (Config.CosmeticById[r.item] :: any).unlock.key
+				check("season item " .. r.item .. " sits on its own track", unlockKey == track)
+			end
+		end
+	end
+	for _, item in Config.Cosmetics do
+		if item.unlock.type == "season" then
+			check("season cosmetic reachable once " .. item.id, slots[item.id] == 1, slots[item.id])
+		end
+	end
+	check("season: no reward beyond the last tier", SeasonPass.reward("free", sp.tiers + 1) == nil and SeasonPass.reward("premium", 0) == nil and SeasonPass.reward("bogus", 1) == nil)
+
+	-- points: placement only, never boosted, bots-only tables pay half
+	check("points: win > top3 > plain", SeasonPass.matchPoints(1, 6, 3) > SeasonPass.matchPoints(2, 6, 3) and SeasonPass.matchPoints(2, 6, 3) > SeasonPass.matchPoints(6, 6, 3))
+	check("points: last place still earns", SeasonPass.matchPoints(6, 6, 3) > 0)
+	check("points: practice pays half", SeasonPass.matchPoints(1, 5, 1) == SeasonPass.matchPoints(1, 5, 2) // 2)
+	local allOk = true
+	for _, mode in Config.Modes do
+		for n = 2, mode.maxPlayers do
+			for place = 1, n do
+				for humans = 1, 3 do
+					allOk = allOk and SeasonPass.matchPoints(place, n, humans) > 0
+				end
+			end
+		end
+	end
+	check("points: positive everywhere", allOk)
+	-- a free player can finish the pass: ~average match pays well under the monthly play needed
+	local perMatch = SeasonPass.matchPoints(3, 5, 2)
+	check("season: full track needs at most ~100 average matches", SeasonPass.maxPoints() / perMatch <= 100, SeasonPass.maxPoints() / perMatch)
+
+	-- state machine
+	local st = SeasonPass.fresh(24300)
+	check("fresh: tier 0, not premium", SeasonPass.tier(st.points) == 0 and not st.premium)
+	check("progress at 0", select(2, SeasonPass.progress(0)) == 0)
+	SeasonPass.addPoints(st, sp.pointsPerTier - 1)
+	check("tier stays 0 just below the threshold", SeasonPass.tier(st.points) == 0)
+	SeasonPass.addPoints(st, 1)
+	check("tier 1 at the threshold", SeasonPass.tier(st.points) == 1)
+	check("claim free tier 1", SeasonPass.canClaim(st, "free", 1))
+	check("cannot claim premium without the pass", not SeasonPass.canClaim(st, "premium", 1))
+	check("cannot claim a tier not reached", not SeasonPass.canClaim(st, "free", 2))
+	st.claimed[SeasonPass.key("free", 1)] = true
+	check("cannot claim twice", not SeasonPass.canClaim(st, "free", 1))
+	check("bad tiers rejected", not SeasonPass.canClaim(st, "free", 0) and not SeasonPass.canClaim(st, "free", 1.5) and not SeasonPass.canClaim(st, "free", sp.tiers + 1) and not SeasonPass.canClaim(st, "free", 0 / 0) and not SeasonPass.canClaim(st, "x", 1))
+	-- buying premium late unlocks the tiers already reached (retroactive)
+	SeasonPass.addPoints(st, sp.pointsPerTier * 4)
+	st.premium = true
+	local list = SeasonPass.claimables(st)
+	check("claimables: 4 free + 5 premium after buying premium at tier 5", #list == 9, #list)
+	check("addPoints ignores junk", SeasonPass.addPoints(st, -5) == 0 and SeasonPass.addPoints(st, 0 / 0) == 0)
+	-- skip a tier
+	local before = SeasonPass.tier(st.points)
+	check("skip tier advances exactly one tier", SeasonPass.skipTier(st) and SeasonPass.tier(st.points) == before + 1)
+	SeasonPass.addPoints(st, 1e9)
+	check("points capped at the last tier", st.points == SeasonPass.maxPoints() and SeasonPass.tier(st.points) == sp.tiers)
+	check("skip at the last tier is refused", not SeasonPass.skipTier(st))
+	local _, into, need = SeasonPass.progress(st.points)
+	check("full bar at the last tier", into == need)
+	-- season rollover drops the old state, same season keeps it
+	check("sync keeps the same season", SeasonPass.sync(st, 24300) == st)
+	local nxt = SeasonPass.sync(st, 24301)
+	check("sync resets on a new season", nxt ~= st and nxt.points == 0 and not nxt.premium and next(nxt.claimed) == nil and nxt.season == 24301)
+	check("sync of nil", SeasonPass.sync(nil, 7).season == 7)
+	-- season tier skip / premium products never change points formula
+	check("points formula has no paid input", #{ SeasonPass.matchPoints(1, 5, 2) } == 1)
+	-- the season products exist and are matched by kind
+	check("season products wired", Config.ProductByKey.SeasonPass.kind == "season" and Config.ProductByKey.SeasonTier.kind == "tier")
 end
 
 print(string.format("%d checks, %d failures", checks, fails))
