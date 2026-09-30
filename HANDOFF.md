@@ -110,6 +110,28 @@ Base: `docs/research/top-juegos-y-precios.md`. Son precios de juegos reales saca
 - **Capturas actuales:** `docs/previews/<juego>/`, con el detalle en cada `.txt`.
 - **Para confirmar en un celular real:** que nada choque con el notch ni con la barra de Roblox, y la posición real del joystick y del botón de salto.
 
+
+## 4f. Ronda 5: ritmo de progresión (simuladores)
+
+Cada juego tiene ahora un simulador en Luau puro que usa su `Config` y sus fórmulas reales. Simula a un jugador que no paga, arma la línea de tiempo de hitos y tiene un test que falla si el ritmo se sale de los objetivos. Se corre con `luau sim/pacing_sim.luau` desde la carpeta del juego.
+
+| Juego | Hallazgo | Cambio medido |
+|---|---|---|
+| ki-warriors | **El juego se terminaba en unos 90 minutos**: los multiplicadores por planeta estaban 3 o 4 órdenes de magnitud de más. | Planeta 2 de 17 a 6 min, primera ascensión a los 33 min, planeta 10 cerca del día 29. Los pases de batalla se completan dentro de la temporada jugando activo. |
+| Planet Crackers | Esperas de 25 a 30 min sin nada nuevo en la primera hora. | Espera máxima de 31 a unos 9 min, primer rebirth de 51 a 39 min. |
+| Tap Pets | Frost Peak llegaba a los 30 min y la primera mejora con gemas al minuto 5. | Frost de 30 a 13 min, Lava de 44 a 28, primera mejora al minuto 2. |
+| Crop Kingdom | Lo que frenaba era el stock de semillas, no la plata. El mango tardaba unos 52 min. | Mango a 32 min, primer rebirth de 61 a 45 min, bache máximo de 10 a 6 min. |
+| Sky Tower Obby | Etapas imposibles, como un wallhop de unos 200 s, en medio de etapas fáciles. | Sin picos injustos y **más difícil en promedio**, como pediste: la mediana por torre subió en 8 de 10. Cosméticos más accesibles al principio. |
+| Ruleta PvP | El pase de temporada se completaba en 9 días y la tienda se vaciaba en una semana. | Pase en unos 23 días, tienda para semanas, nivel 10 a los 38 min en vez de al día 3. |
+
+**Límites:** los simuladores modelan un tipo de jugador con supuestos propios, como cuántos clicks hace o el riesgo de cada salto. Sirven para comparar antes y después y encontrar baches, no para predecir tiempos exactos. Los tiempos reales se miden con analíticas cuando el juego esté publicado.
+
+**Huecos que no se arreglan con números (hace falta contenido):**
+- Tap Pets: entre el primer rebirth y Cosmic Void no aparece nada nuevo.
+- Planet Crackers: después de unos 50 min solo hay rebirths hasta la galaxia 5.
+- Obby: después de la torre 3 las monedas no tienen en qué gastarse.
+- ki-warriors: un jugador casual (25 min por día) no llega a terminar el pase de batalla.
+
 ## 4c. Hasta dónde conviene seguir sin Studio
 
 Después de 2 rondas, todo lo que se puede verificar sin Studio está hecho. Lo que falta necesita ver el juego andando:
