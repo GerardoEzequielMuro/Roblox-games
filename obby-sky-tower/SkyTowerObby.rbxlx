@@ -242,6 +242,7 @@ return Ambience
 
 local TowerStyle = require(script.Parent.TowerStyle)
 local Rules = require(script.Parent.Rules)
+local Pricing = require(script.Parent.Pricing)
 
 local Config = {}
 
@@ -256,22 +257,29 @@ Config.AutosaveInterval = 90
 
 -- Monetization ---------------------------------------------------------------------------
 Config.Products = {
-	SkipStage = 0, -- Developer Product: skip 1 stage (top earner in obbies)
-	Skip10 = 0, -- Developer Product: skip 10 stages
-	Coins500 = 0, -- Developer Product: 500 coins
-	Coins2500 = 0, -- Developer Product: 2,500 coins
+	SkipStage = 0, -- Developer Product: skip 1 stage, levels 1-300 (19 R$)
+	SkipStageHigh = 0, -- Developer Product: skip 1 stage, levels 301-1000 (29 R$). 0 = SkipStage is used
+	Skip10 = 0, -- Developer Product: skip 10 stages (149 R$)
+	DoubleJump5 = 0, -- Developer Product: double jump for 5 minutes (9 R$)
+	Coins500 = 0, -- Developer Product: 500 coins (49 R$)
+	Coins2500 = 0, -- Developer Product: 2,500 coins (199 R$)
+	Coins7000 = 0, -- Developer Product: 7,000 coins (499 R$)
 	AdSkip = 0, -- Developer Product used only as the reward holder of the rewarded-video ad skip
-	StarterPack = 0, -- Developer Product: first-24-hour starter pack (suggested 59 R$)
+	StarterPack = 0, -- Developer Product: first-24-hour starter pack (59 R$)
 } :: { [string]: number }
 
 Config.Passes = {
-	SpeedCoil = 0, -- WalkSpeed 24 (toggle in Settings). Suggested 8 R$: the impulse buy of top obbies
-	GravityCoil = 0, -- lower gravity while jumping (toggle in Settings)
+	SpeedCoil = 0, -- WalkSpeed 24 (toggle in Settings). 99 R$
+	GravityCoil = 0, -- lower gravity while jumping (toggle in Settings). 69 R$
+	Fusion = 0, -- both coils in one pass (139 R$ vs 168 separately)
 	DoubleJump = 0, -- one extra jump in the air, for ever (the shop sells it for 5 minutes)
-	InfiniteRevives = 0, -- unlimited pocket checkpoints (suggested 139 R$)
-	VIP = 0, -- [VIP] chat tag, gold trail, +50% coins, bigger daily reward
-	DoubleCoins = 0, -- x2 coins from every source
+	InfiniteRevives = 0, -- unlimited pocket checkpoints (179 R$)
+	VIP = 0, -- [VIP] chat tag, gold trail, +50% coins, bigger daily reward (299 R$)
+	DoubleCoins = 0, -- x2 coins from every source (195 R$)
 } :: { [string]: number }
+
+-- Intended Robux prices (what to type in the Creator Dashboard). Shared/Pricing is the source.
+Config.Prices = Pricing
 
 Config.BadgeIds = {
 	Winner = 0, -- awarded on reaching stage 100
@@ -296,9 +304,13 @@ Config.AdDailyCap = 6 -- rewarded-video ad skips per player per UTC day
 
 -- Starter pack (P0-4) ---------------------------------------------------------------------------
 Config.StarterPackWindow = 24 * 3600 -- on sale during the first 24 h after the first join
-Config.StarterPackSkips = 3
+Config.StarterPackSkips = 5
+Config.StarterPackCoins = 500 -- a Coins500 pack
 Config.StarterBoostSeconds = 30 * 60 -- x2 coins boost
-Config.StarterPackAnchorPrice = 169 -- crossed-out "value" shown on the offer (display only)
+-- Crossed-out "value": what the skips + coins cost separately at list price (Shared/Pricing). The
+-- trail and the boost are a free extra and are not counted, so the badge never overstates it.
+Config.StarterPackAnchorPrice = Pricing.starterValue(Config.StarterPackSkips, Config.StarterPackCoins)
+Config.StarterPackDiscountPct = Pricing.discountPct(Config.StarterPackAnchorPrice, Pricing.Products.StarterPack)
 
 -- Invites / referrals (P0-3) ---------------------------------------------------------------------
 Config.ReferralMaxRewards = 25 -- lifetime cap of inviter rewards
@@ -357,6 +369,7 @@ Config.DailyStreakWindow = 48 * 3600 -- miss this and the streak resets
 
 export type PlaytimeReward = { minutes: number, coins: number, freeSkips: number }
 Config.PlaytimeRewards = {
+	{ minutes = 1, coins = 20, freeSkips = 0 }, -- first gift inside the first minute
 	{ minutes = 5, coins = 30, freeSkips = 0 },
 	{ minutes = 15, coins = 75, freeSkips = 0 },
 	{ minutes = 30, coins = 150, freeSkips = 1 },
@@ -2437,13 +2450,13 @@ return {
 	["msg.invited_gift"] = "Ein Freund hat dich eingeladen: +{coins} Münzen +{n} Gratis-Skip!",
 	["msg.referral_reward"] = "Deine Freunde klettern! +{coins} Münzen +{n} Gratis-Skips ({friends})",
 	["starter.title"] = "Starterpaket",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct} %",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} Gratis-Skips + Spur Starterstern + {minutes} Min. doppelte Münzen",
+	["starter.items"] = "{n} Gratis-Skips + {coins} Münzen + Spur Starterstern + {minutes} Min. doppelte Münzen",
 	["starter.buy"] = "Holen - R$ {price}",
 	["starter.buy_noprice"] = "Holen",
 	["starter.ends"] = "Endet in {time}",
-	["msg.starter_thanks"] = "Starterpaket: +{n} Gratis-Skips, neue Spur und {minutes} Min. doppelte Münzen!",
+	["msg.starter_thanks"] = "Starterpaket: +{n} Gratis-Skips, +{coins} Münzen, neue Spur und {minutes} Min. doppelte Münzen!",
 	["shop.starter_only"] = "Nur im Starterpaket",
 	["shop.group_only"] = "Nur für die Gruppe",
 	["trail.starter"] = "Starterstern",
@@ -2569,6 +2582,17 @@ return {
 	["win.lose_list"] = "Deinen Platz im Turm: zurück zu Level 0",
 	["win.gain"] = "DU BEHÄLTST",
 	["win.gain_list"] = "Bestes Level, Geschenke, Münzen und Siege + eine neue Spurfarbe",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Doppelsprung 5 Min.",
+	["store.DoubleJump5.desc"] = "Zusätzlicher Luftsprung für 5 Minuten",
+	["store.Fusion.name"] = "Fusions-Spule",
+	["store.Fusion.desc"] = "Tempo- und Schwerkraft-Spule in einer",
+	["store.Coins7000.name"] = "7.000 Münzen",
+	["store.Coins7000.desc"] = "Mega-Münzpaket",
+	["msg.doublejump_added"] = "Doppelsprung für {minutes} Min.!",
+	["msg.announce_summit"] = "{name} hat den Gipfel von {tower} erreicht!",
+	["msg.announce_top"] = "{name} hat alle 1.000 Stufen erobert!",
 }
 ]]></string>
           </Properties>
@@ -2786,13 +2810,13 @@ return {
 	["msg.invited_gift"] = "A friend invited you: +{coins} coins +{n} free skip!",
 	["msg.referral_reward"] = "Your friends are climbing! +{coins} coins +{n} free skips ({friends})",
 	["starter.title"] = "Starter Pack",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} free skips + Starter Star trail + {minutes} min of 2x coins",
+	["starter.items"] = "{n} free skips + {coins} coins + Starter Star trail + {minutes} min of 2x coins",
 	["starter.buy"] = "Get it - R$ {price}",
 	["starter.buy_noprice"] = "Get it",
 	["starter.ends"] = "Ends in {time}",
-	["msg.starter_thanks"] = "Starter Pack: +{n} free skips, a new trail and {minutes} min of 2x coins!",
+	["msg.starter_thanks"] = "Starter Pack: +{n} free skips, +{coins} coins, a new trail and {minutes} min of 2x coins!",
 	["shop.starter_only"] = "Starter Pack only",
 	["shop.group_only"] = "Group only",
 	["trail.starter"] = "Starter Star",
@@ -2918,6 +2942,17 @@ return {
 	["win.lose_list"] = "Your place on the tower: back to stage 0",
 	["win.gain"] = "YOU KEEP",
 	["win.gain_list"] = "Best stage, gifts, coins and wins + a new trail colour",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Double Jump 5 min",
+	["store.DoubleJump5.desc"] = "Extra air jump for 5 minutes",
+	["store.Fusion.name"] = "Fusion Coil",
+	["store.Fusion.desc"] = "Speed + Gravity coils in one",
+	["store.Coins7000.name"] = "7,000 Coins",
+	["store.Coins7000.desc"] = "Mega coin pack",
+	["msg.doublejump_added"] = "Double jump for {minutes} min!",
+	["msg.announce_summit"] = "{name} reached the summit of {tower}!",
+	["msg.announce_top"] = "{name} conquered all 1,000 stages!",
 }
 ]]></string>
           </Properties>
@@ -3124,13 +3159,13 @@ return {
 	["msg.invited_gift"] = "Un amigo te invitó: ¡+{coins} monedas +{n} salto gratis!",
 	["msg.referral_reward"] = "¡Tus amigos están subiendo! +{coins} monedas +{n} saltos gratis ({friends})",
 	["starter.title"] = "Pack de inicio",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} saltos gratis + estela Estrella Inicial + {minutes} min de monedas x2",
+	["starter.items"] = "{n} saltos gratis + {coins} monedas + estela Estrella Inicial + {minutes} min de monedas x2",
 	["starter.buy"] = "Consíguelo - R$ {price}",
 	["starter.buy_noprice"] = "Consíguelo",
 	["starter.ends"] = "Termina en {time}",
-	["msg.starter_thanks"] = "Pack de inicio: ¡+{n} saltos gratis, una estela nueva y {minutes} min de monedas x2!",
+	["msg.starter_thanks"] = "Pack de inicio: ¡+{n} saltos gratis, +{coins} monedas, una estela nueva y {minutes} min de monedas x2!",
 	["shop.starter_only"] = "Solo Pack de inicio",
 	["shop.group_only"] = "Solo grupo",
 	["trail.starter"] = "Estrella Inicial",
@@ -3256,6 +3291,17 @@ return {
 	["win.lose_list"] = "Tu lugar en la torre: vuelves al nivel 0",
 	["win.gain"] = "CONSERVAS",
 	["win.gain_list"] = "Mejor nivel, regalos, monedas y victorias + un color de estela nuevo",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Doble salto 5 min",
+	["store.DoubleJump5.desc"] = "Salto extra en el aire por 5 minutos",
+	["store.Fusion.name"] = "Bobina Fusión",
+	["store.Fusion.desc"] = "Bobinas de velocidad y gravedad en una",
+	["store.Coins7000.name"] = "7.000 monedas",
+	["store.Coins7000.desc"] = "Paquete mega de monedas",
+	["msg.doublejump_added"] = "¡Doble salto por {minutes} min!",
+	["msg.announce_summit"] = "¡{name} llegó a la cima de {tower}!",
+	["msg.announce_top"] = "¡{name} conquistó los 1.000 niveles!",
 }
 ]]></string>
           </Properties>
@@ -3462,13 +3508,13 @@ return {
 	["msg.invited_gift"] = "Un ami t'a invité : +{coins} pièces +{n} saut gratuit !",
 	["msg.referral_reward"] = "Tes amis grimpent ! +{coins} pièces +{n} sauts gratuits ({friends})",
 	["starter.title"] = "Pack de départ",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct} %",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} sauts gratuits + traînée Étoile de départ + {minutes} min de pièces x2",
+	["starter.items"] = "{n} sauts gratuits + {coins} pièces + traînée Étoile de départ + {minutes} min de pièces x2",
 	["starter.buy"] = "Je le prends - R$ {price}",
 	["starter.buy_noprice"] = "Je le prends",
 	["starter.ends"] = "Fin dans {time}",
-	["msg.starter_thanks"] = "Pack de départ : +{n} sauts gratuits, une nouvelle traînée et {minutes} min de pièces x2 !",
+	["msg.starter_thanks"] = "Pack de départ : +{n} sauts gratuits, +{coins} pièces, une nouvelle traînée et {minutes} min de pièces x2 !",
 	["shop.starter_only"] = "Pack de départ uniquement",
 	["shop.group_only"] = "Groupe uniquement",
 	["trail.starter"] = "Étoile de départ",
@@ -3594,6 +3640,17 @@ return {
 	["win.lose_list"] = "Ta place dans la tour : retour à l'étape 0",
 	["win.gain"] = "TU GARDES",
 	["win.gain_list"] = "Meilleure étape, cadeaux, pièces et victoires + une nouvelle couleur de traînée",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Double saut 5 min",
+	["store.DoubleJump5.desc"] = "Un saut de plus en l'air pendant 5 minutes",
+	["store.Fusion.name"] = "Bobine Fusion",
+	["store.Fusion.desc"] = "Bobines de vitesse et de gravité en une",
+	["store.Coins7000.name"] = "7 000 pièces",
+	["store.Coins7000.desc"] = "Méga pack de pièces",
+	["msg.doublejump_added"] = "Double saut pendant {minutes} min !",
+	["msg.announce_summit"] = "{name} a atteint le sommet de {tower} !",
+	["msg.announce_top"] = "{name} a conquis les 1 000 niveaux !",
 }
 ]]></string>
           </Properties>
@@ -3800,13 +3857,13 @@ return {
 	["msg.invited_gift"] = "Temanmu mengundangmu: +{coins} koin +{n} skip gratis!",
 	["msg.referral_reward"] = "Temanmu ikut memanjat! +{coins} koin +{n} skip gratis ({friends})",
 	["starter.title"] = "Paket Pemula",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} skip gratis + jejak Bintang Pemula + {minutes} mnt koin 2x",
+	["starter.items"] = "{n} skip gratis + {coins} koin + jejak Bintang Pemula + {minutes} mnt koin 2x",
 	["starter.buy"] = "Ambil - R$ {price}",
 	["starter.buy_noprice"] = "Ambil",
 	["starter.ends"] = "Berakhir dalam {time}",
-	["msg.starter_thanks"] = "Paket Pemula: +{n} skip gratis, jejak baru, dan {minutes} mnt koin 2x!",
+	["msg.starter_thanks"] = "Paket Pemula: +{n} skip gratis, +{coins} koin, jejak baru, dan {minutes} mnt koin 2x!",
 	["shop.starter_only"] = "Khusus Paket Pemula",
 	["shop.group_only"] = "Khusus grup",
 	["trail.starter"] = "Bintang Pemula",
@@ -3932,6 +3989,17 @@ return {
 	["win.lose_list"] = "Posisimu di menara: kembali ke stage 0",
 	["win.gain"] = "KAMU TETAP PUNYA",
 	["win.gain_list"] = "Stage terbaik, hadiah, koin, dan kemenangan + warna jejak baru",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Lompat Ganda 5 mnt",
+	["store.DoubleJump5.desc"] = "Lompatan ekstra di udara selama 5 menit",
+	["store.Fusion.name"] = "Koil Fusion",
+	["store.Fusion.desc"] = "Koil kecepatan + gravitasi jadi satu",
+	["store.Coins7000.name"] = "7.000 Koin",
+	["store.Coins7000.desc"] = "Paket koin mega",
+	["msg.doublejump_added"] = "Lompat ganda selama {minutes} mnt!",
+	["msg.announce_summit"] = "{name} mencapai puncak {tower}!",
+	["msg.announce_top"] = "{name} menaklukkan semua 1.000 level!",
 }
 ]]></string>
           </Properties>
@@ -4138,13 +4206,13 @@ return {
 	["msg.invited_gift"] = "友だちからの招待: +{coins}コイン +{n}無料スキップ!",
 	["msg.referral_reward"] = "友だちが登ってるよ!+{coins}コイン +{n}無料スキップ({friends})",
 	["starter.title"] = "スターターパック",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "無料スキップ{n}回 + スタースタートレイル + コイン2倍{minutes}分",
+	["starter.items"] = "無料スキップ{n}回 + {coins}コイン + スタースタートレイル + コイン2倍{minutes}分",
 	["starter.buy"] = "ゲット - R$ {price}",
 	["starter.buy_noprice"] = "ゲット",
 	["starter.ends"] = "終了まで {time}",
-	["msg.starter_thanks"] = "スターターパック: 無料スキップ+{n}、新トレイル、コイン2倍{minutes}分!",
+	["msg.starter_thanks"] = "スターターパック: 無料スキップ+{n}、{coins}コイン、新トレイル、コイン2倍{minutes}分!",
 	["shop.starter_only"] = "スターターパック限定",
 	["shop.group_only"] = "グループ限定",
 	["trail.starter"] = "スタースター",
@@ -4270,6 +4338,17 @@ return {
 	["win.lose_list"] = "タワーでの現在地：ステージ0に戻る",
 	["win.gain"] = "残るもの",
 	["win.gain_list"] = "最高ステージ、ギフト、コイン、クリア回数＋新しいトレイルの色",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "ダブルジャンプ5分",
+	["store.DoubleJump5.desc"] = "5分間、空中でもう1回ジャンプ",
+	["store.Fusion.name"] = "フュージョンコイル",
+	["store.Fusion.desc"] = "スピードとグラビティのコイルが1つに",
+	["store.Coins7000.name"] = "7,000コイン",
+	["store.Coins7000.desc"] = "メガコインパック",
+	["msg.doublejump_added"] = "ダブルジャンプ{minutes}分!",
+	["msg.announce_summit"] = "{name}が{tower}の頂上に到達!",
+	["msg.announce_top"] = "{name}が全1,000ステージを制覇!",
 }
 ]]></string>
           </Properties>
@@ -4476,13 +4555,13 @@ return {
 	["msg.invited_gift"] = "친구가 초대했어요: +{coins} 코인 +{n} 무료 스킵!",
 	["msg.referral_reward"] = "친구들이 오르고 있어요! +{coins} 코인 +{n} 무료 스킵 ({friends})",
 	["starter.title"] = "스타터 팩",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "무료 스킵 {n}개 + 스타터 스타 트레일 + {minutes}분 코인 2배",
+	["starter.items"] = "무료 스킵 {n}개 + {coins} 코인 + 스타터 스타 트레일 + {minutes}분 코인 2배",
 	["starter.buy"] = "받기 - R$ {price}",
 	["starter.buy_noprice"] = "받기",
 	["starter.ends"] = "{time} 후 종료",
-	["msg.starter_thanks"] = "스타터 팩: 무료 스킵 +{n}, 새 트레일, 코인 2배 {minutes}분!",
+	["msg.starter_thanks"] = "스타터 팩: 무료 스킵 +{n}, {coins} 코인, 새 트레일, 코인 2배 {minutes}분!",
 	["shop.starter_only"] = "스타터 팩 전용",
 	["shop.group_only"] = "그룹 전용",
 	["trail.starter"] = "스타터 스타",
@@ -4608,6 +4687,17 @@ return {
 	["win.lose_list"] = "타워에서의 위치: 스테이지 0으로 돌아감",
 	["win.gain"] = "유지되는 것",
 	["win.gain_list"] = "최고 스테이지, 선물, 코인, 클리어 횟수 + 새로운 트레일 색상",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "더블 점프 5분",
+	["store.DoubleJump5.desc"] = "5분 동안 공중 점프 한 번 더",
+	["store.Fusion.name"] = "퓨전 코일",
+	["store.Fusion.desc"] = "스피드 + 중력 코일을 하나로",
+	["store.Coins7000.name"] = "7,000 코인",
+	["store.Coins7000.desc"] = "메가 코인 팩",
+	["msg.doublejump_added"] = "{minutes}분 동안 더블 점프!",
+	["msg.announce_summit"] = "{name}님이 {tower} 정상에 도착했어요!",
+	["msg.announce_top"] = "{name}님이 1,000 스테이지를 모두 정복했어요!",
 }
 ]]></string>
           </Properties>
@@ -4814,13 +4904,13 @@ return {
 	["msg.invited_gift"] = "Um amigo te convidou: +{coins} moedas +{n} pulo grátis!",
 	["msg.referral_reward"] = "Seus amigos estão subindo! +{coins} moedas +{n} pulos grátis ({friends})",
 	["starter.title"] = "Pacote Inicial",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} pulos grátis + rastro Estrela Inicial + {minutes} min de moedas x2",
+	["starter.items"] = "{n} pulos grátis + {coins} moedas + rastro Estrela Inicial + {minutes} min de moedas x2",
 	["starter.buy"] = "Pegar - R$ {price}",
 	["starter.buy_noprice"] = "Pegar",
 	["starter.ends"] = "Acaba em {time}",
-	["msg.starter_thanks"] = "Pacote Inicial: +{n} pulos grátis, rastro novo e {minutes} min de moedas x2!",
+	["msg.starter_thanks"] = "Pacote Inicial: +{n} pulos grátis, +{coins} moedas, rastro novo e {minutes} min de moedas x2!",
 	["shop.starter_only"] = "Só no Pacote Inicial",
 	["shop.group_only"] = "Só do grupo",
 	["trail.starter"] = "Estrela Inicial",
@@ -4946,6 +5036,17 @@ return {
 	["win.lose_list"] = "Seu lugar na torre: volta à fase 0",
 	["win.gain"] = "VOCÊ MANTÉM",
 	["win.gain_list"] = "Melhor fase, presentes, moedas e vitórias + uma nova cor de rastro",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Pulo duplo 5 min",
+	["store.DoubleJump5.desc"] = "Pulo extra no ar por 5 minutos",
+	["store.Fusion.name"] = "Bobina Fusão",
+	["store.Fusion.desc"] = "Bobinas de velocidade e gravidade em uma",
+	["store.Coins7000.name"] = "7.000 moedas",
+	["store.Coins7000.desc"] = "Mega pacote de moedas",
+	["msg.doublejump_added"] = "Pulo duplo por {minutes} min!",
+	["msg.announce_summit"] = "{name} chegou ao topo da {tower}!",
+	["msg.announce_top"] = "{name} conquistou as 1.000 fases!",
 }
 ]]></string>
           </Properties>
@@ -5152,13 +5253,13 @@ return {
 	["msg.invited_gift"] = "Тебя пригласил друг: +{coins} монет +{n} бесплатный пропуск!",
 	["msg.referral_reward"] = "Твои друзья лезут на башню! +{coins} монет +{n} пропусков ({friends})",
 	["starter.title"] = "Стартовый набор",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} бесплатных пропуска + след «Стартовая звезда» + {minutes} мин двойных монет",
+	["starter.items"] = "{n} бесплатных пропуска + {coins} монет + след «Стартовая звезда» + {minutes} мин двойных монет",
 	["starter.buy"] = "Взять - R$ {price}",
 	["starter.buy_noprice"] = "Взять",
 	["starter.ends"] = "Закончится через {time}",
-	["msg.starter_thanks"] = "Стартовый набор: +{n} пропуска, новый след и {minutes} мин двойных монет!",
+	["msg.starter_thanks"] = "Стартовый набор: +{n} пропуска, +{coins} монет, новый след и {minutes} мин двойных монет!",
 	["shop.starter_only"] = "Только в стартовом наборе",
 	["shop.group_only"] = "Только для группы",
 	["trail.starter"] = "Стартовая звезда",
@@ -5284,6 +5385,17 @@ return {
 	["win.lose_list"] = "Место на башне: возврат на этап 0",
 	["win.gain"] = "ТЫ СОХРАНЯЕШЬ",
 	["win.gain_list"] = "Лучший этап, подарки, монеты и победы + новый цвет следа",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Двойной прыжок 5 мин",
+	["store.DoubleJump5.desc"] = "Лишний прыжок в воздухе на 5 минут",
+	["store.Fusion.name"] = "Катушка «Слияние»",
+	["store.Fusion.desc"] = "Катушки скорости и гравитации в одной",
+	["store.Coins7000.name"] = "7 000 монет",
+	["store.Coins7000.desc"] = "Мега-набор монет",
+	["msg.doublejump_added"] = "Двойной прыжок на {minutes} мин!",
+	["msg.announce_summit"] = "{name} достиг вершины: {tower}!",
+	["msg.announce_top"] = "{name} покорил все 1 000 уровней!",
 }
 ]]></string>
           </Properties>
@@ -5490,13 +5602,13 @@ return {
 	["msg.invited_gift"] = "เพื่อนชวนคุณมา: +{coins} เหรียญ +{n} ข้ามฟรี!",
 	["msg.referral_reward"] = "เพื่อนกำลังปีน! +{coins} เหรียญ +{n} ข้ามฟรี ({friends})",
 	["starter.title"] = "แพ็กเริ่มต้น",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "ข้ามฟรี {n} ครั้ง + เทรลดาวเริ่มต้น + เหรียญ x2 {minutes} นาที",
+	["starter.items"] = "ข้ามฟรี {n} ครั้ง + {coins} เหรียญ + เทรลดาวเริ่มต้น + เหรียญ x2 {minutes} นาที",
 	["starter.buy"] = "รับเลย - R$ {price}",
 	["starter.buy_noprice"] = "รับเลย",
 	["starter.ends"] = "จะหมดใน {time}",
-	["msg.starter_thanks"] = "แพ็กเริ่มต้น: ข้ามฟรี +{n} เทรลใหม่ และเหรียญ x2 {minutes} นาที!",
+	["msg.starter_thanks"] = "แพ็กเริ่มต้น: ข้ามฟรี +{n} {coins} เหรียญ เทรลใหม่ และเหรียญ x2 {minutes} นาที!",
 	["shop.starter_only"] = "เฉพาะแพ็กเริ่มต้น",
 	["shop.group_only"] = "เฉพาะกลุ่ม",
 	["trail.starter"] = "ดาวเริ่มต้น",
@@ -5622,6 +5734,17 @@ return {
 	["win.lose_list"] = "ตำแหน่งบนหอคอย: กลับไปด่าน 0",
 	["win.gain"] = "สิ่งที่ยังอยู่",
 	["win.gain_list"] = "ด่านสูงสุด ของขวัญ เหรียญ และชัยชนะ + สีเทรลใหม่",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "กระโดดสองชั้น 5 นาที",
+	["store.DoubleJump5.desc"] = "กระโดดกลางอากาศเพิ่มอีกครั้งนาน 5 นาที",
+	["store.Fusion.name"] = "คอยล์ฟิวชัน",
+	["store.Fusion.desc"] = "คอยล์ความเร็วและแรงโน้มถ่วงในชิ้นเดียว",
+	["store.Coins7000.name"] = "7,000 เหรียญ",
+	["store.Coins7000.desc"] = "แพ็กเหรียญสุดคุ้ม",
+	["msg.doublejump_added"] = "กระโดดสองชั้น {minutes} นาที!",
+	["msg.announce_summit"] = "{name} ถึงยอด{tower}แล้ว!",
+	["msg.announce_top"] = "{name} พิชิตครบ 1,000 ด่านแล้ว!",
 }
 ]]></string>
           </Properties>
@@ -5828,13 +5951,13 @@ return {
 	["msg.invited_gift"] = "Bir arkadaşın seni davet etti: +{coins} altın +{n} bedava atlama!",
 	["msg.referral_reward"] = "Arkadaşların tırmanıyor! +{coins} altın +{n} bedava atlama ({friends})",
 	["starter.title"] = "Başlangıç Paketi",
-	["starter.discount"] = "-%70",
+	["starter.discount"] = "-%{pct}",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} bedava atlama + Başlangıç Yıldızı izi + {minutes} dk 2x altın",
+	["starter.items"] = "{n} bedava atlama + {coins} altın + Başlangıç Yıldızı izi + {minutes} dk 2x altın",
 	["starter.buy"] = "Al - R$ {price}",
 	["starter.buy_noprice"] = "Al",
 	["starter.ends"] = "{time} içinde bitiyor",
-	["msg.starter_thanks"] = "Başlangıç Paketi: +{n} bedava atlama, yeni iz ve {minutes} dk 2x altın!",
+	["msg.starter_thanks"] = "Başlangıç Paketi: +{n} bedava atlama, +{coins} altın, yeni iz ve {minutes} dk 2x altın!",
 	["shop.starter_only"] = "Sadece Başlangıç Paketi",
 	["shop.group_only"] = "Sadece grup",
 	["trail.starter"] = "Başlangıç Yıldızı",
@@ -5960,6 +6083,17 @@ return {
 	["win.lose_list"] = "Kuledeki yerin: 0. bölüme dönersin",
 	["win.gain"] = "SENDE KALIR",
 	["win.gain_list"] = "En iyi bölüm, hediyeler, paralar ve galibiyetler + yeni bir iz rengi",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Çift Zıplama 5 dk",
+	["store.DoubleJump5.desc"] = "5 dakika boyunca havada ekstra zıplama",
+	["store.Fusion.name"] = "Füzyon Bobini",
+	["store.Fusion.desc"] = "Hız ve yerçekimi bobini tek pakette",
+	["store.Coins7000.name"] = "7.000 Altın",
+	["store.Coins7000.desc"] = "Mega altın paketi",
+	["msg.doublejump_added"] = "{minutes} dk çift zıplama!",
+	["msg.announce_summit"] = "{name}, {tower} zirvesine ulaştı!",
+	["msg.announce_top"] = "{name} 1.000 seviyenin hepsini fethetti!",
 }
 ]]></string>
           </Properties>
@@ -6166,13 +6300,13 @@ return {
 	["msg.invited_gift"] = "Bạn bè đã mời bạn: +{coins} xu +{n} lượt bỏ qua miễn phí!",
 	["msg.referral_reward"] = "Bạn bè đang leo cùng bạn! +{coins} xu +{n} lượt bỏ qua ({friends})",
 	["starter.title"] = "Gói Khởi Đầu",
-	["starter.discount"] = "-70%",
+	["starter.discount"] = "-{pct}%",
 	["starter.was"] = "<s>R$ {price}</s>",
-	["starter.items"] = "{n} lượt bỏ qua + vệt Ngôi Sao Khởi Đầu + {minutes} phút xu x2",
+	["starter.items"] = "{n} lượt bỏ qua + {coins} xu + vệt Ngôi Sao Khởi Đầu + {minutes} phút xu x2",
 	["starter.buy"] = "Lấy ngay - R$ {price}",
 	["starter.buy_noprice"] = "Lấy ngay",
 	["starter.ends"] = "Kết thúc sau {time}",
-	["msg.starter_thanks"] = "Gói Khởi Đầu: +{n} lượt bỏ qua, vệt mới và {minutes} phút xu x2!",
+	["msg.starter_thanks"] = "Gói Khởi Đầu: +{n} lượt bỏ qua, +{coins} xu, vệt mới và {minutes} phút xu x2!",
 	["shop.starter_only"] = "Chỉ có trong Gói Khởi Đầu",
 	["shop.group_only"] = "Chỉ dành cho nhóm",
 	["trail.starter"] = "Ngôi Sao Khởi Đầu",
@@ -6298,6 +6432,17 @@ return {
 	["win.lose_list"] = "Vị trí trên tháp: quay về màn 0",
 	["win.gain"] = "BẠN GIỮ",
 	["win.gain_list"] = "Màn cao nhất, quà, xu và số lần thắng + một màu vệt sáng mới",
+
+	-- round 2: new store items, announcements
+	["store.DoubleJump5.name"] = "Nhảy đôi 5 phút",
+	["store.DoubleJump5.desc"] = "Thêm một lần nhảy trên không trong 5 phút",
+	["store.Fusion.name"] = "Cuộn Hợp Nhất",
+	["store.Fusion.desc"] = "Cuộn tốc độ và trọng lực trong một",
+	["store.Coins7000.name"] = "7.000 xu",
+	["store.Coins7000.desc"] = "Gói xu siêu lớn",
+	["msg.doublejump_added"] = "Nhảy đôi trong {minutes} phút!",
+	["msg.announce_summit"] = "{name} đã lên đỉnh {tower}!",
+	["msg.announce_top"] = "{name} đã chinh phục cả 1.000 màn!",
 }
 ]]></string>
           </Properties>
@@ -6514,6 +6659,104 @@ return Powerups
       </Item>
       <Item class="ModuleScript" referent="27">
         <Properties>
+          <string name="Name">Pricing</string>
+          <string name="Source"><![CDATA[--!strict
+-- Robux price list (reference) + the pure rules that depend on it. PURE Luau, unit-tested by
+-- tests/pricing_test.luau.
+--
+-- The REAL price of every product / pass is the one set in the Creator Dashboard (the game reads it
+-- with MarketplaceService:GetProductInfo). This table is the intended price list: it is what the
+-- owner types into the Dashboard, what the economy checks run against, and what the Starter Pack's
+-- crossed-out "value" is computed from, so the anchor can never drift from real prices.
+-- Source: docs/research/top-juegos-y-precios.md section 4.2 (obby references).
+local Pricing = {}
+
+Pricing.Products = {
+	SkipStage = 19, -- 1 stage, levels 1-300
+	SkipStageHigh = 29, -- 1 stage, levels 301-1000
+	Skip10 = 149, -- 10 stages (vs 190-290 bought one by one)
+	DoubleJump5 = 9, -- double jump for 5 minutes: the impulse first purchase
+	Coins500 = 49, -- coin ladder: 10.2 / 12.6 / 14.0 coins per R$
+	Coins2500 = 199,
+	Coins7000 = 499,
+	StarterPack = 59,
+	AdSkip = 0, -- not sold: reward holder of the rewarded video
+} :: { [string]: number }
+
+Pricing.Passes = {
+	SpeedCoil = 99,
+	GravityCoil = 69,
+	Fusion = 139, -- speed + gravity coil in one pass (both sold separately for 168)
+	DoubleJump = 99,
+	InfiniteRevives = 179,
+	DoubleCoins = 195,
+	VIP = 299,
+} :: { [string]: number }
+
+-- Coins each coin pack gives (Monetization and the store read this, so text and grant agree).
+Pricing.CoinPacks = {
+	Coins500 = 500,
+	Coins2500 = 2500,
+	Coins7000 = 7000,
+} :: { [string]: number }
+
+-- Levels 1..SkipLowMax use the cheap skip, the rest the dearer one.
+Pricing.SkipLowMax = 300
+
+-- The stage a skip would land on is `at + 1`: its band decides the product.
+function Pricing.skipKey(at: number): string
+	if at + 1 <= Pricing.SkipLowMax then
+		return "SkipStage"
+	end
+	return "SkipStageHigh"
+end
+
+-- Product id to prompt for a 1-stage skip from `at`. `ids` = Config.Products. When the id of the
+-- band is not created yet (0) the other band's id is used, so selling never stops for want of it.
+function Pricing.skipProductId(ids: { [string]: number }, at: number): number
+	local key = Pricing.skipKey(at)
+	local other = if key == "SkipStage" then "SkipStageHigh" else "SkipStage"
+	local id = ids[key] or 0
+	if id ~= 0 then
+		return id
+	end
+	return ids[other] or 0
+end
+
+-- Crossed-out "value" of the Starter Pack: what its skips and coins cost if bought separately at
+-- today's list prices (the exclusive trail and the boost are a free extra, NOT counted).
+function Pricing.starterValue(skips: number, coins: number): number
+	local total = skips * Pricing.Products.SkipStage
+	for key, amount in Pricing.CoinPacks do
+		if amount == coins then
+			total += Pricing.Products[key]
+			return total
+		end
+	end
+	-- coins that match no pack: priced at the smallest pack's rate, rounded up
+	local small = Pricing.CoinPacks.Coins500
+	return total + math.ceil(coins / small * Pricing.Products.Coins500)
+end
+
+-- Honest "-N%" badge: real discount of `price` against `value`, rounded down.
+function Pricing.discountPct(value: number, price: number): number
+	if value <= 0 or price >= value then
+		return 0
+	end
+	return math.floor((1 - price / value) * 100)
+end
+
+-- Robux -> coins per R$ of a pack (for the ladder test and the owner's reference).
+function Pricing.coinsPerRobux(key: string): number
+	return (Pricing.CoinPacks[key] or 0) / (Pricing.Products[key] or 1)
+end
+
+return Pricing
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="28">
+        <Properties>
           <string name="Name">Quality</string>
           <string name="Source"><![CDATA[--!strict
 -- Lite profile: which devices get the cheaper look. PURE Luau (tests/visual_test.luau).
@@ -6545,7 +6788,7 @@ return Quality
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">Referral</string>
           <string name="Source"><![CDATA[--!strict
@@ -6576,7 +6819,7 @@ return Referral
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">Rules</string>
           <string name="Source"><![CDATA[--!strict
@@ -6730,6 +6973,16 @@ function Rules.runTopAfterTravel(L: LayoutLike, runTop: number, target: number):
 	return math.max(runTop, Rules.summitOf(L, target))
 end
 
+-- Server-wide announcement ("X reached the summit of Tower N!") for a summit EARNED on foot
+-- (reason "reach") and paid for the first time in this run. A skip, a teleport or a repeat of a
+-- summit already paid this run never broadcasts, so it cannot be spammed. "top" = stage 1000.
+function Rules.announceKind(L: LayoutLike, stage: number, rewarded: boolean, reason: string): string?
+	if reason ~= "reach" or not rewarded or not Rules.isSummit(L, stage) then
+		return nil
+	end
+	return if stage >= L.TOTAL then "top" else "summit"
+end
+
 -- Back-fill for profiles saved before runTop existed: every summit at or below the saved stage
 -- was already rewarded in this run.
 function Rules.runTopFromStage(L: LayoutLike, stage: number): number
@@ -6806,7 +7059,7 @@ return Rules
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">RunTime</string>
           <string name="Source"><![CDATA[--!strict
@@ -6830,7 +7083,7 @@ return RunTime
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">Segments</string>
           <string name="Source"><![CDATA[--!strict
@@ -6878,7 +7131,7 @@ return Segments
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">TowerStyle</string>
           <string name="Source"><![CDATA[--!strict
@@ -7026,11 +7279,11 @@ return TowerStyle
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="33">
+  <Item class="ServerScriptService" referent="34">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="34">
+    <Item class="Script" referent="35">
       <Properties>
         <string name="Name">Server</string>
         <token name="RunContext">0</token>
@@ -7220,7 +7473,7 @@ task.spawn(function()
 end)
 ]]></string>
       </Properties>
-      <Item class="ModuleScript" referent="35">
+      <Item class="ModuleScript" referent="36">
         <Properties>
           <string name="Name">Checkpoints</string>
           <string name="Source"><![CDATA[--!strict
@@ -7420,6 +7673,18 @@ local function advanceTo(player: Player, g: number, reason: string)
 		if rewarded then
 			p.runTop = g
 			Session.addCoins(player, Config.CoinsPerTower)
+		end
+		-- server-wide shout-out for a summit earned on foot (the others see it, not the climber)
+		local kind = Rules.announceKind(L, g, rewarded, reason)
+		if kind then
+			local msg = if kind == "top"
+				then Remotes.M("msg.announce_top", { name = player.DisplayName })
+				else Remotes.M("msg.announce_summit", { name = player.DisplayName, tower = { key = "tower." .. tostring(tower) } })
+			for _, other in Players:GetPlayers() do
+				if other ~= player then
+					Remotes.notify(other, msg, "info")
+				end
+			end
 		end
 		local gift = Gifts.at(g)
 		local newGift = gift ~= nil and not p.gifts[tostring(gift.id)]
@@ -7841,7 +8106,7 @@ return Checkpoints
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="36">
+      <Item class="ModuleScript" referent="37">
         <Properties>
           <string name="Name">Cosmetics</string>
           <string name="Source"><![CDATA[--!strict
@@ -8239,7 +8504,7 @@ return Cosmetics
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">Data</string>
           <string name="Source"><![CDATA[--!strict
@@ -8518,7 +8783,7 @@ return Data
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">Events</string>
           <string name="Source"><![CDATA[--!strict
@@ -8630,7 +8895,7 @@ return Events
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="40">
         <Properties>
           <string name="Name">Leaderboard</string>
           <string name="Source"><![CDATA[--!strict
@@ -8818,7 +9083,7 @@ return Leaderboard
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="40">
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">Lounge</string>
           <string name="Source"><![CDATA[--!strict
@@ -8962,7 +9227,7 @@ return Lounge
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="41">
+      <Item class="ModuleScript" referent="42">
         <Properties>
           <string name="Name">Monetization</string>
           <string name="Source"><![CDATA[--!strict
@@ -8973,6 +9238,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
+local Powerups = require(ReplicatedStorage.Shared.Powerups)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
@@ -8987,6 +9254,12 @@ local MAX_RECEIPTS = 60
 type Grant = (Player, Data.Profile) -> any
 local productHandlers: { [number]: Grant } = {}
 local M = Remotes.M
+
+local function formatCoins(n: number): string
+	local digits = tostring(math.floor(n)):reverse()
+	local grouped = digits:gsub("(%d%d%d)", "%1,")
+	return (grouped:reverse():gsub("^,", ""))
+end
 
 local function register(id: number, fn: Grant)
 	if id ~= 0 then
@@ -9003,13 +9276,17 @@ local function saleBonus(p: Data.Profile, msg: Remotes.Msg): any
 	return msg
 end
 
-register(Config.Products.SkipStage, function(player, p)
+-- One grant for both price bands (19 R$ up to level 300, 29 R$ above): the client offers the band
+-- of the level you are on; what is granted is the same either way.
+local function grantSkip(player: Player, p: Data.Profile): any
 	if Checkpoints.skip(player, 1, "skip") then
 		return saleBonus(p, M("msg.stage_skipped"))
 	end
 	p.freeSkips += 1 -- already at the top: keep it for the next run
 	return saleBonus(p, M("msg.saved_skip"))
-end)
+end
+register(Config.Products.SkipStage, grantSkip)
+register(Config.Products.SkipStageHigh, grantSkip)
 register(Config.Products.Skip10, function(player, p)
 	if Checkpoints.skip(player, 10, "skip") then
 		return saleBonus(p, M("msg.skipped_ahead"))
@@ -9030,22 +9307,34 @@ end)
 function Monetization.grantStarter(_player: Player, p: Data.Profile): Remotes.Msg
 	p.starterBought = true
 	p.freeSkips += Config.StarterPackSkips
+	p.coins += Config.StarterPackCoins
+	p.totalCoins += Config.StarterPackCoins
 	p.trails.starter = true
 	p.boostEndsAt = math.max(os.time(), p.boostEndsAt) + Config.StarterBoostSeconds
-	return M("msg.starter_thanks", { n = Config.StarterPackSkips, minutes = Config.StarterBoostSeconds // 60 })
+	return M("msg.starter_thanks", { n = Config.StarterPackSkips, coins = Config.StarterPackCoins, minutes = Config.StarterBoostSeconds // 60 })
 end
 register(Config.Products.StarterPack, function(player, p)
 	return Monetization.grantStarter(player, p)
 end)
-register(Config.Products.Coins500, function(_player, p)
-	p.coins += 500
-	p.totalCoins += 500
-	return M("msg.coins_added", { n = 500 })
-end)
-register(Config.Products.Coins2500, function(_player, p)
-	p.coins += 2500
-	p.totalCoins += 2500
-	return M("msg.coins_added", { n = "2,500" })
+-- Coin packs (amounts in Shared/Pricing.CoinPacks). Bought coins are not multiplied by boosts.
+for key, amount in Pricing.CoinPacks do
+	register(Config.Products[key] or 0, function(_player, p)
+		p.coins += amount
+		p.totalCoins += amount
+		return M("msg.coins_added", { n = formatCoins(amount) })
+	end)
+end
+
+-- Double jump for 5 minutes (9 R$). Stacks like the coin shop's timed power-ups (up to the cap).
+-- Like the pass and the shop version it makes the run unranked (Session.refreshHelp).
+register(Config.Products.DoubleJump5, function(player, p)
+	local seconds = 300
+	local now = os.time()
+	local left = Powerups.remaining(p.boosts, "doublejump", now)
+	p.boosts.doublejump = now + math.min(left + seconds, Powerups.MAX_TIMED)
+	Cosmetics.applyCoils(player)
+	Session.refreshHelp(player)
+	return M("msg.doublejump_added", { minutes = seconds // 60 })
 end)
 
 local function passNameById(id: number): string?
@@ -9157,7 +9446,7 @@ return Monetization
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="42">
+      <Item class="ModuleScript" referent="43">
         <Properties>
           <string name="Name">Nametags</string>
           <string name="Source"><![CDATA[--!strict
@@ -9271,7 +9560,7 @@ return Nametags
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="43">
+      <Item class="ModuleScript" referent="44">
         <Properties>
           <string name="Name">Obstacles</string>
           <string name="Source"><![CDATA[--!strict
@@ -9710,7 +9999,7 @@ return Obstacles
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="44">
+      <Item class="ModuleScript" referent="45">
         <Properties>
           <string name="Name">Referrals</string>
           <string name="Source"><![CDATA[--!strict
@@ -9887,7 +10176,7 @@ return Referrals
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="45">
+      <Item class="ModuleScript" referent="46">
         <Properties>
           <string name="Name">Remotes</string>
           <string name="Source"><![CDATA[--!strict
@@ -9998,7 +10287,7 @@ return Remotes
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="46">
+      <Item class="ModuleScript" referent="47">
         <Properties>
           <string name="Name">Rewards</string>
           <string name="Source"><![CDATA[--!strict
@@ -10138,7 +10427,7 @@ return Rewards
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="47">
+      <Item class="ModuleScript" referent="48">
         <Properties>
           <string name="Name">Scenery</string>
           <string name="Source"><![CDATA[--!strict
@@ -11570,7 +11859,7 @@ return Scenery
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="48">
+      <Item class="ModuleScript" referent="49">
         <Properties>
           <string name="Name">Session</string>
           <string name="Source"><![CDATA[--!strict
@@ -11671,6 +11960,10 @@ function Session.hasPass(player: Player, name: string): boolean
 		return false
 	end
 	if s.passes[name] then
+		return true
+	end
+	-- Fusion = both coils in one pass (Pricing: 139 R$ vs 168 separately)
+	if (name == "SpeedCoil" or name == "GravityCoil") and s.passes.Fusion then
 		return true
 	end
 	-- Studio convenience (off by default): unconfigured passes count as owned so every pass can
@@ -11855,7 +12148,7 @@ return Session
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="49">
+      <Item class="ModuleScript" referent="50">
         <Properties>
           <string name="Name">Shops</string>
           <string name="Source"><![CDATA[--!strict
@@ -12023,7 +12316,7 @@ return Shops
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="50">
+      <Item class="ModuleScript" referent="51">
         <Properties>
           <string name="Name">StageGenerator</string>
           <string name="Source"><![CDATA[--!strict
@@ -13024,7 +13317,7 @@ return StageGenerator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="51">
+      <Item class="ModuleScript" referent="52">
         <Properties>
           <string name="Name">Towers</string>
           <string name="Source"><![CDATA[--!strict
@@ -13173,18 +13466,18 @@ return Towers
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="52">
+  <Item class="StarterPlayer" referent="53">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CharacterJumpPower">50</float>
       <bool name="CharacterUseJumpPower">true</bool>
       <float name="CharacterWalkSpeed">16</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="53">
+    <Item class="StarterPlayerScripts" referent="54">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="54">
+      <Item class="LocalScript" referent="55">
         <Properties>
           <string name="Name">Client</string>
           <string name="Source"><![CDATA[--!strict
@@ -13326,7 +13619,7 @@ task.spawn(function()
 end)
 ]]></string>
         </Properties>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -13366,7 +13659,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -13427,11 +13720,11 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="57">
+        <Item class="Folder" referent="58">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="58">
+          <Item class="ModuleScript" referent="59">
             <Properties>
               <string name="Name">Cards</string>
               <string name="Source"><![CDATA[--!strict
@@ -13537,7 +13830,7 @@ return Cards
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="59">
+          <Item class="ModuleScript" referent="60">
             <Properties>
               <string name="Name">Celebrate</string>
               <string name="Source"><![CDATA[--!strict
@@ -13704,7 +13997,7 @@ return Celebrate
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="60">
+          <Item class="ModuleScript" referent="61">
             <Properties>
               <string name="Name">EventBar</string>
               <string name="Source"><![CDATA[--!strict
@@ -13798,7 +14091,7 @@ return EventBar
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="61">
+          <Item class="ModuleScript" referent="62">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -13827,6 +14120,7 @@ local Rules = require(ReplicatedStorage.Shared.Rules)
 local Powerups = require(ReplicatedStorage.Shared.Powerups)
 local LocalFx = require(script.Parent.Parent.World.LocalFx)
 local RunTime = require(ReplicatedStorage.Shared.RunTime)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
 local Net = require(script.Parent.Parent.Net)
 local Kit = require(script.Parent.Kit)
 local Progress = require(script.Parent.Progress)
@@ -13884,7 +14178,7 @@ function Hud.skip(n: number)
 		end
 		return
 	end
-	local id = if n == 10 then Config.Products.Skip10 else Config.Products.SkipStage
+	local id = if n == 10 then Config.Products.Skip10 else Pricing.skipProductId(Config.Products, s.at or s.stage or 0)
 	if id ~= 0 then
 		MarketplaceService:PromptProductPurchase(Players.LocalPlayer, id)
 	elseif Hud.studioTools() then
@@ -14290,13 +14584,17 @@ function Hud.init()
 		Kit.relayout()
 	end
 
-	local skipPrice: number? = nil
-	fetchPrice(Config.Products.SkipStage, function(p)
-		skipPrice = p
-	end)
+	-- both price bands (19 R$ / 29 R$): the one of the level you are on is shown
+	local refreshLater: () -> () = function() end
+	for _, id in { Config.Products.SkipStage, Config.Products.SkipStageHigh } do
+		fetchPrice(id, function()
+			refreshLater()
+		end)
+	end
 	local skip10Price: number? = nil
 	fetchPrice(Config.Products.Skip10, function(p)
 		skip10Price = p
+		refreshLater()
 	end)
 
 	local function refresh()
@@ -14307,7 +14605,9 @@ function Hud.init()
 		local free = s.freeSkips or 0
 		local onBase = s.base == true
 		local studio = Hud.studioTools()
-		local view = Rules.skipButton(Layout :: any, at, onBase, free, Config.Products.SkipStage, studio, studio)
+		local skipId = Pricing.skipProductId(Config.Products, at)
+		local skipPrice = productPrice[skipId]
+		local view = Rules.skipButton(Layout :: any, at, onBase, free, skipId, studio, studio)
 		local before = actionsShown()
 		skip.Visible = view.visible
 		Kit.setText(skipTitle, view.title)
@@ -14436,6 +14736,7 @@ function Hud.init()
 		end
 	end)
 	Players.LocalPlayer:GetAttributeChangedSignal("Dash"):Connect(refresh)
+	refreshLater = refresh
 	refresh()
 end
 
@@ -14443,7 +14744,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="62">
+          <Item class="ModuleScript" referent="63">
             <Properties>
               <string name="Name">Intro</string>
               <string name="Source"><![CDATA[--!strict
@@ -14525,7 +14826,7 @@ return Intro
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="63">
+          <Item class="ModuleScript" referent="64">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -15200,7 +15501,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="64">
+          <Item class="ModuleScript" referent="65">
             <Properties>
               <string name="Name">Progress</string>
               <string name="Source"><![CDATA[--!strict
@@ -15459,7 +15760,7 @@ return Progress
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="65">
+          <Item class="ModuleScript" referent="66">
             <Properties>
               <string name="Name">Prompts</string>
               <string name="Source"><![CDATA[--!strict
@@ -15474,6 +15775,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
 local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
 local Kit = require(script.Parent.Kit)
@@ -15527,14 +15829,16 @@ function Prompts.offerSkip(data: { [string]: any })
 			end,
 		})
 	end
-	if Config.Products.SkipStage ~= 0 then
-		local price = Hud.priceOf(Config.Products.SkipStage)
+	local skipId = Pricing.skipProductId(Config.Products, s.at or s.stage or 0)
+	if skipId ~= 0 then
+		Hud.fetchPrice(skipId, function() end)
+		local price = Hud.priceOf(skipId)
 		table.insert(buttons, {
 			name = "PaidSkip",
 			text = if price then Lang.t("offer.paid", { price = price }) else Lang.t("offer.paid_noprice"),
 			color = Kit.C.blue,
 			onClick = function()
-				MarketplaceService:PromptProductPurchase(Players.LocalPlayer, Config.Products.SkipStage)
+				MarketplaceService:PromptProductPurchase(Players.LocalPlayer, skipId)
 			end,
 		})
 	elseif Hud.studioTools() then
@@ -15594,7 +15898,7 @@ return Prompts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="66">
+          <Item class="ModuleScript" referent="67">
             <Properties>
               <string name="Name">RewardsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -15747,7 +16051,7 @@ return RewardsPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="67">
+          <Item class="ModuleScript" referent="68">
             <Properties>
               <string name="Name">SettingsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -15860,7 +16164,7 @@ return SettingsPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="68">
+          <Item class="ModuleScript" referent="69">
             <Properties>
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16020,7 +16324,7 @@ return ShopPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="69">
+          <Item class="ModuleScript" referent="70">
             <Properties>
               <string name="Name">StarterPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16050,7 +16354,7 @@ function StarterPanel.init()
 	Kit.corner(badge, 75)
 	Kit.stroke(badge, Kit.darker(Kit.C.yellow, 0.45), 4)
 	badge.Rotation = -8
-	Kit.bold(badge, "@starter.discount", UDim2.fromScale(0.9, 0.5), UDim2.fromScale(0.05, 0.25), Kit.C.white, nil, 56)
+	local badgeText = Kit.bold(badge, "", UDim2.fromScale(0.9, 0.5), UDim2.fromScale(0.05, 0.25), Kit.C.white, nil, 56)
 	local was = Kit.text(content, "", UDim2.new(1, -190, 0, 36), UDim2.fromOffset(180, 16), Color3.fromRGB(150, 140, 170), nil, 30)
 	was.TextXAlignment = Enum.TextXAlignment.Left
 	local items = Kit.text(content, "", UDim2.new(1, -190, 0, 96), UDim2.fromOffset(180, 58), Kit.C.ink, nil, 28)
@@ -16065,8 +16369,10 @@ function StarterPanel.init()
 	buy.Name = "Buy"
 
 	local function refresh()
+		-- the crossed-out value and the % are computed from the list prices (Shared/Pricing)
 		Kit.setText(was, "starter.was", { price = Config.StarterPackAnchorPrice })
-		Kit.setText(items, "starter.items", { n = Config.StarterPackSkips, minutes = Config.StarterBoostSeconds // 60 })
+		Kit.setText(badgeText, "starter.discount", { pct = Config.StarterPackDiscountPct })
+		Kit.setText(items, "starter.items", { n = Config.StarterPackSkips, coins = Config.StarterPackCoins, minutes = Config.StarterBoostSeconds // 60 })
 		local price = Hud.priceOf(Config.Products.StarterPack)
 		if price then
 			Kit.setText(buy, "starter.buy", { price = price })
@@ -16110,7 +16416,7 @@ return StarterPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">StorePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16120,6 +16426,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
 local Net = require(script.Parent.Parent.Net)
 local Kit = require(script.Parent.Kit)
 
@@ -16130,14 +16437,17 @@ type Item = { key: string, name: string, desc: string, icon: string, color: Colo
 local ITEMS: { Item } = {
 	{ key = "SkipStage", name = "Skip Stage", desc = "Jump to the next checkpoint", icon = "⏭", color = Kit.C.green, isPass = false },
 	{ key = "Skip10", name = "Skip 10 Stages", desc = "Leap 10 checkpoints ahead", icon = "🚀", color = Kit.C.blue, isPass = false },
+	{ key = "DoubleJump5", name = "Double Jump 5 min", desc = "Extra air jump for 5 minutes", icon = "⏫", color = Kit.C.green, isPass = false },
 	{ key = "VIP", name = "VIP", desc = "[VIP] tag, gold trail, +50% coins, 2x daily", icon = "👑", color = Kit.C.yellow, isPass = true },
 	{ key = "SpeedCoil", name = "Speed Coil", desc = "Run 50% faster (toggle)", icon = "⚡", color = Kit.C.orange, isPass = true },
 	{ key = "GravityCoil", name = "Gravity Coil", desc = "Floaty low-gravity jumps (toggle)", icon = "🪐", color = Kit.C.purple, isPass = true },
+	{ key = "Fusion", name = "Fusion Coil", desc = "Speed + Gravity coils in one", icon = "🌀", color = Kit.C.blue, isPass = true },
 	{ key = "DoubleJump", name = "Double Jump", desc = "One extra jump in the air, for ever", icon = "⏫", color = Kit.C.green, isPass = true },
 	{ key = "InfiniteRevives", name = "Infinite Revives", desc = "Unlimited pocket checkpoints", icon = "📍", color = Kit.C.orange, isPass = true },
 	{ key = "DoubleCoins", name = "2x Coins", desc = "Double coins forever", icon = "💰", color = Kit.C.yellow, isPass = true },
 	{ key = "Coins500", name = "500 Coins", desc = "Coin pack", icon = "💰", color = Kit.C.pink, isPass = false },
 	{ key = "Coins2500", name = "2,500 Coins", desc = "Big coin pack", icon = "💰", color = Kit.C.pink, isPass = false },
+	{ key = "Coins7000", name = "7,000 Coins", desc = "Mega coin pack", icon = "💰", color = Kit.C.pink, isPass = false },
 }
 
 local prices: { [number]: number } = {}
@@ -16146,7 +16456,24 @@ local function idOf(item: Item): number
 	if item.isPass then
 		return Config.Passes[item.key] or 0
 	end
+	if item.key == "SkipStage" then
+		-- 19 R$ up to level 300, 29 R$ above (falls back to the other id while one is not created)
+		local s = Net.state
+		return Pricing.skipProductId(Config.Products, s.at or s.stage or 0)
+	end
 	return Config.Products[item.key] or 0
+end
+
+-- Already yours (or pointless to sell): passes you own, Fusion when you own both coils, and the
+-- 5-minute double jump when the permanent pass is yours.
+local function isOwned(item: Item): boolean
+	if item.key == "Fusion" then
+		return Net.hasPass("Fusion") or (Net.hasPass("SpeedCoil") and Net.hasPass("GravityCoil"))
+	end
+	if item.key == "DoubleJump5" then
+		return Net.hasPass("DoubleJump")
+	end
+	return item.isPass and Net.hasPass(item.key)
 end
 
 function StorePanel.init()
@@ -16173,7 +16500,7 @@ function StorePanel.init()
 				title.TextXAlignment = Enum.TextXAlignment.Left
 				local desc = Kit.text(c, "@store." .. item.key .. ".desc", UDim2.fromOffset(170, 30), UDim2.fromOffset(102, 40), Color3.fromRGB(110, 105, 140), nil, 16)
 				desc.TextXAlignment = Enum.TextXAlignment.Left
-				local owned = item.isPass and Net.hasPass(item.key)
+				local owned = isOwned(item)
 				local btn = Kit.button(c, "", UDim2.fromOffset(166, 52), UDim2.fromOffset(102, 72), if owned then Kit.C.grey else Kit.C.green, function()
 					if owned then
 						return
@@ -16219,7 +16546,7 @@ return StorePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">Toast</string>
               <string name="Source"><![CDATA[--!strict
@@ -16303,7 +16630,7 @@ return Toast
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">TravelPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16371,7 +16698,7 @@ return TravelPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="74">
             <Properties>
               <string name="Name">WinPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16446,11 +16773,11 @@ return WinPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="Folder" referent="74">
+        <Item class="Folder" referent="75">
           <Properties>
             <string name="Name">World</string>
           </Properties>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="76">
             <Properties>
               <string name="Name">Atmos</string>
               <string name="Source"><![CDATA[--!strict
@@ -16644,7 +16971,7 @@ return Atmos
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">ChatTags</string>
               <string name="Source"><![CDATA[--!strict
@@ -16685,7 +17012,7 @@ return ChatTags
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">Juice</string>
               <string name="Source"><![CDATA[--!strict
@@ -17259,7 +17586,7 @@ return Juice
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">LocalFx</string>
               <string name="Source"><![CDATA[--!strict
@@ -17603,7 +17930,7 @@ return LocalFx
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">Weather</string>
               <string name="Source"><![CDATA[--!strict
@@ -17736,7 +18063,7 @@ return Weather
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">WorldText</string>
               <string name="Source"><![CDATA[--!strict
@@ -17835,7 +18162,7 @@ return WorldText
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="81">
+  <Item class="Workspace" referent="82">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="FallenPartsDestroyHeight">-200</float>

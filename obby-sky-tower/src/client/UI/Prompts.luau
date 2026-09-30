@@ -10,6 +10,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
 local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
 local Kit = require(script.Parent.Kit)
@@ -63,14 +64,16 @@ function Prompts.offerSkip(data: { [string]: any })
 			end,
 		})
 	end
-	if Config.Products.SkipStage ~= 0 then
-		local price = Hud.priceOf(Config.Products.SkipStage)
+	local skipId = Pricing.skipProductId(Config.Products, s.at or s.stage or 0)
+	if skipId ~= 0 then
+		Hud.fetchPrice(skipId, function() end)
+		local price = Hud.priceOf(skipId)
 		table.insert(buttons, {
 			name = "PaidSkip",
 			text = if price then Lang.t("offer.paid", { price = price }) else Lang.t("offer.paid_noprice"),
 			color = Kit.C.blue,
 			onClick = function()
-				MarketplaceService:PromptProductPurchase(Players.LocalPlayer, Config.Products.SkipStage)
+				MarketplaceService:PromptProductPurchase(Players.LocalPlayer, skipId)
 			end,
 		})
 	elseif Hud.studioTools() then

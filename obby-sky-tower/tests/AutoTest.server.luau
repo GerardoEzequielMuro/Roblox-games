@@ -41,6 +41,20 @@ local Events = require(Server:WaitForChild("Events"))
 local Monetization = require(Server:WaitForChild("Monetization"))
 local Shared = ReplicatedStorage:WaitForChild("Shared")
 local Config = require(Shared:WaitForChild("Config"))
+
+-- Pricing: every item of the intended price list has a slot for its Dashboard ID in Config
+do
+	local Pricing = require(Shared:WaitForChild("Pricing"))
+	local missing = {}
+	for key in Pricing.Products do
+		if Config.Products[key] == nil then table.insert(missing, "Products." .. key) end
+	end
+	for key in Pricing.Passes do
+		if Config.Passes[key] == nil then table.insert(missing, "Passes." .. key) end
+	end
+	check("every priced product/pass has a Config ID slot", #missing == 0, table.concat(missing, ","))
+	check("starter anchor matches list prices", Config.StarterPackAnchorPrice == Pricing.starterValue(Config.StarterPackSkips, Config.StarterPackCoins), Config.StarterPackAnchorPrice)
+end
 local Layout = require(Shared:WaitForChild("Layout"))
 local Rules = require(Shared:WaitForChild("Rules"))
 local Powerups = require(Shared:WaitForChild("Powerups"))

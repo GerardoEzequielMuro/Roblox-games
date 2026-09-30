@@ -25,7 +25,7 @@ function StarterPanel.init()
 	Kit.corner(badge, 75)
 	Kit.stroke(badge, Kit.darker(Kit.C.yellow, 0.45), 4)
 	badge.Rotation = -8
-	Kit.bold(badge, "@starter.discount", UDim2.fromScale(0.9, 0.5), UDim2.fromScale(0.05, 0.25), Kit.C.white, nil, 56)
+	local badgeText = Kit.bold(badge, "", UDim2.fromScale(0.9, 0.5), UDim2.fromScale(0.05, 0.25), Kit.C.white, nil, 56)
 	local was = Kit.text(content, "", UDim2.new(1, -190, 0, 36), UDim2.fromOffset(180, 16), Color3.fromRGB(150, 140, 170), nil, 30)
 	was.TextXAlignment = Enum.TextXAlignment.Left
 	local items = Kit.text(content, "", UDim2.new(1, -190, 0, 96), UDim2.fromOffset(180, 58), Kit.C.ink, nil, 28)
@@ -40,8 +40,10 @@ function StarterPanel.init()
 	buy.Name = "Buy"
 
 	local function refresh()
+		-- the crossed-out value and the % are computed from the list prices (Shared/Pricing)
 		Kit.setText(was, "starter.was", { price = Config.StarterPackAnchorPrice })
-		Kit.setText(items, "starter.items", { n = Config.StarterPackSkips, minutes = Config.StarterBoostSeconds // 60 })
+		Kit.setText(badgeText, "starter.discount", { pct = Config.StarterPackDiscountPct })
+		Kit.setText(items, "starter.items", { n = Config.StarterPackSkips, coins = Config.StarterPackCoins, minutes = Config.StarterBoostSeconds // 60 })
 		local price = Hud.priceOf(Config.Products.StarterPack)
 		if price then
 			Kit.setText(buy, "starter.buy", { price = price })

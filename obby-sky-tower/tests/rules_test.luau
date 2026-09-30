@@ -376,6 +376,19 @@ end
 check(not Rules.studioTools(true, false, false), "Studio without a flag: no test tools (the owner's playtest looks like the real game)")
 check(Rules.studioTools(true, true, false) and Rules.studioTools(true, false, true), "Studio + a flag: test tools")
 
+-- Server-wide summit announcements: only a summit earned on foot and paid for the first time -----
+for tower = 1, L.TOWERS do
+	local g = tower * L.STAGES
+	eq(Rules.announceKind(L, g, true, "reach"), if g == L.TOTAL then "top" else "summit", "announce summit " .. g)
+	eq(Rules.announceKind(L, g, false, "reach"), nil, "no announce for a summit already paid this run " .. g)
+	eq(Rules.announceKind(L, g, true, "skip"), nil, "no announce for a skip onto the summit " .. g)
+	eq(Rules.announceKind(L, g, true, "ad"), nil, "no announce for an ad skip " .. g)
+	eq(Rules.announceKind(L, g, true, "coins"), nil, "no announce for a coin skip " .. g)
+	eq(Rules.announceKind(L, g - 1, true, "reach"), nil, "no announce one below the summit " .. g)
+end
+eq(Rules.announceKind(L, 0, true, "reach"), nil, "no announce at the lobby")
+eq(Rules.announceKind(L, 50, true, "reach"), nil, "no announce mid tower")
+
 print(("rules_test: %d checks, %d failures"):format(checks, failures))
 if failures > 0 then
 	error("rules_test failed")

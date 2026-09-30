@@ -239,6 +239,7 @@ Budgets (checked by the Studio playtest): workspace < 9,000 parts (currently ~5,
 | **Starter Pack** | While `StarterPack` is set, not bought and within 24 h of the first join: one popup when you reach stage 3, then a pulsing menu button. Grants 3 free skips, the exclusive *Starter Star* trail and 30 min of x2 coins (`boostEndsAt`, survives rejoin). |
 | **Name tags** | Billboard over each head: display name ([VIP] in gold), "Stage N · 🏆 W" and a title by wins (Climber, Sky Walker, Cloud Runner, Tower Legend, Sky God). Localized per viewer. |
 | **Live events** | `Shared/LiveEvents.luau` + `Config.LiveEvents`: *2x Coins Weekend* (Saturday 00:00 - Sunday 23:59 UTC, doubles every coin grant) and *Skip Sale Hour* (20:00-21:00 UTC daily, a bought skip gives +1 free skip; prices unchanged). HUD pill with countdown, banner when one starts. Admins (`Config.AdminUserIds`) can type `/event <id> <minutes>`; it is broadcast to all servers with MessagingService. |
+| **Summit shout-out** | A summit earned on foot and paid for the first time in a run (`Rules.announceKind`) sends every OTHER player in the server a toast: "X reached the summit of <tower>!" (stage 1000: "X conquered all 1,000 stages!"). Skips, teleports and repeats never broadcast. |
 | **Group gift** | Hidden while `Config.GroupId = 0`. Button prompts the join, then `Request("ClaimGroupGift")` checks membership: +150 coins, +1 free skip, exclusive *Crew* trail, once. |
 | **Notification opt-in** | First time you reach stage 10 or win (at most once a week) the server fires `AskNotifications`; if `ExperienceNotificationService:CanPromptOptInAsync()` is true a card asks "Want a ping when 2x Coins Weekend starts?" and calls `PromptOptIn()`. No sending yet. |
 
@@ -274,25 +275,35 @@ Create these, then paste the IDs into `src/shared/Config.luau` (any ID left at 0
 
 ### Developer Products (`Config.Products`)
 
-| Key | Name | Suggested price | Notes |
+Prices are the recommended ones from `docs/research/top-juegos-y-precios.md` 4.2; the list lives in
+`src/shared/Pricing.luau` (`Config.Prices`) and is checked by `tests/pricing_test.luau`.
+
+| Key | Name | Price | Notes |
 |---|---|---|---|
-| `SkipStage` | Skip Stage | **15 R$** | The main earner. Keep it cheap and impulsive. |
-| `Skip10` | Skip 10 Stages | **99 R$** | Anchors the value of the single skip. |
-| `Coins500` | 500 Coins | 25 R$ | Optional. |
-| `Coins2500` | 2,500 Coins | 99 R$ | Optional. |
+| `SkipStage` | Skip Stage | **19 R$** | 1 stage, levels 1-300. The main earner. The HUD / offer / store pick the band of the level you are on (`Pricing.skipProductId`). |
+| `SkipStageHigh` | Skip Stage (301+) | **29 R$** | Same grant, levels 301-1000. While it is 0 the cheap id sells everywhere. |
+| `Skip10` | Skip 10 Stages | **149 R$** | Cheaper than ten singles. |
+| `DoubleJump5` | Double Jump 5 min | **9 R$** | First impulse buy. Stacks like the coin-shop power-up, marks the run unranked. |
+| `Coins500` | 500 Coins | 49 R$ | Coin ladder 10.2 / 12.6 / 14.0 coins per R$. |
+| `Coins2500` | 2,500 Coins | 199 R$ | |
+| `Coins7000` | 7,000 Coins | 499 R$ | |
 | `AdSkip` | Ad Skip | any (not sold) | Reward holder for the rewarded-video skip. Ads need 2,000 monthly unique visitors, ID verification + 2FA and the maturity questionnaire. |
-| `StarterPack` | Starter Pack | **59 R$** | 3 free skips + Starter Star trail + 30 min x2 coins; first 24 h only. |
+| `StarterPack` | Starter Pack | **59 R$** | 5 free skips + 500 coins + Starter Star trail + 30 min x2 coins; first 24 h after the first join (a real per-player window). Crossed-out value = 5 skips + the 500-coin pack at list price (144), badge = the real discount (-59%), both computed in `Pricing`. |
 
 ### Game Passes (`Config.Passes`)
 
-| Key | Name | Suggested price | What it does |
+| Key | Name | Price | What it does |
 |---|---|---|---|
-| `SpeedCoil` | Speed Coil | **8 R$** | WalkSpeed 24 (toggle in Settings). The hook: the first purchase, almost free |
-| `GravityCoil` | Gravity Coil | **19 R$** | Low gravity jumps (toggle in Settings) |
-| `DoubleJump` | Double Jump | **99 R$** | One extra jump in the air, for ever |
-| `InfiniteRevives` | Infinite Revives | **139 R$** | Unlimited pocket checkpoints |
-| `VIP` | VIP | **199 R$** | [VIP] chat tag, gold trail, +50% coins, 2x daily reward |
-| `DoubleCoins` | 2x Coins | **149 R$** | Double coins from every source |
+| `SpeedCoil` | Speed Coil | **99 R$** | WalkSpeed 24 (toggle in Settings). |
+| `GravityCoil` | Gravity Coil | **69 R$** | Low gravity jumps (toggle in Settings). |
+| `Fusion` | Fusion Coil | **139 R$** | Both coils in one pass (168 separately). `Session.hasPass` answers true for both coils. |
+| `DoubleJump` | Double Jump | **99 R$** | One extra jump in the air, for ever. |
+| `InfiniteRevives` | Infinite Revives | **179 R$** | Unlimited pocket checkpoints. |
+| `VIP` | VIP | **299 R$** | [VIP] chat tag, gold trail, +50% coins, 2x daily reward. |
+| `DoubleCoins` | 2x Coins | **195 R$** | Double coins from every source. |
+
+Nothing sold is random (no odds to show) and nothing sold touches the Fastest Climb ranking: every
+advantage marks the run unranked.
 
 ### Badges (`Config.BadgeIds`)
 
@@ -302,9 +313,8 @@ Create these, then paste the IDs into `src/shared/Config.luau` (any ID left at 0
 | `Stage50` | Halfway There (stage 50) — optional |
 | `FirstRebirth` | Born Again (first rebirth) — optional |
 
-Price ladder (from the top-obby research, `ROBLOX-INVESTIGACION-2.md`): hook 8 → impulse skip 15 →
-starter pack 59 → Skip 10 at 99 → permanent passes 99–199. Runs helped by a pass are not ranked,
-so nothing sold touches the Fastest Climb board.
+Price ladder: double jump 5 min 9 → skip 19 / 29 → starter pack 59 → Skip 10 at 149 → permanent
+passes 69–299. Runs helped by a pass are not ranked, so nothing sold touches the Fastest Climb board.
 
 Not built yet (backlog): "troll" tools as products (hammer 199, grapple hook 299, admin panel
 1,499) with a server switch and out of the ranking, and a two-player mode.
@@ -320,7 +330,7 @@ Create a Roblox group for the game and set `Config.GroupId` (0 hides the button)
 ```
 src/shared/  Config (all tunables + IDs) · Layout (pure map maths: 10 towers, curve, save pads, shop decks)
              Rules (pure game rules: reach, skips, spawn, towers needed, ranked, HUD skip button)
-             Gifts · Powerups · Perks (pure catalogues + purchase rules) · Quality (lite profile rule)
+             Gifts · Pricing (Robux price list, starter anchor, skip bands) · Powerups · Perks (pure catalogues + purchase rules) · Quality (lite profile rule)
              TowerStyle (palettes + tower moods) · Ambience (sky per height and tower)
              DecorPlan (scenery positions) · Segments (bar gradients)
              Locale + Locales/* · RunTime · Referral · LiveEvents

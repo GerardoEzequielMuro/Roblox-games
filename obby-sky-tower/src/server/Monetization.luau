@@ -6,6 +6,8 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
+local Powerups = require(ReplicatedStorage.Shared.Powerups)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
@@ -20,6 +22,12 @@ local MAX_RECEIPTS = 60
 type Grant = (Player, Data.Profile) -> any
 local productHandlers: { [number]: Grant } = {}
 local M = Remotes.M
+
+local function formatCoins(n: number): string
+	local digits = tostring(math.floor(n)):reverse()
+	local grouped = digits:gsub("(%d%d%d)", "%1,")
+	return (grouped:reverse():gsub("^,", ""))
+end
 
 local function register(id: number, fn: Grant)
 	if id ~= 0 then
@@ -36,13 +44,17 @@ local function saleBonus(p: Data.Profile, msg: Remotes.Msg): any
 	return msg
 end
 
-register(Config.Products.SkipStage, function(player, p)
+-- One grant for both price bands (19 R$ up to level 300, 29 R$ above): the client offers the band
+-- of the level you are on; what is granted is the same either way.
+local function grantSkip(player: Player, p: Data.Profile): any
 	if Checkpoints.skip(player, 1, "skip") then
 		return saleBonus(p, M("msg.stage_skipped"))
 	end
 	p.freeSkips += 1 -- already at the top: keep it for the next run
 	return saleBonus(p, M("msg.saved_skip"))
-end)
+end
+register(Config.Products.SkipStage, grantSkip)
+register(Config.Products.SkipStageHigh, grantSkip)
 register(Config.Products.Skip10, function(player, p)
 	if Checkpoints.skip(player, 10, "skip") then
 		return saleBonus(p, M("msg.skipped_ahead"))
@@ -63,22 +75,34 @@ end)
 function Monetization.grantStarter(_player: Player, p: Data.Profile): Remotes.Msg
 	p.starterBought = true
 	p.freeSkips += Config.StarterPackSkips
+	p.coins += Config.StarterPackCoins
+	p.totalCoins += Config.StarterPackCoins
 	p.trails.starter = true
 	p.boostEndsAt = math.max(os.time(), p.boostEndsAt) + Config.StarterBoostSeconds
-	return M("msg.starter_thanks", { n = Config.StarterPackSkips, minutes = Config.StarterBoostSeconds // 60 })
+	return M("msg.starter_thanks", { n = Config.StarterPackSkips, coins = Config.StarterPackCoins, minutes = Config.StarterBoostSeconds // 60 })
 end
 register(Config.Products.StarterPack, function(player, p)
 	return Monetization.grantStarter(player, p)
 end)
-register(Config.Products.Coins500, function(_player, p)
-	p.coins += 500
-	p.totalCoins += 500
-	return M("msg.coins_added", { n = 500 })
-end)
-register(Config.Products.Coins2500, function(_player, p)
-	p.coins += 2500
-	p.totalCoins += 2500
-	return M("msg.coins_added", { n = "2,500" })
+-- Coin packs (amounts in Shared/Pricing.CoinPacks). Bought coins are not multiplied by boosts.
+for key, amount in Pricing.CoinPacks do
+	register(Config.Products[key] or 0, function(_player, p)
+		p.coins += amount
+		p.totalCoins += amount
+		return M("msg.coins_added", { n = formatCoins(amount) })
+	end)
+end
+
+-- Double jump for 5 minutes (9 R$). Stacks like the coin shop's timed power-ups (up to the cap).
+-- Like the pass and the shop version it makes the run unranked (Session.refreshHelp).
+register(Config.Products.DoubleJump5, function(player, p)
+	local seconds = 300
+	local now = os.time()
+	local left = Powerups.remaining(p.boosts, "doublejump", now)
+	p.boosts.doublejump = now + math.min(left + seconds, Powerups.MAX_TIMED)
+	Cosmetics.applyCoils(player)
+	Session.refreshHelp(player)
+	return M("msg.doublejump_added", { minutes = seconds // 60 })
 end)
 
 local function passNameById(id: number): string?

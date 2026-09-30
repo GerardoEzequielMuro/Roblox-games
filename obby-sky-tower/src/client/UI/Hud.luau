@@ -24,6 +24,7 @@ local Rules = require(ReplicatedStorage.Shared.Rules)
 local Powerups = require(ReplicatedStorage.Shared.Powerups)
 local LocalFx = require(script.Parent.Parent.World.LocalFx)
 local RunTime = require(ReplicatedStorage.Shared.RunTime)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
 local Net = require(script.Parent.Parent.Net)
 local Kit = require(script.Parent.Kit)
 local Progress = require(script.Parent.Progress)
@@ -81,7 +82,7 @@ function Hud.skip(n: number)
 		end
 		return
 	end
-	local id = if n == 10 then Config.Products.Skip10 else Config.Products.SkipStage
+	local id = if n == 10 then Config.Products.Skip10 else Pricing.skipProductId(Config.Products, s.at or s.stage or 0)
 	if id ~= 0 then
 		MarketplaceService:PromptProductPurchase(Players.LocalPlayer, id)
 	elseif Hud.studioTools() then
@@ -487,13 +488,17 @@ function Hud.init()
 		Kit.relayout()
 	end
 
-	local skipPrice: number? = nil
-	fetchPrice(Config.Products.SkipStage, function(p)
-		skipPrice = p
-	end)
+	-- both price bands (19 R$ / 29 R$): the one of the level you are on is shown
+	local refreshLater: () -> () = function() end
+	for _, id in { Config.Products.SkipStage, Config.Products.SkipStageHigh } do
+		fetchPrice(id, function()
+			refreshLater()
+		end)
+	end
 	local skip10Price: number? = nil
 	fetchPrice(Config.Products.Skip10, function(p)
 		skip10Price = p
+		refreshLater()
 	end)
 
 	local function refresh()
@@ -504,7 +509,9 @@ function Hud.init()
 		local free = s.freeSkips or 0
 		local onBase = s.base == true
 		local studio = Hud.studioTools()
-		local view = Rules.skipButton(Layout :: any, at, onBase, free, Config.Products.SkipStage, studio, studio)
+		local skipId = Pricing.skipProductId(Config.Products, at)
+		local skipPrice = productPrice[skipId]
+		local view = Rules.skipButton(Layout :: any, at, onBase, free, skipId, studio, studio)
 		local before = actionsShown()
 		skip.Visible = view.visible
 		Kit.setText(skipTitle, view.title)
@@ -633,6 +640,7 @@ function Hud.init()
 		end
 	end)
 	Players.LocalPlayer:GetAttributeChangedSignal("Dash"):Connect(refresh)
+	refreshLater = refresh
 	refresh()
 end
 

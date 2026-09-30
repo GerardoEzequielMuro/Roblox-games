@@ -4,6 +4,7 @@
 
 local TowerStyle = require(script.Parent.TowerStyle)
 local Rules = require(script.Parent.Rules)
+local Pricing = require(script.Parent.Pricing)
 
 local Config = {}
 
@@ -18,22 +19,29 @@ Config.AutosaveInterval = 90
 
 -- Monetization ---------------------------------------------------------------------------
 Config.Products = {
-	SkipStage = 0, -- Developer Product: skip 1 stage (top earner in obbies)
-	Skip10 = 0, -- Developer Product: skip 10 stages
-	Coins500 = 0, -- Developer Product: 500 coins
-	Coins2500 = 0, -- Developer Product: 2,500 coins
+	SkipStage = 0, -- Developer Product: skip 1 stage, levels 1-300 (19 R$)
+	SkipStageHigh = 0, -- Developer Product: skip 1 stage, levels 301-1000 (29 R$). 0 = SkipStage is used
+	Skip10 = 0, -- Developer Product: skip 10 stages (149 R$)
+	DoubleJump5 = 0, -- Developer Product: double jump for 5 minutes (9 R$)
+	Coins500 = 0, -- Developer Product: 500 coins (49 R$)
+	Coins2500 = 0, -- Developer Product: 2,500 coins (199 R$)
+	Coins7000 = 0, -- Developer Product: 7,000 coins (499 R$)
 	AdSkip = 0, -- Developer Product used only as the reward holder of the rewarded-video ad skip
-	StarterPack = 0, -- Developer Product: first-24-hour starter pack (suggested 59 R$)
+	StarterPack = 0, -- Developer Product: first-24-hour starter pack (59 R$)
 } :: { [string]: number }
 
 Config.Passes = {
-	SpeedCoil = 0, -- WalkSpeed 24 (toggle in Settings). Suggested 8 R$: the impulse buy of top obbies
-	GravityCoil = 0, -- lower gravity while jumping (toggle in Settings)
+	SpeedCoil = 0, -- WalkSpeed 24 (toggle in Settings). 99 R$
+	GravityCoil = 0, -- lower gravity while jumping (toggle in Settings). 69 R$
+	Fusion = 0, -- both coils in one pass (139 R$ vs 168 separately)
 	DoubleJump = 0, -- one extra jump in the air, for ever (the shop sells it for 5 minutes)
-	InfiniteRevives = 0, -- unlimited pocket checkpoints (suggested 139 R$)
-	VIP = 0, -- [VIP] chat tag, gold trail, +50% coins, bigger daily reward
-	DoubleCoins = 0, -- x2 coins from every source
+	InfiniteRevives = 0, -- unlimited pocket checkpoints (179 R$)
+	VIP = 0, -- [VIP] chat tag, gold trail, +50% coins, bigger daily reward (299 R$)
+	DoubleCoins = 0, -- x2 coins from every source (195 R$)
 } :: { [string]: number }
+
+-- Intended Robux prices (what to type in the Creator Dashboard). Shared/Pricing is the source.
+Config.Prices = Pricing
 
 Config.BadgeIds = {
 	Winner = 0, -- awarded on reaching stage 100
@@ -58,9 +66,13 @@ Config.AdDailyCap = 6 -- rewarded-video ad skips per player per UTC day
 
 -- Starter pack (P0-4) ---------------------------------------------------------------------------
 Config.StarterPackWindow = 24 * 3600 -- on sale during the first 24 h after the first join
-Config.StarterPackSkips = 3
+Config.StarterPackSkips = 5
+Config.StarterPackCoins = 500 -- a Coins500 pack
 Config.StarterBoostSeconds = 30 * 60 -- x2 coins boost
-Config.StarterPackAnchorPrice = 169 -- crossed-out "value" shown on the offer (display only)
+-- Crossed-out "value": what the skips + coins cost separately at list price (Shared/Pricing). The
+-- trail and the boost are a free extra and are not counted, so the badge never overstates it.
+Config.StarterPackAnchorPrice = Pricing.starterValue(Config.StarterPackSkips, Config.StarterPackCoins)
+Config.StarterPackDiscountPct = Pricing.discountPct(Config.StarterPackAnchorPrice, Pricing.Products.StarterPack)
 
 -- Invites / referrals (P0-3) ---------------------------------------------------------------------
 Config.ReferralMaxRewards = 25 -- lifetime cap of inviter rewards
@@ -119,6 +131,7 @@ Config.DailyStreakWindow = 48 * 3600 -- miss this and the streak resets
 
 export type PlaytimeReward = { minutes: number, coins: number, freeSkips: number }
 Config.PlaytimeRewards = {
+	{ minutes = 1, coins = 20, freeSkips = 0 }, -- first gift inside the first minute
 	{ minutes = 5, coins = 30, freeSkips = 0 },
 	{ minutes = 15, coins = 75, freeSkips = 0 },
 	{ minutes = 30, coins = 150, freeSkips = 1 },

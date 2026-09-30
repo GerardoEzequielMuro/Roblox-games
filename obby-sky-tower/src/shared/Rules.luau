@@ -149,6 +149,16 @@ function Rules.runTopAfterTravel(L: LayoutLike, runTop: number, target: number):
 	return math.max(runTop, Rules.summitOf(L, target))
 end
 
+-- Server-wide announcement ("X reached the summit of Tower N!") for a summit EARNED on foot
+-- (reason "reach") and paid for the first time in this run. A skip, a teleport or a repeat of a
+-- summit already paid this run never broadcasts, so it cannot be spammed. "top" = stage 1000.
+function Rules.announceKind(L: LayoutLike, stage: number, rewarded: boolean, reason: string): string?
+	if reason ~= "reach" or not rewarded or not Rules.isSummit(L, stage) then
+		return nil
+	end
+	return if stage >= L.TOTAL then "top" else "summit"
+end
+
 -- Back-fill for profiles saved before runTop existed: every summit at or below the saved stage
 -- was already rewarded in this run.
 function Rules.runTopFromStage(L: LayoutLike, stage: number): number

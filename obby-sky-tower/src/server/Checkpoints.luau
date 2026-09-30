@@ -196,6 +196,18 @@ local function advanceTo(player: Player, g: number, reason: string)
 			p.runTop = g
 			Session.addCoins(player, Config.CoinsPerTower)
 		end
+		-- server-wide shout-out for a summit earned on foot (the others see it, not the climber)
+		local kind = Rules.announceKind(L, g, rewarded, reason)
+		if kind then
+			local msg = if kind == "top"
+				then Remotes.M("msg.announce_top", { name = player.DisplayName })
+				else Remotes.M("msg.announce_summit", { name = player.DisplayName, tower = { key = "tower." .. tostring(tower) } })
+			for _, other in Players:GetPlayers() do
+				if other ~= player then
+					Remotes.notify(other, msg, "info")
+				end
+			end
+		end
 		local gift = Gifts.at(g)
 		local newGift = gift ~= nil and not p.gifts[tostring(gift.id)]
 		if gift and newGift then

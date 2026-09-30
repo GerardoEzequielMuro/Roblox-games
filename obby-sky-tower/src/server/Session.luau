@@ -98,6 +98,10 @@ function Session.hasPass(player: Player, name: string): boolean
 	if s.passes[name] then
 		return true
 	end
+	-- Fusion = both coils in one pass (Pricing: 139 R$ vs 168 separately)
+	if (name == "SpeedCoil" or name == "GravityCoil") and s.passes.Fusion then
+		return true
+	end
 	-- Studio convenience (off by default): unconfigured passes count as owned so every pass can
 	-- be tried without publishing. Off, a Studio session plays exactly like a new player's.
 	return Config.StudioOwnsPasses and RunService:IsStudio() and Config.Passes[name] == 0

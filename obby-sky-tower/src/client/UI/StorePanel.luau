@@ -5,6 +5,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Pricing = require(ReplicatedStorage.Shared.Pricing)
 local Net = require(script.Parent.Parent.Net)
 local Kit = require(script.Parent.Kit)
 
@@ -15,14 +16,17 @@ type Item = { key: string, name: string, desc: string, icon: string, color: Colo
 local ITEMS: { Item } = {
 	{ key = "SkipStage", name = "Skip Stage", desc = "Jump to the next checkpoint", icon = "⏭", color = Kit.C.green, isPass = false },
 	{ key = "Skip10", name = "Skip 10 Stages", desc = "Leap 10 checkpoints ahead", icon = "🚀", color = Kit.C.blue, isPass = false },
+	{ key = "DoubleJump5", name = "Double Jump 5 min", desc = "Extra air jump for 5 minutes", icon = "⏫", color = Kit.C.green, isPass = false },
 	{ key = "VIP", name = "VIP", desc = "[VIP] tag, gold trail, +50% coins, 2x daily", icon = "👑", color = Kit.C.yellow, isPass = true },
 	{ key = "SpeedCoil", name = "Speed Coil", desc = "Run 50% faster (toggle)", icon = "⚡", color = Kit.C.orange, isPass = true },
 	{ key = "GravityCoil", name = "Gravity Coil", desc = "Floaty low-gravity jumps (toggle)", icon = "🪐", color = Kit.C.purple, isPass = true },
+	{ key = "Fusion", name = "Fusion Coil", desc = "Speed + Gravity coils in one", icon = "🌀", color = Kit.C.blue, isPass = true },
 	{ key = "DoubleJump", name = "Double Jump", desc = "One extra jump in the air, for ever", icon = "⏫", color = Kit.C.green, isPass = true },
 	{ key = "InfiniteRevives", name = "Infinite Revives", desc = "Unlimited pocket checkpoints", icon = "📍", color = Kit.C.orange, isPass = true },
 	{ key = "DoubleCoins", name = "2x Coins", desc = "Double coins forever", icon = "💰", color = Kit.C.yellow, isPass = true },
 	{ key = "Coins500", name = "500 Coins", desc = "Coin pack", icon = "💰", color = Kit.C.pink, isPass = false },
 	{ key = "Coins2500", name = "2,500 Coins", desc = "Big coin pack", icon = "💰", color = Kit.C.pink, isPass = false },
+	{ key = "Coins7000", name = "7,000 Coins", desc = "Mega coin pack", icon = "💰", color = Kit.C.pink, isPass = false },
 }
 
 local prices: { [number]: number } = {}
@@ -31,7 +35,24 @@ local function idOf(item: Item): number
 	if item.isPass then
 		return Config.Passes[item.key] or 0
 	end
+	if item.key == "SkipStage" then
+		-- 19 R$ up to level 300, 29 R$ above (falls back to the other id while one is not created)
+		local s = Net.state
+		return Pricing.skipProductId(Config.Products, s.at or s.stage or 0)
+	end
 	return Config.Products[item.key] or 0
+end
+
+-- Already yours (or pointless to sell): passes you own, Fusion when you own both coils, and the
+-- 5-minute double jump when the permanent pass is yours.
+local function isOwned(item: Item): boolean
+	if item.key == "Fusion" then
+		return Net.hasPass("Fusion") or (Net.hasPass("SpeedCoil") and Net.hasPass("GravityCoil"))
+	end
+	if item.key == "DoubleJump5" then
+		return Net.hasPass("DoubleJump")
+	end
+	return item.isPass and Net.hasPass(item.key)
 end
 
 function StorePanel.init()
@@ -58,7 +79,7 @@ function StorePanel.init()
 				title.TextXAlignment = Enum.TextXAlignment.Left
 				local desc = Kit.text(c, "@store." .. item.key .. ".desc", UDim2.fromOffset(170, 30), UDim2.fromOffset(102, 40), Color3.fromRGB(110, 105, 140), nil, 16)
 				desc.TextXAlignment = Enum.TextXAlignment.Left
-				local owned = item.isPass and Net.hasPass(item.key)
+				local owned = isOwned(item)
 				local btn = Kit.button(c, "", UDim2.fromOffset(166, 52), UDim2.fromOffset(102, 72), if owned then Kit.C.grey else Kit.C.green, function()
 					if owned then
 						return
