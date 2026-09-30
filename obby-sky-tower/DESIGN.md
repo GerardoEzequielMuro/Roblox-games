@@ -18,6 +18,9 @@ uploaded assets.
    gift on its summit. The portal on each summit leads to the base island of the next tower.
 7. **Rebirth** (win panel or the pedestal on the summit of tower 1) → back to stage 0 for a new
    ranked run. Best stage, gifts, coins and wins stay.
+8. A summit pays its Win (tower 1) and its coin bonus **once per run** (`profile.runTop`,
+   `Rules.summitRewarded`): the teleporter to the world under a summit gives that summit up until
+   the next rebirth, so Top Wins can't be farmed with 10-stage climbs.
 
 Boards in the lobby: **Top Wins**, **Fastest Climb** (tower 1, unassisted runs only) and
 **Highest Stage** (of the 1,000).
@@ -125,7 +128,8 @@ platform or hazard of any stage in the ten towers.
 A terrace beyond the summit room of tower 1, open to everybody who has reached stage 100
 (`Shared/Perks.luau`, `server/Lounge.luau`). Everything is free:
 
-- **Teleporter**: to the lobby or the start of any world you have already reached (a panel lists them).
+- **Teleporter**: to the lobby (keeps your checkpoint) or the start of any world you have already
+  reached (a panel lists them).
 - **Glider** and **Cloud** (explore mode): fly around the map. Checkpoints do not count while one
   is on, and turning it off returns you to your checkpoint, so they cannot skip stages.
 - **Dash** and **Triple Jump** (abilities): they do count for progress, in assisted runs.
@@ -168,8 +172,9 @@ Minimal, the way tower games do it (`UI/Hud.luau`, `UI/Progress.luau`, `UI/Cards
 - **Touch**: the corner block moves under the Roblox buttons (the thumbstick owns the bottom
   left), the actions become a column on the right above the jump button, the level bar sits in
   the free band between thumbstick and jump button.
-- The "(Studio test)" skip exists only inside Studio: `Rules.skipButton` hides Skip Stage in a
-  published build without a product id (checked by the playtest).
+- The "(Studio test)" skip needs Studio **and** a test flag (`Rules.studioTools`:
+  `Config.StudioFreeSkips`, off by default, or the Workspace attribute `StudioTestTools` that only
+  `test.project.json` sets). A normal Studio playtest and a published game never show it.
 - The rebirth window shows what you lose (red) next to what you keep (green).
 
 ## Performance
@@ -246,7 +251,7 @@ Budgets (checked by the Studio playtest): workspace < 9,000 parts (currently ~5,
 
 ### Profile fields added
 
-`lang`, `bestRunMs`, `ads {day, count}`, `referredBy`, `referralPaid`, `referralRewards`, `starterBought`, `boostEndsAt`, `groupGiftClaimed`, `notifAskedAt`, and with the 1,000-stage update (profile v2): `base` (standing on the base island of the next tower), `gifts`, `boosts` (power-up end times), `charges`, `perks`, `pocket` (all back-filled by `reconcile`, no data wipe; coils are switched off once by the migration).
+`lang`, `bestRunMs`, `ads {day, count}`, `referredBy`, `referralPaid`, `referralRewards`, `starterBought`, `boostEndsAt`, `groupGiftClaimed`, `notifAskedAt`, and with the 1,000-stage update (profile v2): `base` (standing on the base island of the next tower), `gifts`, `boosts` (power-up end times), `charges`, `perks`, `pocket`, `runTop` (all back-filled by `reconcile`, no data wipe; coils are switched off once by the migration; `runTop` starts at the last summit under the saved stage).
 
 ## Languages
 

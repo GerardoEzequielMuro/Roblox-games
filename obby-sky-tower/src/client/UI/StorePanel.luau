@@ -53,7 +53,7 @@ function StorePanel.init()
 				local c = Kit.card(grid, i)
 				local iconBg = Kit.frame(c, UDim2.fromOffset(80, 80), UDim2.fromOffset(12, 20), item.color)
 				Kit.corner(iconBg, 18)
-				Kit.text(iconBg, item.icon, UDim2.fromScale(0.8, 0.8), UDim2.fromScale(0.1, 0.1), Kit.C.white, nil, 50)
+				Kit.icon(iconBg, item.icon, UDim2.fromScale(0.8, 0.8), UDim2.fromScale(0.1, 0.1), Kit.C.white, nil, 50)
 				local title = Kit.text(c, "@store." .. item.key .. ".name", UDim2.fromOffset(170, 30), UDim2.fromOffset(102, 10), Kit.C.ink, nil, 26)
 				title.TextXAlignment = Enum.TextXAlignment.Left
 				local desc = Kit.text(c, "@store." .. item.key .. ".desc", UDim2.fromOffset(170, 30), UDim2.fromOffset(102, 40), Color3.fromRGB(110, 105, 140), nil, 16)

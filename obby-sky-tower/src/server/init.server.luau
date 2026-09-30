@@ -78,17 +78,52 @@ local function onCharacter(player: Player, char: Model)
 		player:SetAttribute("Roam", nil)
 	end
 	Checkpoints.teleport(player) -- may build the player's tower first
-	Cosmetics.applyAll(player)
-	char:WaitForChild("Head", 5)
-	Cosmetics.applyExtras(player)
-	Nametags.update(player)
-	Session.push(player)
 	local hum = char:FindFirstChildOfClass("Humanoid")
 	if hum then
 		hum.Died:Connect(function()
 			Checkpoints.noteDeath(player) -- death streak -> skip offer (P0-1)
 		end)
 	end
+	-- The avatar's body parts and accessories can still be arriving (CharacterAppearanceLoaded
+	-- fires after CharacterAdded). Pieces welded to a Head / Torso that the appearance then
+	-- replaces are left loose and fall off the character ("disassembled" look), so the welded
+	-- extras wait for the full appearance, and are re-applied if a body part is swapped later.
+	Cosmetics.applyTrail(player)
+	Cosmetics.applyEffect(player)
+	Cosmetics.applyCoils(player)
+	Session.push(player)
+	if not player:HasAppearanceLoaded() then
+		local loaded = false
+		local conn = player.CharacterAppearanceLoaded:Connect(function()
+			loaded = true
+		end)
+		local t0 = os.clock()
+		while not loaded and os.clock() - t0 < 8 and char.Parent and player.Parent do
+			task.wait(0.1)
+		end
+		conn:Disconnect()
+	end
+	if not char.Parent or player.Character ~= char then
+		return
+	end
+	char:WaitForChild("Head", 5)
+	Cosmetics.applyAll(player)
+	Nametags.update(player)
+	Session.push(player)
+	local pendingRefresh = false
+	char.ChildAdded:Connect(function(child)
+		if pendingRefresh or not (child.Name == "Head" or child.Name == "UpperTorso" or child.Name == "Torso") then
+			return
+		end
+		pendingRefresh = true
+		task.delay(0.2, function()
+			pendingRefresh = false
+			if char.Parent and player.Character == char then
+				Cosmetics.applyExtras(player)
+				Nametags.update(player)
+			end
+		end)
+	end)
 end
 
 local function onPlayerAdded(player: Player)

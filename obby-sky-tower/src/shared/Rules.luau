@@ -112,6 +112,58 @@ function Rules.portalOpen(L: LayoutLike, best: number, tower: number): boolean
 	return tower >= 1 and tower < L.TOWERS and best >= tower * L.STAGES
 end
 
+-- Walking (Touched) into the portal on the summit of `tower`. Explicit requests (the prompt, the
+-- HUD button) go through portalOpen alone; a touch must never change progress by accident:
+--   * not in explore mode (glider / cloud fly past old portals; pads don't count then, and neither
+--     does a portal),
+--   * not backwards: somebody whose checkpoint is past this summit (e.g. back in the lobby and
+--     wandering up tower 1) would lose it.
+function Rules.portalTouchAllowed(L: LayoutLike, stage: number, tower: number, roaming: boolean): boolean
+	return not roaming and stage <= tower * L.STAGES
+end
+
+---------------------------------------------------------------------------------------------
+-- Summit rewards (Wins +1 on tower 1, the summit coin bonus): once per summit per run.
+-- `runTop` = the highest summit already rewarded in the current run (saved in the profile, reset
+-- by a rebirth). Without it a teleport to the world just below a summit (or a rejoin after one)
+-- would pay the summit again for a 10-stage climb, and Top Wins could be farmed.
+---------------------------------------------------------------------------------------------
+function Rules.summitRewarded(L: LayoutLike, runTop: number, g: number): boolean
+	return Rules.isSummit(L, g) and g > runTop
+end
+
+-- The summit a stage climbs towards (its own tower's top): 1..100 -> 100, 101..200 -> 200.
+function Rules.summitOf(L: LayoutLike, g: number): number
+	if g <= 0 then
+		return 0
+	end
+	return math.min(math.ceil(g / L.STAGES), L.TOWERS) * L.STAGES
+end
+
+-- runTop after a teleporter trip to `target` (0 = the lobby: progress is kept, nothing changes).
+-- Landing below a summit gives up that summit's reward for the rest of the run.
+function Rules.runTopAfterTravel(L: LayoutLike, runTop: number, target: number): number
+	if target <= 0 then
+		return runTop
+	end
+	return math.max(runTop, Rules.summitOf(L, target))
+end
+
+-- Back-fill for profiles saved before runTop existed: every summit at or below the saved stage
+-- was already rewarded in this run.
+function Rules.runTopFromStage(L: LayoutLike, stage: number): number
+	return math.clamp(stage // L.STAGES, 0, L.TOWERS) * L.STAGES
+end
+
+---------------------------------------------------------------------------------------------
+-- Studio-only test tools (the free "Skip (Studio test)" buttons). Never in a published game:
+-- they need BOTH Studio and an explicit test flag (Config.StudioTestTools, or the Workspace
+-- attribute "StudioTestTools" that only test.project.json sets).
+---------------------------------------------------------------------------------------------
+function Rules.studioTools(isStudio: boolean, configFlag: boolean, workspaceFlag: boolean): boolean
+	return isStudio and (configFlag or workspaceFlag)
+end
+
 -- Coins for reaching stage g for the first time in a run (5 early, +2 per world, capped).
 function Rules.coinsForStage(g: number): number
 	return 5 + 2 * math.min(math.max(g, 0) // 10, 25)

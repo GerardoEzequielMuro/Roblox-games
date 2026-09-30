@@ -12,6 +12,7 @@ local GroupService = game:GetService("GroupService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 local SocialService = game:GetService("SocialService")
 local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
@@ -60,7 +61,13 @@ end
 
 Hud.topScale = 1 -- scale of the top-centre HUD rows (EventBar follows it)
 
--- Skip n stages: free skip first, then Robux product, then (Studio only, id 0) dev skip.
+-- Studio test tools (free dev skips): the server says so (Studio AND a test flag, see
+-- Rules.studioTools) and this client must be running in Studio too.
+function Hud.studioTools(): boolean
+	return Net.state.studioTools == true and RunService:IsStudio()
+end
+
+-- Skip n stages: free skip first, then Robux product, then (Studio test tools only) dev skip.
 function Hud.skip(n: number)
 	local s = Net.state
 	if Rules.skipTarget(Layout :: any, s.at or s.stage or 0, n, s.base == true) == nil then
@@ -77,7 +84,7 @@ function Hud.skip(n: number)
 	local id = if n == 10 then Config.Products.Skip10 else Config.Products.SkipStage
 	if id ~= 0 then
 		MarketplaceService:PromptProductPurchase(Players.LocalPlayer, id)
-	elseif s.studio and Config.StudioFreeSkips then
+	elseif Hud.studioTools() then
 		local ok, msg = Net.request("DevSkip", { n = n })
 		if ok then
 			Toast.show(Lang.t("toast.studio_skip"), "info")
@@ -91,10 +98,12 @@ end
 local GLASS = Color3.fromRGB(24, 28, 44)
 local function glass(parent: Instance, size: UDim2, pos: UDim2): Frame
 	local f = Kit.frame(parent, size, pos, GLASS)
-	f.BackgroundTransparency = 0.4
+	f.BackgroundTransparency = 0.35
 	Kit.corner(f, 14)
+	-- a soft top-lit sheen instead of a flat fill
+	Kit.gradient(f, Color3.fromRGB(255, 255, 255), Color3.fromRGB(150, 160, 190), 90)
 	local st = Kit.stroke(f, Color3.new(1, 1, 1), 1.5)
-	st.Transparency = 0.6
+	st.Transparency = 0.55
 	return f
 end
 
@@ -115,7 +124,7 @@ local function menuButton(parent: Instance, order: number, name: string, text: s
 	local b = Kit.button(parent, "", UDim2.fromOffset(MENU_CELL, MENU_CELL), UDim2.new(), color, onClick)
 	b.Name = name
 	b.LayoutOrder = order
-	Kit.text(b, icon, UDim2.new(1, 0, 0, 44), UDim2.fromOffset(0, 2), Kit.C.white, nil, 38)
+	Kit.icon(b, icon, UDim2.new(1, 0, 0, 44), UDim2.fromOffset(0, 2), Kit.C.white, nil, 38)
 	Kit.bold(b, text, UDim2.new(1, 0, 0, 22), UDim2.new(0, 0, 1, -24), Kit.C.white, nil, 18)
 	local badge = Kit.frame(b, UDim2.fromOffset(24, 24), UDim2.new(1, -10, 0, -10), Kit.C.red)
 	Kit.corner(badge, 12)
@@ -208,7 +217,7 @@ function Hud.init()
 	local coinLabel, coinIcon = counter(corner, 124, 128)
 	Kit.coin(coinIcon, 30, UDim2.fromScale(0.5, 0.5), Vector2.new(0.5, 0.5))
 	local winsLabel, winsIcon = counter(corner, 258, 84)
-	Kit.text(winsIcon, "🏆", UDim2.fromScale(1, 1), UDim2.new(), Kit.C.white, nil, 24)
+	Kit.icon(winsIcon, "🏆", UDim2.fromScale(1, 1), UDim2.new(), Kit.C.white, nil, 24)
 
 	left = Kit.region("Menu", Vector2.new(0, 1), UDim2.new(0, 12, 1, -120), Vector2.new(MENU_COLS * MENU_CELL + (MENU_COLS - 1) * MENU_GAP, MENU_CELL))
 	left.Visible = false
@@ -227,7 +236,7 @@ function Hud.init()
 		Kit.toggle("starter")
 	end)
 	local starterPulse = Instance.new("UIScale")
-	starterPulse.Parent = starterBtn:FindFirstChildOfClass("TextLabel")
+	starterPulse.Parent = starterBtn:FindFirstChild("Icon")
 	TweenService:Create(starterPulse, TweenInfo.new(0.7, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.15 }):Play()
 	starterBtn.Visible = false
 	menuButton(left, 1, "Shop", "@hud.shop", "🛍", Kit.C.pink, function()
@@ -380,7 +389,7 @@ function Hud.init()
 			chip.Visible = false
 			Kit.corner(chip, 17)
 			Kit.stroke(chip, Kit.C.ink, 2)
-			Kit.text(chip, item.icon, UDim2.fromOffset(28, 28), UDim2.fromOffset(4, 3), Kit.C.white, nil, 22)
+			Kit.icon(chip, item.icon, UDim2.fromOffset(28, 28), UDim2.fromOffset(4, 3), Kit.C.white, nil, 22)
 			local label = Kit.bold(chip, "", UDim2.new(1, -36, 1, -8), UDim2.fromOffset(32, 4), Kit.C.white, nil, 18)
 			label.TextXAlignment = Enum.TextXAlignment.Left
 			chipFor[item.id] = label
@@ -494,8 +503,8 @@ function Hud.init()
 		Kit.setRaw(winsLabel, ("%d"):format(s.wins or 0))
 		local free = s.freeSkips or 0
 		local onBase = s.base == true
-		local studio = s.studio == true
-		local view = Rules.skipButton(Layout :: any, at, onBase, free, Config.Products.SkipStage, studio, Config.StudioFreeSkips)
+		local studio = Hud.studioTools()
+		local view = Rules.skipButton(Layout :: any, at, onBase, free, Config.Products.SkipStage, studio, studio)
 		local before = actionsShown()
 		skip.Visible = view.visible
 		Kit.setText(skipTitle, view.title)
@@ -508,7 +517,7 @@ function Hud.init()
 		else
 			Kit.setRaw(skipSub, "")
 		end
-		skip10.Visible = Rules.skip10Visible(Layout :: any, at, onBase, Config.Products.Skip10, studio, Config.StudioFreeSkips)
+		skip10.Visible = Rules.skip10Visible(Layout :: any, at, onBase, Config.Products.Skip10, studio, studio)
 		if skip10Price then
 			Kit.setText(skip10, "hud.skip10_price", { price = skip10Price })
 		else

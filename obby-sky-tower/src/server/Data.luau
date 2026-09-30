@@ -10,6 +10,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local Gifts = require(ReplicatedStorage.Shared.Gifts)
 local Powerups = require(ReplicatedStorage.Shared.Powerups)
+local Rules = require(ReplicatedStorage.Shared.Rules)
 
 local Data = {}
 
@@ -18,6 +19,7 @@ export type Profile = {
 	stage: number, -- saved checkpoint, 0..1000 (0 = lobby start)
 	best: number, -- highest stage ever reached
 	base: boolean, -- on a summit (stage 100, 200...): already took the portal to the next tower
+	runTop: number, -- highest summit already rewarded in this run (Rules.summitRewarded; 0 after a rebirth)
 	gifts: { [string]: boolean }, -- tower gifts owned, by gift id ("1".."10", Shared/Gifts)
 	boosts: { [string]: number }, -- shop power-ups: id -> os.time() when it ends (Shared/Powerups)
 	charges: { [string]: number }, -- shop charges: shield, pocket
@@ -75,6 +77,7 @@ local function defaultProfile(): Profile
 		stage = 0,
 		best = 0,
 		base = false,
+		runTop = 0,
 		gifts = {},
 		boosts = {},
 		charges = {},
@@ -112,6 +115,14 @@ Data.defaultProfile = defaultProfile
 -- Fill any keys added in later versions and sanitise values.
 local function reconcile(p: any): Profile
 	local def = defaultProfile() :: any
+	-- saved before the once-per-run summit rule: the summits under the saved stage were paid
+	if type(p.runTop) ~= "number" then
+		p.runTop = Rules.runTopFromStage(Layout :: any, math.floor(tonumber(p.stage) or 0))
+	end
+	-- a corrupted / hand-edited entry must not break the loop below
+	if type(p.settings) ~= "table" then
+		p.settings = nil
+	end
 	for k, v in def do
 		if p[k] == nil then
 			p[k] = v
@@ -130,6 +141,7 @@ local function reconcile(p: any): Profile
 	end
 	p.stage = math.clamp(math.floor(tonumber(p.stage) or 0), 0, Layout.TOTAL)
 	p.best = math.clamp(math.max(tonumber(p.best) or 0, p.stage), 0, Layout.TOTAL)
+	p.runTop = math.clamp(math.floor(p.runTop), 0, Layout.TOTAL)
 	-- gifts are earned by the best stage: nobody who got there is left without one
 	for _, gift in Gifts.earned(p.best) do
 		p.gifts[tostring(gift.id)] = true

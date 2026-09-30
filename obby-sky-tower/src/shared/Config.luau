@@ -41,9 +41,12 @@ Config.BadgeIds = {
 	FirstRebirth = 0, -- optional
 } :: { [string]: number }
 
--- In Studio only: when a product ID is 0 the Skip button still shows and skips for free,
--- so the whole loop can be tested without publishing.
-Config.StudioFreeSkips = true
+-- Studio test tools (the free "Skip (Studio test)" buttons, used while product IDs are 0).
+-- They need BOTH RunService:IsStudio() AND a flag (Rules.studioTools): this one, or the Workspace
+-- attribute "StudioTestTools" = true (test.project.json sets it). Off by default, so a normal
+-- Studio playtest looks exactly like the published game; a published game never shows them.
+Config.StudioFreeSkips = false
+Config.StudioToolsAttribute = "StudioTestTools"
 -- In Studio only: treat every pass whose ID is 0 as owned (to try coils / VIP without publishing).
 -- Leave it off to play in Studio exactly as a new player would.
 Config.StudioOwnsPasses = false

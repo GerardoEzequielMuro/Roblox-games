@@ -3,6 +3,7 @@
 -- (UIScale per region, bigger on touch devices), and a one-panel-at-a-time modal system.
 local GuiService = game:GetService("GuiService")
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 local TextService = game:GetService("TextService")
 local TweenService = game:GetService("TweenService")
@@ -10,6 +11,7 @@ local UserInputService = game:GetService("UserInputService")
 local Workspace = game:GetService("Workspace")
 
 local Lang = require(script.Parent.Parent.Lang)
+local Icons = require(ReplicatedStorage.Shared.Icons)
 
 local Kit = {}
 
@@ -242,8 +244,41 @@ function Kit.button(parent: Instance, text: string, size: UDim2, pos: UDim2, col
 	return b
 end
 
--- Drawn coin (the coin emoji is missing from Roblox's emoji font).
-function Kit.coin(parent: Instance, size: number, pos: UDim2, anchor: Vector2?): Frame
+-- An icon from the shared pack (Shared/Icons) as an ImageLabel, sized / placed like a label.
+function Kit.image(parent: Instance, image: string, size: UDim2, pos: UDim2, anchor: Vector2?): ImageLabel
+	local img = Instance.new("ImageLabel")
+	img.Name = "Icon"
+	img.BackgroundTransparency = 1
+	img.BorderSizePixel = 0
+	img.Image = image
+	img.ScaleType = Enum.ScaleType.Fit
+	img.Size = size
+	img.Position = pos
+	img.AnchorPoint = anchor or Vector2.zero
+	img.Parent = parent
+	return img
+end
+
+-- The one place emoji icons are drawn: the uploaded icon (ImageLabel, ScaleType Fit) when the
+-- glyph has one in Shared/Icons with an id, otherwise the emoji exactly as before (a TextLabel).
+-- Either way the object is named "Icon".
+function Kit.icon(parent: Instance, glyph: string, size: UDim2, pos: UDim2, color: Color3?, anchor: Vector2?, maxSize: number?): GuiObject
+	local image = Icons.forGlyphImage(glyph)
+	if image then
+		return Kit.image(parent, image, size, pos, anchor)
+	end
+	local t = Kit.text(parent, glyph, size, pos, color or Kit.C.white, anchor, maxSize)
+	t.Name = "Icon"
+	return t
+end
+
+-- Coin: the uploaded "coin" icon when there is one, else the drawn coin (the coin emoji is
+-- missing from Roblox's emoji font).
+function Kit.coin(parent: Instance, size: number, pos: UDim2, anchor: Vector2?): GuiObject
+	local image = Icons.get("coin")
+	if image then
+		return Kit.image(parent, image, UDim2.fromOffset(size, size), pos, anchor)
+	end
 	local c = Kit.frame(parent, UDim2.fromOffset(size, size), pos, Color3.fromRGB(255, 205, 40), anchor)
 	Kit.corner(c, size)
 	Kit.stroke(c, Color3.fromRGB(200, 130, 10), math.max(2, size * 0.09))

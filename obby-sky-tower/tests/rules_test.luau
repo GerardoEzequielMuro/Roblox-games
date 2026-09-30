@@ -323,6 +323,59 @@ do
 	end
 end
 
+-- Summit rewards: once per summit per run (a teleport or a rejoin can't farm Wins / the bonus) ----
+do
+	check(Rules.summitRewarded(L, 0, 100), "first summit of a run pays")
+	check(not Rules.summitRewarded(L, 100, 100), "the same summit does not pay twice in a run")
+	check(Rules.summitRewarded(L, 100, 200), "the next summit pays")
+	check(not Rules.summitRewarded(L, 0, 99) and not Rules.summitRewarded(L, 0, 0), "only summits")
+	eq(Rules.summitOf(L, 0), 0, "summitOf lobby")
+	eq(Rules.summitOf(L, 1), 100, "summitOf 1")
+	eq(Rules.summitOf(L, 90), 100, "summitOf 90")
+	eq(Rules.summitOf(L, 100), 100, "summitOf 100")
+	eq(Rules.summitOf(L, 101), 200, "summitOf 101")
+	eq(Rules.summitOf(L, 1000), 1000, "summitOf 1000")
+	-- the farm the rule closes: rebirth (runTop 0) -> teleport to 90 -> climb 10 stages -> win
+	local top = Rules.runTopAfterTravel(L, 0, 90)
+	check(not Rules.summitRewarded(L, top, 100), "teleport to world 10 gives up the tower-1 summit reward")
+	check(Rules.summitRewarded(L, top, 200), "...but not the next one")
+	eq(Rules.runTopAfterTravel(L, 300, 0), 300, "going to the lobby keeps runTop")
+	eq(Rules.runTopAfterTravel(L, 300, 110), 300, "travelling back never lowers runTop")
+	eq(Rules.runTopAfterTravel(L, 0, 100), 100, "teleport onto a summit")
+	-- migration of profiles saved before runTop
+	eq(Rules.runTopFromStage(L, 0), 0, "migration: stage 0")
+	eq(Rules.runTopFromStage(L, 99), 0, "migration: stage 99")
+	eq(Rules.runTopFromStage(L, 100), 100, "migration: stage 100")
+	eq(Rules.runTopFromStage(L, 457), 400, "migration: stage 457")
+	eq(Rules.runTopFromStage(L, 1000), 1000, "migration: stage 1000")
+	eq(Rules.runTopFromStage(L, 5000), 1000, "migration: absurd stage is clamped")
+	-- a whole honest run pays every summit exactly once
+	local paid, runTop = 0, 0
+	for g = 1, Layout.TOTAL do
+		if Rules.summitRewarded(L, runTop, g) then
+			paid += 1
+			runTop = g
+		end
+	end
+	eq(paid, Layout.TOWERS, "an honest 0 -> 1000 climb pays each summit once")
+end
+
+-- Portal touches never move progress by accident ----------------------------------------------
+check(Rules.portalTouchAllowed(L, 100, 1, false), "on the summit: the portal works")
+check(Rules.portalTouchAllowed(L, 60, 1, false), "behind the summit (teleported / explored there): forward is fine")
+check(not Rules.portalTouchAllowed(L, 100, 1, true), "explore mode: portal touches ignored")
+check(not Rules.portalTouchAllowed(L, 850, 1, false), "checkpoint on tower 9: tower-1 portal touch would go backwards")
+check(Rules.portalTouchAllowed(L, 200, 2, false) and not Rules.portalTouchAllowed(L, 201, 2, false), "portal 2 edges")
+
+-- Studio test tools: never outside Studio, never without an explicit flag ------------------------
+for _, cfg in { true, false } do
+	for _, ws in { true, false } do
+		check(not Rules.studioTools(false, cfg, ws), "published build: no test tools whatever the flags")
+	end
+end
+check(not Rules.studioTools(true, false, false), "Studio without a flag: no test tools (the owner's playtest looks like the real game)")
+check(Rules.studioTools(true, true, false) and Rules.studioTools(true, false, true), "Studio + a flag: test tools")
+
 print(("rules_test: %d checks, %d failures"):format(checks, failures))
 if failures > 0 then
 	error("rules_test failed")

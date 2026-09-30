@@ -43,6 +43,9 @@
         "StreamingMinRadius": 128,
         "StreamingTargetRadius": 448,
         "StreamOutBehavior": "Opportunistic"
+      },
+      "$attributes": {
+        "StudioTestTools": true
       }
     },
     "Lighting": {

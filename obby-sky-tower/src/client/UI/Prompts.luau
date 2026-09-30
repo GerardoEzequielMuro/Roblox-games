@@ -73,7 +73,7 @@ function Prompts.offerSkip(data: { [string]: any })
 				MarketplaceService:PromptProductPurchase(Players.LocalPlayer, Config.Products.SkipStage)
 			end,
 		})
-	elseif s.studio and Config.StudioFreeSkips then
+	elseif Hud.studioTools() then
 		table.insert(buttons, {
 			name = "PaidSkip",
 			text = Lang.t("offer.studio"),

@@ -679,6 +679,11 @@ do
 	perfSample("stage 1000 idle", 6)
 	-- teleporter
 	check("travel to a world not on the grid rejected", not req("Travel", { stage = 45 }) and not req("Travel", { stage = 1010 }))
+	local stageBeforeLobby = q("state").stage
+	check("teleporter 'Lobby' keeps the checkpoint (it used to save stage 0)", req("Travel", { stage = 0 }) and (function()
+		task.wait(1)
+		return q("state").stage == stageBeforeLobby and stageBeforeLobby > 0
+	end)(), ("%s -> %s"):format(tostring(stageBeforeLobby), tostring(q("state").stage)))
 	check("travel to world 5 of tower 1 (stage 40)", req("Travel", { stage = 40 }) and waitFor(function()
 		local s2x = q("state")
 		return s2x.stage == 40 and s2x.at == 40 and (s2x.padDist or 99) < 10

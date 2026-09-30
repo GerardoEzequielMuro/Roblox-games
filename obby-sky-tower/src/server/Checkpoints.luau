@@ -8,7 +8,6 @@
 local BadgeService = game:GetService("BadgeService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -96,6 +95,15 @@ function Checkpoints.teleport(player: Player)
 	-- back on the checkpoint: progress since the last save is lost (pocket checkpoints keep it)
 	local pk = p.pocket
 	s.at = if pk and pk.stage == p.stage and not s.inLobby then math.max(pk.at, p.stage) else p.stage
+	-- the spawn CFrames put a default R15 root 3.5 studs over the floor; taller avatars (bigger
+	-- HipHeight) are lifted so their feet never start inside the pad / spawn
+	local hum = char:FindFirstChildOfClass("Humanoid")
+	if hum and hum.RigType == Enum.HumanoidRigType.R15 then
+		local lift = hum.HipHeight + root.Size.Y / 2 - 3
+		if lift > 0 then
+			cf += Vector3.new(0, lift, 0)
+		end
+	end
 	root.AssemblyLinearVelocity = Vector3.zero
 	char:PivotTo(cf)
 end
@@ -129,6 +137,12 @@ local function advanceTo(player: Player, g: number, reason: string)
 	-- speedrun: the run starts on leaving stage 0; anything that helps makes it unranked
 	local run = s.run
 	if from == 0 and run.start == nil then
+		-- what happened before leaving stage 0 (a power-up bought and already expired, explore
+		-- mode switched off again...) is not part of the run: only what is still on counts
+		if not s.help.joinedMidRun then
+			s.help = {}
+			run.valid = true
+		end
 		run.start = Workspace:GetServerTimeNow()
 		Session.refreshHelp(player)
 	end
@@ -175,14 +189,20 @@ local function advanceTo(player: Player, g: number, reason: string)
 	end
 	if summit then
 		local tower = g // Layout.STAGES
-		Session.addCoins(player, Config.CoinsPerTower)
+		-- the win and the summit bonus are paid once per summit per run (Rules.summitRewarded):
+		-- a teleport to the world under a summit, or a rejoin, can't farm them
+		local rewarded = Rules.summitRewarded(L, p.runTop, g)
+		if rewarded then
+			p.runTop = g
+			Session.addCoins(player, Config.CoinsPerTower)
+		end
 		local gift = Gifts.at(g)
 		local newGift = gift ~= nil and not p.gifts[tostring(gift.id)]
 		if gift and newGift then
 			grantGift(player, p, gift)
 		end
 		local info: WinInfo = { runMs = nil, newBest = false }
-		if tower == 1 then
+		if tower == 1 and rewarded then
 			p.wins += 1
 			awardBadge(player, Config.BadgeIds.Winner)
 			if p.wins == 1 and p.equippedTrail == "" then
@@ -208,7 +228,7 @@ local function advanceTo(player: Player, g: number, reason: string)
 			best = p.bestRunMs,
 			gift = if newGift and gift then gift.id else nil,
 		})
-		if tower == 1 and onWin then
+		if tower == 1 and rewarded and onWin then
 			onWin(player, info)
 		end
 	end
@@ -341,6 +361,7 @@ function Checkpoints.rebirth(player: Player): (boolean, any?)
 	end
 	p.stage = 0
 	p.base = false
+	p.runTop = 0
 	p.pocket = nil
 	s.at = 0
 	s.coinStage = 0
@@ -445,7 +466,12 @@ function Checkpoints.travel(player: Player, stage: number)
 	if not p or not s then
 		return
 	end
+	if stage <= 0 then
+		Checkpoints.goToLobby(player) -- never "travel" to stage 0: that would wipe the checkpoint
+		return
+	end
 	Session.assist(player, "travelled")
+	p.runTop = Rules.runTopAfterTravel(L, p.runTop, stage)
 	p.stage = stage
 	p.base = false
 	p.pocket = nil
@@ -478,7 +504,11 @@ function Checkpoints.init(lobby: StageGenerator.Lobby, winCallback: (Player, Win
 			portal.Touched:Connect(function(hit)
 				local model = hit:FindFirstAncestorOfClass("Model")
 				local player = model and Players:GetPlayerFromCharacter(model)
-				if player then
+				local p = player and Data.get(player)
+				local s = player and Session.get(player)
+				-- walking into it must never move progress by accident (explore mode, or a
+				-- checkpoint further up than this summit): the prompt / HUD button still work
+				if player and p and s and Rules.portalTouchAllowed(L, p.stage, tower.tower, s.roam ~= nil) then
 					Checkpoints.enterPortal(player, tower.tower)
 				end
 			end)
@@ -540,7 +570,7 @@ function Checkpoints.init(lobby: StageGenerator.Lobby, winCallback: (Player, Win
 	end)
 	-- Studio-only: product IDs are 0 while developing, so let the Skip button work for free.
 	Remotes.handle("DevSkip", function(player, payload)
-		if not (RunService:IsStudio() and Config.StudioFreeSkips) then
+		if not Session.studioTools() then
 			return false, Remotes.M("err.not_available")
 		end
 		local n = if payload.n == 10 then 10 else 1

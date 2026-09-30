@@ -125,6 +125,11 @@ function Lounge.init()
 		if not p or not target or not Perks.canTravel(p.best, target) then
 			return false, M("err.travel_locked")
 		end
+		if target == 0 then
+			-- the "Lobby" button: go there and KEEP the checkpoint (travel(0) used to save stage 0,
+			-- wiping the player's progress)
+			return Checkpoints.goToLobby(player)
+		end
 		Checkpoints.travel(player, target)
 		return true
 	end)

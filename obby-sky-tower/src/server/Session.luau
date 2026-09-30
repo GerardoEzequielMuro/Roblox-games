@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local LiveEvents = require(ReplicatedStorage.Shared.LiveEvents)
@@ -74,6 +75,11 @@ function Session.start(player: Player): S
 	wins.Parent = ls
 	ls.Parent = player
 	return s
+end
+
+-- Studio-only test tools (free dev skips): Studio AND an explicit flag (Rules.studioTools).
+function Session.studioTools(): boolean
+	return Rules.studioTools(RunService:IsStudio(), Config.StudioFreeSkips, Workspace:GetAttribute(Config.StudioToolsAttribute) == true)
 end
 
 function Session.stop(player: Player)
@@ -257,6 +263,7 @@ function Session.push(player: Player)
 		playClaimed = claimed,
 		persistent = Data.isPersistent(player),
 		studio = RunService:IsStudio(),
+		studioTools = Session.studioTools(),
 	})
 	for _, fn in pushHooks do
 		task.spawn(fn, player)

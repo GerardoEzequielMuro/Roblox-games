@@ -843,6 +843,9 @@ local CAPS: { [number]: CapStyle } = {
 	[4] = { cap = rgb(250, 228, 175), capMat = Enum.Material.Sand }, -- sand on sandstone
 	[5] = { cap = rgb(105, 92, 98), capMat = Enum.Material.Basalt },
 	[6] = { cap = rgb(250, 228, 180), capMat = Enum.Material.Sand }, -- seabed sand on reef rock
+	[7] = { capMat = Enum.Material.Metal }, -- steel deck plates on the factory slabs
+	[8] = { bodyMat = Enum.Material.Marble, capMat = Enum.Material.Marble }, -- white-marble sky palace
+	[9] = { bodyMat = Enum.Material.Slate, capMat = Enum.Material.Neon }, -- dark slabs, glowing tops
 }
 
 -- `slab` is a static platform. Gives it a top layer (grass on dirt, snow on ice, frosting on

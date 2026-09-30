@@ -205,8 +205,10 @@ local function bit(parent: Instance, shape: Enum.PartType, size: Vector3, cf: CF
 	p.Material = material
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.Parent = parent
+	-- weld (unanchored, massless, no collision) BEFORE it enters the character: a bare Part in a
+	-- character for even one physics step can push or trip the avatar
 	weldTo(p, to)
+	p.Parent = parent
 	return p
 end
 
