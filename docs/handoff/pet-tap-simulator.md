@@ -278,3 +278,50 @@ Todo verificado con `tools/uipreview` (PNG/txt regenerados en `docs/previews/pet
 - Con `ForceTouchLayout` (o el emulador de celular): que el bloque izquierdo no toque el joystick y que el dock quede entre joystick y salto en un iPhone real (el área útil cambia con el notch).
 - Que el scroll de las ventanas en táctil se sienta bien (Upgrades, Teleport, Codes, Quests, Rewards, Index) y que el ZIndex de los badges no rompa las animaciones de "pop" al desbloquear botones.
 - Que los textos del menú (Upgrades, Teleport) se lean a 0.8 con la fuente real.
+
+## Ronda 5: ritmo de progresión
+
+Simulador nuevo `pet-tap-simulator/sim/pacing_sim.luau` (núcleo en `sim/pacing_core.luau`, usa `Config` y `Formulas` reales). Corre con `luau sim/pacing_sim.luau -a 9` (primera sesión de 4 h) o `-a 5 week` (7 días, 2 sesiones por día). `sim/pacing_tune.luau` reajusta costos de puertas/huevos/rebirth contra los objetivos. Test nuevo: `tests/pacing_targets.luau` (16 checks, falla si un hito sale de su ventana; ~6 s). `economy_sim.luau` queda como modelo viejo (marcado como tal).
+
+### Jugador simulado (free)
+Toca 6/s, hatchea cada 3 s el huevo con mejor ganancia esperada (si repaga en 150 s), equipa lo mejor, craftea, compra la puerta apenas puede, rebirth si alcanza y no hay puerta a menos de 5 min, gemas a TapPower/PetSlots/Luck (Walk Speed con el sobrante). Cobra regalos de sesión, daily (a los 30 s), 3 quests por día (una cada ~12 min, huevo Magic de bonus) y offline al volver. Esto es más completo que el sim viejo, por eso los "antes" difieren de los del round anterior (daily/quests/huevos Magic aceleran todo).
+
+### Hitos (tiempo de juego activo, mediana de 9 semillas)
+| Hito | Objetivo | Antes | Después |
+|---|---|---|---|
+| Primera ganancia visible | < 10 s | 1 s | 1 s |
+| Primera compra (huevo básico) | < 60 s | 17 s | 17 s |
+| Primer upgrade de gemas | <= 3 min | 5:00 | 2:00 |
+| Compras en los primeros 3 min (upgrades de gemas) | >= 3 | 10 (0) | 19 (3) |
+| Zona 2 Candy Land | ~5 min | 2:43 | 4:31 |
+| Huevo Sprinkle | | 9:14 | 7:19 |
+| Zona 3 Frost Peak | 10-20 min | 29:55 | 13:10 |
+| Zona 4 Lava Caves | 20-40 min | 43:35 | 27:34 |
+| Primer rebirth | 30-60 min | 39:27 | 37:59 |
+| Rebirth #2 | | 44:51 | 48:11 |
+| Zona 5 Cosmic Void | horas | 53:29 | 1h 13m |
+| Rebirth #4 | | 56:10 | 1h 48m |
+| Rebirth #5 / #6 | cola larga | 1h 05 / 1h 52 | 3h 18 (2 de 9) / nunca en 4 h |
+| Mayor hueco entre "tiers nuevos" en la 1ra hora (mediana) | <= 15 min | 22 min | 12.6 min (peor semilla 20) |
+| Mayor tramo sin NADA nuevo (tier, regalo, quest, upgrade) | <= 10 min | 8 min | 10 min (regalos cada 10 min) |
+
+Semana (5 semillas, 2 sesiones por día): rebirth #5 en el día 2, #6 en el día 4, #7 pasa de la semana.
+
+### Qué cambié y por qué (`src/shared/Config.luau`)
+- Gate Candy Land 27K -> 79K: con daily + spotted egg el jugador llegaba a los 2:43; ahora ~4:30 y se siente ganado.
+- Gate Frost Peak 2.6M -> 1.3M y Lava Caves 420M -> 38M: antes había un tramo muerto de ~20 min (sprinkle a los 9 min y nada hasta la zona 3 a los 30); ahora las zonas caen a ~13 y ~27 min.
+- Gate Cosmic Void 6B -> 40B: la última zona pasa a ser una meta de horas (1h 13m) en vez de 53 min.
+- Precios de huevos seguidos a su puerta (mismo criterio de proporción; Sprinkle va atado a la puerta 3): candy 16K -> 47K, sprinkle 140K -> 70K, frost 260K -> 130K, glacier 2.1M -> 1M, magma 12M -> 1.1M, cosmic 180M -> 1.2B. Siguen ordenados por zona.
+- `RebirthBaseCost` 63M -> 2B (crecimiento x8 igual): el primer rebirth sigue en ~38 min, pero #2 a ~48 min llena el hueco 40-60 min y los siguientes se estiran a horas/días (antes #6 a las 2 h).
+- Regalo de sesión de 5 min (10 gemas) -> 2 min (35 gemas): dos TapPower + Walk Speed antes del minuto 3 (antes 0 upgrades de gemas hasta el min 5). Las etiquetas se traducen por `kind`, no hay textos que tocar.
+- Robux, pases y productos: sin cambios. No hizo falta tocar ningún test existente (todos pasan tal cual); `DESIGN.md` actualizado con la tabla nueva.
+
+### Verificación
+`rojo build default.project.json` OK, `luau-lsp analyze` sin salida, tests puros (locale, model_slots, passes_pricing, policy_hud, unit_p0, check_config, pacing_targets) en verde. Mutando la puerta 2 a 400K el test nuevo falla como corresponde.
+
+### Límites del sim
+- Jugador siempre activo durante la sesión; no modela AFK (Auto Tap/Auto Hatch libres), caminatas entre zonas/huevos, amigos, anuncios, eventos, códigos, dados de traits ni las recompensas del Index (+10% taps por zona).
+- Los quests se asumen completos cada 12 min y el huevo Magic (pets exclusivos escalan con la mejor mascota de la zona) pesa mucho: la variación entre semillas (20 min en el peor hueco de tiers) sale sobre todo de ese sorteo y de los regalos de taps de los minutos 10/40.
+- Entre el primer rebirth y Cosmic Void (~35 a ~73 min) los únicos tiers nuevos son rebirth #2 y regalos/quests; si queremos más, falta contenido (más zonas/huevos), no números.
+- Números tuneados a 2 cifras significativas con `pacing_tune.luau` (5 semillas); el test usa 7 y ventanas anchas. Cualquier cambio de pets/multiplicadores obliga a re-correr el sim.
+- Para confirmar en Studio: que el daily se note a los ~30 s (badge en Rewards) y que los precios de huevos nuevos se lean bien en el panel de huevos.

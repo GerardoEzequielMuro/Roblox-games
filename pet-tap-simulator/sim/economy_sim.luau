@@ -1,4 +1,5 @@
 --!nocheck
+-- OLDER economy simulation (round 5 superseded it with sim/pacing_sim.luau; numbers in last_run.txt are stale).
 -- Economy simulation for Tap Pets Simulator. Pure Luau (no Roblox APIs).
 -- Run from the project root:
 --   ../huerta-tycoon/tools/luau.exe sim/economy_sim.luau

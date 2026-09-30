@@ -172,24 +172,26 @@ gifts. Hatches only eggs that repay themselves within 150 s. Equips the best pet
 automatically. Buys gates as soon as it can. Rebirths when affordable, unless a gate is less
 than 5 min away. Spends gems on the cheapest useful upgrade.
 
-`sim/economy_sim.luau` (20 seeds, 6 h):
+`sim/pacing_sim.luau` (round 5: also models daily reward, daily quests, Magic Egg bonuses,
+offline earnings and multi-day sessions; median play time over seeds):
 
-| Milestone | Target | Simulated average |
+| Milestone | Target | Simulated |
 |---|---|---|
-| Zone 2 Candy Land (27K) | ~5 min | **4 m 48 s** |
-| Zone 3 Frost Peak (2.6M) | — | **35 m 37 s** |
-| First rebirth (63M) | ~1 h | **1 h 02 m** |
-| Zone 4 Lava Caves (420M) | — | **1 h 46 m** |
-| Zone 5 Cosmic Void (6B) | 3–4 h | **3 h 29 m** |
+| First egg | < 60 s | **17 s** |
+| Zone 2 Candy Land (79K) | ~5 min | **~4.5 min** |
+| Zone 3 Frost Peak (1.3M) | 10-20 min | **~13 min** |
+| Zone 4 Lava Caves (38M) | 20-40 min | **~27 min** |
+| First rebirth (2B) | 30-60 min | **~37 min** |
+| Zone 5 Cosmic Void (40B) | hours | **~1 h 13 m** |
 
-Run `../huerta-tycoon/tools/luau.exe sim/economy_sim.luau -a tune` to re-fit the gate costs,
-egg prices (kept in proportion to their zone's gate) and the first rebirth cost to these
-targets after changing pets or multipliers. `sim/set_config.py key=value ...` writes numbers
-back into Config.
+`luau sim/pacing_sim.luau -a 9 week` prints the full table and the week view;
+`luau sim/pacing_tune.luau` re-fits gate costs, egg prices (kept in proportion to their gate)
+and the first rebirth cost to the targets; `tests/pacing_targets.luau` fails when a milestone
+leaves its window. (`sim/economy_sim.luau` is the older, simpler model; its numbers are stale.)
 
 | Item | Cost |
 |---|---|
-| Rebirth n | 63M × 8ⁿ Taps → +50% taps, 30 + 15n Gems |
+| Rebirth n | 2B × 8ⁿ Taps → +50% taps, 30 + 15n Gems |
 | Tap Power | 10 × 1.45ˡᵛ Gems (max 25) |
 | Luck | 20 × 1.55ˡᵛ Gems (max 15) |
 | Pet Slots | 60 × 3ˡᵛ Gems (max 3) |

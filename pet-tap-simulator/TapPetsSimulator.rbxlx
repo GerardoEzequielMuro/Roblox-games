@@ -239,10 +239,10 @@ Config.ZoneWidth = 170
 
 Config.Zones = {
 	{ index = 1, id = "meadow", name = "Spawn Meadow", cost = 0, ground = { 110, 200, 80 }, groundMaterial = "Grass", path = { 235, 215, 160 }, pathMaterial = "Sand", wall = { 150, 105, 70 }, sky = { 255, 255, 255 }, decor = "meadow" },
-	{ index = 2, id = "candy", name = "Candy Land", cost = 27000, ground = { 255, 180, 215 }, groundMaterial = "SmoothPlastic", path = { 255, 245, 190 }, pathMaterial = "SmoothPlastic", wall = { 255, 110, 170 }, sky = { 255, 225, 245 }, decor = "candy" },
-	{ index = 3, id = "frost", name = "Frost Peak", cost = 2600000, ground = { 235, 245, 255 }, groundMaterial = "Snow", path = { 170, 215, 255 }, pathMaterial = "Ice", wall = { 120, 170, 220 }, sky = { 220, 240, 255 }, decor = "frost" },
-	{ index = 4, id = "lava", name = "Lava Caves", cost = 420000000, ground = { 70, 55, 55 }, groundMaterial = "Basalt", path = { 255, 110, 30 }, pathMaterial = "CrackedLava", wall = { 45, 35, 35 }, sky = { 255, 210, 190 }, decor = "lava" },
-	{ index = 5, id = "cosmic", name = "Cosmic Void", cost = 6000000000, ground = { 45, 35, 90 }, groundMaterial = "Slate", path = { 130, 90, 255 }, pathMaterial = "Neon", wall = { 25, 20, 60 }, sky = { 215, 205, 255 }, decor = "cosmic" },
+	{ index = 2, id = "candy", name = "Candy Land", cost = 79000, ground = { 255, 180, 215 }, groundMaterial = "SmoothPlastic", path = { 255, 245, 190 }, pathMaterial = "SmoothPlastic", wall = { 255, 110, 170 }, sky = { 255, 225, 245 }, decor = "candy" },
+	{ index = 3, id = "frost", name = "Frost Peak", cost = 1300000, ground = { 235, 245, 255 }, groundMaterial = "Snow", path = { 170, 215, 255 }, pathMaterial = "Ice", wall = { 120, 170, 220 }, sky = { 220, 240, 255 }, decor = "frost" },
+	{ index = 4, id = "lava", name = "Lava Caves", cost = 38000000, ground = { 70, 55, 55 }, groundMaterial = "Basalt", path = { 255, 110, 30 }, pathMaterial = "CrackedLava", wall = { 45, 35, 35 }, sky = { 255, 210, 190 }, decor = "lava" },
+	{ index = 5, id = "cosmic", name = "Cosmic Void", cost = 40000000000, ground = { 45, 35, 90 }, groundMaterial = "Slate", path = { 130, 90, 255 }, pathMaterial = "Neon", wall = { 25, 20, 60 }, sky = { 215, 205, 255 }, decor = "cosmic" },
 } :: { Zone }
 
 ---------------------------------------------------------------------------
@@ -271,22 +271,22 @@ Config.Eggs = {
 	{ id = "spotted", name = "Spotted Egg", zone = 1, price = 3000, color = { 255, 230, 150 }, spots = { 200, 120, 60 }, offsetX = 30, offsetZ = 30, entries = {
 		{ pet = "piggy", chance = 55 }, { pet = "chick", chance = 32 }, { pet = "fox", chance = 10.5 }, { pet = "owl", chance = 2.399 }, { pet = "unicorn", chance = 0.1 }, { pet = "shadowdragon", chance = SECRET },
 	} },
-	{ id = "candy", name = "Candy Egg", zone = 2, price = 16000, color = { 255, 140, 200 }, spots = { 120, 220, 255 }, offsetX = -30, offsetZ = 20, entries = {
+	{ id = "candy", name = "Candy Egg", zone = 2, price = 47000, color = { 255, 140, 200 }, spots = { 120, 220, 255 }, offsetX = -30, offsetZ = 20, entries = {
 		{ pet = "gummybear", chance = 58 }, { pet = "lollipup", chance = 30 }, { pet = "cupcakecat", chance = 10 }, { pet = "candydragon", chance = 1.999 }, { pet = "shadowdragon", chance = SECRET },
 	} },
-	{ id = "sprinkle", name = "Sprinkle Egg", zone = 2, price = 140000, color = { 255, 250, 200 }, spots = { 255, 90, 160 }, offsetX = 30, offsetZ = 20, entries = {
+	{ id = "sprinkle", name = "Sprinkle Egg", zone = 2, price = 70000, color = { 255, 250, 200 }, spots = { 255, 90, 160 }, offsetX = 30, offsetZ = 20, entries = {
 		{ pet = "donutdog", chance = 60 }, { pet = "marshbunny", chance = 33 }, { pet = "cottonfox", chance = 6.899 }, { pet = "jellyphoenix", chance = 0.1 }, { pet = "shadowdragon", chance = SECRET },
 	} },
-	{ id = "frost", name = "Frost Egg", zone = 3, price = 260000, color = { 200, 235, 255 }, spots = { 255, 255, 255 }, offsetX = -30, offsetZ = 20, entries = {
+	{ id = "frost", name = "Frost Egg", zone = 3, price = 130000, color = { 200, 235, 255 }, spots = { 255, 255, 255 }, offsetX = -30, offsetZ = 20, entries = {
 		{ pet = "penguin", chance = 60 }, { pet = "snowfox", chance = 30 }, { pet = "polarbear", chance = 8.5 }, { pet = "icewolf", chance = 1.499 }, { pet = "shadowdragon", chance = SECRET },
 	} },
-	{ id = "glacier", name = "Glacier Egg", zone = 3, price = 2100000, color = { 120, 190, 255 }, spots = { 230, 250, 255 }, offsetX = 30, offsetZ = 20, entries = {
+	{ id = "glacier", name = "Glacier Egg", zone = 3, price = 1000000, color = { 120, 190, 255 }, spots = { 230, 250, 255 }, offsetX = 30, offsetZ = 20, entries = {
 		{ pet = "arcticowl", chance = 62 }, { pet = "yeti", chance = 30 }, { pet = "frostphoenix", chance = 7.9 }, { pet = "icedragon", chance = 0.099 }, { pet = "shadowdragon", chance = SECRET },
 	} },
-	{ id = "magma", name = "Magma Egg", zone = 4, price = 12000000, color = { 80, 40, 30 }, spots = { 255, 120, 20 }, offsetX = 0, offsetZ = 25, entries = {
+	{ id = "magma", name = "Magma Egg", zone = 4, price = 1100000, color = { 80, 40, 30 }, spots = { 255, 120, 20 }, offsetX = 0, offsetZ = 25, entries = {
 		{ pet = "lavapup", chance = 60 }, { pet = "embercat", chance = 30 }, { pet = "magmagolem", chance = 9.4 }, { pet = "firedragon", chance = 0.58 }, { pet = "hellhound", chance = 0.019 }, { pet = "shadowdragon", chance = SECRET },
 	} },
-	{ id = "cosmic", name = "Cosmic Egg", zone = 5, price = 180000000, color = { 60, 40, 140 }, spots = { 255, 240, 120 }, offsetX = 0, offsetZ = 25, entries = {
+	{ id = "cosmic", name = "Cosmic Egg", zone = 5, price = 1200000000, color = { 60, 40, 140 }, spots = { 255, 240, 120 }, offsetX = 0, offsetZ = 25, entries = {
 		{ pet = "mooncat", chance = 60 }, { pet = "starbunny", chance = 30 }, { pet = "alienpup", chance = 9.4 }, { pet = "nebulaowl", chance = 0.58 }, { pet = "galaxydragon", chance = 0.019 }, { pet = "shadowdragon", chance = SECRET },
 	} },
 	-- Robux-only egg, sits in spawn. Hatched via developer product, never with taps.
@@ -312,7 +312,7 @@ Config.OctoHatchCount = 8 -- x8 Hatch pass (includes x3)
 ---------------------------------------------------------------------------
 -- Rebirth
 ---------------------------------------------------------------------------
-Config.RebirthBaseCost = 63000000
+Config.RebirthBaseCost = 2000000000
 Config.RebirthCostGrowth = 8
 Config.RebirthMultPer = 0.5 -- each rebirth adds +50% to every tap
 Config.RebirthGemsBase = 30
@@ -483,7 +483,7 @@ Config.DailyRewards = {
 export type Gift = { minutes: number, reward: Reward }
 Config.Gifts = {
 	{ minutes = 0.75, reward = { kind = "taps", amount = 1, label = "1 min of Taps" } }, -- first minute: pays the first egg
-	{ minutes = 5, reward = { kind = "gems", amount = 10, label = "10 Gems" } },
+	{ minutes = 2, reward = { kind = "gems", amount = 35, label = "35 Gems" } }, -- first gem upgrades (TapPower x2 + Walk Speed) by minute 3
 	{ minutes = 10, reward = { kind = "taps", amount = 5, label = "5 min of Taps" } },
 	{ minutes = 20, reward = { kind = "luck", amount = 5, label = "5 min Super Luck" } },
 	{ minutes = 30, reward = { kind = "gems", amount = 25, label = "25 Gems" } },
