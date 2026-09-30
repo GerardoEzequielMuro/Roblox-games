@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "คืนร่าง",
 	["forms.need"] = "พลัง {power}",
 	["forms.need_asc"] = "เลื่อนขั้น {n} ครั้ง",
+	["forms.need_asc_one"] = "เลื่อนขั้น {n} ครั้ง",
 
 	-- moves
 	["moves.techniques"] = "ท่าไม้ตาย",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "เลื่อนขั้น {n} ครั้ง",
+	["ascend.count_one"] = "เลื่อนขั้น {n} ครั้ง",
 	["ascend.next"] = "การฝึก {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "สิ่งที่ยังอยู่: ร่าง ท่าไม้ตาย ออร่า อัปเกรด และ {gems}",
 	["ascend.resets"] = "สิ่งที่รีเซ็ต: ค่าพลัง {sparks} ลูกน้ำหนัก และดาวเคราะห์",

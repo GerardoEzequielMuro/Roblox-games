@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "Убрать форму",
 	["forms.need"] = "{power} силы",
 	["forms.need_asc"] = "Вознесений: {n}",
+	["forms.need_asc_one"] = "Вознесений: {n}",
 
 	-- moves
 	["moves.techniques"] = "Техники",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "Вознесений: {n}",
+	["ascend.count_one"] = "Вознесений: {n}",
 	["ascend.next"] = "Тренировка {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Сохраняется: формы, техники, ауры, улучшения и {gems}.",
 	["ascend.resets"] = "Сбрасывается: характеристики, {sparks}, грузы и планеты.",

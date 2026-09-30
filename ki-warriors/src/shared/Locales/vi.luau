@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "Hạ sức mạnh",
 	["forms.need"] = "{power} sức mạnh",
 	["forms.need_asc"] = "{n} lần thăng cấp",
+	["forms.need_asc_one"] = "{n} lần thăng cấp",
 
 	-- moves
 	["moves.techniques"] = "Kỹ thuật",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} lần thăng cấp",
+	["ascend.count_one"] = "{n} lần thăng cấp",
 	["ascend.next"] = "Luyện tập {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Bạn giữ lại: dạng, kỹ thuật, hào quang, nâng cấp và {gems}.",
 	["ascend.resets"] = "Bị reset: chỉ số, {sparks}, tạ và hành tinh.",

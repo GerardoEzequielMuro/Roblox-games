@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "변신 해제",
 	["forms.need"] = "파워 {power}",
 	["forms.need_asc"] = "승천 {n}회",
+	["forms.need_asc_one"] = "승천 {n}회",
 
 	-- moves
 	["moves.techniques"] = "필살기",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "승천 {n}회",
+	["ascend.count_one"] = "승천 {n}회",
 	["ascend.next"] = "수련 {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "유지: 폼, 필살기, 오라, 강화, {gems}.",
 	["ascend.resets"] = "초기화: 능력치, {sparks}, 웨이트, 행성.",

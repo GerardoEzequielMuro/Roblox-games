@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "Reduzir poder",
 	["forms.need"] = "{power} de poder",
 	["forms.need_asc"] = "{n} ascensões",
+	["forms.need_asc_one"] = "{n} ascensão",
 
 	-- moves
 	["moves.techniques"] = "Técnicas",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Ascensões",
+	["ascend.count_one"] = "{n} Ascensão",
 	["ascend.next"] = "Treino {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Você mantém: formas, técnicas, auras, melhorias e {gems}.",
 	["ascend.resets"] = "Reinicia: atributos, {sparks}, pesos e planetas.",

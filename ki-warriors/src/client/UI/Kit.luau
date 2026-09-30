@@ -102,6 +102,13 @@ function Kit.button(parent: Instance, text: string, color: Color3, width: number
 		Parent = parent,
 		OnClick = onClick,
 	})
+	-- touch: buttons are at least 52 design px tall (Theme.minButtonH), so a short row grows
+	if Theme.minButtonH > 0 and parent:IsA("Frame") and parent.Name == "Row" then
+		local need = Theme.minButtonH + 8
+		if parent.Size.Y.Scale == 0 and parent.Size.Y.Offset < need then
+			parent.Size = UDim2.new(parent.Size.X.Scale, parent.Size.X.Offset, 0, need)
+		end
+	end
 	for _, d in b:GetDescendants() do
 		if d:IsA("GuiObject") then
 			d.ZIndex = 24

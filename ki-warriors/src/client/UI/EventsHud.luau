@@ -141,14 +141,20 @@ local function buildOffline()
 end
 
 function EventsHud.init()
+	-- PC: column on the right. Touch: under the zone pill in the top centre, two chips per row
+	-- (the top right belongs to the objective and the round combat buttons).
 	local dock = new("Frame", {
 		Name = "Events",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(196, 130),
-		Position = if touch then UDim2.new(1, -8, 0, 6) else UDim2.new(1, -10, 0.28, 0),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = if touch then UDim2.fromOffset(398, 62) else UDim2.fromOffset(196, 130),
+		Position = if touch then UDim2.new(0.5, 29, 0, 122) else UDim2.new(1, -10, 0.28, 0),
+		AnchorPoint = if touch then Vector2.new(0.5, 0) else Vector2.new(1, 0),
 		Parent = Root.gui,
-	}, { Theme.list(Enum.FillDirection.Vertical, 5, Enum.HorizontalAlignment.Right) })
+	}, {
+		if touch
+			then new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Wraps = true, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Top })
+			else Theme.list(Enum.FillDirection.Vertical, 5, Enum.HorizontalAlignment.Right),
+	})
 	Root.mount(dock)
 	chip(dock, "pvp", 1)
 	chip(dock, "rush", 2)

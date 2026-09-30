@@ -94,22 +94,30 @@ end
 -- Training dock: auto toggles + five numbered stat slots + weights
 ---------------------------------------------------------------------------
 local statSlots: { [string]: { frame: TextButton, value: TextLabel, ring: UIStroke, scale: UIScale } } = {}
-local SLOT = if touch then 50 else 58
+local SLOT = if touch then 58 else 58 -- touch: 58 * 0.85 scale * 0.94 (unselected) >= 44 px
+
+local AUTO_ICONS = { autoTrain = "💪", autoCharge = "🔋", autoFight = "⚔️" }
 
 local function toggleButton(key: string, locKey: string, order: number, parent: Instance, w: number): TextButton
+	-- touch: a 53 px tall pill with "icon ON/OFF" (the full name does not fit 74 px in every
+	-- language); PC: "Auto Train: OFF" with a status dot.
 	local b = new("TextButton", {
 		Name = "Auto_" .. key,
-		Size = UDim2.fromOffset(w, 26),
+		Size = UDim2.fromOffset(w, if touch then 53 else 26),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		AutoButtonColor = false,
 		Text = "",
 		LayoutOrder = order,
 		Parent = parent,
-	}, { Theme.corner(13), Theme.stroke(2.5), new("UIGradient", { Name = "G", Rotation = 90 }) })
-	Theme.gloss(b, 13, 0.86) -- first child drawn, so it sits under the dot and the label
-	local dot = new("Frame", { Name = "Dot", Size = UDim2.fromOffset(12, 12), Position = UDim2.fromOffset(7, 7), BackgroundColor3 = Theme.Grey, Parent = b }, { Theme.corner(6), Theme.stroke(1.5) })
+	}, { Theme.corner(if touch then 16 else 13), Theme.stroke(2.5), new("UIGradient", { Name = "G", Rotation = 90 }) })
+	Theme.gloss(b, if touch then 16 else 13, 0.86) -- first child drawn, so it sits under the dot and the label
+	local dot = new("Frame", { Name = "Dot", Size = UDim2.fromOffset(12, 12), Position = if touch then UDim2.new(0, 8, 0.5, -6) else UDim2.fromOffset(7, 7), BackgroundColor3 = Theme.Grey, Parent = b }, { Theme.corner(6), Theme.stroke(1.5) })
 	local _ = dot
-	Theme.text({ Name = "Label", Text = "", Size = UDim2.new(1, -28, 1, -6), Position = UDim2.fromOffset(23, 3), MaxTextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
+	if touch then
+		Theme.text({ Name = "Label", Text = "", Size = UDim2.new(1, -26, 1, -14), Position = UDim2.fromOffset(22, 7), MaxTextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
+	else
+		Theme.text({ Name = "Label", Text = "", Size = UDim2.new(1, -28, 1, -6), Position = UDim2.fromOffset(23, 3), MaxTextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
+	end
 	b:SetAttribute("SettingKey", key)
 	b:SetAttribute("LocKey", locKey)
 	Theme.pressable(b, 1.04)
@@ -122,35 +130,45 @@ end
 
 local function buildTraining()
 	local n = #Config.Stats
-	local gap = 8
-	local gearW = if touch then 96 else 118
+	local gap = if touch then 5 else 8
+	local gearW = if touch then 84 else 118
 	local w = n * SLOT + (n - 1) * gap + gap + gearW
-	local h = 26 + 6 + SLOT + 20
+	local h = if touch then SLOT + 40 else 26 + 6 + SLOT + 20
 	local dock = new("Frame", {
 		Name = "Training",
 		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(w, h),
-		Position = if touch then UDim2.new(0.5, 40, 0, 6) else UDim2.new(0.5, 0, 1, -8),
+		Position = if touch then UDim2.new(0.5, 29, 0, 6) else UDim2.new(0.5, 0, 1, -8),
 		AnchorPoint = if touch then Vector2.new(0.5, 0) else Vector2.new(0.5, 1),
 		Parent = Root.gui,
 	})
 	Root.mount(dock)
 	refs.training = dock
-	-- auto toggles (top row on PC, bottom row on touch so the slots sit under the Roblox bar)
+	-- auto toggles: PC = row above the slots. Touch = their own block under the vitals (left
+	-- column), so the top centre stays short and the toggles are big enough for a thumb.
 	local autos = new("Frame", {
 		Name = "Autos",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(w, 26),
-		Position = if touch then UDim2.fromOffset(0, SLOT + 24) else UDim2.fromOffset(0, 0),
-		Parent = dock,
+		Size = if touch then UDim2.fromOffset(240, 53) else UDim2.fromOffset(w, 26),
+		Position = if touch then UDim2.fromOffset(8, 132) else UDim2.fromOffset(0, 0),
+		Parent = if touch then Root.gui else dock,
 	}, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
-	local bw = math.floor((w - 12) / 3)
+	if touch then
+		local holder = Root.mount(autos)
+		-- sits right under the vitals block, which grows with the UI scale (tablets)
+		local function below()
+			holder.Position = UDim2.fromOffset(8, math.floor(6 + 146 * Root.scale + 2))
+		end
+		below()
+		Root.Changed:Connect(below)
+	end
+	local bw = if touch then 76 else math.floor((w - 12) / 3)
 	refs.autoTrain = toggleButton("autoTrain", "hud.auto_train", 1, autos, bw)
 	refs.autoCharge = toggleButton("autoCharge", "hud.auto_ki", 2, autos, bw)
 	refs.autoFight = toggleButton("autoFight", "hud.auto_fight", 3, autos, bw)
 	refs.autos = autos
 	-- stat slots
-	local top = if touch then 0 else 32
+	local top = if touch then 4 else 32
 	for i, stat in Config.Stats do
 		local info = Config.StatInfo[stat]
 		local color = Theme.rgb(info.color)
@@ -173,7 +191,7 @@ local function buildTraining()
 		if not touch then
 			Theme.text({ Text = tostring(i), Font = Theme.Display, Size = UDim2.fromOffset(18, 20), Position = UDim2.fromOffset(-2, -6), MaxTextSize = 20, Stroke = 2.5, Parent = b }).ZIndex = 4
 		end
-		local value = Theme.text({ Name = "Value", Text = "0", Font = Theme.Display, Size = UDim2.fromOffset(SLOT + gap, 18), Position = UDim2.new(0.5, 0, 1, 2), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 18, TextColor3 = Theme.lighten(color, 0.45), Parent = b })
+		local value = Theme.text({ Name = "Value", Text = "0", Font = Theme.Display, Size = UDim2.fromOffset(SLOT + gap, 18), Position = UDim2.new(0.5, 0, 1, 3), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 18, TextColor3 = Theme.lighten(color, 0.45), Parent = b })
 		b.Activated:Connect(function()
 			Theme.play("click", 0.3)
 			Controls.setStat(stat)
@@ -206,7 +224,7 @@ local function buildTraining()
 	end)
 	refs.gear = gear
 	-- selected stat readout: "+12 per rep · auto 1.5/s"
-	refs.trainRate = Theme.text({ Name = "Rate", Text = "", Size = UDim2.fromOffset(w, 14), Position = if touch then UDim2.fromOffset(0, SLOT + 52) else UDim2.fromOffset(0, -18), MaxTextSize = 13, TextColor3 = Theme.Yellow, Parent = dock })
+	refs.trainRate = Theme.text({ Name = "Rate", Text = "", Size = UDim2.fromOffset(w, if touch then 17 else 14), Position = if touch then UDim2.fromOffset(0, SLOT + 28) else UDim2.fromOffset(0, -18), MaxTextSize = 13, TextColor3 = Theme.Yellow, Parent = dock })
 end
 
 ---------------------------------------------------------------------------
@@ -311,8 +329,8 @@ local function buildCombat()
 	-- touch: the training dock owns the top centre, so these sit lower / to the right
 	local zone = new("Frame", {
 		Name = "Zone",
-		Size = UDim2.fromOffset(320, 32),
-		Position = if touch then UDim2.new(0.5, 40, 0, 118) else UDim2.new(0.5, 0, 0, 88),
+		Size = if touch then UDim2.fromOffset(250, 32) else UDim2.fromOffset(320, 32),
+		Position = if touch then UDim2.new(0.5, 28, 0, 92) else UDim2.new(0.5, 0, 0, 88),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
@@ -323,7 +341,7 @@ local function buildCombat()
 	refs.zone = zone
 	refs.zoneText = Theme.text({ Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), MaxTextSize = 19, Parent = zone })
 
-	local boss = new("Frame", { Name = "BossBar", BackgroundTransparency = 1, Size = UDim2.fromOffset(440, 44), Position = if touch then UDim2.new(0.5, 40, 0, 154) else UDim2.new(0.5, 0, 0, 126), AnchorPoint = Vector2.new(0.5, 0), Visible = false, Parent = Root.gui })
+	local boss = new("Frame", { Name = "BossBar", BackgroundTransparency = 1, Size = if touch then UDim2.fromOffset(270, 44) else UDim2.fromOffset(440, 44), Position = if touch then UDim2.new(0.5, -8, 0, 152) else UDim2.new(0.5, 0, 0, 126), AnchorPoint = Vector2.new(0.5, 0), Visible = false, Parent = Root.gui })
 	Root.mount(boss)
 	refs.boss = boss
 	refs.bossName = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 20), MaxTextSize = 19, Stroke = 3, TextColor3 = Theme.Yellow, Parent = boss })
@@ -453,7 +471,11 @@ local function refreshFull()
 	for _, key in { "autoTrain", "autoCharge", "autoFight" } do
 		local b = refs[key]
 		local on = s.settings[key] == true
-		b.Label.Text = Lang.t(b:GetAttribute("LocKey")) .. ": " .. Lang.t(if on then "hud.on" else "hud.off")
+		if touch then
+			b.Label.Text = AUTO_ICONS[key] .. " " .. Lang.t(if on then "hud.on" else "hud.off")
+		else
+			b.Label.Text = Lang.t(b:GetAttribute("LocKey")) .. ": " .. Lang.t(if on then "hud.on" else "hud.off")
+		end
 		b.G.Color = face(if on then Theme.Green else Theme.Grey)
 		b.Dot.BackgroundColor3 = if on then Color3.fromRGB(210, 255, 170) else Theme.PanelDark
 	end

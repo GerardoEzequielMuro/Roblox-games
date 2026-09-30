@@ -1866,6 +1866,7 @@ return {
 	["forms.revert"] = "Zurückwandeln",
 	["forms.need"] = "{power} Kraft",
 	["forms.need_asc"] = "{n} Aufstiege",
+	["forms.need_asc_one"] = "{n} Aufstieg",
 
 	-- moves
 	["moves.techniques"] = "Techniken",
@@ -1889,6 +1890,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Aufstiege",
+	["ascend.count_one"] = "{n} Aufstieg",
 	["ascend.next"] = "Training {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Du behältst: Formen, Techniken, Auren, Upgrades und {gems}.",
 	["ascend.resets"] = "Zurückgesetzt: Werte, {sparks}, Gewichte und Planeten.",
@@ -2346,6 +2348,7 @@ return {
 	["forms.revert"] = "Power down",
 	["forms.need"] = "{power} power",
 	["forms.need_asc"] = "{n} ascensions",
+	["forms.need_asc_one"] = "{n} ascension",
 
 	-- moves
 	["moves.techniques"] = "Techniques",
@@ -2369,6 +2372,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Ascensions",
+	["ascend.count_one"] = "{n} Ascension",
 	["ascend.next"] = "Training {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "You keep: forms, techniques, auras, upgrades and {gems}.",
 	["ascend.resets"] = "Resets: stats, {sparks}, weights and planets.",
@@ -2825,6 +2829,7 @@ return {
 	["forms.revert"] = "Bajar poder",
 	["forms.need"] = "{power} de poder",
 	["forms.need_asc"] = "{n} ascensiones",
+	["forms.need_asc_one"] = "{n} ascensión",
 
 	-- moves
 	["moves.techniques"] = "Técnicas",
@@ -2848,6 +2853,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Ascensiones",
+	["ascend.count_one"] = "{n} Ascensión",
 	["ascend.next"] = "Entrenamiento {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Te quedas con: formas, técnicas, auras, mejoras y {gems}.",
 	["ascend.resets"] = "Se reinicia: estadísticas, {sparks}, pesas y planetas.",
@@ -3304,6 +3310,7 @@ return {
 	["forms.revert"] = "Baisser la puissance",
 	["forms.need"] = "{power} de puissance",
 	["forms.need_asc"] = "{n} ascensions",
+	["forms.need_asc_one"] = "{n} ascension",
 
 	-- moves
 	["moves.techniques"] = "Techniques",
@@ -3327,6 +3334,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Ascensions",
+	["ascend.count_one"] = "{n} Ascension",
 	["ascend.next"] = "Entraînement {cur} % → {next} % · +{g} {gems}",
 	["ascend.keeps"] = "Tu gardes : formes, techniques, auras, améliorations et {gems}.",
 	["ascend.resets"] = "Remis à zéro : stats, {sparks}, poids et planètes.",
@@ -3783,6 +3791,7 @@ return {
 	["forms.revert"] = "Turunkan power",
 	["forms.need"] = "{power} power",
 	["forms.need_asc"] = "{n} ascension",
+	["forms.need_asc_one"] = "{n} ascension",
 
 	-- moves
 	["moves.techniques"] = "Teknik",
@@ -3806,6 +3815,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Ascension",
+	["ascend.count_one"] = "{n} Ascension",
 	["ascend.next"] = "Latihan {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Yang tetap kamu simpan: wujud, teknik, aura, upgrade, dan {gems}.",
 	["ascend.resets"] = "Yang di-reset: stat, {sparks}, beban, dan planet.",
@@ -4262,6 +4272,7 @@ return {
 	["forms.revert"] = "元に戻る",
 	["forms.need"] = "パワー{power}",
 	["forms.need_asc"] = "アセンション{n}回",
+	["forms.need_asc_one"] = "アセンション{n}回",
 
 	-- moves
 	["moves.techniques"] = "必殺技",
@@ -4285,6 +4296,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "アセンション {n}回",
+	["ascend.count_one"] = "アセンション {n}回",
 	["ascend.next"] = "トレーニング {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "引き継ぎ: フォーム、必殺技、オーラ、強化、{gems}。",
 	["ascend.resets"] = "リセット: 能力、{sparks}、ウェイト、惑星。",
@@ -4741,6 +4753,7 @@ return {
 	["forms.revert"] = "변신 해제",
 	["forms.need"] = "파워 {power}",
 	["forms.need_asc"] = "승천 {n}회",
+	["forms.need_asc_one"] = "승천 {n}회",
 
 	-- moves
 	["moves.techniques"] = "필살기",
@@ -4764,6 +4777,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "승천 {n}회",
+	["ascend.count_one"] = "승천 {n}회",
 	["ascend.next"] = "수련 {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "유지: 폼, 필살기, 오라, 강화, {gems}.",
 	["ascend.resets"] = "초기화: 능력치, {sparks}, 웨이트, 행성.",
@@ -5220,6 +5234,7 @@ return {
 	["forms.revert"] = "Reduzir poder",
 	["forms.need"] = "{power} de poder",
 	["forms.need_asc"] = "{n} ascensões",
+	["forms.need_asc_one"] = "{n} ascensão",
 
 	-- moves
 	["moves.techniques"] = "Técnicas",
@@ -5243,6 +5258,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Ascensões",
+	["ascend.count_one"] = "{n} Ascensão",
 	["ascend.next"] = "Treino {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Você mantém: formas, técnicas, auras, melhorias e {gems}.",
 	["ascend.resets"] = "Reinicia: atributos, {sparks}, pesos e planetas.",
@@ -5699,6 +5715,7 @@ return {
 	["forms.revert"] = "Убрать форму",
 	["forms.need"] = "{power} силы",
 	["forms.need_asc"] = "Вознесений: {n}",
+	["forms.need_asc_one"] = "Вознесений: {n}",
 
 	-- moves
 	["moves.techniques"] = "Техники",
@@ -5722,6 +5739,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "Вознесений: {n}",
+	["ascend.count_one"] = "Вознесений: {n}",
 	["ascend.next"] = "Тренировка {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Сохраняется: формы, техники, ауры, улучшения и {gems}.",
 	["ascend.resets"] = "Сбрасывается: характеристики, {sparks}, грузы и планеты.",
@@ -6178,6 +6196,7 @@ return {
 	["forms.revert"] = "คืนร่าง",
 	["forms.need"] = "พลัง {power}",
 	["forms.need_asc"] = "เลื่อนขั้น {n} ครั้ง",
+	["forms.need_asc_one"] = "เลื่อนขั้น {n} ครั้ง",
 
 	-- moves
 	["moves.techniques"] = "ท่าไม้ตาย",
@@ -6201,6 +6220,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "เลื่อนขั้น {n} ครั้ง",
+	["ascend.count_one"] = "เลื่อนขั้น {n} ครั้ง",
 	["ascend.next"] = "การฝึก {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "สิ่งที่ยังอยู่: ร่าง ท่าไม้ตาย ออร่า อัปเกรด และ {gems}",
 	["ascend.resets"] = "สิ่งที่รีเซ็ต: ค่าพลัง {sparks} ลูกน้ำหนัก และดาวเคราะห์",
@@ -6657,6 +6677,7 @@ return {
 	["forms.revert"] = "Gücü indir",
 	["forms.need"] = "{power} güç",
 	["forms.need_asc"] = "{n} yükselme",
+	["forms.need_asc_one"] = "{n} yükselme",
 
 	-- moves
 	["moves.techniques"] = "Teknikler",
@@ -6680,6 +6701,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Yükselme",
+	["ascend.count_one"] = "{n} Yükselme",
 	["ascend.next"] = "Antrenman %{cur} → %{next} · +{g} {gems}",
 	["ascend.keeps"] = "Kalanlar: formlar, teknikler, auralar, geliştirmeler ve {gems}.",
 	["ascend.resets"] = "Sıfırlananlar: özellikler, {sparks}, ağırlıklar ve gezegenler.",
@@ -7136,6 +7158,7 @@ return {
 	["forms.revert"] = "Hạ sức mạnh",
 	["forms.need"] = "{power} sức mạnh",
 	["forms.need_asc"] = "{n} lần thăng cấp",
+	["forms.need_asc_one"] = "{n} lần thăng cấp",
 
 	-- moves
 	["moves.techniques"] = "Kỹ thuật",
@@ -7159,6 +7182,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} lần thăng cấp",
+	["ascend.count_one"] = "{n} lần thăng cấp",
 	["ascend.next"] = "Luyện tập {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Bạn giữ lại: dạng, kỹ thuật, hào quang, nâng cấp và {gems}.",
 	["ascend.resets"] = "Bị reset: chỉ số, {sparks}, tạ và hành tinh.",
@@ -20052,14 +20076,20 @@ local function buildOffline()
 end
 
 function EventsHud.init()
+	-- PC: column on the right. Touch: under the zone pill in the top centre, two chips per row
+	-- (the top right belongs to the objective and the round combat buttons).
 	local dock = new("Frame", {
 		Name = "Events",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(196, 130),
-		Position = if touch then UDim2.new(1, -8, 0, 6) else UDim2.new(1, -10, 0.28, 0),
-		AnchorPoint = Vector2.new(1, 0),
+		Size = if touch then UDim2.fromOffset(398, 62) else UDim2.fromOffset(196, 130),
+		Position = if touch then UDim2.new(0.5, 29, 0, 122) else UDim2.new(1, -10, 0.28, 0),
+		AnchorPoint = if touch then Vector2.new(0.5, 0) else Vector2.new(1, 0),
 		Parent = Root.gui,
-	}, { Theme.list(Enum.FillDirection.Vertical, 5, Enum.HorizontalAlignment.Right) })
+	}, {
+		if touch
+			then new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Wraps = true, Padding = UDim.new(0, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Top })
+			else Theme.list(Enum.FillDirection.Vertical, 5, Enum.HorizontalAlignment.Right),
+	})
 	Root.mount(dock)
 	chip(dock, "pvp", 1)
 	chip(dock, "rush", 2)
@@ -20259,22 +20289,30 @@ end
 -- Training dock: auto toggles + five numbered stat slots + weights
 ---------------------------------------------------------------------------
 local statSlots: { [string]: { frame: TextButton, value: TextLabel, ring: UIStroke, scale: UIScale } } = {}
-local SLOT = if touch then 50 else 58
+local SLOT = if touch then 58 else 58 -- touch: 58 * 0.85 scale * 0.94 (unselected) >= 44 px
+
+local AUTO_ICONS = { autoTrain = "💪", autoCharge = "🔋", autoFight = "⚔️" }
 
 local function toggleButton(key: string, locKey: string, order: number, parent: Instance, w: number): TextButton
+	-- touch: a 53 px tall pill with "icon ON/OFF" (the full name does not fit 74 px in every
+	-- language); PC: "Auto Train: OFF" with a status dot.
 	local b = new("TextButton", {
 		Name = "Auto_" .. key,
-		Size = UDim2.fromOffset(w, 26),
+		Size = UDim2.fromOffset(w, if touch then 53 else 26),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		AutoButtonColor = false,
 		Text = "",
 		LayoutOrder = order,
 		Parent = parent,
-	}, { Theme.corner(13), Theme.stroke(2.5), new("UIGradient", { Name = "G", Rotation = 90 }) })
-	Theme.gloss(b, 13, 0.86) -- first child drawn, so it sits under the dot and the label
-	local dot = new("Frame", { Name = "Dot", Size = UDim2.fromOffset(12, 12), Position = UDim2.fromOffset(7, 7), BackgroundColor3 = Theme.Grey, Parent = b }, { Theme.corner(6), Theme.stroke(1.5) })
+	}, { Theme.corner(if touch then 16 else 13), Theme.stroke(2.5), new("UIGradient", { Name = "G", Rotation = 90 }) })
+	Theme.gloss(b, if touch then 16 else 13, 0.86) -- first child drawn, so it sits under the dot and the label
+	local dot = new("Frame", { Name = "Dot", Size = UDim2.fromOffset(12, 12), Position = if touch then UDim2.new(0, 8, 0.5, -6) else UDim2.fromOffset(7, 7), BackgroundColor3 = Theme.Grey, Parent = b }, { Theme.corner(6), Theme.stroke(1.5) })
 	local _ = dot
-	Theme.text({ Name = "Label", Text = "", Size = UDim2.new(1, -28, 1, -6), Position = UDim2.fromOffset(23, 3), MaxTextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
+	if touch then
+		Theme.text({ Name = "Label", Text = "", Size = UDim2.new(1, -26, 1, -14), Position = UDim2.fromOffset(22, 7), MaxTextSize = 20, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
+	else
+		Theme.text({ Name = "Label", Text = "", Size = UDim2.new(1, -28, 1, -6), Position = UDim2.fromOffset(23, 3), MaxTextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
+	end
 	b:SetAttribute("SettingKey", key)
 	b:SetAttribute("LocKey", locKey)
 	Theme.pressable(b, 1.04)
@@ -20287,35 +20325,45 @@ end
 
 local function buildTraining()
 	local n = #Config.Stats
-	local gap = 8
-	local gearW = if touch then 96 else 118
+	local gap = if touch then 5 else 8
+	local gearW = if touch then 84 else 118
 	local w = n * SLOT + (n - 1) * gap + gap + gearW
-	local h = 26 + 6 + SLOT + 20
+	local h = if touch then SLOT + 40 else 26 + 6 + SLOT + 20
 	local dock = new("Frame", {
 		Name = "Training",
 		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(w, h),
-		Position = if touch then UDim2.new(0.5, 40, 0, 6) else UDim2.new(0.5, 0, 1, -8),
+		Position = if touch then UDim2.new(0.5, 29, 0, 6) else UDim2.new(0.5, 0, 1, -8),
 		AnchorPoint = if touch then Vector2.new(0.5, 0) else Vector2.new(0.5, 1),
 		Parent = Root.gui,
 	})
 	Root.mount(dock)
 	refs.training = dock
-	-- auto toggles (top row on PC, bottom row on touch so the slots sit under the Roblox bar)
+	-- auto toggles: PC = row above the slots. Touch = their own block under the vitals (left
+	-- column), so the top centre stays short and the toggles are big enough for a thumb.
 	local autos = new("Frame", {
 		Name = "Autos",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(w, 26),
-		Position = if touch then UDim2.fromOffset(0, SLOT + 24) else UDim2.fromOffset(0, 0),
-		Parent = dock,
+		Size = if touch then UDim2.fromOffset(240, 53) else UDim2.fromOffset(w, 26),
+		Position = if touch then UDim2.fromOffset(8, 132) else UDim2.fromOffset(0, 0),
+		Parent = if touch then Root.gui else dock,
 	}, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
-	local bw = math.floor((w - 12) / 3)
+	if touch then
+		local holder = Root.mount(autos)
+		-- sits right under the vitals block, which grows with the UI scale (tablets)
+		local function below()
+			holder.Position = UDim2.fromOffset(8, math.floor(6 + 146 * Root.scale + 2))
+		end
+		below()
+		Root.Changed:Connect(below)
+	end
+	local bw = if touch then 76 else math.floor((w - 12) / 3)
 	refs.autoTrain = toggleButton("autoTrain", "hud.auto_train", 1, autos, bw)
 	refs.autoCharge = toggleButton("autoCharge", "hud.auto_ki", 2, autos, bw)
 	refs.autoFight = toggleButton("autoFight", "hud.auto_fight", 3, autos, bw)
 	refs.autos = autos
 	-- stat slots
-	local top = if touch then 0 else 32
+	local top = if touch then 4 else 32
 	for i, stat in Config.Stats do
 		local info = Config.StatInfo[stat]
 		local color = Theme.rgb(info.color)
@@ -20338,7 +20386,7 @@ local function buildTraining()
 		if not touch then
 			Theme.text({ Text = tostring(i), Font = Theme.Display, Size = UDim2.fromOffset(18, 20), Position = UDim2.fromOffset(-2, -6), MaxTextSize = 20, Stroke = 2.5, Parent = b }).ZIndex = 4
 		end
-		local value = Theme.text({ Name = "Value", Text = "0", Font = Theme.Display, Size = UDim2.fromOffset(SLOT + gap, 18), Position = UDim2.new(0.5, 0, 1, 2), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 18, TextColor3 = Theme.lighten(color, 0.45), Parent = b })
+		local value = Theme.text({ Name = "Value", Text = "0", Font = Theme.Display, Size = UDim2.fromOffset(SLOT + gap, 18), Position = UDim2.new(0.5, 0, 1, 3), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 18, TextColor3 = Theme.lighten(color, 0.45), Parent = b })
 		b.Activated:Connect(function()
 			Theme.play("click", 0.3)
 			Controls.setStat(stat)
@@ -20371,7 +20419,7 @@ local function buildTraining()
 	end)
 	refs.gear = gear
 	-- selected stat readout: "+12 per rep · auto 1.5/s"
-	refs.trainRate = Theme.text({ Name = "Rate", Text = "", Size = UDim2.fromOffset(w, 14), Position = if touch then UDim2.fromOffset(0, SLOT + 52) else UDim2.fromOffset(0, -18), MaxTextSize = 13, TextColor3 = Theme.Yellow, Parent = dock })
+	refs.trainRate = Theme.text({ Name = "Rate", Text = "", Size = UDim2.fromOffset(w, if touch then 17 else 14), Position = if touch then UDim2.fromOffset(0, SLOT + 28) else UDim2.fromOffset(0, -18), MaxTextSize = 13, TextColor3 = Theme.Yellow, Parent = dock })
 end
 
 ---------------------------------------------------------------------------
@@ -20476,8 +20524,8 @@ local function buildCombat()
 	-- touch: the training dock owns the top centre, so these sit lower / to the right
 	local zone = new("Frame", {
 		Name = "Zone",
-		Size = UDim2.fromOffset(320, 32),
-		Position = if touch then UDim2.new(0.5, 40, 0, 118) else UDim2.new(0.5, 0, 0, 88),
+		Size = if touch then UDim2.fromOffset(250, 32) else UDim2.fromOffset(320, 32),
+		Position = if touch then UDim2.new(0.5, 28, 0, 92) else UDim2.new(0.5, 0, 0, 88),
 		AnchorPoint = Vector2.new(0.5, 0),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Visible = false,
@@ -20488,7 +20536,7 @@ local function buildCombat()
 	refs.zone = zone
 	refs.zoneText = Theme.text({ Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), MaxTextSize = 19, Parent = zone })
 
-	local boss = new("Frame", { Name = "BossBar", BackgroundTransparency = 1, Size = UDim2.fromOffset(440, 44), Position = if touch then UDim2.new(0.5, 40, 0, 154) else UDim2.new(0.5, 0, 0, 126), AnchorPoint = Vector2.new(0.5, 0), Visible = false, Parent = Root.gui })
+	local boss = new("Frame", { Name = "BossBar", BackgroundTransparency = 1, Size = if touch then UDim2.fromOffset(270, 44) else UDim2.fromOffset(440, 44), Position = if touch then UDim2.new(0.5, -8, 0, 152) else UDim2.new(0.5, 0, 0, 126), AnchorPoint = Vector2.new(0.5, 0), Visible = false, Parent = Root.gui })
 	Root.mount(boss)
 	refs.boss = boss
 	refs.bossName = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 20), MaxTextSize = 19, Stroke = 3, TextColor3 = Theme.Yellow, Parent = boss })
@@ -20618,7 +20666,11 @@ local function refreshFull()
 	for _, key in { "autoTrain", "autoCharge", "autoFight" } do
 		local b = refs[key]
 		local on = s.settings[key] == true
-		b.Label.Text = Lang.t(b:GetAttribute("LocKey")) .. ": " .. Lang.t(if on then "hud.on" else "hud.off")
+		if touch then
+			b.Label.Text = AUTO_ICONS[key] .. " " .. Lang.t(if on then "hud.on" else "hud.off")
+		else
+			b.Label.Text = Lang.t(b:GetAttribute("LocKey")) .. ": " .. Lang.t(if on then "hud.on" else "hud.off")
+		end
 		b.G.Color = face(if on then Theme.Green else Theme.Grey)
 		b.Dot.BackgroundColor3 = if on then Color3.fromRGB(210, 255, 170) else Theme.PanelDark
 	end
@@ -20953,6 +21005,13 @@ function Kit.button(parent: Instance, text: string, color: Color3, width: number
 		Parent = parent,
 		OnClick = onClick,
 	})
+	-- touch: buttons are at least 52 design px tall (Theme.minButtonH), so a short row grows
+	if Theme.minButtonH > 0 and parent:IsA("Frame") and parent.Name == "Row" then
+		local need = Theme.minButtonH + 8
+		if parent.Size.Y.Scale == 0 and parent.Size.Y.Offset < need then
+			parent.Size = UDim2.new(parent.Size.X.Scale, parent.Size.X.Offset, 0, need)
+		end
+	end
 	for _, d in b:GetDescendants() do
 		if d:IsA("GuiObject") then
 			d.ZIndex = 24
@@ -21025,9 +21084,9 @@ return Kit
             <Properties>
               <string name="Name">Menu</string>
               <string name="Source"><![CDATA[--!nonstrict
--- The menu: a short column of round buttons on the left (2 columns on phones, between the
--- vitals and the thumbstick). "Warrior" and "More" fold out a text sub-menu; the rest open
--- their window. Buttons appear as the story unlocks them, so a new player starts with few.
+-- The menu: a short column of round buttons on the left on PC; on phones a single row at the
+-- bottom, between the thumbstick and the combat buttons. "Warrior" and "More" fold out a
+-- text sub-menu; the rest open their window. Buttons appear as the story unlocks them, so a new player starts with few.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -21049,7 +21108,8 @@ local Menu = {}
 local new = Theme.new
 local touch = Root.isTouch
 
-local SIZE = if touch then 46 else 52
+local SIZE = 52 -- touch: 52 * 0.85 scale = 44 px
+local GAP = if touch then 9 else 8
 local buttons: { [string]: { frame: TextButton, badge: Frame, holder: Frame } } = {}
 Menu.buttons = buttons
 local sub: Frame? = nil
@@ -21074,21 +21134,29 @@ local function closeSub()
 	end
 end
 
-local function openSub(entry, anchor: GuiObject)
+local function openSub(entry, anchor: GuiObject, anchorX: number)
 	closeSub()
 	subFor = entry.name
-	local h = #entry.sub * 38 + 10
+	local cellH = if touch then 52 else 34
+	local rowH = cellH + 4
+	local cols = if touch then 2 else 1
+	local rows = math.ceil(#entry.sub / cols)
+	local cellW = if touch then 122 else 166
+	local h = rows * rowH + 6
 	local f = Theme.panel({
 		Name = "SubMenu",
-		Size = UDim2.fromOffset(176, h),
-		Position = UDim2.fromOffset(SIZE + 12, -6),
+		Size = UDim2.fromOffset(cols * (cellW + 4) + 6, h),
+		-- touch: opens upwards from the bottom menu row, left-aligned with the row
+		Position = if touch then UDim2.fromOffset(-anchorX, -(h + 10)) else UDim2.fromOffset(SIZE + 12, -6),
 		ZIndex = 30,
 		Parent = anchor,
 	})
 	new("UIScale", { Parent = f })
 	for i, win in entry.sub do
-		local b = new("TextButton", { Name = "Sub_" .. win, Size = UDim2.new(1, -10, 0, 34), Position = UDim2.fromOffset(5, 5 + (i - 1) * 38), BackgroundColor3 = Theme.PanelLight, BackgroundTransparency = 0.4, AutoButtonColor = true, Text = "", ZIndex = 31, Parent = f }, { Theme.corner(8) })
-		Theme.icon(SUB_ICONS[win] or "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.fromOffset(6, 5), Parent = b }).ZIndex = 32
+		local col = (i - 1) % cols
+		local row = (i - 1) // cols
+		local b = new("TextButton", { Name = "Sub_" .. win, Size = UDim2.fromOffset(cellW, cellH), Position = UDim2.fromOffset(5 + col * (cellW + 4), 5 + row * rowH), BackgroundColor3 = Theme.PanelLight, BackgroundTransparency = 0.4, AutoButtonColor = true, Text = "", ZIndex = 31, Parent = f }, { Theme.corner(8) })
+		Theme.icon(SUB_ICONS[win] or "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 0.5, -12), Parent = b }).ZIndex = 32
 		local t = Theme.text({ Key = "menu." .. win, Size = UDim2.new(1, -40, 1, -10), Position = UDim2.fromOffset(36, 5), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
 		t.ZIndex = 32
 		b.Activated:Connect(function()
@@ -21101,22 +21169,37 @@ local function openSub(entry, anchor: GuiObject)
 end
 
 local function build()
-	local cols = if touch then 3 else 1
+	local cols = if touch then #ENTRIES else 1
 	local rows = math.ceil(#ENTRIES / cols)
-	local gap = 8
+	local gap = GAP
 	local dock = new("Frame", {
 		Name = "Menu",
 		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(cols * (SIZE + gap), rows * (SIZE + 18 + gap)),
-		Position = if touch then UDim2.new(0, 8, 0, 190) else UDim2.new(0, 12, 0.4, 0),
-		AnchorPoint = if touch then Vector2.zero else Vector2.new(0, 0.5),
+		-- touch: bottom row between the thumbstick (x < ~155) and the combat buttons
+		Position = if touch then UDim2.new(0, 162, 1, -2) else UDim2.new(0, 12, 0.4, 0),
+		AnchorPoint = if touch then Vector2.new(0, 1) else Vector2.new(0, 0.5),
 		Parent = Root.gui,
 	})
-	Root.mount(dock).ZIndex = 5
+	local mounted = Root.mount(dock)
+	mounted.ZIndex = 5
+	if touch then
+		-- tablets: the thumbstick is bigger and further in, so the row moves right with the scale
+		local function place()
+			mounted.Position = UDim2.new(0, 162 + math.max(0, Root.scale / 0.85 - 1) * 300, 1, -2)
+		end
+		place()
+		Root.Changed:Connect(place)
+	end
+	if touch then
+		-- hidden (still locked) entries collapse instead of leaving a hole in the row
+		new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, gap), SortOrder = Enum.SortOrder.LayoutOrder, Parent = dock })
+	end
 	for i, e in ENTRIES do
 		local col = (i - 1) % cols
 		local row = (i - 1) // cols
-		local holder = new("Frame", { Name = "Holder_" .. e.name, BackgroundTransparency = 1, Size = UDim2.fromOffset(SIZE, SIZE + 16), Position = UDim2.fromOffset(col * (SIZE + gap), row * (SIZE + 18 + gap)), Parent = dock })
+		-- earlier buttons draw above later ones so a badge (top-right) is not hidden by its neighbour
+		local holder = new("Frame", { Name = "Holder_" .. e.name, ZIndex = #ENTRIES - i + 1, BackgroundTransparency = 1, LayoutOrder = i, Size = UDim2.fromOffset(SIZE, SIZE + 16), Position = if touch then UDim2.new() else UDim2.fromOffset(col * (SIZE + gap), row * (SIZE + 18 + gap)), Parent = dock })
 		local b = new("TextButton", {
 			Name = "Menu_" .. e.name,
 			Size = UDim2.fromOffset(SIZE, SIZE),
@@ -21130,7 +21213,7 @@ local function build()
 			Theme.gradient(Theme.PanelLight, Theme.PanelDark),
 		})
 		Theme.icon(e.icon, { Size = UDim2.fromScale(0.58, 0.58), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b })
-		Theme.text({ Key = "menu." .. e.name, Size = UDim2.fromOffset(SIZE + 14, 14), Position = UDim2.new(0.5, 0, 1, 1), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 12, Parent = b })
+		Theme.text({ Key = "menu." .. e.name, Size = UDim2.fromOffset(SIZE + gap, if touch then 16 else 14), Position = UDim2.new(0.5, 0, 1, 1), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = if touch then 14 else 12, Parent = b })
 		local scale = new("UIScale", { Parent = b })
 		b.MouseEnter:Connect(function()
 			TweenService:Create(scale, TweenInfo.new(0.1), { Scale = 1.08 }):Play()
@@ -21145,7 +21228,13 @@ local function build()
 					closeSub()
 				else
 					Windows.close()
-					openSub(e, holder)
+					local before = 0
+					for j = 1, i - 1 do
+						if buttons[ENTRIES[j].name].holder.Visible then
+							before += 1
+						end
+					end
+					openSub(e, holder, before * (SIZE + gap))
 				end
 			else
 				closeSub()
@@ -21293,7 +21382,7 @@ local function renderForms(body: Frame)
 		else
 			local need = Lang.t("forms.need", { power = Format.abbrev(f.reqPower) })
 			if f.reqRebirths then
-				need ..= " · " .. Lang.t("forms.need_asc", { n = f.reqRebirths })
+				need ..= " · " .. Lang.t(if f.reqRebirths == 1 then "forms.need_asc_one" else "forms.need_asc", { n = f.reqRebirths })
 			end
 			if f.special and not s.passes[f.special.pass] then
 				need ..= "\n" .. Lang.t("special.need", { boss = Lang.t("npc." .. f.special.boss), have = math.min(f.special.count, (s.bossKills and s.bossKills[f.special.boss]) or 0), n = f.special.count, pass = Lang.t("pass." .. f.special.pass .. ".name") })
@@ -21394,7 +21483,7 @@ local function renderAscend(body: Frame)
 		Kit.text(body, { Key = "ascend.keeps", Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 78), MaxTextSize = 16, TextColor3 = Theme.Green, TextWrapped = true, Font = Theme.FontBold })
 		Kit.text(body, { Key = "ascend.resets", Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 120), MaxTextSize = 16, TextColor3 = Theme.Red, TextWrapped = true, Font = Theme.FontBold })
 		ascendUi.holder = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -40, 0, 26), Position = UDim2.fromOffset(20, 172), ZIndex = 22, Parent = body })
-		ascendUi.button = Theme.button({ Key = "ascend.button", Color = Theme.Purple, Size = UDim2.fromOffset(260, 56), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1), TextSize = 26, ZIndex = 23, Parent = body, OnClick = function()
+		ascendUi.button = Theme.button({ Key = "ascend.button", Color = Theme.Purple, Size = UDim2.fromOffset(260, 52), Position = UDim2.new(0.5, 0, 1, -6), AnchorPoint = Vector2.new(0.5, 1), TextSize = 26, ZIndex = 23, Parent = body, OnClick = function()
 			local ok = Kit.request("Rebirth", nil, Lang.t("ascend.done"))
 			if ok then
 				Windows.close()
@@ -21407,7 +21496,7 @@ local function renderAscend(body: Frame)
 		end
 	end
 	local req = s.rebirthReq or Formulas.rebirthRequirement(s.rebirths)
-	ascendUi.count.Text = "🌟 " .. Lang.t("ascend.count", { n = s.rebirths })
+	ascendUi.count.Text = "🌟 " .. Lang.t(if s.rebirths == 1 then "ascend.count_one" else "ascend.count", { n = s.rebirths })
 	ascendUi.now.Text = Lang.t("ascend.next", { cur = Format.abbrev((1 + s.rebirths) * 100), next = Format.abbrev((2 + s.rebirths) * 100), g = Config.Rebirth.gems })
 	Kit.clear(ascendUi.holder)
 	Kit.bar(ascendUi.holder, UDim2.fromScale(1, 1), UDim2.new(), Theme.Purple, s.power / req, Format.abbrev(s.power) .. " / " .. Format.abbrev(req))
@@ -21701,7 +21790,7 @@ local function renderRewards(body: Frame)
 	Kit.header(list, "rewards.codes", 20)
 	local row = Kit.row(list, 54, 21)
 	local saved = if codeBox then codeBox.Text else ""
-	codeBox = new("TextBox", { Name = "CodeBox", Size = UDim2.new(1, -170, 0, 36), Position = UDim2.fromOffset(12, 9), BackgroundColor3 = Theme.PanelDark, Font = Theme.FontBold, TextSize = 20, TextColor3 = Theme.Text, PlaceholderText = Lang.t("rewards.code_hint"), PlaceholderColor3 = Theme.Dim, Text = saved, ClearTextOnFocus = false, ZIndex = 23, Parent = row }, { Theme.corner(8), Theme.stroke(2) })
+	codeBox = new("TextBox", { Name = "CodeBox", Size = UDim2.new(1, -170, 0, math.max(36, Theme.minButtonH)), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Theme.PanelDark, Font = Theme.FontBold, TextSize = 20, TextColor3 = Theme.Text, PlaceholderText = Lang.t("rewards.code_hint"), PlaceholderColor3 = Theme.Dim, Text = saved, ClearTextOnFocus = false, ZIndex = 23, Parent = row }, { Theme.corner(8), Theme.stroke(2) })
 	Kit.button(row, Lang.t("rewards.redeem"), Theme.Green, 140, function()
 		local box = codeBox
 		if box and box.Text ~= "" then
@@ -22100,7 +22189,7 @@ local function renderSettings(body: Frame)
 	end
 	Kit.header(list, "settings.language", 10)
 	local g = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 11, ZIndex = 22, Parent = list }, {
-		new("UIGridLayout", { CellSize = UDim2.fromOffset(158, 38), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }),
+		new("UIGridLayout", { CellSize = UDim2.fromOffset(158, math.max(38, Theme.minButtonH)), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }),
 	})
 	for i, l in Locale.Languages do
 		local on = Lang.code == l.code
@@ -22546,12 +22635,13 @@ local function refresh()
 end
 
 function QuestTracker.init()
-	-- PC: top centre. Touch: left, between the vitals and the menu.
+	-- PC: top centre. Touch: top right (the left column is vitals + auto toggles, the centre
+	-- is the training dock), two-line title over the bar, 54 px tall so it is a real button.
 	panel = Theme.panel({
 		Name = "Objective",
-		Size = if touch then UDim2.fromOffset(250, 44) else UDim2.fromOffset(400, 46),
-		Position = if touch then UDim2.fromOffset(8, 142) else UDim2.new(0.5, 0, 0, 6),
-		AnchorPoint = if touch then Vector2.zero else Vector2.new(0.5, 0),
+		Size = if touch then UDim2.fromOffset(184, 64) else UDim2.fromOffset(400, 46),
+		Position = if touch then UDim2.new(1, -8, 0, 6) else UDim2.new(0.5, 0, 0, 6),
+		AnchorPoint = if touch then Vector2.new(1, 0) else Vector2.new(0.5, 0),
 		Accent = Theme.Yellow,
 		Corner = 12,
 		Parent = Root.gui,
@@ -22559,11 +22649,19 @@ function QuestTracker.init()
 	new("UIScale", { Parent = panel })
 	local holder = Root.mount(panel)
 	local _ = holder
-	title = Theme.text({ Name = "Title", Text = "", Size = UDim2.new(1, -90, 0, 20), Position = UDim2.fromOffset(10, 8), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-	reward = Theme.text({ Name = "Reward", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(76, 20), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, Parent = panel })
-	local _bar
-	_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.new(1, -20, 0, 12), Position = UDim2.new(0, 10, 1, -16), Color = Theme.Yellow, TextSize = 10, Stroke = 1.5, Corner = 5, Parent = panel })
-	hint = Theme.text({ Name = "Hint", Text = "", Size = if touch then UDim2.fromOffset(330, 26) else UDim2.fromOffset(560, 30), Position = if touch then UDim2.new(1, 10, 0, 8) else UDim2.new(0.5, 0, 1, 6), AnchorPoint = if touch then Vector2.zero else Vector2.new(0.5, 0), MaxTextSize = 22, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = if touch then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center, Parent = panel })
+	if touch then
+		title = Theme.text({ Name = "Title", Text = "", Size = UDim2.new(1, -16, 0, 30), Position = UDim2.fromOffset(8, 7), MaxTextSize = 16, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = panel })
+		reward = Theme.text({ Name = "Reward", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(70, 20), Position = UDim2.new(1, -6, 1, -7), AnchorPoint = Vector2.new(1, 1), MaxTextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, Parent = panel })
+		local _bar
+		_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.fromOffset(98, 20), Position = UDim2.new(0, 8, 1, -7), AnchorPoint = Vector2.new(0, 1), Color = Theme.Yellow, TextSize = 13, Stroke = 1.5, Corner = 6, Parent = panel })
+		hint = Theme.text({ Name = "Hint", Text = "", Size = UDim2.fromOffset(200, 28), Position = UDim2.new(1, 0, 1, 4), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 20, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = Enum.TextXAlignment.Right, Parent = panel })
+	else
+		title = Theme.text({ Name = "Title", Text = "", Size = UDim2.new(1, -90, 0, 20), Position = UDim2.fromOffset(10, 8), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+		reward = Theme.text({ Name = "Reward", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(76, 20), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, Parent = panel })
+		local _bar
+		_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.new(1, -20, 0, 12), Position = UDim2.new(0, 10, 1, -16), Color = Theme.Yellow, TextSize = 10, Stroke = 1.5, Corner = 5, Parent = panel })
+		hint = Theme.text({ Name = "Hint", Text = "", Size = UDim2.fromOffset(560, 30), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 22, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = Enum.TextXAlignment.Center, Parent = panel })
+	end
 	local click = new("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 5, Parent = panel })
 	click.Activated:Connect(function()
 		Windows.toggle("Quests")
@@ -22677,13 +22775,22 @@ Root.overlay = Theme.new("ScreenGui", {
 	Parent = playerGui,
 }) :: ScreenGui
 
+-- Smallest text (design px) TextScaled labels may shrink to: 13 * 0.85 = 11 px on a phone.
+Theme.minText = if Root.isTouch then 13 else 8
+Theme.minButtonH = if Root.isTouch then 52 else 0
+
 Root.scale = 1
 local scales: { UIScale } = {}
 local changed = Instance.new("BindableEvent")
 Root.Changed = changed.Event
 
--- Design size 1100x560 of usable (safe-area) space: ~0.8 on a 920x505 phone, capped at 1.1
--- on big monitors so the PC layout stays compact.
+-- PC: design size 1100x560 of usable (safe-area) space, capped at 1.1 on big monitors so the
+-- layout stays compact.
+-- Touch: the usable area of a landscape phone is only ~750x310 px, so the design size is
+-- 860x365 and the scale never goes under 0.75 (0.85 on a typical phone). That keeps buttons
+-- >= 44 px and text >= 11 px, at the price of a denser layout (see Hud / Menu / TouchControls).
+Root.TOUCH_MIN_SCALE = 0.75
+Root.area = Vector2.new(1100, 560) -- usable space in design units (screen size / scale)
 local function compute(): number
 	local size = Root.gui.AbsoluteSize
 	if size.X < 10 or size.Y < 10 then
@@ -22693,7 +22800,14 @@ local function compute(): number
 		end
 		size = cam.ViewportSize
 	end
-	return math.clamp(math.min(size.X / 1100, size.Y / 560), 0.5, 1.1)
+	local s: number
+	if Root.isTouch then
+		s = math.clamp(math.min(size.X / 860, size.Y / 365), Root.TOUCH_MIN_SCALE, 1.1)
+	else
+		s = math.clamp(math.min(size.X / 1100, size.Y / 560), 0.5, 1.1)
+	end
+	Root.area = size / s
+	return s
 end
 
 local playerListShown: boolean? = nil
@@ -22859,6 +22973,9 @@ function Theme.list(dir: Enum.FillDirection?, padding: number?, hAlign: Enum.Hor
 	})
 end
 
+-- Smallest size a TextScaled label may shrink to; Root raises it on touch devices.
+Theme.minText = 8
+
 -- Text label. Extra props: Key/Args (translation), Stroke (false | thickness), MaxTextSize.
 function Theme.text(props: { [string]: any }): TextLabel
 	local t = Theme.new("TextLabel", {
@@ -22879,7 +22996,8 @@ function Theme.text(props: { [string]: any }): TextLabel
 	if props.Stroke ~= false then
 		Theme.textStroke(if type(props.Stroke) == "number" then props.Stroke else 2).Parent = t
 	end
-	Theme.new("UITextSizeConstraint", { MaxTextSize = props.MaxTextSize or 36, MinTextSize = 8, Parent = t })
+	local minText = Theme.minText
+	Theme.new("UITextSizeConstraint", { MaxTextSize = math.max(props.MaxTextSize or 36, minText), MinTextSize = minText, Parent = t })
 	if props.Parent then
 		t.Parent = props.Parent
 	end
@@ -23018,12 +23136,19 @@ export type ButtonOpts = {
 	ZIndex: number?,
 }
 
+-- Shortest a button may be (design px); Root raises it on touch devices (52 * 0.85 = 44 px).
+Theme.minButtonH = 0
+
 function Theme.button(opts: ButtonOpts): TextButton
 	local color = opts.Color or Theme.Blue
 	local corner = opts.Corner or 12
+	local size = opts.Size or UDim2.fromOffset(160, 48)
+	if Theme.minButtonH > 0 and size.Y.Scale == 0 and size.Y.Offset < Theme.minButtonH then
+		size = UDim2.new(size.X.Scale, size.X.Offset, 0, Theme.minButtonH)
+	end
 	local b = Theme.new("TextButton", {
 		Name = opts.Name or "Button",
-		Size = opts.Size or UDim2.fromOffset(160, 48),
+		Size = size,
 		Position = opts.Position or UDim2.new(),
 		AnchorPoint = opts.AnchorPoint or Vector2.zero,
 		BackgroundColor3 = Color3.new(1, 1, 1),
@@ -23379,28 +23504,53 @@ type Btn = { frame: TextButton, cool: Frame, action: string }
 local buttons: { [string]: Btn } = {}
 TouchControls.buttons = buttons
 
--- Screen-space layout (fractions of the safe area). Jump button zone: x > 0.75, y > 0.65.
+-- Layout: centre of each button as { dx, dy, size }: distance in px from the bottom-right
+-- corner of the safe area (bottom-LEFT for the seeds, flag `left`), measured on a typical
+-- landscape phone (750x330 usable px, UI scale 0.85; sizes are design px, x0.85 on screen).
+-- Everything is >= 44 px and keeps clear of the Roblox jump button (x > 700, y > 240 from the
+-- top-left), the thumbstick (x < 155, y > 190) and the menu row along the bottom
+-- (x 162-458). On tablets the offsets grow with the UI scale (see place()).
+--   row y=300 .. 138 (from the top): rows of the right-hand cluster, columns 722/668/614/560/506
 local LAYOUT = {
-	punch = { 0.665, 0.835, 98 },
-	block = { 0.555, 0.885, 64 },
-	charge = { 0.575, 0.70, 64 },
-	blast = { 0.72, 0.62, 70 },
-	beam = { 0.83, 0.555, 70 },
-	dash = { 0.94, 0.50, 64 },
-	form = { 0.94, 0.355, 60 },
-	fly = { 0.94, 0.215, 60 },
-	down = { 0.845, 0.25, 54 },
-	boost = { 0.755, 0.28, 54 },
-	t_pulse_volley = { 0.845, 0.40, 56 },
-	t_meteor_dive = { 0.745, 0.455, 56 },
-	t_sunfall = { 0.645, 0.53, 56 },
-	t_umbral_volley = { 0.645, 0.37, 52 },
-	t_null_nova = { 0.545, 0.45, 52 },
-	seed_vigor_seed = { 0.46, 0.70, 44 },
-	seed_titan_seed = { 0.46, 0.80, 44 },
-	seed_spark_seed = { 0.46, 0.90, 44 },
+	punch = { 109, 57, 100 },
+	block = { 190, 32, 56 },
+	charge = { 190, 86, 56 },
+	blast = { 136, 140, 56 },
+	beam = { 82, 140, 56 },
+	dash = { 28, 140, 56 },
+	form = { 28, 194, 56 },
+	fly = { 82, 194, 56 },
+	down = { 244, 86, 54 },
+	boost = { 244, 32, 54 },
+	t_pulse_volley = { 190, 140, 54 },
+	t_meteor_dive = { 244, 140, 54 },
+	t_sunfall = { 244, 194, 54 },
+	t_umbral_volley = { 190, 194, 54 },
+	t_null_nova = { 136, 194, 54 },
+	-- seeds: a row above the bottom menu, from the left (dx = distance from the left edge)
+	seed_vigor_seed = { 189, 92, 54, true },
+	seed_titan_seed = { 245, 92, 54, true },
+	seed_spark_seed = { 301, 92, 54, true },
 }
 TouchControls.LAYOUT = LAYOUT
+
+local holders: { [string]: Frame } = {}
+local PHONE_SCALE = 0.85
+
+-- (Re)positions every button; bigger UI scales (tablets) spread the cluster out with the buttons.
+local function place()
+	local k = math.max(1, Root.scale / PHONE_SCALE)
+	-- tablets: the jump button sits further in and is bigger, so the cluster also moves left/up
+	local extraX, extraY = (k - 1) * 300, (k - 1) * 150
+	for name, holder in holders do
+		local spec = LAYOUT[name]
+		if spec[4] then
+			holder.Position = UDim2.new(0, spec[1] * k, 1, -spec[2] * k)
+		else
+			holder.Position = UDim2.new(1, -(spec[1] * k + extraX), 1, -(spec[2] * k + extraY))
+		end
+	end
+end
 
 local function button(name: string, icon: string, color: Color3): Btn
 	local spec = LAYOUT[name]
@@ -23408,7 +23558,7 @@ local function button(name: string, icon: string, color: Color3): Btn
 	local b = new("TextButton", {
 		Name = "Touch_" .. name,
 		Size = UDim2.fromOffset(size, size),
-		Position = UDim2.fromScale(spec[1], spec[2]),
+		Position = UDim2.new(),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundColor3 = Color3.fromRGB(40, 40, 52),
 		BackgroundTransparency = 0.45,
@@ -23434,7 +23584,7 @@ local function button(name: string, icon: string, color: Color3): Btn
 	b.MouseLeave:Connect(function()
 		sc.Scale = 1
 	end)
-	Root.mount(b)
+	holders[name] = Root.mount(b)
 	local entry = { frame = b, cool = cool, action = name }
 	buttons[name] = entry
 	return entry
@@ -23533,6 +23683,8 @@ function TouchControls.init()
 		end
 	end)
 	refresh()
+	place()
+	Root.Changed:Connect(place)
 
 	RunService.RenderStepped:Connect(function()
 		local now = os.clock()
@@ -23618,12 +23770,23 @@ end
 
 -- Creates window chrome and returns it; the caller fills `body`. titleKey is a translation key.
 function Windows.create(name: string, icon: string, titleKey: string, color: Color3, size: Vector2?): Window
-	local sz = size or Vector2.new(720, 470)
+	local designSize = size or Vector2.new(720, 470)
+	local sz = designSize
+	local touch = Root.isTouch
+	-- touch: the window has to fit the usable area (Root.area design px) with room for the
+	-- medal / close button that poke out of its corners, so it gets shorter (bodies scroll)
+	local function fit(): Vector2
+		if not touch then
+			return designSize
+		end
+		return Vector2.new(math.min(designSize.X, Root.area.X - 48), math.min(designSize.Y, Root.area.Y - 34))
+	end
+	sz = fit()
 	local frame = Theme.panel({
 		Name = name .. "Window",
 		Size = UDim2.fromOffset(sz.X, sz.Y),
-		Position = UDim2.fromScale(0.5, 0.52),
-		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = if touch then UDim2.new(0.5, 0, 0, 22) else UDim2.fromScale(0.5, 0.52),
+		AnchorPoint = if touch then Vector2.new(0.5, 0) else Vector2.new(0.5, 0.5),
 		Visible = false,
 		ZIndex = 20,
 		Parent = Root.gui,
@@ -23631,7 +23794,14 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		StrokeThickness = 4,
 	})
 	Theme.new("UIScale", { Parent = frame })
-	Root.mount(frame)
+	local mounted = Root.mount(frame)
+	if touch then
+		Root.Changed:Connect(function()
+			local v = fit()
+			frame.Size = UDim2.fromOffset(v.X, v.Y)
+			mounted.Size = frame.Size
+		end)
+	end
 	Theme.shadow(frame, 22)
 	local header = Theme.new("Frame", {
 		Name = "Header",

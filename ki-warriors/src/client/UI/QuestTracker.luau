@@ -150,12 +150,13 @@ local function refresh()
 end
 
 function QuestTracker.init()
-	-- PC: top centre. Touch: left, between the vitals and the menu.
+	-- PC: top centre. Touch: top right (the left column is vitals + auto toggles, the centre
+	-- is the training dock), two-line title over the bar, 54 px tall so it is a real button.
 	panel = Theme.panel({
 		Name = "Objective",
-		Size = if touch then UDim2.fromOffset(250, 44) else UDim2.fromOffset(400, 46),
-		Position = if touch then UDim2.fromOffset(8, 142) else UDim2.new(0.5, 0, 0, 6),
-		AnchorPoint = if touch then Vector2.zero else Vector2.new(0.5, 0),
+		Size = if touch then UDim2.fromOffset(184, 64) else UDim2.fromOffset(400, 46),
+		Position = if touch then UDim2.new(1, -8, 0, 6) else UDim2.new(0.5, 0, 0, 6),
+		AnchorPoint = if touch then Vector2.new(1, 0) else Vector2.new(0.5, 0),
 		Accent = Theme.Yellow,
 		Corner = 12,
 		Parent = Root.gui,
@@ -163,11 +164,19 @@ function QuestTracker.init()
 	new("UIScale", { Parent = panel })
 	local holder = Root.mount(panel)
 	local _ = holder
-	title = Theme.text({ Name = "Title", Text = "", Size = UDim2.new(1, -90, 0, 20), Position = UDim2.fromOffset(10, 8), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
-	reward = Theme.text({ Name = "Reward", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(76, 20), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, Parent = panel })
-	local _bar
-	_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.new(1, -20, 0, 12), Position = UDim2.new(0, 10, 1, -16), Color = Theme.Yellow, TextSize = 10, Stroke = 1.5, Corner = 5, Parent = panel })
-	hint = Theme.text({ Name = "Hint", Text = "", Size = if touch then UDim2.fromOffset(330, 26) else UDim2.fromOffset(560, 30), Position = if touch then UDim2.new(1, 10, 0, 8) else UDim2.new(0.5, 0, 1, 6), AnchorPoint = if touch then Vector2.zero else Vector2.new(0.5, 0), MaxTextSize = 22, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = if touch then Enum.TextXAlignment.Left else Enum.TextXAlignment.Center, Parent = panel })
+	if touch then
+		title = Theme.text({ Name = "Title", Text = "", Size = UDim2.new(1, -16, 0, 30), Position = UDim2.fromOffset(8, 7), MaxTextSize = 16, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, Parent = panel })
+		reward = Theme.text({ Name = "Reward", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(70, 20), Position = UDim2.new(1, -6, 1, -7), AnchorPoint = Vector2.new(1, 1), MaxTextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, Parent = panel })
+		local _bar
+		_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.fromOffset(98, 20), Position = UDim2.new(0, 8, 1, -7), AnchorPoint = Vector2.new(0, 1), Color = Theme.Yellow, TextSize = 13, Stroke = 1.5, Corner = 6, Parent = panel })
+		hint = Theme.text({ Name = "Hint", Text = "", Size = UDim2.fromOffset(200, 28), Position = UDim2.new(1, 0, 1, 4), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 20, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = Enum.TextXAlignment.Right, Parent = panel })
+	else
+		title = Theme.text({ Name = "Title", Text = "", Size = UDim2.new(1, -90, 0, 20), Position = UDim2.fromOffset(10, 8), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Parent = panel })
+		reward = Theme.text({ Name = "Reward", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(76, 20), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, Parent = panel })
+		local _bar
+		_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.new(1, -20, 0, 12), Position = UDim2.new(0, 10, 1, -16), Color = Theme.Yellow, TextSize = 10, Stroke = 1.5, Corner = 5, Parent = panel })
+		hint = Theme.text({ Name = "Hint", Text = "", Size = UDim2.fromOffset(560, 30), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 22, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = Enum.TextXAlignment.Center, Parent = panel })
+	end
 	local click = new("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 5, Parent = panel })
 	click.Activated:Connect(function()
 		Windows.toggle("Quests")

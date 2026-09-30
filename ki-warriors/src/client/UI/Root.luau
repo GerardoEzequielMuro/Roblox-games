@@ -38,13 +38,22 @@ Root.overlay = Theme.new("ScreenGui", {
 	Parent = playerGui,
 }) :: ScreenGui
 
+-- Smallest text (design px) TextScaled labels may shrink to: 13 * 0.85 = 11 px on a phone.
+Theme.minText = if Root.isTouch then 13 else 8
+Theme.minButtonH = if Root.isTouch then 52 else 0
+
 Root.scale = 1
 local scales: { UIScale } = {}
 local changed = Instance.new("BindableEvent")
 Root.Changed = changed.Event
 
--- Design size 1100x560 of usable (safe-area) space: ~0.8 on a 920x505 phone, capped at 1.1
--- on big monitors so the PC layout stays compact.
+-- PC: design size 1100x560 of usable (safe-area) space, capped at 1.1 on big monitors so the
+-- layout stays compact.
+-- Touch: the usable area of a landscape phone is only ~750x310 px, so the design size is
+-- 860x365 and the scale never goes under 0.75 (0.85 on a typical phone). That keeps buttons
+-- >= 44 px and text >= 11 px, at the price of a denser layout (see Hud / Menu / TouchControls).
+Root.TOUCH_MIN_SCALE = 0.75
+Root.area = Vector2.new(1100, 560) -- usable space in design units (screen size / scale)
 local function compute(): number
 	local size = Root.gui.AbsoluteSize
 	if size.X < 10 or size.Y < 10 then
@@ -54,7 +63,14 @@ local function compute(): number
 		end
 		size = cam.ViewportSize
 	end
-	return math.clamp(math.min(size.X / 1100, size.Y / 560), 0.5, 1.1)
+	local s: number
+	if Root.isTouch then
+		s = math.clamp(math.min(size.X / 860, size.Y / 365), Root.TOUCH_MIN_SCALE, 1.1)
+	else
+		s = math.clamp(math.min(size.X / 1100, size.Y / 560), 0.5, 1.1)
+	end
+	Root.area = size / s
+	return s
 end
 
 local playerListShown: boolean? = nil

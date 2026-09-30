@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "元に戻る",
 	["forms.need"] = "パワー{power}",
 	["forms.need_asc"] = "アセンション{n}回",
+	["forms.need_asc_one"] = "アセンション{n}回",
 
 	-- moves
 	["moves.techniques"] = "必殺技",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "アセンション {n}回",
+	["ascend.count_one"] = "アセンション {n}回",
 	["ascend.next"] = "トレーニング {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "引き継ぎ: フォーム、必殺技、オーラ、強化、{gems}。",
 	["ascend.resets"] = "リセット: 能力、{sparks}、ウェイト、惑星。",

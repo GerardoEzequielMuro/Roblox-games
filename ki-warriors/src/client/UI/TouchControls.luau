@@ -19,28 +19,53 @@ type Btn = { frame: TextButton, cool: Frame, action: string }
 local buttons: { [string]: Btn } = {}
 TouchControls.buttons = buttons
 
--- Screen-space layout (fractions of the safe area). Jump button zone: x > 0.75, y > 0.65.
+-- Layout: centre of each button as { dx, dy, size }: distance in px from the bottom-right
+-- corner of the safe area (bottom-LEFT for the seeds, flag `left`), measured on a typical
+-- landscape phone (750x330 usable px, UI scale 0.85; sizes are design px, x0.85 on screen).
+-- Everything is >= 44 px and keeps clear of the Roblox jump button (x > 700, y > 240 from the
+-- top-left), the thumbstick (x < 155, y > 190) and the menu row along the bottom
+-- (x 162-458). On tablets the offsets grow with the UI scale (see place()).
+--   row y=300 .. 138 (from the top): rows of the right-hand cluster, columns 722/668/614/560/506
 local LAYOUT = {
-	punch = { 0.665, 0.835, 98 },
-	block = { 0.555, 0.885, 64 },
-	charge = { 0.575, 0.70, 64 },
-	blast = { 0.72, 0.62, 70 },
-	beam = { 0.83, 0.555, 70 },
-	dash = { 0.94, 0.50, 64 },
-	form = { 0.94, 0.355, 60 },
-	fly = { 0.94, 0.215, 60 },
-	down = { 0.845, 0.25, 54 },
-	boost = { 0.755, 0.28, 54 },
-	t_pulse_volley = { 0.845, 0.40, 56 },
-	t_meteor_dive = { 0.745, 0.455, 56 },
-	t_sunfall = { 0.645, 0.53, 56 },
-	t_umbral_volley = { 0.645, 0.37, 52 },
-	t_null_nova = { 0.545, 0.45, 52 },
-	seed_vigor_seed = { 0.46, 0.70, 44 },
-	seed_titan_seed = { 0.46, 0.80, 44 },
-	seed_spark_seed = { 0.46, 0.90, 44 },
+	punch = { 109, 57, 100 },
+	block = { 190, 32, 56 },
+	charge = { 190, 86, 56 },
+	blast = { 136, 140, 56 },
+	beam = { 82, 140, 56 },
+	dash = { 28, 140, 56 },
+	form = { 28, 194, 56 },
+	fly = { 82, 194, 56 },
+	down = { 244, 86, 54 },
+	boost = { 244, 32, 54 },
+	t_pulse_volley = { 190, 140, 54 },
+	t_meteor_dive = { 244, 140, 54 },
+	t_sunfall = { 244, 194, 54 },
+	t_umbral_volley = { 190, 194, 54 },
+	t_null_nova = { 136, 194, 54 },
+	-- seeds: a row above the bottom menu, from the left (dx = distance from the left edge)
+	seed_vigor_seed = { 189, 92, 54, true },
+	seed_titan_seed = { 245, 92, 54, true },
+	seed_spark_seed = { 301, 92, 54, true },
 }
 TouchControls.LAYOUT = LAYOUT
+
+local holders: { [string]: Frame } = {}
+local PHONE_SCALE = 0.85
+
+-- (Re)positions every button; bigger UI scales (tablets) spread the cluster out with the buttons.
+local function place()
+	local k = math.max(1, Root.scale / PHONE_SCALE)
+	-- tablets: the jump button sits further in and is bigger, so the cluster also moves left/up
+	local extraX, extraY = (k - 1) * 300, (k - 1) * 150
+	for name, holder in holders do
+		local spec = LAYOUT[name]
+		if spec[4] then
+			holder.Position = UDim2.new(0, spec[1] * k, 1, -spec[2] * k)
+		else
+			holder.Position = UDim2.new(1, -(spec[1] * k + extraX), 1, -(spec[2] * k + extraY))
+		end
+	end
+end
 
 local function button(name: string, icon: string, color: Color3): Btn
 	local spec = LAYOUT[name]
@@ -48,7 +73,7 @@ local function button(name: string, icon: string, color: Color3): Btn
 	local b = new("TextButton", {
 		Name = "Touch_" .. name,
 		Size = UDim2.fromOffset(size, size),
-		Position = UDim2.fromScale(spec[1], spec[2]),
+		Position = UDim2.new(),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		BackgroundColor3 = Color3.fromRGB(40, 40, 52),
 		BackgroundTransparency = 0.45,
@@ -74,7 +99,7 @@ local function button(name: string, icon: string, color: Color3): Btn
 	b.MouseLeave:Connect(function()
 		sc.Scale = 1
 	end)
-	Root.mount(b)
+	holders[name] = Root.mount(b)
 	local entry = { frame = b, cool = cool, action = name }
 	buttons[name] = entry
 	return entry
@@ -173,6 +198,8 @@ function TouchControls.init()
 		end
 	end)
 	refresh()
+	place()
+	Root.Changed:Connect(place)
 
 	RunService.RenderStepped:Connect(function()
 		local now = os.clock()

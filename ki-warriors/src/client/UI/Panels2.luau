@@ -172,7 +172,7 @@ local function renderRewards(body: Frame)
 	Kit.header(list, "rewards.codes", 20)
 	local row = Kit.row(list, 54, 21)
 	local saved = if codeBox then codeBox.Text else ""
-	codeBox = new("TextBox", { Name = "CodeBox", Size = UDim2.new(1, -170, 0, 36), Position = UDim2.fromOffset(12, 9), BackgroundColor3 = Theme.PanelDark, Font = Theme.FontBold, TextSize = 20, TextColor3 = Theme.Text, PlaceholderText = Lang.t("rewards.code_hint"), PlaceholderColor3 = Theme.Dim, Text = saved, ClearTextOnFocus = false, ZIndex = 23, Parent = row }, { Theme.corner(8), Theme.stroke(2) })
+	codeBox = new("TextBox", { Name = "CodeBox", Size = UDim2.new(1, -170, 0, math.max(36, Theme.minButtonH)), Position = UDim2.new(0, 12, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Theme.PanelDark, Font = Theme.FontBold, TextSize = 20, TextColor3 = Theme.Text, PlaceholderText = Lang.t("rewards.code_hint"), PlaceholderColor3 = Theme.Dim, Text = saved, ClearTextOnFocus = false, ZIndex = 23, Parent = row }, { Theme.corner(8), Theme.stroke(2) })
 	Kit.button(row, Lang.t("rewards.redeem"), Theme.Green, 140, function()
 		local box = codeBox
 		if box and box.Text ~= "" then
@@ -571,7 +571,7 @@ local function renderSettings(body: Frame)
 	end
 	Kit.header(list, "settings.language", 10)
 	local g = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, LayoutOrder = 11, ZIndex = 22, Parent = list }, {
-		new("UIGridLayout", { CellSize = UDim2.fromOffset(158, 38), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }),
+		new("UIGridLayout", { CellSize = UDim2.fromOffset(158, math.max(38, Theme.minButtonH)), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }),
 	})
 	for i, l in Locale.Languages do
 		local on = Lang.code == l.code

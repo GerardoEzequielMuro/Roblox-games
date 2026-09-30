@@ -2,90 +2,9 @@
 # image: mid-phone-shop.png  (coordinates below are in the full 844x390 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
-## Layout findings (28)
-[high] small-touch: KiWarriorsUI.MenuHolder.Menu.Holder_More.Menu_More rect=[115, 288, 141, 314] (x6 similar)
-    touch target 26x26px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Menu.luau:94 < ki-warriors/src/client/UI/Menu.luau:173
-[high] small-touch: KiWarriorsUI.ObjectiveHolder.Objective.TextButton rect=[55, 200, 194, 224]
-    touch target 139x24px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/QuestTracker.luau:171 < ki-warriors/src/client/Main.client.luau:48
-[high] small-touch: KiWarriorsUI.ShopWindowHolder.ShopWindow.Body.List.Row.Button rect=[483, 148, 566, 169] (x3 similar)
-    touch target 83x21px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:269 < ki-warriors/src/client/UI/Kit.luau:94
-[high] small-touch: KiWarriorsUI.ShopWindowHolder.ShopWindow.Body.List.Row.Button rect=[570, 148, 614, 169] (x3 similar)
-    touch target 44x21px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:269 < ki-warriors/src/client/UI/Kit.luau:94
-[high] small-touch: KiWarriorsUI.ShopWindowHolder.ShopWindow.Button rect=[611, 78, 642, 109]
-    touch target 31x31px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:269 < ki-warriors/src/client/UI/Windows.luau:130
-[high] small-touch: KiWarriorsUI.Touch_t_pulse_volleyHolder.Touch_t_pulse_volley rect=[665, 167, 696, 198]
-    touch target 31x31px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/TouchControls.luau:48 < ki-warriors/src/client/UI/TouchControls.luau:132
-[high] small-touch: KiWarriorsUI.TrainingHolder.Training.Gear rect=[516, 64, 569, 92]
-    touch target 53x28px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Hud.luau:184 < ki-warriors/src/client/UI/Hud.luau:601
-[high] small-touch: KiWarriorsUI.TrainingHolder.Training.Stat_agility rect=[452, 65, 478, 91] (x4 similar)
-    touch target 26x26px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Hud.luau:157 < ki-warriors/src/client/UI/Hud.luau:601
-[high] small-touch: KiWarriorsUI.TrainingHolder.Training.Stat_strength rect=[353, 62, 384, 93]
-    touch target 31x31px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Hud.luau:157 < ki-warriors/src/client/UI/Hud.luau:601
-[high] tiny-text: KiWarriorsUI.MenuHolder.Menu.Holder_More.Menu_More.TextLabel rect=[111, 314, 144, 322] (x6 similar)
-    TextScaled resolves to 6px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Menu.luau:107
-[high] tiny-text: KiWarriorsUI.ObjectiveHolder.Objective.Progress.Text rect=[63, 216, 186, 222]
-    TextScaled resolves to 5px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Theme.luau:388
-[high] tiny-text: KiWarriorsUI.ObjectiveHolder.Objective.Title rect=[61, 204, 149, 216]
-    TextScaled resolves to 5px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/QuestTracker.luau:166
-[high] tiny-text: KiWarriorsUI.TrainingHolder.Training.Gear.Top rect=[518, 66, 567, 78]
-    TextScaled resolves to 6px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Hud.luau:196
-[high] tiny-text: KiWarriorsUI.VitalsHolder.Vitals.PowerRow.TextLabel rect=[148, 66, 195, 74]
-    TextScaled resolves to 6px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Hud.luau:82
-[med] core-overlap: KiWarriorsUI.MenuHolder.Menu.Holder_More.Menu_More rect=[115, 288, 141, 314] (x4 similar)
+## Layout findings (1)
+[low] core-overlap: KiWarriorsUI.ShopWindowHolder.ShopWindow.Body.List.Row.Chip.TextLabel rect=[137, 240, 161, 264] (x2 similar)
     covered by the touch control (thumbstick/jump)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Menu.luau:94 < ki-warriors/src/client/UI/Menu.luau:173
-[med] small-touch: KiWarriorsUI.Touch_beamHolder.Touch_beam rect=[650, 211, 689, 250]
-    touch target 39x39px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/TouchControls.luau:48 < ki-warriors/src/client/UI/TouchControls.luau:102
-[med] small-touch: KiWarriorsUI.Touch_dashHolder.Touch_dash rect=[734, 196, 770, 231]
-    touch target 36x36px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/TouchControls.luau:48 < ki-warriors/src/client/UI/TouchControls.luau:113
-[med] small-touch: KiWarriorsUI.Touch_flyHolder.Touch_fly rect=[735, 108, 769, 142]
-    touch target 33x33px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/TouchControls.luau:48 < ki-warriors/src/client/UI/TouchControls.luau:117
-[med] small-touch: KiWarriorsUI.Touch_formHolder.Touch_form rect=[735, 152, 769, 185]
-    touch target 33x33px (< 44px on a touch screen)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/TouchControls.luau:48 < ki-warriors/src/client/UI/TouchControls.luau:114
-[med] tiny-text: KiWarriorsUI.EventsHolder.Events.Chip_boss.TextLabel rect=[684, 66, 785, 78]
-    TextScaled resolves to 7px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/EventsHud.luau:38
-[med] tiny-text: KiWarriorsUI.ObjectiveHolder.Objective.Reward rect=[147, 204, 189, 216]
-    TextScaled resolves to 8px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/QuestTracker.luau:167
-[med] tiny-text: KiWarriorsUI.ShopWindowHolder.ShopWindow.Body.List.Row.TextLabel rect=[263, 156, 463, 173] (x3 similar)
-    TextScaled resolves to 7px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Kit.luau:67
-[med] tiny-text: KiWarriorsUI.VitalsHolder.Vitals.Boost rect=[56, 137, 195, 145]
-    TextScaled resolves to 7px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Hud.luau:90
-[med] tiny-text: KiWarriorsUI.VitalsHolder.Vitals.HpBar.Text rect=[57, 88, 194, 100]
-    TextScaled resolves to 8px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Theme.luau:388
-[med] tiny-text: KiWarriorsUI.VitalsHolder.Vitals.KiBar.Text rect=[57, 103, 194, 113]
-    TextScaled resolves to 7px (< 9px, unreadable)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Theme.luau:388
-[low] core-overlap: KiWarriorsUI.MenuHolder.Menu.Holder_More.Menu_More.TextLabel rect=[120, 293, 135, 308] (x4 similar)
-    covered by the touch control (thumbstick/jump)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Theme.luau:145
-[low] core-overlap: KiWarriorsUI.MenuHolder.Menu.Holder_More.Menu_More.TextLabel rect=[111, 314, 144, 322] (x4 similar)
-    covered by the touch control (thumbstick/jump)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Menu.luau:107
-[low] core-overlap: KiWarriorsUI.MenuHolder.Menu.Holder_Rewards.Menu_Rewards.Badge.TextLabel rect=[137, 245, 152, 260] (x2 similar)
-    covered by the touch control (thumbstick/jump)
-    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:109 < ki-warriors/src/client/UI/Theme.luau:427
+    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:112 < ki-warriors/src/client/UI/Theme.luau:149
 
 ## Runtime log (0)

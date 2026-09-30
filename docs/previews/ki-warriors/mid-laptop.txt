@@ -1,0 +1,7 @@
+# uipreview ki-warriors state=mid screen=laptop (1366x768)
+# image: mid-laptop.png  (coordinates below are in the full 1366x768 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (0)
+
+## Runtime log (0)

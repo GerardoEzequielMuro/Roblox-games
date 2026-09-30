@@ -104,6 +104,9 @@ function Theme.list(dir: Enum.FillDirection?, padding: number?, hAlign: Enum.Hor
 	})
 end
 
+-- Smallest size a TextScaled label may shrink to; Root raises it on touch devices.
+Theme.minText = 8
+
 -- Text label. Extra props: Key/Args (translation), Stroke (false | thickness), MaxTextSize.
 function Theme.text(props: { [string]: any }): TextLabel
 	local t = Theme.new("TextLabel", {
@@ -124,7 +127,8 @@ function Theme.text(props: { [string]: any }): TextLabel
 	if props.Stroke ~= false then
 		Theme.textStroke(if type(props.Stroke) == "number" then props.Stroke else 2).Parent = t
 	end
-	Theme.new("UITextSizeConstraint", { MaxTextSize = props.MaxTextSize or 36, MinTextSize = 8, Parent = t })
+	local minText = Theme.minText
+	Theme.new("UITextSizeConstraint", { MaxTextSize = math.max(props.MaxTextSize or 36, minText), MinTextSize = minText, Parent = t })
 	if props.Parent then
 		t.Parent = props.Parent
 	end
@@ -263,12 +267,19 @@ export type ButtonOpts = {
 	ZIndex: number?,
 }
 
+-- Shortest a button may be (design px); Root raises it on touch devices (52 * 0.85 = 44 px).
+Theme.minButtonH = 0
+
 function Theme.button(opts: ButtonOpts): TextButton
 	local color = opts.Color or Theme.Blue
 	local corner = opts.Corner or 12
+	local size = opts.Size or UDim2.fromOffset(160, 48)
+	if Theme.minButtonH > 0 and size.Y.Scale == 0 and size.Y.Offset < Theme.minButtonH then
+		size = UDim2.new(size.X.Scale, size.X.Offset, 0, Theme.minButtonH)
+	end
 	local b = Theme.new("TextButton", {
 		Name = opts.Name or "Button",
-		Size = opts.Size or UDim2.fromOffset(160, 48),
+		Size = size,
 		Position = opts.Position or UDim2.new(),
 		AnchorPoint = opts.AnchorPoint or Vector2.zero,
 		BackgroundColor3 = Color3.new(1, 1, 1),

@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "Gücü indir",
 	["forms.need"] = "{power} güç",
 	["forms.need_asc"] = "{n} yükselme",
+	["forms.need_asc_one"] = "{n} yükselme",
 
 	-- moves
 	["moves.techniques"] = "Teknikler",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Yükselme",
+	["ascend.count_one"] = "{n} Yükselme",
 	["ascend.next"] = "Antrenman %{cur} → %{next} · +{g} {gems}",
 	["ascend.keeps"] = "Kalanlar: formlar, teknikler, auralar, geliştirmeler ve {gems}.",
 	["ascend.resets"] = "Sıfırlananlar: özellikler, {sparks}, ağırlıklar ve gezegenler.",

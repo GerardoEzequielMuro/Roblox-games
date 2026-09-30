@@ -60,12 +60,23 @@ end
 
 -- Creates window chrome and returns it; the caller fills `body`. titleKey is a translation key.
 function Windows.create(name: string, icon: string, titleKey: string, color: Color3, size: Vector2?): Window
-	local sz = size or Vector2.new(720, 470)
+	local designSize = size or Vector2.new(720, 470)
+	local sz = designSize
+	local touch = Root.isTouch
+	-- touch: the window has to fit the usable area (Root.area design px) with room for the
+	-- medal / close button that poke out of its corners, so it gets shorter (bodies scroll)
+	local function fit(): Vector2
+		if not touch then
+			return designSize
+		end
+		return Vector2.new(math.min(designSize.X, Root.area.X - 48), math.min(designSize.Y, Root.area.Y - 34))
+	end
+	sz = fit()
 	local frame = Theme.panel({
 		Name = name .. "Window",
 		Size = UDim2.fromOffset(sz.X, sz.Y),
-		Position = UDim2.fromScale(0.5, 0.52),
-		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = if touch then UDim2.new(0.5, 0, 0, 22) else UDim2.fromScale(0.5, 0.52),
+		AnchorPoint = if touch then Vector2.new(0.5, 0) else Vector2.new(0.5, 0.5),
 		Visible = false,
 		ZIndex = 20,
 		Parent = Root.gui,
@@ -73,7 +84,14 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		StrokeThickness = 4,
 	})
 	Theme.new("UIScale", { Parent = frame })
-	Root.mount(frame)
+	local mounted = Root.mount(frame)
+	if touch then
+		Root.Changed:Connect(function()
+			local v = fit()
+			frame.Size = UDim2.fromOffset(v.X, v.Y)
+			mounted.Size = frame.Size
+		end)
+	end
 	Theme.shadow(frame, 22)
 	local header = Theme.new("Frame", {
 		Name = "Header",

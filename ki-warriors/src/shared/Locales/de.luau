@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "Zurückwandeln",
 	["forms.need"] = "{power} Kraft",
 	["forms.need_asc"] = "{n} Aufstiege",
+	["forms.need_asc_one"] = "{n} Aufstieg",
 
 	-- moves
 	["moves.techniques"] = "Techniken",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Aufstiege",
+	["ascend.count_one"] = "{n} Aufstieg",
 	["ascend.next"] = "Training {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Du behältst: Formen, Techniken, Auren, Upgrades und {gems}.",
 	["ascend.resets"] = "Zurückgesetzt: Werte, {sparks}, Gewichte und Planeten.",

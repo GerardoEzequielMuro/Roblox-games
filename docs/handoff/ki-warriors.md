@@ -190,3 +190,32 @@ Desde `ki-warriors/` con `PATH=/tmp/tools:$PATH`:
 - Elegir y bajar los modelos (hoy no hay ninguno: no inventé ids).
 - Los props que dependen del color del tema (cristales, hongos/shards, pilones, lollipops) siguen primitivos: un modelo no se tiñe. Si hace falta, agregar ranuras por tema.
 - Si se usa un landmark de modelo, el `Random` de las nubes del cielo del planeta queda corrido (el landmark original consume draws que no se compensan); solo cambian las nubes.
+
+## Ronda 4: UI arreglada con la vista previa
+
+Todo verificado con `tools/uipreview` (PNG/txt regenerados en `docs/previews/ki-warriors/`, `--all` + laptop + tablet). Estado final: PC y laptop 0 hallazgos; celular HUD 0 hallazgos (new y mid); tablet 0; ventanas en celular solo quedan hallazgos `low/med` de `core-overlap` (el contenido scrolleable de una ventana modal pasa por la zona del joystick, se puede scrollear) y nada `high`. 0 errores de runtime.
+
+### Qué arreglé
+- **Escala táctil** (`UI/Root.luau`): en táctil la escala ahora es `clamp(min(X/860, Y/365), 0.75, 1.1)` (~0.85 en un iPhone apaisado, antes ~0.6). Expone `Root.area` (espacio útil en unidades de diseño), `Theme.minText = 13` (texto escalado nunca baja de ~11 px reales) y `Theme.minButtonH = 52` (botones >= 44 px reales). PC sin cambios.
+- **Theme** (`Theme.luau:~122` `Theme.text`, `Theme.button`): usan esos mínimos.
+- **HUD táctil reordenado** (`UI/Hud.luau`): los toggles Auto pasaron a una fila propia de 3 píldoras de 53 px bajo las barras (icono + ON/OFF; el nombre completo no entra en todos los idiomas); el dock de entrenamiento queda solo con los 5 slots (58 px) + pesas + línea de tasa; zona y barra de jefe más angostas y debajo.
+- **Objetivo** (`UI/QuestTracker.luau`): arriba a la derecha, título en 2 líneas, barra de 20 px, alto 54 px reales; la pista del tutorial debajo.
+- **Menú** (`UI/Menu.luau`): en táctil es una fila horizontal abajo, entre el joystick y los botones de combate (antes debajo del joystick); botones de 44 px; los bloqueados no dejan huecos (UIListLayout); submenú en grilla de 2 columnas que abre hacia arriba; los badges ya no quedan tapados por el botón vecino (ZIndex decreciente).
+- **Botones de combate** (`UI/TouchControls.luau`): `LAYOUT` ahora en px desde la esquina inferior derecha (todos >= 44 px, fuera de la zona del salto), semillas en fila sobre el menú; en tablet el cluster se corre a la izquierda/arriba con la escala.
+- **Eventos** (`UI/EventsHud.luau`): en táctil van arriba al centro, 2 chips por fila (antes tapaban Volar/Forma).
+- **Ventanas** (`UI/Windows.luau`, `UI/Kit.luau`, `Panels1/2`): en táctil se achican para entrar en el área útil y quedan pegadas arriba (medallón y X ya no pisan la barra de Roblox); botones de las filas >= 52 px (la fila crece); CodeBox y grilla de idiomas también. X de la ventana ya no choca con los toggles.
+- **Plurales** ("1 Ascensions"): claves nuevas `ascend.count_one` y `forms.need_asc_one` en los 12 idiomas; `Panels1.luau:176` y `:62` eligen según n == 1.
+
+### Qué queda
+- Celular: el contenido scrolleable de ventanas largas pasa por debajo de la zona del joystick (solo al scrollear).
+- Con 3-4 eventos activos a la vez, la segunda fila de chips puede tapar un poco la barra de jefe (no son botones).
+- Teléfonos de menos de ~700 px útiles: la escala baja a 0.75 y el centro del HUD queda justo.
+- Shop/Invite: mucho espacio vacío en PC (sin cambios; depende de productos reales).
+
+### Qué confirmar en Studio
+- Escala real en un teléfono (emulador de dispositivo, y `Workspace.ForceTouchLayout`): posición real del joystick/salto vs. la fila del menú y el cluster.
+- `UIScale` en el holder: que el `Position` en offset no se escale (la herramienta asume que no).
+- Íconos 💪/🔋/⚔️ de los toggles Auto (si se sube el pack, agregarlos a `Glyphs`).
+- `UIListLayout.Wraps` en los chips de eventos.
+
+Nota de herramienta: el chequeo `core-overlap` marca el área completa del joystick aunque el joystick dinámico real solo aparece donde se toca.

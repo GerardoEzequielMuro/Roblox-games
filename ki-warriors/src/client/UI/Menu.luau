@@ -1,7 +1,7 @@
 --!nonstrict
--- The menu: a short column of round buttons on the left (2 columns on phones, between the
--- vitals and the thumbstick). "Warrior" and "More" fold out a text sub-menu; the rest open
--- their window. Buttons appear as the story unlocks them, so a new player starts with few.
+-- The menu: a short column of round buttons on the left on PC; on phones a single row at the
+-- bottom, between the thumbstick and the combat buttons. "Warrior" and "More" fold out a
+-- text sub-menu; the rest open their window. Buttons appear as the story unlocks them, so a new player starts with few.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
@@ -23,7 +23,8 @@ local Menu = {}
 local new = Theme.new
 local touch = Root.isTouch
 
-local SIZE = if touch then 46 else 52
+local SIZE = 52 -- touch: 52 * 0.85 scale = 44 px
+local GAP = if touch then 9 else 8
 local buttons: { [string]: { frame: TextButton, badge: Frame, holder: Frame } } = {}
 Menu.buttons = buttons
 local sub: Frame? = nil
@@ -48,21 +49,29 @@ local function closeSub()
 	end
 end
 
-local function openSub(entry, anchor: GuiObject)
+local function openSub(entry, anchor: GuiObject, anchorX: number)
 	closeSub()
 	subFor = entry.name
-	local h = #entry.sub * 38 + 10
+	local cellH = if touch then 52 else 34
+	local rowH = cellH + 4
+	local cols = if touch then 2 else 1
+	local rows = math.ceil(#entry.sub / cols)
+	local cellW = if touch then 122 else 166
+	local h = rows * rowH + 6
 	local f = Theme.panel({
 		Name = "SubMenu",
-		Size = UDim2.fromOffset(176, h),
-		Position = UDim2.fromOffset(SIZE + 12, -6),
+		Size = UDim2.fromOffset(cols * (cellW + 4) + 6, h),
+		-- touch: opens upwards from the bottom menu row, left-aligned with the row
+		Position = if touch then UDim2.fromOffset(-anchorX, -(h + 10)) else UDim2.fromOffset(SIZE + 12, -6),
 		ZIndex = 30,
 		Parent = anchor,
 	})
 	new("UIScale", { Parent = f })
 	for i, win in entry.sub do
-		local b = new("TextButton", { Name = "Sub_" .. win, Size = UDim2.new(1, -10, 0, 34), Position = UDim2.fromOffset(5, 5 + (i - 1) * 38), BackgroundColor3 = Theme.PanelLight, BackgroundTransparency = 0.4, AutoButtonColor = true, Text = "", ZIndex = 31, Parent = f }, { Theme.corner(8) })
-		Theme.icon(SUB_ICONS[win] or "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.fromOffset(6, 5), Parent = b }).ZIndex = 32
+		local col = (i - 1) % cols
+		local row = (i - 1) // cols
+		local b = new("TextButton", { Name = "Sub_" .. win, Size = UDim2.fromOffset(cellW, cellH), Position = UDim2.fromOffset(5 + col * (cellW + 4), 5 + row * rowH), BackgroundColor3 = Theme.PanelLight, BackgroundTransparency = 0.4, AutoButtonColor = true, Text = "", ZIndex = 31, Parent = f }, { Theme.corner(8) })
+		Theme.icon(SUB_ICONS[win] or "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.new(0, 6, 0.5, -12), Parent = b }).ZIndex = 32
 		local t = Theme.text({ Key = "menu." .. win, Size = UDim2.new(1, -40, 1, -10), Position = UDim2.fromOffset(36, 5), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
 		t.ZIndex = 32
 		b.Activated:Connect(function()
@@ -75,22 +84,37 @@ local function openSub(entry, anchor: GuiObject)
 end
 
 local function build()
-	local cols = if touch then 3 else 1
+	local cols = if touch then #ENTRIES else 1
 	local rows = math.ceil(#ENTRIES / cols)
-	local gap = 8
+	local gap = GAP
 	local dock = new("Frame", {
 		Name = "Menu",
 		BackgroundTransparency = 1,
 		Size = UDim2.fromOffset(cols * (SIZE + gap), rows * (SIZE + 18 + gap)),
-		Position = if touch then UDim2.new(0, 8, 0, 190) else UDim2.new(0, 12, 0.4, 0),
-		AnchorPoint = if touch then Vector2.zero else Vector2.new(0, 0.5),
+		-- touch: bottom row between the thumbstick (x < ~155) and the combat buttons
+		Position = if touch then UDim2.new(0, 162, 1, -2) else UDim2.new(0, 12, 0.4, 0),
+		AnchorPoint = if touch then Vector2.new(0, 1) else Vector2.new(0, 0.5),
 		Parent = Root.gui,
 	})
-	Root.mount(dock).ZIndex = 5
+	local mounted = Root.mount(dock)
+	mounted.ZIndex = 5
+	if touch then
+		-- tablets: the thumbstick is bigger and further in, so the row moves right with the scale
+		local function place()
+			mounted.Position = UDim2.new(0, 162 + math.max(0, Root.scale / 0.85 - 1) * 300, 1, -2)
+		end
+		place()
+		Root.Changed:Connect(place)
+	end
+	if touch then
+		-- hidden (still locked) entries collapse instead of leaving a hole in the row
+		new("UIListLayout", { FillDirection = Enum.FillDirection.Horizontal, Padding = UDim.new(0, gap), SortOrder = Enum.SortOrder.LayoutOrder, Parent = dock })
+	end
 	for i, e in ENTRIES do
 		local col = (i - 1) % cols
 		local row = (i - 1) // cols
-		local holder = new("Frame", { Name = "Holder_" .. e.name, BackgroundTransparency = 1, Size = UDim2.fromOffset(SIZE, SIZE + 16), Position = UDim2.fromOffset(col * (SIZE + gap), row * (SIZE + 18 + gap)), Parent = dock })
+		-- earlier buttons draw above later ones so a badge (top-right) is not hidden by its neighbour
+		local holder = new("Frame", { Name = "Holder_" .. e.name, ZIndex = #ENTRIES - i + 1, BackgroundTransparency = 1, LayoutOrder = i, Size = UDim2.fromOffset(SIZE, SIZE + 16), Position = if touch then UDim2.new() else UDim2.fromOffset(col * (SIZE + gap), row * (SIZE + 18 + gap)), Parent = dock })
 		local b = new("TextButton", {
 			Name = "Menu_" .. e.name,
 			Size = UDim2.fromOffset(SIZE, SIZE),
@@ -104,7 +128,7 @@ local function build()
 			Theme.gradient(Theme.PanelLight, Theme.PanelDark),
 		})
 		Theme.icon(e.icon, { Size = UDim2.fromScale(0.58, 0.58), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b })
-		Theme.text({ Key = "menu." .. e.name, Size = UDim2.fromOffset(SIZE + 14, 14), Position = UDim2.new(0.5, 0, 1, 1), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 12, Parent = b })
+		Theme.text({ Key = "menu." .. e.name, Size = UDim2.fromOffset(SIZE + gap, if touch then 16 else 14), Position = UDim2.new(0.5, 0, 1, 1), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = if touch then 14 else 12, Parent = b })
 		local scale = new("UIScale", { Parent = b })
 		b.MouseEnter:Connect(function()
 			TweenService:Create(scale, TweenInfo.new(0.1), { Scale = 1.08 }):Play()
@@ -119,7 +143,13 @@ local function build()
 					closeSub()
 				else
 					Windows.close()
-					openSub(e, holder)
+					local before = 0
+					for j = 1, i - 1 do
+						if buttons[ENTRIES[j].name].holder.Visible then
+							before += 1
+						end
+					end
+					openSub(e, holder, before * (SIZE + gap))
 				end
 			else
 				closeSub()

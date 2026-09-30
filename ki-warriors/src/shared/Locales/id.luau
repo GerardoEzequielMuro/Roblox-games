@@ -74,6 +74,7 @@ return {
 	["forms.revert"] = "Turunkan power",
 	["forms.need"] = "{power} power",
 	["forms.need_asc"] = "{n} ascension",
+	["forms.need_asc_one"] = "{n} ascension",
 
 	-- moves
 	["moves.techniques"] = "Teknik",
@@ -97,6 +98,7 @@ return {
 
 	-- ascension
 	["ascend.count"] = "{n} Ascension",
+	["ascend.count_one"] = "{n} Ascension",
 	["ascend.next"] = "Latihan {cur}% → {next}% · +{g} {gems}",
 	["ascend.keeps"] = "Yang tetap kamu simpan: wujud, teknik, aura, upgrade, dan {gems}.",
 	["ascend.resets"] = "Yang di-reset: stat, {sparks}, beban, dan planet.",

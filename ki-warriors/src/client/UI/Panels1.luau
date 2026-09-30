@@ -59,7 +59,7 @@ local function renderForms(body: Frame)
 		else
 			local need = Lang.t("forms.need", { power = Format.abbrev(f.reqPower) })
 			if f.reqRebirths then
-				need ..= " · " .. Lang.t("forms.need_asc", { n = f.reqRebirths })
+				need ..= " · " .. Lang.t(if f.reqRebirths == 1 then "forms.need_asc_one" else "forms.need_asc", { n = f.reqRebirths })
 			end
 			if f.special and not s.passes[f.special.pass] then
 				need ..= "\n" .. Lang.t("special.need", { boss = Lang.t("npc." .. f.special.boss), have = math.min(f.special.count, (s.bossKills and s.bossKills[f.special.boss]) or 0), n = f.special.count, pass = Lang.t("pass." .. f.special.pass .. ".name") })
@@ -160,7 +160,7 @@ local function renderAscend(body: Frame)
 		Kit.text(body, { Key = "ascend.keeps", Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 78), MaxTextSize = 16, TextColor3 = Theme.Green, TextWrapped = true, Font = Theme.FontBold })
 		Kit.text(body, { Key = "ascend.resets", Size = UDim2.new(1, -20, 0, 40), Position = UDim2.fromOffset(10, 120), MaxTextSize = 16, TextColor3 = Theme.Red, TextWrapped = true, Font = Theme.FontBold })
 		ascendUi.holder = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -40, 0, 26), Position = UDim2.fromOffset(20, 172), ZIndex = 22, Parent = body })
-		ascendUi.button = Theme.button({ Key = "ascend.button", Color = Theme.Purple, Size = UDim2.fromOffset(260, 56), Position = UDim2.new(0.5, 0, 1, -8), AnchorPoint = Vector2.new(0.5, 1), TextSize = 26, ZIndex = 23, Parent = body, OnClick = function()
+		ascendUi.button = Theme.button({ Key = "ascend.button", Color = Theme.Purple, Size = UDim2.fromOffset(260, 52), Position = UDim2.new(0.5, 0, 1, -6), AnchorPoint = Vector2.new(0.5, 1), TextSize = 26, ZIndex = 23, Parent = body, OnClick = function()
 			local ok = Kit.request("Rebirth", nil, Lang.t("ascend.done"))
 			if ok then
 				Windows.close()
@@ -173,7 +173,7 @@ local function renderAscend(body: Frame)
 		end
 	end
 	local req = s.rebirthReq or Formulas.rebirthRequirement(s.rebirths)
-	ascendUi.count.Text = "🌟 " .. Lang.t("ascend.count", { n = s.rebirths })
+	ascendUi.count.Text = "🌟 " .. Lang.t(if s.rebirths == 1 then "ascend.count_one" else "ascend.count", { n = s.rebirths })
 	ascendUi.now.Text = Lang.t("ascend.next", { cur = Format.abbrev((1 + s.rebirths) * 100), next = Format.abbrev((2 + s.rebirths) * 100), g = Config.Rebirth.gems })
 	Kit.clear(ascendUi.holder)
 	Kit.bar(ascendUi.holder, UDim2.fromScale(1, 1), UDim2.new(), Theme.Purple, s.power / req, Format.abbrev(s.power) .. " / " .. Format.abbrev(req))
