@@ -27,13 +27,13 @@ function WinPanel.init()
 		list.TextWrapped = true
 		return card
 	end
-	column("Lose", 0, Kit.C.red, "@win.lose", "@win.lose_list")
+	local lose = column("Lose", 0, Kit.C.red, "@win.lose", "@win.lose_list")
 	local gain = column("Gain", 0.5, Kit.C.green, "@win.gain", "@win.gain_list")
 	local swatch = Kit.frame(gain, UDim2.new(1, -60, 0, 22), UDim2.new(0.5, 0, 1, -32), Kit.C.pink, Vector2.new(0.5, 0))
 	swatch.Name = "NextTrail"
 	Kit.corner(swatch, 11)
 	Kit.stroke(swatch, Kit.C.ink, 2)
-	Kit.button(content, "@win.rebirth", UDim2.fromOffset(330, 66), UDim2.new(0.5, -105, 1, -68), Kit.C.green, function()
+	local rebirth = Kit.button(content, "@win.rebirth", UDim2.fromOffset(330, 66), UDim2.new(0.5, -105, 1, -68), Kit.C.green, function()
 		local ok, msg = Net.request("Rebirth")
 		if ok then
 			Kit.close()
@@ -41,7 +41,7 @@ function WinPanel.init()
 			Toast.show(msg, "error")
 		end
 	end, Vector2.new(0.5, 0), 30)
-	Kit.button(content, "@win.stay", UDim2.fromOffset(200, 66), UDim2.new(0.5, 170, 1, -68), Kit.C.grey, function()
+	local stay = Kit.button(content, "@win.stay", UDim2.fromOffset(200, 66), UDim2.new(0.5, 170, 1, -68), Kit.C.grey, function()
 		Kit.close()
 	end, Vector2.new(0.5, 0), 28)
 	-- the way on: 900 more stages behind the portal
@@ -54,6 +54,26 @@ function WinPanel.init()
 		end
 	end, Vector2.new(0.5, 0), 28)
 	portal.Name = "Portal"
+
+	-- Touch: short, wide panel (Kit.panel): slimmer cards, buttons 58 tall, all inside the content.
+	Kit.onLayout(function(touch)
+		for _, card in { lose, gain } do
+			card.Size = UDim2.new(0.5, -6, 0, if touch then 114 else 160)
+			card.Position = UDim2.new(if card == gain then 0.5 else 0, if card == gain then 6 else 0, 0, if touch then 44 else 56)
+			local list = card:FindFirstChild("List") :: TextLabel
+			list.Size = UDim2.new(1, -24, 1, if touch then -76 else -88)
+			list.Position = UDim2.fromOffset(12, if touch then 42 else 46)
+		end
+		title.Size = UDim2.new(1, 0, 0, if touch then 42 else 50)
+		swatch.Size = UDim2.new(1, -60, 0, if touch then 18 else 22)
+		swatch.Position = UDim2.new(0.5, 0, 1, if touch then -26 else -32)
+		rebirth.Size = UDim2.fromOffset(330, if touch then 58 else 66)
+		rebirth.Position = UDim2.new(0.5, -105, 1, if touch then -58 else -68)
+		stay.Size = UDim2.fromOffset(200, if touch then 58 else 66)
+		stay.Position = UDim2.new(0.5, 170, 1, if touch then -58 else -68)
+		portal.Size = UDim2.fromOffset(540, if touch then 54 else 56)
+		portal.Position = UDim2.new(0.5, 0, 1, if touch then -116 else -134)
+	end)
 
 	Kit.onOpen("win", function()
 		local wins = Net.state.wins or 0

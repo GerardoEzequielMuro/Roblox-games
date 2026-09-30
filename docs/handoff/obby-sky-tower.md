@@ -208,3 +208,30 @@ Sesión en la nube, sin Studio: **no vi nada corriendo**.
 3. `balloon.rbxm` (Model): tiene que seguir bamboleándose. `portal_frame.rbxm`: que el disco quede en el hueco y se pueda entrar.
 4. Mirar Output: warnings de scripts borrados o de modelos que se pasan del tope de partes.
 5. Con modelos cargados, repetir el AutoTest: el tope "scenery parts" (4200) y el de sombras (<25%).
+
+## Ronda 4: UI arreglada con la vista previa
+
+Con `tools/uipreview` (`--all`, más laptop y tablet). Resultado: 0 hallazgos en PC y laptop; en celular solo quedan `core-overlap` de ventanas modales (ver abajo). Se regeneró todo `docs/previews/obby-sky-tower/`.
+
+**Qué arreglé**
+- **Checkpoint/Lobby sin texto** (`Kit.luau` `Kit.singleLine`, ~l.293): medía el alto con `Size.Y.Offset` = 0 (botón con alto por escala) y quedaba `TextSize = -8`. Ahora toma el alto del padre (`Scale * parent.Size.Y.Offset`) y se reajusta cuando el padre cambia de tamaño. Antes: dos botones vacíos; después: "Checkpoint" y "Lobby" legibles.
+- **Recuadro alrededor del timer** (`Hud.luau` ~l.195): el `UIStroke` ahora es `Contextual`, contornea los números y no la caja.
+- **Botón Menu** en celular (`Hud.luau`, `Kit.onLayout`): el alto de diseño sube para que mida >= 46 px reales (antes 37); el bloque de monedas/chips se acomoda según ese alto.
+- **Menú abierto bajo el joystick** (`Hud.luau`, `MENU_COLS_TOUCH`): en táctil la grilla pasa a 4 columnas x 2 filas y se abre como popup en la franja libre entre el timer y la barra de nivel, a la derecha del joystick (antes Settings/Invite quedaban encima del pulgar). En PC sigue igual (3 columnas).
+- **Columna de acciones** (`Hud.luau`): alturas táctiles 54 (Skip 10, Checkpoint/Lobby, habilidades, explorar); en celular la columna baja hasta justo arriba de la barra de nivel (queda a la izquierda del botón de salto); en tablet se mantiene al 64% para no pisar el salto grande. Botones 44-45 px reales.
+- **Ventanas en celular** (`Kit.luau`, `Kit.panel` + `Kit.region(..., touchSize)`, `PANEL_TOUCH_H`): en táctil el panel pasa de 640x460 a 860x350 (apaisado), con encabezado más finito y X de 52 px. Escala ~0.85 en vez de ~0.67: X de 40 px, botones de tienda/ajustes/recompensas/victoria >= 44 px.
+- Acomodos táctiles (`Kit.onLayout`) en `SettingsPanel.luau` (coils lado a lado, 12 idiomas en 6 columnas), `RewardsPanel.luau` (diario/códigos más bajos, código + Redeem en una fila, premios de tiempo más compactos) y `WinPanel.luau` (tarjetas y botones dentro del alto nuevo). PC no cambia.
+- Plurales: no hay casos en este juego (los hallazgos de "1 Ascensions" eran de ki-warriors); no toqué locales.
+
+**Qué queda**
+- `core-overlap` (low/med) en celular dentro de ventanas modales (Shop, Travel, Rewards, Settings): el panel ancho pasa por encima de la zona del joystick. Es modal con velo a pantalla completa (el `Dim` es un botón), así que no se camina mientras está abierta; lo dejo a propósito.
+- Si aparecen a la vez portal + habilidades + explorar, la columna de acciones se achica (~0.65) y algún botón puede bajar de 44 px. Caso raro.
+- Los nombres en japonés/coreano/tailandés salen como cajitas en la vista previa: falta de fuente CJK de la herramienta (en Roblox se ven).
+
+**Confirmar en Studio**
+1. Celular real (o emulador apaisado con notch): Menu, popup del menú y su distancia al joystick dinámico.
+2. Que las ventanas anchas (Settings/Rewards/Win/Shop/Travel) no se corten en pantallas 16:9 más angostas (p. ej. 640x360) y se cierren bien con el X.
+3. Que el texto de Checkpoint/Lobby no se corta en los 12 idiomas.
+4. Timer sin recuadro.
+
+Verificación: `rojo build` OK, `luau-lsp analyze` sin salida, tests puros (`tests/*.luau`) pasan.

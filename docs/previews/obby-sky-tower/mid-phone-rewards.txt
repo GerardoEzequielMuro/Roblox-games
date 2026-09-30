@@ -2,36 +2,18 @@
 # image: mid-phone-rewards.png  (coordinates below are in the full 844x390 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
-## Layout findings (10)
-[high] small-touch: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextBox rect=[433, 150, 605, 180]
-    touch target 172x30px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/RewardsPanel.luau:36 < obby-sky-tower/src/client/init.client.luau:37
-[high] small-touch: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextButton rect=[240, 321, 301, 351] (x5 similar)
-    touch target 61x30px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/RewardsPanel.luau:82 < obby-sky-tower/src/client/init.client.luau:37
-[high] tiny-text: SkyTowerUI.Actions.Bottom.Checkpoint rect=[579, 214, 679, 257]
-    TextSize=-8 -> 0.9px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:338 < obby-sky-tower/src/client/init.client.luau:34
-[high] tiny-text: SkyTowerUI.Actions.Bottom.Lobby rect=[684, 214, 738, 257]
-    TextSize=-8 -> 0.9px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:343 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Actions.Bottom.Checkpoint rect=[579, 214, 679, 257]
-    touch target 100x43px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:338 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Actions.Bottom.Lobby rect=[684, 214, 738, 257]
-    touch target 54x43px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:343 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Corner.MenuButton rect=[59, 107, 145, 144]
-    touch target 86x37px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:207 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextButton rect=[239, 186, 411, 221]
-    touch target 172x35px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/RewardsPanel.luau:27 < obby-sky-tower/src/client/init.client.luau:37
-[med] small-touch: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextButton rect=[433, 186, 605, 221]
-    touch target 172x35px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/RewardsPanel.luau:52 < obby-sky-tower/src/client/init.client.luau:37
-[med] small-touch: SkyTowerUI.Panel_rewards.Window.Body.Frame.TextButton rect=[583, 80, 615, 112]
-    touch target 32x32px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Kit.luau:580 < obby-sky-tower/src/client/UI/RewardsPanel.luau:19
+## Layout findings (4)
+[med] core-overlap: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextButton rect=[79, 316, 200, 362]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/RewardsPanel.luau:84 < obby-sky-tower/src/client/init.client.luau:37
+[low] core-overlap: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextLabel rect=[76, 250, 202, 270]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:120 < obby-sky-tower/src/client/UI/RewardsPanel.luau:71 < obby-sky-tower/src/client/init.client.luau:37
+[low] core-overlap: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextLabel rect=[76, 270, 202, 297]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:120 < obby-sky-tower/src/client/UI/RewardsPanel.luau:73 < obby-sky-tower/src/client/init.client.luau:37
+[low] core-overlap: SkyTowerUI.Panel_rewards.Window.Body.Content.Frame.TextLabel rect=[76, 303, 202, 315]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:120 < obby-sky-tower/src/client/UI/RewardsPanel.luau:83 < obby-sky-tower/src/client/init.client.luau:37
 
 ## Runtime log (0)

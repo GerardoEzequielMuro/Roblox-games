@@ -2,36 +2,12 @@
 # image: mid-phone-shop.png  (coordinates below are in the full 844x390 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
-## Layout findings (10)
-[high] tiny-text: SkyTowerUI.Actions.Bottom.Checkpoint rect=[579, 214, 679, 257]
-    TextSize=-8 -> 0.9px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:338 < obby-sky-tower/src/client/init.client.luau:34
-[high] tiny-text: SkyTowerUI.Actions.Bottom.Lobby rect=[684, 214, 738, 257]
-    TextSize=-8 -> 0.9px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:343 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Actions.Bottom.Checkpoint rect=[579, 214, 679, 257]
-    touch target 100x43px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:338 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Actions.Bottom.Lobby rect=[684, 214, 738, 257]
-    touch target 54x43px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:343 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Corner.MenuButton rect=[59, 107, 145, 144]
-    touch target 86x37px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:207 < obby-sky-tower/src/client/init.client.luau:34
-[med] small-touch: SkyTowerUI.Panel_shop.Window.Body.Content.ScrollingFrame.Frame.TextButton rect=[252, 251, 352, 285]
-    touch target 100x34px (< 44px on a touch screen)
+## Layout findings (2)
+[med] core-overlap: SkyTowerUI.Panel_shop.Window.Body.Content.ScrollingFrame.Frame.TextButton rect=[108, 299, 244, 345]
+    covered by the touch control (thumbstick/jump)
     created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/ShopPanel.luau:38 < obby-sky-tower/src/client/UI/ShopPanel.luau:73
-[med] small-touch: SkyTowerUI.Panel_shop.Window.Body.Content.ScrollingFrame.Frame.TextButton rect=[372, 251, 472, 285] (x2 similar)
-    touch target 100x34px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/ShopPanel.luau:38 < obby-sky-tower/src/client/UI/ShopPanel.luau:104
-[med] small-touch: SkyTowerUI.Panel_shop.Window.Body.Content.TextButton rect=[232, 121, 332, 155]
-    touch target 100x34px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/ShopPanel.luau:129 < obby-sky-tower/src/client/init.client.luau:35
-[med] small-touch: SkyTowerUI.Panel_shop.Window.Body.Content.TextButton rect=[340, 121, 439, 155]
-    touch target 100x34px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/ShopPanel.luau:133 < obby-sky-tower/src/client/init.client.luau:35
-[med] small-touch: SkyTowerUI.Panel_shop.Window.Body.Frame.TextButton rect=[583, 80, 615, 112]
-    touch target 32x32px (< 44px on a touch screen)
-    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Kit.luau:580 < obby-sky-tower/src/client/UI/ShopPanel.luau:50
+[low] core-overlap: SkyTowerUI.Panel_shop.Window.Body.Content.ScrollingFrame.Frame.TextLabel rect=[106, 253, 246, 279]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:120 < obby-sky-tower/src/client/UI/ShopPanel.luau:36 < obby-sky-tower/src/client/UI/ShopPanel.luau:73
 
 ## Runtime log (0)

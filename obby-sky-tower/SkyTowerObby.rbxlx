@@ -14506,7 +14506,8 @@ end
 
 local MENU_CELL = 80
 local MENU_GAP = 12
-local MENU_COLS = 3
+local MENU_COLS = 3 -- columns of the menu grid on PC; touch screens use MENU_COLS_TOUCH
+local MENU_COLS_TOUCH = 4 -- wider and shorter, so the open grid clears the thumbstick
 
 local function menuButton(parent: Instance, order: number, name: string, text: string, icon: string, color: Color3, onClick: () -> ()): (TextButton, Frame)
 	local b = Kit.button(parent, "", UDim2.fromOffset(MENU_CELL, MENU_CELL), UDim2.new(), color, onClick)
@@ -14578,6 +14579,7 @@ function Hud.init()
 	timerLabel.Name = "Time"
 	timerLabel.Font = Enum.Font.Gotham
 	local timerStroke = Kit.stroke(timerLabel, Kit.C.ink, 1.5)
+	timerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual -- outline the digits, not the box
 	timerStroke.Transparency = 0.35
 	local timerNote = Kit.bold(timer, "", UDim2.new(1, 0, 0, 18), UDim2.fromOffset(0, 50), Color3.fromRGB(240, 240, 255), nil, 15)
 	timerNote.Name = "Note"
@@ -14591,7 +14593,8 @@ function Hud.init()
 		menuOpen = open
 		left.Visible = open
 	end
-	local menuBtn = Kit.button(corner, "@hud.menu", UDim2.fromOffset(116, 50), UDim2.new(), Color3.fromRGB(62, 68, 96), function()
+	local MENU_H = 50 -- design height of the Menu button (taller on phones, see onLayout)
+	local menuBtn = Kit.button(corner, "@hud.menu", UDim2.fromOffset(116, MENU_H), UDim2.new(), Color3.fromRGB(62, 68, 96), function()
 		setMenu(not menuOpen)
 	end, nil, 26)
 	menuBtn.Name = "MenuButton"
@@ -14614,6 +14617,7 @@ function Hud.init()
 			setMenu(false)
 		end
 	end)
+	local menuCols = MENU_COLS
 	local grid = Instance.new("UIGridLayout")
 	grid.CellSize = UDim2.fromOffset(MENU_CELL, MENU_CELL)
 	grid.CellPadding = UDim2.fromOffset(MENU_GAP, MENU_GAP)
@@ -14684,13 +14688,13 @@ function Hud.init()
 	exploreBtn.Name = "StopExploring"
 	exploreBtn.LayoutOrder = 2
 	exploreBtn.Visible = false
-	columnHeight[exploreBtn] = 52
+	columnHeight[exploreBtn] = 54
 
 	local abilityRow = Kit.frame(right, UDim2.fromOffset(ACT_W, 52), UDim2.new(), nil)
 	abilityRow.Name = "Abilities"
 	abilityRow.LayoutOrder = 3
 	abilityRow.Visible = false
-	columnHeight[abilityRow] = 52
+	columnHeight[abilityRow] = 54
 	local dashBtn = Kit.button(abilityRow, "@hud.dash", UDim2.new(0, 88, 1, 0), UDim2.fromOffset(0, 0), Kit.C.blue, function()
 		LocalFx.dash()
 	end, nil, 22)
@@ -14717,11 +14721,11 @@ function Hud.init()
 	end, nil, 24)
 	skip10.Name = "Skip10"
 	skip10.LayoutOrder = 5
-	columnHeight[skip10] = 50
+	columnHeight[skip10] = 54
 	local bottomRow = Kit.frame(right, UDim2.fromOffset(ACT_W, 50), UDim2.new(), nil)
 	bottomRow.Name = "Bottom"
 	bottomRow.LayoutOrder = 6
-	columnHeight[bottomRow] = 50
+	columnHeight[bottomRow] = 54
 	local back = Kit.button(bottomRow, "@hud.checkpoint", UDim2.new(0, 116, 1, 0), UDim2.fromOffset(0, 0), Kit.C.orange, function()
 		Net.request("ReturnToCheckpoint")
 	end, nil, 20)
@@ -14793,28 +14797,43 @@ function Hud.init()
 				n += 1
 			end
 		end
-		local rows = math.max(1, math.ceil(n / MENU_COLS))
+		local rows = math.max(1, math.ceil(n / menuCols))
 		return rows * MENU_CELL + (rows - 1) * MENU_GAP
 	end
 	Kit.onLayout(function(touch, area, scale)
+		local cols = if touch then MENU_COLS_TOUCH else MENU_COLS
+		if cols ~= menuCols then
+			menuCols = cols
+			grid.FillDirectionMaxCells = cols
+		end
 		local mh = menuHeight()
-		left.Size = UDim2.fromOffset(left.Size.X.Offset, mh)
+		local mw = cols * MENU_CELL + (cols - 1) * MENU_GAP
+		left.Size = UDim2.fromOffset(mw, mh)
 		local shown = actionsShown()
 		if touch then
 			-- corner block under the Roblox buttons; the thumbstick owns the bottom left
 			local top = math.floor(area.Y * 0.16)
 			local cs = math.min(scale, area.X * 0.34 / CORNER_W)
+			-- the Menu button must stay >= 44 px tall on screen
+			local mbH = math.max(MENU_H, math.ceil(46 / cs))
+			menuBtn.Size = UDim2.fromOffset(116, mbH)
+			corner.Size = UDim2.fromOffset(CORNER_W, mbH)
 			corner.AnchorPoint = Vector2.new(0, 0)
 			corner.Position = UDim2.new(0, 12, 0, top)
 			Kit.setScale(corner, cs)
 			chips.AnchorPoint = Vector2.new(0, 0)
-			chips.Position = UDim2.new(0, 12, 0, top + math.floor(56 * cs))
+			chips.Position = UDim2.new(0, 12, 0, top + math.floor((mbH + 6) * cs))
 			Kit.setScale(chips, cs)
-			-- the open menu may cover the thumbstick zone: it is a popup, it closes on a choice
-			local gridTop = top + math.floor(96 * cs)
+			-- the open menu is a popup in the free band between the top HUD and the level bar,
+			-- right of the thumbstick (which owns the bottom left); it closes on a choice
+			local stripTop = math.floor((Hud.EVENT_TOP + (if Hud.eventBarVisible then 44 else 0)) * scale)
+			local gridTop = math.max(stripTop, top + math.floor((mbH + 40) * cs)) + 8
+			local gridLeft = math.floor(area.X * 0.3)
+			local gridBottom = area.Y - math.floor((Progress.LEVEL_H + 16) * math.min(scale, area.X * 0.4 / 420))
+			local ms = math.min(scale, (gridBottom - gridTop) / mh, (area.X * 0.5 - 12) / mw)
 			left.AnchorPoint = Vector2.new(0, 0)
-			left.Position = UDim2.new(0, 12, 0, gridTop)
-			Kit.setScale(left, math.min(scale, (area.Y * 0.95 - gridTop) / mh))
+			left.Position = UDim2.new(0, gridLeft, 0, gridTop)
+			Kit.setScale(left, ms)
 			-- side bar: right edge, above the jump button (which owns the bottom 35%)
 			local ss = scale * 0.85
 			if side then
@@ -14823,9 +14842,15 @@ function Hud.init()
 				side.Size = UDim2.fromOffset(Progress.SIDE_W, math.floor(area.Y * 0.5 / ss))
 				Kit.setScale(side, ss)
 			end
-			-- action column: left of the side bar, bottom at 64% of the height, shrunk to fit
+			-- action column: left of the side bar (the jump button sits right of it), bottom just
+			-- above the level bar (phones; 64% of the height on tablets), shrunk to fit when the optional buttons are showing
 			local size = shapeActions(false)
-			local bottom = math.floor(area.Y * 0.64)
+			local ls = math.min(scale, area.X * 0.4 / 420)
+			local bottom = area.Y - math.floor((Progress.LEVEL_H + 14) * ls)
+			if area.Y > 450 then
+				-- tablets: the (bigger) jump button sits under the column, keep it above it
+				bottom = math.floor(area.Y * 0.64)
+			end
 			right.AnchorPoint = Vector2.new(1, 1)
 			right.Position = UDim2.new(1, -12 - math.floor(Progress.SIDE_W * ss), 0, bottom)
 			Kit.setScale(right, math.min(scale, (bottom - 8) / math.max(size.Y, 1)))
@@ -14836,6 +14861,8 @@ function Hud.init()
 				Kit.setScale(level, math.min(scale, area.X * 0.4 / 420))
 			end
 		else
+			menuBtn.Size = UDim2.fromOffset(116, MENU_H)
+			corner.Size = UDim2.fromOffset(CORNER_W, MENU_H)
 			corner.AnchorPoint = Vector2.new(0, 1)
 			corner.Position = UDim2.new(0, 12, 1, -12)
 			Kit.setScale(corner, scale)
@@ -15426,7 +15453,13 @@ function Kit.singleLine(obj: TextButton, maxSize: number)
 		local padY = if pad then pad.PaddingTop.Offset + pad.PaddingBottom.Offset else 0
 		-- design (unscaled) box: TextSize is scaled by the region's UIScale just like Size
 		local w = obj.Size.X.Offset - padX - 4
-		local h = obj.Size.Y.Offset - padY
+		-- height: own offset, or (when sized by scale) the parent's design height
+		local parent = obj.Parent
+		local h = obj.Size.Y.Offset
+		if h <= 0 and parent and parent:IsA("GuiObject") then
+			h = obj.Size.Y.Scale * parent.Size.Y.Offset + obj.Size.Y.Offset
+		end
+		h -= padY
 		local size = math.min(maxSize, math.floor(h))
 		local plain = string.gsub(obj.Text, "<[^>]+>", "")
 		while size > 8 do
@@ -15443,6 +15476,10 @@ function Kit.singleLine(obj: TextButton, maxSize: number)
 	end
 	obj:GetPropertyChangedSignal("Text"):Connect(fit)
 	obj:GetPropertyChangedSignal("Size"):Connect(fit)
+	local holder = obj.Parent
+	if holder and holder:IsA("GuiObject") then
+		holder:GetPropertyChangedSignal("Size"):Connect(fit)
+	end
 	fit()
 end
 
@@ -15477,7 +15514,7 @@ end
 -- ScreenGui + scaled regions
 ---------------------------------------------------------------------------------------------
 local gui: ScreenGui? = nil
-type Region = { frame: Frame, scale: UIScale, fit: Vector2? }
+type Region = { frame: Frame, scale: UIScale, fit: Vector2?, fitTouch: Vector2? }
 local regions: { Region } = {}
 
 function Kit.isTouch(): boolean
@@ -15517,14 +15554,18 @@ local function rescale()
 	for _, r in regions do
 		local v = s
 		if r.fit then
+			-- touch: a wider, shorter design box (phones are landscape) so the same panel can be
+			-- scaled up more and its buttons stay >= 44 px
+			local fit = if Kit.isTouch() and r.fitTouch then r.fitTouch else r.fit
+			r.frame.Size = UDim2.fromOffset(fit.X, fit.Y)
 			-- panels: as big as the screen allows (capped), so their buttons stay tappable on
 			-- phones regardless of the HUD scale, and never past the screen edges
-			v = math.min(Kit.PANEL_MAX_SCALE, (area.X - 24) / r.fit.X, (area.Y - 24) / r.fit.Y)
+			v = math.min(Kit.PANEL_MAX_SCALE, (area.X - 16) / fit.X, (area.Y - 12) / fit.Y)
 			-- the drop shadow (22 design px below the panel) only where it fits on screen: on
 			-- phones the panel takes the whole height and the dim veil does the separating
 			local window = r.frame:FindFirstChild("Window")
 			if window then
-				local room = math.min((area.Y - v * r.fit.Y) / 2 - area.Y * 0.02, (area.X - v * r.fit.X) / 2)
+				local room = math.min((area.Y - v * fit.Y) / 2 - area.Y * 0.02, (area.X - v * fit.X) / 2)
 				for _, c in window:GetChildren() do
 					if c.Name == "Shadow" and c:IsA("GuiObject") then
 						c.Visible = room >= 26 * v
@@ -15562,6 +15603,7 @@ function Kit.onLayout(fn: LayoutFn)
 end
 
 Kit.PANEL_MAX_SCALE = 1.1
+Kit.PANEL_TOUCH_H = 350 -- design height of a panel on touch screens (width 860)
 
 -- Overrides one region's scale (call from an onLayout function; the next rescale resets it first).
 function Kit.setScale(region: Frame, value: number)
@@ -15608,12 +15650,12 @@ function Kit.gui(): ScreenGui
 end
 
 -- A transparent container of `designSize` pixels, anchored on screen, scaled as one unit.
-function Kit.region(name: string, anchor: Vector2, pos: UDim2, designSize: Vector2, fitScreen: boolean?): Frame
+function Kit.region(name: string, anchor: Vector2, pos: UDim2, designSize: Vector2, fitScreen: boolean?, touchSize: Vector2?): Frame
 	local f = Kit.frame(Kit.gui(), UDim2.fromOffset(designSize.X, designSize.Y), pos, nil, anchor)
 	f.Name = name
 	local s = Instance.new("UIScale")
 	s.Parent = f
-	table.insert(regions, { frame = f, scale = s, fit = if fitScreen then designSize else nil })
+	table.insert(regions, { frame = f, scale = s, fit = if fitScreen then designSize else nil, fitTouch = touchSize })
 	rescale()
 	return f
 end
@@ -15674,7 +15716,7 @@ local function showDim(on: boolean)
 end
 
 function Kit.panel(name: string, title: string, color: Color3): (Frame, Frame)
-	local root = Kit.region("Panel_" .. name, Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.52), Vector2.new(640, 460), true)
+	local root = Kit.region("Panel_" .. name, Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.52), Vector2.new(640, 460), true, Vector2.new(860, Kit.PANEL_TOUCH_H))
 	root.Visible = false
 	root.ZIndex = 10
 	ensureDim()
@@ -15699,12 +15741,18 @@ function Kit.panel(name: string, title: string, color: Color3): (Frame, Frame)
 	local headerLine = Kit.frame(header, UDim2.new(1, 0, 0, 4), UDim2.new(0, 0, 1, -2), Kit.darker(color, 0.4))
 	headerLine.Name = "Line"
 	Kit.bold(header, title, UDim2.new(1, -140, 1, -12), UDim2.fromOffset(24, 6), Kit.C.white, nil, 38).TextXAlignment = Enum.TextXAlignment.Left
-	Kit.button(header, "X", UDim2.fromOffset(52, 52), UDim2.new(1, -10, 0.5, 0), Kit.C.red, function()
+	Kit.button(header, "X", UDim2.fromOffset(52, 52), UDim2.new(1, -6, 0.5, 0), Kit.C.red, function()
 		Kit.close()
 	end, Vector2.new(1, 0.5), 30)
 	Kit.relayout() -- decides whether this panel's shadow fits
 	local content = Kit.frame(body, UDim2.new(1, -32, 1, -84), UDim2.fromOffset(16, 72), nil)
 	content.Name = "Content"
+	-- touch: a slimmer header gives the content the room the shorter panel took away
+	Kit.onLayout(function(touch)
+		header.Size = UDim2.new(1, 0, 0, if touch then 56 else 64)
+		content.Size = if touch then UDim2.new(1, -32, 1, -68) else UDim2.new(1, -32, 1, -84)
+		content.Position = UDim2.fromOffset(16, if touch then 60 else 72)
+	end)
 	panels[name] = { root = root }
 	return content, root
 end
@@ -16213,10 +16261,11 @@ function RewardsPanel.init()
 	local content = Kit.panel("rewards", "@panel.rewards", Kit.C.orange)
 
 	-- daily ------------------------------------------------------------------------------------
+	local dailyTitle: TextLabel
 	local daily = Kit.frame(content, UDim2.new(0.5, -8, 0, 170), UDim2.fromOffset(0, 0), Kit.C.card)
 	Kit.corner(daily, 16)
 	Kit.stroke(daily, Color3.fromRGB(220, 210, 235), 3)
-	Kit.text(daily, "@rewards.daily", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
+	dailyTitle = Kit.text(daily, "@rewards.daily", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
 	local dailyInfo = Kit.text(daily, "", UDim2.new(1, -20, 0, 50), UDim2.fromOffset(10, 44), Color3.fromRGB(110, 105, 140), nil, 20)
 	local dailyBtn = Kit.button(daily, "@rewards.claim", UDim2.new(1, -20, 0, 56), UDim2.new(0, 10, 1, -66), Kit.C.green, function()
 		say(Net.request("ClaimDaily"))
@@ -16226,7 +16275,7 @@ function RewardsPanel.init()
 	local codes = Kit.frame(content, UDim2.new(0.5, -8, 0, 170), UDim2.new(0.5, 8, 0, 0), Kit.C.card)
 	Kit.corner(codes, 16)
 	Kit.stroke(codes, Color3.fromRGB(220, 210, 235), 3)
-	Kit.text(codes, "@rewards.codes", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
+	local codesTitle = Kit.text(codes, "@rewards.codes", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
 	local box = Instance.new("TextBox")
 	box.Size = UDim2.new(1, -20, 0, 48)
 	box.Position = UDim2.fromOffset(10, 46)
@@ -16243,7 +16292,7 @@ function RewardsPanel.init()
 	tsc.MaxTextSize = 26
 	tsc.Parent = box
 	box.Parent = codes
-	Kit.button(codes, "@rewards.redeem", UDim2.new(1, -20, 0, 56), UDim2.new(0, 10, 1, -66), Kit.C.blue, function()
+	local redeemBtn = Kit.button(codes, "@rewards.redeem", UDim2.new(1, -20, 0, 56), UDim2.new(0, 10, 1, -66), Kit.C.blue, function()
 		local ok, msg = Net.request("RedeemCode", { code = box.Text })
 		say(ok, msg)
 		if ok then
@@ -16252,8 +16301,9 @@ function RewardsPanel.init()
 	end)
 
 	-- play time -----------------------------------------------------------------------------------
-	Kit.text(content, "@rewards.playtime", UDim2.new(1, 0, 0, 30), UDim2.fromOffset(0, 180), Kit.C.ink, nil, 26)
+	local playTitle = Kit.text(content, "@rewards.playtime", UDim2.new(1, 0, 0, 30), UDim2.fromOffset(0, 180), Kit.C.ink, nil, 26)
 	local rows: { { btn: TextButton, bar: Frame, label: TextLabel } } = {}
+	local cellParts: { { cell: Frame, minutes: TextLabel, reward: TextLabel, track: Frame, label: TextLabel, btn: TextButton, x: number } } = {}
 	local n = #Config.PlaytimeRewards
 	for i, r in Config.PlaytimeRewards do
 		local w = 1 / n
@@ -16277,7 +16327,59 @@ function RewardsPanel.init()
 			say(Net.request("ClaimPlaytime", { index = i }))
 		end, nil, 20)
 		rows[i] = { btn = btn, bar = bar, label = label }
+		cellParts[i] = { cell = cell, minutes = minutes, reward = rewardText, track = track, label = label, btn = btn, x = w * (i - 1) }
 	end
+
+	-- Touch: wide, short panel (Kit.panel) -> shorter blocks, code box and Redeem on one row,
+	-- and buttons >= 54 design px tall.
+	Kit.onLayout(function(touch)
+		local blockH = if touch then 120 else 170
+		daily.Size = UDim2.new(0.5, -8, 0, blockH)
+		codes.Size = UDim2.new(0.5, -8, 0, blockH)
+		if touch then
+			dailyTitle.Size = UDim2.new(1, -20, 0, 28)
+			dailyTitle.Position = UDim2.fromOffset(10, 2)
+			codesTitle.Size = UDim2.new(1, -20, 0, 28)
+			codesTitle.Position = UDim2.fromOffset(10, 2)
+			dailyInfo.Size = UDim2.new(1, -20, 0, 26)
+			dailyInfo.Position = UDim2.fromOffset(10, 31)
+			dailyBtn.Size = UDim2.new(1, -20, 0, 56)
+			dailyBtn.Position = UDim2.new(0, 10, 1, -60)
+			box.Size = UDim2.new(0.5, -14, 0, 56)
+			box.Position = UDim2.new(0, 10, 1, -60)
+			redeemBtn.Size = UDim2.new(0.5, -14, 0, 56)
+			redeemBtn.Position = UDim2.new(0.5, 4, 1, -60)
+		else
+			dailyTitle.Size = UDim2.new(1, -20, 0, 34)
+			dailyTitle.Position = UDim2.fromOffset(10, 8)
+			codesTitle.Size = UDim2.new(1, -20, 0, 34)
+			codesTitle.Position = UDim2.fromOffset(10, 8)
+			dailyInfo.Size = UDim2.new(1, -20, 0, 50)
+			dailyInfo.Position = UDim2.fromOffset(10, 44)
+			dailyBtn.Size = UDim2.new(1, -20, 0, 56)
+			dailyBtn.Position = UDim2.new(0, 10, 1, -66)
+			box.Size = UDim2.new(1, -20, 0, 48)
+			box.Position = UDim2.fromOffset(10, 46)
+			redeemBtn.Size = UDim2.new(1, -20, 0, 56)
+			redeemBtn.Position = UDim2.new(0, 10, 1, -66)
+		end
+		playTitle.Size = UDim2.new(1, 0, 0, if touch then 22 else 30)
+		playTitle.Position = UDim2.fromOffset(0, if touch then 124 else 180)
+		local w = 1 / #cellParts
+		for i, c in cellParts do
+			c.cell.Size = UDim2.new(w, -8, 0, if touch then 136 else 160)
+			c.cell.Position = UDim2.new(w * (i - 1), 4, 0, if touch then 148 else 214)
+			c.minutes.Size = UDim2.new(1, -10, 0, if touch then 24 else 26)
+			c.minutes.Position = UDim2.fromOffset(5, if touch then 2 else 4)
+			c.reward.Size = UDim2.new(1, -10, 0, if touch then 32 else 36)
+			c.reward.Position = UDim2.fromOffset(5, if touch then 26 else 30)
+			c.track.Position = UDim2.fromOffset(8, if touch then 57 else 70)
+			c.label.Size = UDim2.new(1, -10, 0, if touch then 15 else 20)
+			c.label.Position = UDim2.fromOffset(5, if touch then 64 else 80)
+			c.btn.Size = UDim2.new(1, -16, 0, if touch then 54 else 48)
+			c.btn.Position = UDim2.new(0, 8, 1, if touch then -56 else -54)
+		end
+	end)
 
 	local function refresh()
 		local s = Net.state
@@ -16382,14 +16484,19 @@ end
 function SettingsPanel.init()
 	local content = Kit.panel("settings", "@panel.settings", Kit.C.grey)
 	local buttons: { [string]: TextButton } = {}
+	local cards: { Frame } = {}
+	local labels: { TextLabel } = {}
 	for i, row in ROWS do
 		local card = Kit.frame(content, UDim2.new(1, 0, 0, ROW_H), UDim2.fromOffset(0, (i - 1) * ROW_PITCH), Kit.C.card)
+		cards[i] = card
 		Kit.corner(card, 16)
 		Kit.stroke(card, Color3.fromRGB(220, 210, 235), 3)
 		local t = Kit.text(card, row.title, UDim2.new(1, -196, 0, 30), UDim2.fromOffset(18, 4), Kit.C.ink, nil, 27)
 		t.TextXAlignment = Enum.TextXAlignment.Left
+		labels[#labels + 1] = t
 		local d = Kit.text(card, row.desc, UDim2.new(1, -196, 0, 22), UDim2.fromOffset(18, 36), Color3.fromRGB(110, 105, 140), nil, 18)
 		d.TextXAlignment = Enum.TextXAlignment.Left
+		labels[#labels + 1] = d
 		local pass = row.pass
 		buttons[row.key] = Kit.button(card, "", UDim2.fromOffset(160, 50), UDim2.new(1, -10, 0.5, 0), Kit.C.green, function()
 			if pass and not Net.hasPass(pass) then
@@ -16427,6 +16534,41 @@ function SettingsPanel.init()
 		b.Name = "Lang_" .. code
 		langButtons[code] = b
 	end
+
+	-- Touch: the panel is a wide, short box (see Kit.panel), so the coils sit side by side and
+	-- the 12 languages go in 6 columns; every button is >= 54 design px tall.
+	Kit.onLayout(function(touch)
+		for i, card in cards do
+			if touch then
+				local half = i <= 2
+				card.Size = UDim2.new(if half then 0.5 else 1, if half then -4 else 0, 0, ROW_H)
+				card.Position = UDim2.new(if i == 2 then 0.5 else 0, if i == 2 then 4 else 0, 0, if i == 3 then ROW_PITCH else 0)
+			else
+				card.Size = UDim2.new(1, 0, 0, ROW_H)
+				card.Position = UDim2.fromOffset(0, (i - 1) * ROW_PITCH)
+			end
+		end
+		for i, row in ROWS do
+			local b = buttons[row.key]
+			b.Size = if touch then UDim2.fromOffset(132, 56) else UDim2.fromOffset(160, 50)
+		end
+		for i, l in labels do
+			l.Size = UDim2.new(1, if touch then -(132 + 40) else -196, 0, l.Size.Y.Offset)
+		end
+		local top = if touch then 2 * ROW_PITCH + 6 else LANG_TOP
+		langTitle.Position = UDim2.fromOffset(0, top - 1)
+		for i, code in Locale.LANGS do
+			local b = langButtons[code]
+			local col, r = (i - 1) % (if touch then 6 else 4), (i - 1) // (if touch then 6 else 4)
+			if touch then
+				b.Size = UDim2.new(1 / 6, -6, 0, 54)
+				b.Position = UDim2.new(col / 6, col, 0, top + 24 + r * 60)
+			else
+				b.Size = UDim2.new(0.25, -6, 0, LANG_H)
+				b.Position = UDim2.new(col * 0.25, col * 2, 0, LANG_TOP + 22 + r * LANG_PITCH)
+			end
+		end
+	end)
 
 	local function refresh()
 		for code, b in langButtons do
@@ -17021,13 +17163,13 @@ function WinPanel.init()
 		list.TextWrapped = true
 		return card
 	end
-	column("Lose", 0, Kit.C.red, "@win.lose", "@win.lose_list")
+	local lose = column("Lose", 0, Kit.C.red, "@win.lose", "@win.lose_list")
 	local gain = column("Gain", 0.5, Kit.C.green, "@win.gain", "@win.gain_list")
 	local swatch = Kit.frame(gain, UDim2.new(1, -60, 0, 22), UDim2.new(0.5, 0, 1, -32), Kit.C.pink, Vector2.new(0.5, 0))
 	swatch.Name = "NextTrail"
 	Kit.corner(swatch, 11)
 	Kit.stroke(swatch, Kit.C.ink, 2)
-	Kit.button(content, "@win.rebirth", UDim2.fromOffset(330, 66), UDim2.new(0.5, -105, 1, -68), Kit.C.green, function()
+	local rebirth = Kit.button(content, "@win.rebirth", UDim2.fromOffset(330, 66), UDim2.new(0.5, -105, 1, -68), Kit.C.green, function()
 		local ok, msg = Net.request("Rebirth")
 		if ok then
 			Kit.close()
@@ -17035,7 +17177,7 @@ function WinPanel.init()
 			Toast.show(msg, "error")
 		end
 	end, Vector2.new(0.5, 0), 30)
-	Kit.button(content, "@win.stay", UDim2.fromOffset(200, 66), UDim2.new(0.5, 170, 1, -68), Kit.C.grey, function()
+	local stay = Kit.button(content, "@win.stay", UDim2.fromOffset(200, 66), UDim2.new(0.5, 170, 1, -68), Kit.C.grey, function()
 		Kit.close()
 	end, Vector2.new(0.5, 0), 28)
 	-- the way on: 900 more stages behind the portal
@@ -17048,6 +17190,26 @@ function WinPanel.init()
 		end
 	end, Vector2.new(0.5, 0), 28)
 	portal.Name = "Portal"
+
+	-- Touch: short, wide panel (Kit.panel): slimmer cards, buttons 58 tall, all inside the content.
+	Kit.onLayout(function(touch)
+		for _, card in { lose, gain } do
+			card.Size = UDim2.new(0.5, -6, 0, if touch then 114 else 160)
+			card.Position = UDim2.new(if card == gain then 0.5 else 0, if card == gain then 6 else 0, 0, if touch then 44 else 56)
+			local list = card:FindFirstChild("List") :: TextLabel
+			list.Size = UDim2.new(1, -24, 1, if touch then -76 else -88)
+			list.Position = UDim2.fromOffset(12, if touch then 42 else 46)
+		end
+		title.Size = UDim2.new(1, 0, 0, if touch then 42 else 50)
+		swatch.Size = UDim2.new(1, -60, 0, if touch then 18 else 22)
+		swatch.Position = UDim2.new(0.5, 0, 1, if touch then -26 else -32)
+		rebirth.Size = UDim2.fromOffset(330, if touch then 58 else 66)
+		rebirth.Position = UDim2.new(0.5, -105, 1, if touch then -58 else -68)
+		stay.Size = UDim2.fromOffset(200, if touch then 58 else 66)
+		stay.Position = UDim2.new(0.5, 170, 1, if touch then -58 else -68)
+		portal.Size = UDim2.fromOffset(540, if touch then 54 else 56)
+		portal.Position = UDim2.new(0.5, 0, 1, if touch then -116 else -134)
+	end)
 
 	Kit.onOpen("win", function()
 		local wins = Net.state.wins or 0

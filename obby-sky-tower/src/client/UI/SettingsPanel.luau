@@ -35,14 +35,19 @@ end
 function SettingsPanel.init()
 	local content = Kit.panel("settings", "@panel.settings", Kit.C.grey)
 	local buttons: { [string]: TextButton } = {}
+	local cards: { Frame } = {}
+	local labels: { TextLabel } = {}
 	for i, row in ROWS do
 		local card = Kit.frame(content, UDim2.new(1, 0, 0, ROW_H), UDim2.fromOffset(0, (i - 1) * ROW_PITCH), Kit.C.card)
+		cards[i] = card
 		Kit.corner(card, 16)
 		Kit.stroke(card, Color3.fromRGB(220, 210, 235), 3)
 		local t = Kit.text(card, row.title, UDim2.new(1, -196, 0, 30), UDim2.fromOffset(18, 4), Kit.C.ink, nil, 27)
 		t.TextXAlignment = Enum.TextXAlignment.Left
+		labels[#labels + 1] = t
 		local d = Kit.text(card, row.desc, UDim2.new(1, -196, 0, 22), UDim2.fromOffset(18, 36), Color3.fromRGB(110, 105, 140), nil, 18)
 		d.TextXAlignment = Enum.TextXAlignment.Left
+		labels[#labels + 1] = d
 		local pass = row.pass
 		buttons[row.key] = Kit.button(card, "", UDim2.fromOffset(160, 50), UDim2.new(1, -10, 0.5, 0), Kit.C.green, function()
 			if pass and not Net.hasPass(pass) then
@@ -80,6 +85,41 @@ function SettingsPanel.init()
 		b.Name = "Lang_" .. code
 		langButtons[code] = b
 	end
+
+	-- Touch: the panel is a wide, short box (see Kit.panel), so the coils sit side by side and
+	-- the 12 languages go in 6 columns; every button is >= 54 design px tall.
+	Kit.onLayout(function(touch)
+		for i, card in cards do
+			if touch then
+				local half = i <= 2
+				card.Size = UDim2.new(if half then 0.5 else 1, if half then -4 else 0, 0, ROW_H)
+				card.Position = UDim2.new(if i == 2 then 0.5 else 0, if i == 2 then 4 else 0, 0, if i == 3 then ROW_PITCH else 0)
+			else
+				card.Size = UDim2.new(1, 0, 0, ROW_H)
+				card.Position = UDim2.fromOffset(0, (i - 1) * ROW_PITCH)
+			end
+		end
+		for i, row in ROWS do
+			local b = buttons[row.key]
+			b.Size = if touch then UDim2.fromOffset(132, 56) else UDim2.fromOffset(160, 50)
+		end
+		for i, l in labels do
+			l.Size = UDim2.new(1, if touch then -(132 + 40) else -196, 0, l.Size.Y.Offset)
+		end
+		local top = if touch then 2 * ROW_PITCH + 6 else LANG_TOP
+		langTitle.Position = UDim2.fromOffset(0, top - 1)
+		for i, code in Locale.LANGS do
+			local b = langButtons[code]
+			local col, r = (i - 1) % (if touch then 6 else 4), (i - 1) // (if touch then 6 else 4)
+			if touch then
+				b.Size = UDim2.new(1 / 6, -6, 0, 54)
+				b.Position = UDim2.new(col / 6, col, 0, top + 24 + r * 60)
+			else
+				b.Size = UDim2.new(0.25, -6, 0, LANG_H)
+				b.Position = UDim2.new(col * 0.25, col * 2, 0, LANG_TOP + 22 + r * LANG_PITCH)
+			end
+		end
+	end)
 
 	local function refresh()
 		for code, b in langButtons do

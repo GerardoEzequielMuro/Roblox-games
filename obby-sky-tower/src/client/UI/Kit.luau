@@ -304,7 +304,13 @@ function Kit.singleLine(obj: TextButton, maxSize: number)
 		local padY = if pad then pad.PaddingTop.Offset + pad.PaddingBottom.Offset else 0
 		-- design (unscaled) box: TextSize is scaled by the region's UIScale just like Size
 		local w = obj.Size.X.Offset - padX - 4
-		local h = obj.Size.Y.Offset - padY
+		-- height: own offset, or (when sized by scale) the parent's design height
+		local parent = obj.Parent
+		local h = obj.Size.Y.Offset
+		if h <= 0 and parent and parent:IsA("GuiObject") then
+			h = obj.Size.Y.Scale * parent.Size.Y.Offset + obj.Size.Y.Offset
+		end
+		h -= padY
 		local size = math.min(maxSize, math.floor(h))
 		local plain = string.gsub(obj.Text, "<[^>]+>", "")
 		while size > 8 do
@@ -321,6 +327,10 @@ function Kit.singleLine(obj: TextButton, maxSize: number)
 	end
 	obj:GetPropertyChangedSignal("Text"):Connect(fit)
 	obj:GetPropertyChangedSignal("Size"):Connect(fit)
+	local holder = obj.Parent
+	if holder and holder:IsA("GuiObject") then
+		holder:GetPropertyChangedSignal("Size"):Connect(fit)
+	end
 	fit()
 end
 
@@ -355,7 +365,7 @@ end
 -- ScreenGui + scaled regions
 ---------------------------------------------------------------------------------------------
 local gui: ScreenGui? = nil
-type Region = { frame: Frame, scale: UIScale, fit: Vector2? }
+type Region = { frame: Frame, scale: UIScale, fit: Vector2?, fitTouch: Vector2? }
 local regions: { Region } = {}
 
 function Kit.isTouch(): boolean
@@ -395,14 +405,18 @@ local function rescale()
 	for _, r in regions do
 		local v = s
 		if r.fit then
+			-- touch: a wider, shorter design box (phones are landscape) so the same panel can be
+			-- scaled up more and its buttons stay >= 44 px
+			local fit = if Kit.isTouch() and r.fitTouch then r.fitTouch else r.fit
+			r.frame.Size = UDim2.fromOffset(fit.X, fit.Y)
 			-- panels: as big as the screen allows (capped), so their buttons stay tappable on
 			-- phones regardless of the HUD scale, and never past the screen edges
-			v = math.min(Kit.PANEL_MAX_SCALE, (area.X - 24) / r.fit.X, (area.Y - 24) / r.fit.Y)
+			v = math.min(Kit.PANEL_MAX_SCALE, (area.X - 16) / fit.X, (area.Y - 12) / fit.Y)
 			-- the drop shadow (22 design px below the panel) only where it fits on screen: on
 			-- phones the panel takes the whole height and the dim veil does the separating
 			local window = r.frame:FindFirstChild("Window")
 			if window then
-				local room = math.min((area.Y - v * r.fit.Y) / 2 - area.Y * 0.02, (area.X - v * r.fit.X) / 2)
+				local room = math.min((area.Y - v * fit.Y) / 2 - area.Y * 0.02, (area.X - v * fit.X) / 2)
 				for _, c in window:GetChildren() do
 					if c.Name == "Shadow" and c:IsA("GuiObject") then
 						c.Visible = room >= 26 * v
@@ -440,6 +454,7 @@ function Kit.onLayout(fn: LayoutFn)
 end
 
 Kit.PANEL_MAX_SCALE = 1.1
+Kit.PANEL_TOUCH_H = 350 -- design height of a panel on touch screens (width 860)
 
 -- Overrides one region's scale (call from an onLayout function; the next rescale resets it first).
 function Kit.setScale(region: Frame, value: number)
@@ -486,12 +501,12 @@ function Kit.gui(): ScreenGui
 end
 
 -- A transparent container of `designSize` pixels, anchored on screen, scaled as one unit.
-function Kit.region(name: string, anchor: Vector2, pos: UDim2, designSize: Vector2, fitScreen: boolean?): Frame
+function Kit.region(name: string, anchor: Vector2, pos: UDim2, designSize: Vector2, fitScreen: boolean?, touchSize: Vector2?): Frame
 	local f = Kit.frame(Kit.gui(), UDim2.fromOffset(designSize.X, designSize.Y), pos, nil, anchor)
 	f.Name = name
 	local s = Instance.new("UIScale")
 	s.Parent = f
-	table.insert(regions, { frame = f, scale = s, fit = if fitScreen then designSize else nil })
+	table.insert(regions, { frame = f, scale = s, fit = if fitScreen then designSize else nil, fitTouch = touchSize })
 	rescale()
 	return f
 end
@@ -552,7 +567,7 @@ local function showDim(on: boolean)
 end
 
 function Kit.panel(name: string, title: string, color: Color3): (Frame, Frame)
-	local root = Kit.region("Panel_" .. name, Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.52), Vector2.new(640, 460), true)
+	local root = Kit.region("Panel_" .. name, Vector2.new(0.5, 0.5), UDim2.fromScale(0.5, 0.52), Vector2.new(640, 460), true, Vector2.new(860, Kit.PANEL_TOUCH_H))
 	root.Visible = false
 	root.ZIndex = 10
 	ensureDim()
@@ -577,12 +592,18 @@ function Kit.panel(name: string, title: string, color: Color3): (Frame, Frame)
 	local headerLine = Kit.frame(header, UDim2.new(1, 0, 0, 4), UDim2.new(0, 0, 1, -2), Kit.darker(color, 0.4))
 	headerLine.Name = "Line"
 	Kit.bold(header, title, UDim2.new(1, -140, 1, -12), UDim2.fromOffset(24, 6), Kit.C.white, nil, 38).TextXAlignment = Enum.TextXAlignment.Left
-	Kit.button(header, "X", UDim2.fromOffset(52, 52), UDim2.new(1, -10, 0.5, 0), Kit.C.red, function()
+	Kit.button(header, "X", UDim2.fromOffset(52, 52), UDim2.new(1, -6, 0.5, 0), Kit.C.red, function()
 		Kit.close()
 	end, Vector2.new(1, 0.5), 30)
 	Kit.relayout() -- decides whether this panel's shadow fits
 	local content = Kit.frame(body, UDim2.new(1, -32, 1, -84), UDim2.fromOffset(16, 72), nil)
 	content.Name = "Content"
+	-- touch: a slimmer header gives the content the room the shorter panel took away
+	Kit.onLayout(function(touch)
+		header.Size = UDim2.new(1, 0, 0, if touch then 56 else 64)
+		content.Size = if touch then UDim2.new(1, -32, 1, -68) else UDim2.new(1, -32, 1, -84)
+		content.Position = UDim2.fromOffset(16, if touch then 60 else 72)
+	end)
 	panels[name] = { root = root }
 	return content, root
 end

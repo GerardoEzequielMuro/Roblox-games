@@ -19,10 +19,11 @@ function RewardsPanel.init()
 	local content = Kit.panel("rewards", "@panel.rewards", Kit.C.orange)
 
 	-- daily ------------------------------------------------------------------------------------
+	local dailyTitle: TextLabel
 	local daily = Kit.frame(content, UDim2.new(0.5, -8, 0, 170), UDim2.fromOffset(0, 0), Kit.C.card)
 	Kit.corner(daily, 16)
 	Kit.stroke(daily, Color3.fromRGB(220, 210, 235), 3)
-	Kit.text(daily, "@rewards.daily", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
+	dailyTitle = Kit.text(daily, "@rewards.daily", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
 	local dailyInfo = Kit.text(daily, "", UDim2.new(1, -20, 0, 50), UDim2.fromOffset(10, 44), Color3.fromRGB(110, 105, 140), nil, 20)
 	local dailyBtn = Kit.button(daily, "@rewards.claim", UDim2.new(1, -20, 0, 56), UDim2.new(0, 10, 1, -66), Kit.C.green, function()
 		say(Net.request("ClaimDaily"))
@@ -32,7 +33,7 @@ function RewardsPanel.init()
 	local codes = Kit.frame(content, UDim2.new(0.5, -8, 0, 170), UDim2.new(0.5, 8, 0, 0), Kit.C.card)
 	Kit.corner(codes, 16)
 	Kit.stroke(codes, Color3.fromRGB(220, 210, 235), 3)
-	Kit.text(codes, "@rewards.codes", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
+	local codesTitle = Kit.text(codes, "@rewards.codes", UDim2.new(1, -20, 0, 34), UDim2.fromOffset(10, 8), Kit.C.ink, nil, 30)
 	local box = Instance.new("TextBox")
 	box.Size = UDim2.new(1, -20, 0, 48)
 	box.Position = UDim2.fromOffset(10, 46)
@@ -49,7 +50,7 @@ function RewardsPanel.init()
 	tsc.MaxTextSize = 26
 	tsc.Parent = box
 	box.Parent = codes
-	Kit.button(codes, "@rewards.redeem", UDim2.new(1, -20, 0, 56), UDim2.new(0, 10, 1, -66), Kit.C.blue, function()
+	local redeemBtn = Kit.button(codes, "@rewards.redeem", UDim2.new(1, -20, 0, 56), UDim2.new(0, 10, 1, -66), Kit.C.blue, function()
 		local ok, msg = Net.request("RedeemCode", { code = box.Text })
 		say(ok, msg)
 		if ok then
@@ -58,8 +59,9 @@ function RewardsPanel.init()
 	end)
 
 	-- play time -----------------------------------------------------------------------------------
-	Kit.text(content, "@rewards.playtime", UDim2.new(1, 0, 0, 30), UDim2.fromOffset(0, 180), Kit.C.ink, nil, 26)
+	local playTitle = Kit.text(content, "@rewards.playtime", UDim2.new(1, 0, 0, 30), UDim2.fromOffset(0, 180), Kit.C.ink, nil, 26)
 	local rows: { { btn: TextButton, bar: Frame, label: TextLabel } } = {}
+	local cellParts: { { cell: Frame, minutes: TextLabel, reward: TextLabel, track: Frame, label: TextLabel, btn: TextButton, x: number } } = {}
 	local n = #Config.PlaytimeRewards
 	for i, r in Config.PlaytimeRewards do
 		local w = 1 / n
@@ -83,7 +85,59 @@ function RewardsPanel.init()
 			say(Net.request("ClaimPlaytime", { index = i }))
 		end, nil, 20)
 		rows[i] = { btn = btn, bar = bar, label = label }
+		cellParts[i] = { cell = cell, minutes = minutes, reward = rewardText, track = track, label = label, btn = btn, x = w * (i - 1) }
 	end
+
+	-- Touch: wide, short panel (Kit.panel) -> shorter blocks, code box and Redeem on one row,
+	-- and buttons >= 54 design px tall.
+	Kit.onLayout(function(touch)
+		local blockH = if touch then 120 else 170
+		daily.Size = UDim2.new(0.5, -8, 0, blockH)
+		codes.Size = UDim2.new(0.5, -8, 0, blockH)
+		if touch then
+			dailyTitle.Size = UDim2.new(1, -20, 0, 28)
+			dailyTitle.Position = UDim2.fromOffset(10, 2)
+			codesTitle.Size = UDim2.new(1, -20, 0, 28)
+			codesTitle.Position = UDim2.fromOffset(10, 2)
+			dailyInfo.Size = UDim2.new(1, -20, 0, 26)
+			dailyInfo.Position = UDim2.fromOffset(10, 31)
+			dailyBtn.Size = UDim2.new(1, -20, 0, 56)
+			dailyBtn.Position = UDim2.new(0, 10, 1, -60)
+			box.Size = UDim2.new(0.5, -14, 0, 56)
+			box.Position = UDim2.new(0, 10, 1, -60)
+			redeemBtn.Size = UDim2.new(0.5, -14, 0, 56)
+			redeemBtn.Position = UDim2.new(0.5, 4, 1, -60)
+		else
+			dailyTitle.Size = UDim2.new(1, -20, 0, 34)
+			dailyTitle.Position = UDim2.fromOffset(10, 8)
+			codesTitle.Size = UDim2.new(1, -20, 0, 34)
+			codesTitle.Position = UDim2.fromOffset(10, 8)
+			dailyInfo.Size = UDim2.new(1, -20, 0, 50)
+			dailyInfo.Position = UDim2.fromOffset(10, 44)
+			dailyBtn.Size = UDim2.new(1, -20, 0, 56)
+			dailyBtn.Position = UDim2.new(0, 10, 1, -66)
+			box.Size = UDim2.new(1, -20, 0, 48)
+			box.Position = UDim2.fromOffset(10, 46)
+			redeemBtn.Size = UDim2.new(1, -20, 0, 56)
+			redeemBtn.Position = UDim2.new(0, 10, 1, -66)
+		end
+		playTitle.Size = UDim2.new(1, 0, 0, if touch then 22 else 30)
+		playTitle.Position = UDim2.fromOffset(0, if touch then 124 else 180)
+		local w = 1 / #cellParts
+		for i, c in cellParts do
+			c.cell.Size = UDim2.new(w, -8, 0, if touch then 136 else 160)
+			c.cell.Position = UDim2.new(w * (i - 1), 4, 0, if touch then 148 else 214)
+			c.minutes.Size = UDim2.new(1, -10, 0, if touch then 24 else 26)
+			c.minutes.Position = UDim2.fromOffset(5, if touch then 2 else 4)
+			c.reward.Size = UDim2.new(1, -10, 0, if touch then 32 else 36)
+			c.reward.Position = UDim2.fromOffset(5, if touch then 26 else 30)
+			c.track.Position = UDim2.fromOffset(8, if touch then 57 else 70)
+			c.label.Size = UDim2.new(1, -10, 0, if touch then 15 else 20)
+			c.label.Position = UDim2.fromOffset(5, if touch then 64 else 80)
+			c.btn.Size = UDim2.new(1, -16, 0, if touch then 54 else 48)
+			c.btn.Position = UDim2.new(0, 8, 1, if touch then -56 else -54)
+		end
+	end)
 
 	local function refresh()
 		local s = Net.state

@@ -119,7 +119,8 @@ end
 
 local MENU_CELL = 80
 local MENU_GAP = 12
-local MENU_COLS = 3
+local MENU_COLS = 3 -- columns of the menu grid on PC; touch screens use MENU_COLS_TOUCH
+local MENU_COLS_TOUCH = 4 -- wider and shorter, so the open grid clears the thumbstick
 
 local function menuButton(parent: Instance, order: number, name: string, text: string, icon: string, color: Color3, onClick: () -> ()): (TextButton, Frame)
 	local b = Kit.button(parent, "", UDim2.fromOffset(MENU_CELL, MENU_CELL), UDim2.new(), color, onClick)
@@ -191,6 +192,7 @@ function Hud.init()
 	timerLabel.Name = "Time"
 	timerLabel.Font = Enum.Font.Gotham
 	local timerStroke = Kit.stroke(timerLabel, Kit.C.ink, 1.5)
+	timerStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Contextual -- outline the digits, not the box
 	timerStroke.Transparency = 0.35
 	local timerNote = Kit.bold(timer, "", UDim2.new(1, 0, 0, 18), UDim2.fromOffset(0, 50), Color3.fromRGB(240, 240, 255), nil, 15)
 	timerNote.Name = "Note"
@@ -204,7 +206,8 @@ function Hud.init()
 		menuOpen = open
 		left.Visible = open
 	end
-	local menuBtn = Kit.button(corner, "@hud.menu", UDim2.fromOffset(116, 50), UDim2.new(), Color3.fromRGB(62, 68, 96), function()
+	local MENU_H = 50 -- design height of the Menu button (taller on phones, see onLayout)
+	local menuBtn = Kit.button(corner, "@hud.menu", UDim2.fromOffset(116, MENU_H), UDim2.new(), Color3.fromRGB(62, 68, 96), function()
 		setMenu(not menuOpen)
 	end, nil, 26)
 	menuBtn.Name = "MenuButton"
@@ -227,6 +230,7 @@ function Hud.init()
 			setMenu(false)
 		end
 	end)
+	local menuCols = MENU_COLS
 	local grid = Instance.new("UIGridLayout")
 	grid.CellSize = UDim2.fromOffset(MENU_CELL, MENU_CELL)
 	grid.CellPadding = UDim2.fromOffset(MENU_GAP, MENU_GAP)
@@ -297,13 +301,13 @@ function Hud.init()
 	exploreBtn.Name = "StopExploring"
 	exploreBtn.LayoutOrder = 2
 	exploreBtn.Visible = false
-	columnHeight[exploreBtn] = 52
+	columnHeight[exploreBtn] = 54
 
 	local abilityRow = Kit.frame(right, UDim2.fromOffset(ACT_W, 52), UDim2.new(), nil)
 	abilityRow.Name = "Abilities"
 	abilityRow.LayoutOrder = 3
 	abilityRow.Visible = false
-	columnHeight[abilityRow] = 52
+	columnHeight[abilityRow] = 54
 	local dashBtn = Kit.button(abilityRow, "@hud.dash", UDim2.new(0, 88, 1, 0), UDim2.fromOffset(0, 0), Kit.C.blue, function()
 		LocalFx.dash()
 	end, nil, 22)
@@ -330,11 +334,11 @@ function Hud.init()
 	end, nil, 24)
 	skip10.Name = "Skip10"
 	skip10.LayoutOrder = 5
-	columnHeight[skip10] = 50
+	columnHeight[skip10] = 54
 	local bottomRow = Kit.frame(right, UDim2.fromOffset(ACT_W, 50), UDim2.new(), nil)
 	bottomRow.Name = "Bottom"
 	bottomRow.LayoutOrder = 6
-	columnHeight[bottomRow] = 50
+	columnHeight[bottomRow] = 54
 	local back = Kit.button(bottomRow, "@hud.checkpoint", UDim2.new(0, 116, 1, 0), UDim2.fromOffset(0, 0), Kit.C.orange, function()
 		Net.request("ReturnToCheckpoint")
 	end, nil, 20)
@@ -406,28 +410,43 @@ function Hud.init()
 				n += 1
 			end
 		end
-		local rows = math.max(1, math.ceil(n / MENU_COLS))
+		local rows = math.max(1, math.ceil(n / menuCols))
 		return rows * MENU_CELL + (rows - 1) * MENU_GAP
 	end
 	Kit.onLayout(function(touch, area, scale)
+		local cols = if touch then MENU_COLS_TOUCH else MENU_COLS
+		if cols ~= menuCols then
+			menuCols = cols
+			grid.FillDirectionMaxCells = cols
+		end
 		local mh = menuHeight()
-		left.Size = UDim2.fromOffset(left.Size.X.Offset, mh)
+		local mw = cols * MENU_CELL + (cols - 1) * MENU_GAP
+		left.Size = UDim2.fromOffset(mw, mh)
 		local shown = actionsShown()
 		if touch then
 			-- corner block under the Roblox buttons; the thumbstick owns the bottom left
 			local top = math.floor(area.Y * 0.16)
 			local cs = math.min(scale, area.X * 0.34 / CORNER_W)
+			-- the Menu button must stay >= 44 px tall on screen
+			local mbH = math.max(MENU_H, math.ceil(46 / cs))
+			menuBtn.Size = UDim2.fromOffset(116, mbH)
+			corner.Size = UDim2.fromOffset(CORNER_W, mbH)
 			corner.AnchorPoint = Vector2.new(0, 0)
 			corner.Position = UDim2.new(0, 12, 0, top)
 			Kit.setScale(corner, cs)
 			chips.AnchorPoint = Vector2.new(0, 0)
-			chips.Position = UDim2.new(0, 12, 0, top + math.floor(56 * cs))
+			chips.Position = UDim2.new(0, 12, 0, top + math.floor((mbH + 6) * cs))
 			Kit.setScale(chips, cs)
-			-- the open menu may cover the thumbstick zone: it is a popup, it closes on a choice
-			local gridTop = top + math.floor(96 * cs)
+			-- the open menu is a popup in the free band between the top HUD and the level bar,
+			-- right of the thumbstick (which owns the bottom left); it closes on a choice
+			local stripTop = math.floor((Hud.EVENT_TOP + (if Hud.eventBarVisible then 44 else 0)) * scale)
+			local gridTop = math.max(stripTop, top + math.floor((mbH + 40) * cs)) + 8
+			local gridLeft = math.floor(area.X * 0.3)
+			local gridBottom = area.Y - math.floor((Progress.LEVEL_H + 16) * math.min(scale, area.X * 0.4 / 420))
+			local ms = math.min(scale, (gridBottom - gridTop) / mh, (area.X * 0.5 - 12) / mw)
 			left.AnchorPoint = Vector2.new(0, 0)
-			left.Position = UDim2.new(0, 12, 0, gridTop)
-			Kit.setScale(left, math.min(scale, (area.Y * 0.95 - gridTop) / mh))
+			left.Position = UDim2.new(0, gridLeft, 0, gridTop)
+			Kit.setScale(left, ms)
 			-- side bar: right edge, above the jump button (which owns the bottom 35%)
 			local ss = scale * 0.85
 			if side then
@@ -436,9 +455,15 @@ function Hud.init()
 				side.Size = UDim2.fromOffset(Progress.SIDE_W, math.floor(area.Y * 0.5 / ss))
 				Kit.setScale(side, ss)
 			end
-			-- action column: left of the side bar, bottom at 64% of the height, shrunk to fit
+			-- action column: left of the side bar (the jump button sits right of it), bottom just
+			-- above the level bar (phones; 64% of the height on tablets), shrunk to fit when the optional buttons are showing
 			local size = shapeActions(false)
-			local bottom = math.floor(area.Y * 0.64)
+			local ls = math.min(scale, area.X * 0.4 / 420)
+			local bottom = area.Y - math.floor((Progress.LEVEL_H + 14) * ls)
+			if area.Y > 450 then
+				-- tablets: the (bigger) jump button sits under the column, keep it above it
+				bottom = math.floor(area.Y * 0.64)
+			end
 			right.AnchorPoint = Vector2.new(1, 1)
 			right.Position = UDim2.new(1, -12 - math.floor(Progress.SIDE_W * ss), 0, bottom)
 			Kit.setScale(right, math.min(scale, (bottom - 8) / math.max(size.Y, 1)))
@@ -449,6 +474,8 @@ function Hud.init()
 				Kit.setScale(level, math.min(scale, area.X * 0.4 / 420))
 			end
 		else
+			menuBtn.Size = UDim2.fromOffset(116, MENU_H)
+			corner.Size = UDim2.fromOffset(CORNER_W, MENU_H)
 			corner.AnchorPoint = Vector2.new(0, 1)
 			corner.Position = UDim2.new(0, 12, 1, -12)
 			Kit.setScale(corner, scale)

@@ -1,9 +1,9 @@
-# uipreview obby-sky-tower state=mid screen=phone (844x390, touch) window=settings -> ok
-# image: mid-phone-settings.png  (coordinates below are in the full 844x390 screen space)
+# uipreview obby-sky-tower state=mid screen=tablet (1180x820, touch) window=settings -> ok
+# image: mid-tablet-settings.png  (coordinates below are in the full 1180x820 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
 ## Layout findings (1)
-[med] core-overlap: SkyTowerUI.Panel_settings.Window.Body.Content.Lang_en rect=[69, 267, 181, 313] (x3 similar)
+[med] core-overlap: SkyTowerUI.Panel_settings.Window.Body.Content.Lang_tr rect=[135, 570, 280, 630]
     covered by the touch control (thumbstick/jump)
     created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/SettingsPanel.luau:77 < obby-sky-tower/src/client/init.client.luau:38
 
