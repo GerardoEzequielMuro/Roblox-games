@@ -30,7 +30,7 @@ local openListeners: { (name: string?) -> () } = {}
 
 local MENU = {
 	{ name = "Shop", icon = "🛒", caption = "menu.shop", color = Theme.C.Green },
-	{ name = "Upgrades", icon = "⚡", caption = "menu.upgrades", color = Theme.C.Blue },
+	{ name = "Upgrades", icon = "⚡", iconName = "upgrade", caption = "menu.upgrades", color = Theme.C.Blue },
 	{ name = "Rebirth", icon = "🔁", caption = "menu.rebirth", color = Theme.C.Purple },
 	{ name = "Store", icon = "💎", caption = "menu.store", color = Theme.C.Pink },
 	{ name = "Daily", icon = "🎁", caption = "menu.daily", color = Theme.C.Orange },
@@ -40,6 +40,69 @@ local MENU = {
 	{ name = "Invite", icon = "👋", caption = "menu.invite", color = Theme.C.Blue },
 	{ name = "Trophies", icon = "🏆", caption = "menu.trophies", color = Theme.C.Gold },
 }
+
+-- A panel whose content is mostly one scroller shrinks with its frame; any other one gets wrapped in a
+-- scrolling viewport so its fixed layout keeps its design height.
+local function isFluid(content: Instance): boolean
+	for _, ch in content:GetChildren() do
+		if ch:IsA("ScrollingFrame") and ch.Size.Y.Scale >= 0.5 then
+			return true
+		end
+	end
+	return false
+end
+
+-- Size a panel for the current screen and return its UIScale (see Layout.panelFit).
+local function fitPanel(frame: Frame): number
+	local w = tonumber(frame:GetAttribute("DesignW")) or frame.Size.X.Offset
+	local h = tonumber(frame:GetAttribute("DesignH")) or frame.Size.Y.Offset
+	frame:SetAttribute("DesignW", w)
+	frame:SetAttribute("DesignH", h)
+	local s, height = Layout.panelFit(w, h, 40)
+	frame.Size = UDim2.fromOffset(w, height)
+	local viewport = frame:FindFirstChild("ContentViewport") :: ScrollingFrame?
+	local content = frame:FindFirstChild("Content") or (viewport and viewport:FindFirstChild("Content"))
+	if not content or not content:IsA("GuiObject") then
+		return s
+	end
+	local top = content:GetAttribute("Top")
+	if type(top) ~= "number" then
+		top = if content.Parent == frame then content.Position.Y.Offset else 71
+		content:SetAttribute("Top", top)
+	end
+	local needScroll = height < h and not isFluid(content)
+	if needScroll then
+		if not viewport then
+			viewport = C.new("ScrollingFrame", {
+				Name = "ContentViewport",
+				Position = UDim2.fromOffset(0, top),
+				Size = UDim2.new(1, 0, 1, -top),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				ScrollBarThickness = 8,
+				ScrollBarImageColor3 = Theme.C.PanelEdge,
+				ScrollingDirection = Enum.ScrollingDirection.Y,
+				ElasticBehavior = Enum.ElasticBehavior.Never,
+				Parent = frame,
+			})
+		end
+		local vp = viewport :: ScrollingFrame
+		vp.Visible = true
+		vp.CanvasSize = UDim2.new(1, 0, 0, h - top)
+		content.Position = UDim2.new()
+		content.Size = UDim2.fromScale(1, 1)
+		content.Parent = vp
+	else
+		content.Parent = frame
+		content.Position = UDim2.fromOffset(0, top)
+		content.Size = UDim2.new(1, 0, 1, -top)
+		if viewport then
+			viewport.Visible = false
+		end
+	end
+	return s
+end
+Panels.fitPanel = fitPanel
 
 local function notify()
 	for _, fn in openListeners do
@@ -82,7 +145,7 @@ function Panels.open(name: string)
 	local sc = def.frame:FindFirstChild("PopScale") :: UIScale?
 	if sc then
 		-- shrink big panels so they always fit the screen (small phones)
-		local target = Layout.fit(def.frame.Size.X.Offset, def.frame.Size.Y.Offset, 40)
+		local target = fitPanel(def.frame)
 		sc.Scale = 0.6 * target
 		C.tween(sc, 0.28, { Scale = target }, Enum.EasingStyle.Back)
 	end
@@ -224,11 +287,11 @@ function Panels.build(root: Instance)
 				Panels.toggle(m.name)
 			end,
 		})
-		C.label(btn, m.icon, UDim2.new(1, 0, 0.62, 0), {
+		C.icon(btn, m.icon, UDim2.new(1, 0, 0.62, 0), {
 			Position = UDim2.fromScale(0, 0.04),
 			TextSize = 28,
 			Outline = false,
-		})
+		}, (m :: any).iconName)
 		local caption = C.label(btn, L(m.caption), UDim2.new(1, -4, 0.3, 0), {
 			AnchorPoint = Vector2.new(0, 1),
 			Position = UDim2.new(0, 2, 1, -2),
@@ -301,7 +364,7 @@ function Panels.build(root: Instance)
 		local cur = Panels.current and defs[Panels.current]
 		local sc = cur and cur.frame:FindFirstChild("PopScale") :: UIScale?
 		if cur and sc then
-			sc.Scale = Layout.fit(cur.frame.Size.X.Offset, cur.frame.Size.Y.Offset, 40)
+			sc.Scale = fitPanel(cur.frame)
 		end
 	end)
 

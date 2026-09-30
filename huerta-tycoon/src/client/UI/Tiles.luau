@@ -18,6 +18,7 @@ local Net = require(script.Parent.Net)
 local Toasts = require(script.Parent.Toasts)
 local Teleport = require(script.Parent.Teleport)
 local Juice = require(script.Parent.Juice)
+local UiMath = require(script.Parent.UiMath)
 
 local player = Players.LocalPlayer
 
@@ -252,13 +253,15 @@ end
 -- Markers are sized in STUDS (they shrink with distance, so neighbours never pile up on screen) and only show
 -- near the player: growing crops get a small progress bar, ripe ones a "READY!" tag.
 Tiles.MAX_READY_TAGS = 3
-Tiles.BAR_RANGE = 46
+-- growing crops: only the nearest few carry a bar (a planted plot was a wall of overlapping bars)
+Tiles.MAX_GROW_BARS = 6
+Tiles.BAR_RANGE = 40
 Tiles.TAG_RANGE = 80
 local function makeBillboard(tile: BasePart, withBar: boolean): (BillboardGui, Frame?, TextLabel)
 	local bb: BillboardGui = C.new("BillboardGui", {
 		Name = if withBar then "GrowBar" else "TileTag",
 		Adornee = tile,
-		Size = if withBar then UDim2.fromScale(3.6, 0.55) else UDim2.fromScale(4.4, 1.2),
+		Size = if withBar then UDim2.fromScale(2.8, 0.42) else UDim2.fromScale(4.4, 1.2),
 		StudsOffsetWorldSpace = Vector3.new(0, if withBar then 1.1 else 4.5, 0),
 		AlwaysOnTop = true,
 		LightInfluence = 0,
@@ -325,6 +328,11 @@ local function updateMarkers()
 					m.fill.Size = UDim2.fromScale(p, 1)
 				end
 			elseif m and kind == "buy" and m.text then
+				-- the floating tag already says it: hide the server's price painted on the same tile (for you only)
+				local lockGui = tile:FindFirstChild("LockGui")
+				if lockGui and lockGui:IsA("SurfaceGui") and lockGui.Enabled then
+					lockGui.Enabled = false
+				end
 				m.text.Text = "🔒 " .. Format.cash(d.tileCost or 0)
 				m.text.TextColor3 = if (d.cash or 0) >= (d.tileCost or math.huge) then GREEN else Theme.C.White
 			end
@@ -335,23 +343,39 @@ local function updateMarkers()
 			clearMarker(tile)
 		end
 	end
-	-- "READY!" only on the few ripe crops nearest to you: a whole ripe plot used to be a wall of text
+	-- "READY!" and grow bars only on the few crops nearest to you: a whole plot used to be a wall of overlapping
+	-- tags. Distances are measured from the character (or the camera before it spawns).
 	local char = player.Character
 	local rootPart = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
-	local ripe: { { bb: BillboardGui, d: number } } = {}
+	local cam = workspace.CurrentCamera
+	local from: Vector3? = if rootPart then rootPart.Position elseif cam then cam.CFrame.Position else nil
+	local ripe: { BillboardGui } = {}
+	local ripeD: { number } = {}
+	local grow: { BillboardGui } = {}
+	local growD: { number } = {}
 	for tile, m in markers do
-		if m.kind == "ripe" and m.bb then
-			table.insert(ripe, { bb = m.bb, d = if rootPart then (tile.Position - rootPart.Position).Magnitude else 0 })
+		local bb = m.bb
+		if bb and (m.kind == "ripe" or m.kind == "grow") then
+			local dist = if from then (tile.Position - from).Magnitude else 0
+			if m.kind == "ripe" then
+				table.insert(ripe, bb)
+				table.insert(ripeD, dist)
+			else
+				table.insert(grow, bb)
+				table.insert(growD, dist)
+			end
 		end
 	end
-	table.sort(ripe, function(a, b)
-		return a.d < b.d
-	end)
-	for i, r in ripe do
-		r.bb.Enabled = i <= Tiles.MAX_READY_TAGS
+	local showRipe = UiMath.nearest(ripeD, Tiles.MAX_READY_TAGS, Tiles.TAG_RANGE)
+	for i, bb in ripe do
+		bb.Enabled = showRipe[i]
 		-- stud-sized tags balloon when you stand next to them: shrink them with proximity
-		local k = math.clamp(r.d / 26, 0.35, 1)
-		r.bb.Size = UDim2.fromScale(4.4 * k, 1.2 * k)
+		local k = math.clamp(ripeD[i] / 26, 0.35, 1)
+		bb.Size = UDim2.fromScale(4.4 * k, 1.2 * k)
+	end
+	local showGrow = UiMath.nearest(growD, Tiles.MAX_GROW_BARS, Tiles.BAR_RANGE)
+	for i, bb in grow do
+		bb.Enabled = showGrow[i]
 	end
 end
 

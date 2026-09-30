@@ -193,9 +193,8 @@ builders.corn = function(model, top, seed, stage, g, look)
 	local dark = seed.stemColor:Lerp(Color3.new(0, 0, 0), 0.18)
 	for k, x in { -1.9, 0, 1.9 } do
 		local at = top * CFrame.new(x, 0, (k % 2) * 0.5 - 0.25) * CFrame.Angles(0, k * 1.3, 0)
-		-- a stalk that tapers, with long drooping leaves in pairs up its height
-		-- a sturdy stalk with long drooping leaves up its height
-		cyl(model, "Stalk", 0.55, h, at * CFrame.new(0, h / 2, 0), dark, { CastShadow = true })
+		-- a stalk that tapers to the tassel (a long spindle, not a pipe), with long drooping leaves up its height
+		ball(model, "Stalk", Vector3.new(0.75, h * 1.08, 0.75), at * CFrame.new(0, h * 0.46, 0), dark, { CastShadow = true })
 		local leaf = 1.4 + 2.6 * g
 		blade(model, at * CFrame.new(0, h * 0.32, 0), 0, leaf, 62, seed.stemColor)
 		blade(model, at * CFrame.new(0, h * 0.6, 0), math.pi, leaf * 0.9, 56, seed.stemColor:Lerp(Color3.new(1, 1, 1), 0.12))
@@ -400,6 +399,42 @@ local function generic(model: Model, top: CFrame, seed: Config.Seed, stage: numb
 	end
 end
 
+-- Foliage gets a real material instead of flat SmoothPlastic, and every tile a slightly different green so a
+-- full plot doesn't look copy-pasted. Fruit keeps its smooth, glossy look (mutations set their own material).
+local FOLIAGE: { [string]: Enum.Material } = {
+	Bush = Enum.Material.Grass,
+	Crown = Enum.Material.Grass,
+	Arm = Enum.Material.Fabric,
+	Leaf = Enum.Material.Fabric,
+	Husk = Enum.Material.Fabric,
+	Petal = Enum.Material.Fabric,
+	Stalk = Enum.Material.Fabric,
+	Vine = Enum.Material.Fabric,
+	Stake = Enum.Material.Wood,
+	Sprout = Enum.Material.Fabric,
+}
+
+-- Stable 0..1 value from a position (same tile, same look after every rebuild).
+local function jitter(p: Vector3): number
+	local v = math.sin(p.X * 12.9898 + p.Z * 78.233) * 43758.5453
+	return v - math.floor(v)
+end
+
+local function finish(model: Model, top: CFrame)
+	local k = (jitter(top.Position) - 0.5) * 0.14 -- -7% .. +7% brightness
+	for _, part in model:GetChildren() do
+		if part:IsA("BasePart") then
+			local mat = FOLIAGE[part.Name]
+			if mat and part.Material == Enum.Material.SmoothPlastic then
+				part.Material = mat
+			end
+			if mat then
+				part.Color = if k >= 0 then part.Color:Lerp(Color3.new(1, 1, 1), k) else part.Color:Lerp(Color3.new(0, 0, 0), -k)
+			end
+		end
+	end
+end
+
 local function build(model: Model, top: CFrame, seed: Config.Seed, stage: number, mutation: string?)
 	local g = (stage + 1) / (STAGES + 1) -- 0.17 .. 1
 	if stage == 0 then
@@ -458,6 +493,7 @@ function CropVisuals.buildModel(top: CFrame, seed: Config.Seed, stage: number, m
 	local model = Instance.new("Model")
 	model.Name = "Crop"
 	build(model, top, seed, stage, mutation)
+	finish(model, top)
 	model.WorldPivot = top
 	model:SetAttribute("Parts", partCount(model))
 	model:SetAttribute("Stage", stage)

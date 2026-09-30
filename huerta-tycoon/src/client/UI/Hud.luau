@@ -54,6 +54,7 @@ function Hud.build(root: Instance)
 	C.stroke(card, 3, Theme.C.Stroke, 0.2)
 	C.gradient(card, Color3.new(1, 1, 1), Color3.fromRGB(176, 186, 206), 90)
 	C.padding(card, 7, 10)
+	C.dropShadow(card)
 
 	-- coin badge: where sold crops fly to
 	local coin: Frame = C.new("Frame", {
@@ -63,10 +64,24 @@ function Hud.build(root: Instance)
 		BackgroundColor3 = Theme.C.Gold,
 		Parent = card,
 	})
-	C.round(coin)
-	C.stroke(coin, 3, Theme.darken(Theme.C.Gold, 0.5))
-	C.gradient(coin, Color3.new(1, 1, 1), Color3.fromRGB(215, 190, 140), 60)
-	C.label(coin, "$", UDim2.fromScale(1, 1), { TextSize = 22, TextColor3 = Color3.fromRGB(255, 250, 210), Outline = 2, NoFit = true })
+	local coinImage = C.iconImage(nil, "coin")
+	if coinImage then
+		-- pack coin: the drawn image replaces the gold disc
+		coin.BackgroundTransparency = 1
+		C.new("ImageLabel", {
+			Name = "Img",
+			Size = UDim2.fromScale(1, 1),
+			BackgroundTransparency = 1,
+			ScaleType = Enum.ScaleType.Fit,
+			Image = coinImage,
+			Parent = coin,
+		})
+	else
+		C.round(coin)
+		C.stroke(coin, 3, Theme.darken(Theme.C.Gold, 0.5))
+		C.gradient(coin, Color3.new(1, 1, 1), Color3.fromRGB(215, 190, 140), 60)
+		C.label(coin, "$", UDim2.fromScale(1, 1), { TextSize = 22, TextColor3 = Color3.fromRGB(255, 250, 210), Outline = 2, NoFit = true })
+	end
 	local coinScale = C.new("UIScale", { Parent = coin })
 
 	local cashLbl = C.label(card, "$0", UDim2.new(1, -100, 0, 36), {
@@ -106,6 +121,8 @@ function Hud.build(root: Instance)
 	})
 	C.corner(basket, 18)
 	C.stroke(basket, 3, Theme.C.Stroke, 0.2)
+	C.gradient(basket, Color3.new(1, 1, 1), Color3.fromRGB(176, 186, 206), 90)
+	C.dropShadow(basket)
 	local basketBar = C.progressBar(basket, UDim2.new(1, -156, 0, 38), Theme.C.Orange, {
 		Position = UDim2.fromOffset(10, 12),
 	})
@@ -269,7 +286,7 @@ function Hud.build(root: Instance)
 	local autoBtn = C.button({
 		Name = "Auto",
 		Parent = actions,
-		Text = L("auto.off", nil, "🤖 "),
+		Text = L("auto.off", nil, C.iconPrefix("🤖")),
 		TextSize = 17,
 		Color = Theme.C.Grey,
 		Size = UDim2.fromOffset(Hud.ACTION_W, 54),
@@ -280,6 +297,8 @@ function Hud.build(root: Instance)
 			end
 		end,
 	})
+
+	C.addIcon(autoBtn, "🤖")
 
 	-- ===== Responsive placement =====
 	-- PC: stats top-left, teleports top-center, 3 actions mid-right, basket bottom-center.
@@ -382,7 +401,7 @@ function Hud.build(root: Instance)
 		if on ~= lastAuto then
 			lastAuto = on
 			C.setColor(autoBtn, if on then Theme.C.Green else Theme.C.Grey)
-			C.setText(autoBtn, L(if on then "auto.on" else "auto.off", nil, "🤖 "))
+			C.setText(autoBtn, L(if on then "auto.on" else "auto.off", nil, C.iconPrefix("🤖")))
 		end
 	end
 

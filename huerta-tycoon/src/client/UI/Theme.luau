@@ -101,6 +101,37 @@ Theme.ProductEmoji = {
 	LuckyPack = "🎲",
 }
 
+-- Emoji used as an ICON -> name in the shared icon pack (Shared/Icons). Components.icon shows the image when the
+-- pack is uploaded and keeps the emoji otherwise. Emojis inside translated sentences are not icons: leave them.
+Theme.EmojiIcon = {
+	["🛒"] = "shop",
+	["⚡"] = "bolt",
+	["🔁"] = "rebirth",
+	["🔄"] = "rebirth",
+	["💎"] = "gem",
+	["🎁"] = "gift",
+	["🎟️"] = "ticket",
+	["⏰"] = "clock",
+	["⏱"] = "clock",
+	["📖"] = "book",
+	["👋"] = "invite",
+	["🏆"] = "trophy",
+	["🤖"] = "auto",
+	["💰"] = "cash",
+	["💵"] = "cash",
+	["💲"] = "coin",
+	["🍀"] = "luck",
+	["👑"] = "crown",
+	["✅"] = "check",
+	["✕"] = "close",
+	["⭐"] = "star",
+	["🌱"] = "sprout",
+	["🔒"] = "lock",
+	["🎲"] = "luck",
+	["📦"] = "magnet",
+	["⬆️"] = "upgrade",
+} :: { [string]: string }
+
 function Theme.seedEmoji(id: string?): string
 	return (id and Theme.SeedEmoji[id]) or "🌱"
 end

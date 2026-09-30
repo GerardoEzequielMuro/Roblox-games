@@ -1,10 +1,12 @@
 --!nonstrict
 -- Shared UI factories: chunky cartoon buttons, panels, labels, progress bars, badges, tweens.
 local TweenService = game:GetService("TweenService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Theme = require(script.Parent.Theme)
 local I18n = require(script.Parent.I18n)
 local Sound = require(script.Parent.Sound)
+local Icons = require(ReplicatedStorage.Shared.Icons)
 
 local C = {}
 
@@ -158,6 +160,111 @@ function C.label(parent: Instance?, text: any, size: UDim2?, props: { [string]: 
 		st.Name = "TextOutline"
 	end
 	return lbl
+end
+
+-- ===== Icons: image from the shared pack when uploaded, the emoji glyph otherwise =====
+
+-- "rbxassetid://..." for an emoji used as an icon (or an explicit pack name), nil while the pack isn't uploaded.
+function C.iconImage(emoji: string?, name: string?): string?
+	local key = name or (emoji and Theme.EmojiIcon[emoji])
+	if not key then
+		return nil
+	end
+	return Icons.get(key)
+end
+
+-- "<emoji> " to prefix a button/title text, or "" when the icon is drawn as an image (see C.addIcon).
+function C.iconPrefix(emoji: string, name: string?, sep: string?): string
+	if C.iconImage(emoji, name) then
+		return ""
+	end
+	return emoji .. (sep or " ")
+end
+
+local ICON_PROPS = { "Name", "Position", "AnchorPoint", "ZIndex", "LayoutOrder", "Visible", "BackgroundColor3", "BackgroundTransparency" }
+
+-- An icon slot: with the image uploaded, a transparent frame holding a centered ImageLabel (ScaleType Fit);
+-- otherwise exactly C.label(parent, emoji, size, props) as before.
+function C.icon(parent: Instance?, emoji: string, size: UDim2?, props: { [string]: any }?, name: string?): GuiObject
+	local image = C.iconImage(emoji, name)
+	if not image then
+		return C.label(parent, emoji, size, props)
+	end
+	local slot: Frame = C.new("Frame", { Name = "Icon", Size = size or UDim2.fromScale(1, 1), BackgroundTransparency = 1 })
+	if props then
+		for _, k in ICON_PROPS do
+			if props[k] ~= nil then
+				(slot :: any)[k] = props[k]
+			end
+		end
+	end
+	C.new("ImageLabel", {
+		Name = "Img",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromScale(0.86, 0.86),
+		BackgroundTransparency = 1,
+		ScaleType = Enum.ScaleType.Fit,
+		Image = image,
+		ZIndex = slot.ZIndex,
+		Parent = slot,
+	})
+	slot.Parent = parent
+	return slot
+end
+
+-- Puts the pack image on a button (left of its label, or centered when the button has no text).
+-- Returns false and does nothing when the image isn't uploaded: the caller keeps the emoji in the text.
+function C.addIcon(btn: GuiObject, emoji: string, name: string?, centered: boolean?): boolean
+	local image = C.iconImage(emoji, name)
+	if not image then
+		return false
+	end
+	local h = if btn.Size.Y.Offset > 0 then btn.Size.Y.Offset else 40
+	local side = math.floor(h * (if centered then 0.62 else 0.58))
+	C.new("ImageLabel", {
+		Name = "Icon",
+		AnchorPoint = if centered then Vector2.new(0.5, 0.5) else Vector2.new(0, 0.5),
+		Position = if centered then UDim2.fromScale(0.5, 0.5) else UDim2.new(0, 8, 0.5, 0),
+		Size = UDim2.fromOffset(side, side),
+		BackgroundTransparency = 1,
+		ScaleType = Enum.ScaleType.Fit,
+		Image = image,
+		ZIndex = btn.ZIndex + 1,
+		Parent = btn,
+	})
+	local lbl = btn:FindFirstChild("Label")
+	if lbl and lbl:IsA("TextLabel") and not centered then
+		lbl.Position = UDim2.fromOffset(side + 4, 0)
+		lbl.Size = UDim2.new(1, -(side + 4), 1, 0)
+	end
+	return true
+end
+
+-- Soft drop shadow for a static HUD block: a darker sibling one step below it that follows its
+-- position, size and visibility (children always draw above their parent, so it can't be a child).
+function C.dropShadow(target: GuiObject, offset: number?, radius: number?): Frame
+	local o = offset or 4
+	local sh: Frame = C.new("Frame", {
+		Name = target.Name .. "Shadow",
+		BackgroundColor3 = Color3.new(0, 0, 0),
+		BackgroundTransparency = 0.72,
+		BorderSizePixel = 0,
+		ZIndex = target.ZIndex - 1,
+	})
+	C.corner(sh, radius or 18)
+	local function sync()
+		sh.AnchorPoint = target.AnchorPoint
+		sh.Position = target.Position + UDim2.fromOffset(0, o)
+		sh.Size = target.Size
+		sh.Visible = target.Visible
+	end
+	sync()
+	for _, prop in { "Position", "Size", "Visible", "AnchorPoint" } do
+		target:GetPropertyChangedSignal(prop):Connect(sync)
+	end
+	sh.Parent = target.Parent
+	return sh
 end
 
 export type ButtonOpts = {
@@ -361,7 +468,7 @@ end
 export type Panel = { frame: Frame, content: Frame, close: TextButton, title: TextLabel, header: Frame }
 
 -- Standard window: cream body, colored header with emoji title, round red close button.
-function C.panel(parent: Instance, opts: { Name: string, Title: any, Icon: string?, Size: UDim2?, Color: Color3? }): Panel
+function C.panel(parent: Instance, opts: { Name: string, Title: any, Icon: string?, IconName: string?, Size: UDim2?, Color: Color3? }): Panel
 	local color = opts.Color or Theme.C.Green
 	local frame: Frame = C.new("Frame", {
 		Name = opts.Name,
@@ -404,15 +511,31 @@ function C.panel(parent: Instance, opts: { Name: string, Title: any, Icon: strin
 		Parent = header,
 	})
 	local titleText: any = opts.Title
-	if opts.Icon then
+	local titleX = 24
+	local titleImage = if opts.Icon then C.iconImage(opts.Icon, opts.IconName) else nil
+	if titleImage then
+		-- pack icon left of the title instead of the emoji prefix
+		C.new("ImageLabel", {
+			Name = "TitleIcon",
+			AnchorPoint = Vector2.new(0, 0.5),
+			Position = UDim2.new(0, 20, 0.5, 0),
+			Size = UDim2.fromOffset(46, 46),
+			BackgroundTransparency = 1,
+			ScaleType = Enum.ScaleType.Fit,
+			Image = titleImage,
+			ZIndex = 2,
+			Parent = header,
+		})
+		titleX = 74
+	elseif opts.Icon then
 		if I18n.isLoc(titleText) then
 			titleText = I18n.L(titleText.key, titleText.args, opts.Icon .. "  ")
 		else
 			titleText = opts.Icon .. "  " .. tostring(titleText)
 		end
 	end
-	local title = C.label(header, titleText, UDim2.new(1, -120, 1, 0), {
-		Position = UDim2.fromOffset(24, 0),
+	local title = C.label(header, titleText, UDim2.new(1, -(96 + titleX), 1, 0), {
+		Position = UDim2.fromOffset(titleX, 0),
 		TextSize = 34,
 		TextXAlignment = Enum.TextXAlignment.Left,
 		Outline = 3,
@@ -422,7 +545,7 @@ function C.panel(parent: Instance, opts: { Name: string, Title: any, Icon: strin
 	local close = C.button({
 		Name = "Close",
 		Parent = frame,
-		Text = "✕",
+		Text = C.iconPrefix("✕", nil, ""),
 		TextSize = 28,
 		Size = UDim2.fromOffset(56, 56),
 		AnchorPoint = Vector2.new(0.5, 0.5),
@@ -432,6 +555,7 @@ function C.panel(parent: Instance, opts: { Name: string, Title: any, Icon: strin
 		StrokeThickness = 4,
 	})
 	close.ZIndex = 5
+	C.addIcon(close, "✕", nil, true)
 
 	local content: Frame = C.new("Frame", {
 		Name = "Content",

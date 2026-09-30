@@ -114,7 +114,7 @@ function StorePanel.build(root: Instance, openOdds: (() -> ())?)
 				})
 				odds.ZIndex = 3
 			end
-			C.label(card, Theme.ProductEmoji[item.key] or "🎁", UDim2.new(1, 0, 0, 60), {
+			C.icon(card, Theme.ProductEmoji[item.key] or "🎁", UDim2.new(1, 0, 0, 60), {
 				Position = UDim2.fromOffset(0, 8),
 				TextSize = 48,
 				Outline = false,

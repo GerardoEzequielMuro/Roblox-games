@@ -108,7 +108,7 @@ function GiftsPanel.build(root: Instance)
 	for i, g in Config.PlaytimeGifts do
 		local card = C.card(grid, UDim2.new(), Theme.darken(Theme.C.Red, 0.1), { LayoutOrder = i, Name = "Gift" .. i })
 		local border = card:FindFirstChild("Border") :: UIStroke
-		C.label(card, emojiFor(g), UDim2.new(0, 50, 0, 44), {
+		C.icon(card, emojiFor(g), UDim2.new(0, 50, 0, 44), {
 			Position = UDim2.fromOffset(8, 6),
 			TextSize = 36,
 			Outline = false,

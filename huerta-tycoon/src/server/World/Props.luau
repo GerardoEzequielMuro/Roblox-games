@@ -37,13 +37,43 @@ function Props.lighten(c: Color3, f: number): Color3
 	return c:Lerp(Color3.new(1, 1, 1), f)
 end
 
+-- Parts built without an explicit material get one from their name instead of flat SmoothPlastic
+-- (painted trims and frames read as wood, ropes and flags as cloth, reeds and vines as plants).
+-- Animals, fruit, balloons and small details keep the smooth cartoon finish.
+local NAME_MATERIALS: { { pattern: string, mat: Enum.Material } } = {
+	{ pattern = "Frame$", mat = Enum.Material.Wood },
+	{ pattern = "Trim$", mat = Enum.Material.Wood },
+	{ pattern = "Beam$", mat = Enum.Material.Wood },
+	{ pattern = "Brace$", mat = Enum.Material.Wood },
+	{ pattern = "Post$", mat = Enum.Material.Wood },
+	{ pattern = "Eave$", mat = Enum.Material.Wood },
+	{ pattern = "Bar$", mat = Enum.Material.Wood },
+	{ pattern = "Rope$", mat = Enum.Material.Fabric },
+	{ pattern = "Cord$", mat = Enum.Material.Fabric },
+	{ pattern = "String$", mat = Enum.Material.Fabric },
+	{ pattern = "Pennant$", mat = Enum.Material.Fabric },
+	{ pattern = "Band$", mat = Enum.Material.Fabric },
+	{ pattern = "Flag$", mat = Enum.Material.Fabric },
+	{ pattern = "Reed", mat = Enum.Material.Grass },
+	{ pattern = "Vine", mat = Enum.Material.Grass },
+	{ pattern = "LilyPad$", mat = Enum.Material.Grass },
+}
+function Props.materialFor(name: string): Enum.Material
+	for _, rule in NAME_MATERIALS do
+		if string.find(name, rule.pattern) then
+			return rule.mat
+		end
+	end
+	return Enum.Material.SmoothPlastic
+end
+
 local function finish(p: BasePart, name: string, size: Vector3, cf: CFrame, color: Color3, material: Enum.Material?, extra: Extra, parent: Instance)
 	p.Name = name
 	p.Anchored = true
 	p.CanTouch = false
 	p.TopSurface = Enum.SurfaceType.Smooth
 	p.BottomSurface = Enum.SurfaceType.Smooth
-	p.Material = material or Enum.Material.SmoothPlastic
+	p.Material = material or Props.materialFor(name)
 	p.Size = size
 	p.CFrame = cf
 	p.Color = color

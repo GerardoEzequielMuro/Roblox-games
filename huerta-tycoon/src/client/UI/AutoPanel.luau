@@ -73,7 +73,7 @@ function AutoPanel.build(root: Instance, openUpgrades: (() -> ())?)
 		C.corner(icon, 14)
 		C.stroke(icon, 3, Theme.darken(m.color, 0.4))
 		C.shade(icon)
-		C.label(icon, m.icon, UDim2.fromScale(1, 1), { TextSize = 34, Outline = false })
+		C.icon(icon, m.icon, UDim2.fromScale(1, 1), { TextSize = 34, Outline = false })
 		C.label(card, L("auto." .. m.id), UDim2.new(1, -270, 0, 28), {
 			Position = UDim2.fromOffset(84, 10),
 			TextSize = 24,

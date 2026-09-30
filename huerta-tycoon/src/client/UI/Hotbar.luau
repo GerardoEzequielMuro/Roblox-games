@@ -58,6 +58,8 @@ function Hotbar.build(root: Instance)
 	Hotbar.frame = frame
 	C.corner(frame, 20)
 	C.stroke(frame, 3, Theme.C.Stroke, 0.3)
+	C.gradient(frame, Color3.new(1, 1, 1), Color3.fromRGB(176, 186, 206), 90)
+	C.dropShadow(frame, 4, 20)
 
 	local scroller: ScrollingFrame = C.new("ScrollingFrame", {
 		Size = UDim2.new(1, -12, 1, 0),

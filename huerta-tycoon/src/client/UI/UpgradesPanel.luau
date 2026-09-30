@@ -18,6 +18,7 @@ function UpgradesPanel.build(root: Instance)
 		Name = "UpgradesPanel",
 		Title = L("panel.upgrades"),
 		Icon = "⚡",
+		IconName = "upgrade",
 		Color = Theme.C.Blue,
 		Size = UDim2.fromOffset(680, 520),
 	})
@@ -38,7 +39,7 @@ function UpgradesPanel.build(root: Instance)
 		C.corner(icon, 16)
 		C.stroke(icon, 3, Theme.darken(color, 0.4))
 		C.shade(icon)
-		C.label(icon, emoji, UDim2.fromScale(1, 1), { TextSize = 42, Outline = false })
+		C.icon(icon, emoji, UDim2.fromScale(1, 1), { TextSize = 42, Outline = false })
 
 		C.label(card, name, UDim2.fromOffset(240, 30), {
 			Position = UDim2.fromOffset(104, 8),

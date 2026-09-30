@@ -80,7 +80,7 @@ function DailyPanel.build(root: Instance)
 			TextColor3 = Theme.C.Ink,
 			Outline = false,
 		})
-		C.label(card, emoji, UDim2.new(1, 0, 0, 44), {
+		C.icon(card, emoji, UDim2.new(1, 0, 0, 44), {
 			Position = UDim2.fromOffset(0, 30),
 			TextSize = 36,
 			Outline = false,
