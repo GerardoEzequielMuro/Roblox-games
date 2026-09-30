@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "Super Chance +{n} min !",
 	["toast.coming_soon"] = "{item} arrive bientôt !",
 	["toast.deleted"] = "{n} compagnons supprimés",
+	["toast.deleted1"] = "1 compagnon supprimé",
 	["toast.pet_locked"] = "Ce compagnon est verrouillé",
 	["toast.upgraded"] = "{name} amélioré !",
 	["toast.not_enough_taps"] = "Pas encore assez de Taps !",

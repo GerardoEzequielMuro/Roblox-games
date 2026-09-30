@@ -37,16 +37,16 @@ function PetsWindow.init()
 		Name = "MoreSlots",
 		Text = "+",
 		Color = Theme.Green,
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -394, 0, 5),
-		Corner = 22,
+		Size = UDim2.fromOffset(56, 56),
+		Position = UDim2.new(1, -398, 0, -1),
+		Corner = 28,
 		TextSize = 30,
 		Parent = top,
 		OnClick = function()
 			Windows.open("Upgrades")
 		end,
 	})
-	local countLabel = Theme.text({ Text = "", Size = UDim2.new(1, -404, 1, -8), Position = UDim2.fromOffset(0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = top })
+	local countLabel = Theme.text({ Text = "", Size = UDim2.new(1, -410, 1, -8), Position = UDim2.fromOffset(0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = top })
 	local deleteMode = false
 	local selected: { [string]: boolean } = {}
 	local selectedUid: string? = nil
@@ -56,8 +56,8 @@ function PetsWindow.init()
 	Theme.button({
 		Key = "pets.equip_best",
 		Color = Theme.Green,
-		Size = UDim2.fromOffset(160, 54),
-		Position = UDim2.new(1, -340, 0, 0),
+		Size = UDim2.fromOffset(160, 56),
+		Position = UDim2.new(1, -340, 0, -1),
 		TextSize = 26,
 		Parent = top,
 		OnClick = function()
@@ -68,9 +68,9 @@ function PetsWindow.init()
 	deleteButton = Theme.button({
 		Key = "pets.delete_mode",
 		Color = Theme.Red,
-		Size = UDim2.fromOffset(170, 54),
+		Size = UDim2.fromOffset(170, 56),
 		TextSize = 26,
-		Position = UDim2.new(1, -170, 0, 0),
+		Position = UDim2.new(1, -170, 0, -1),
 		Parent = top,
 		OnClick = function()
 			if deleteMode then
@@ -80,7 +80,7 @@ function PetsWindow.init()
 				end
 				if #uids > 0 then
 					local ok, res = Net.request("Delete", { uids = uids })
-					Toasts.show(if ok then Lang.t("toast.deleted", { n = res }) else Lang.msg(res), if ok then "success" else "error")
+					Toasts.show(if ok then (if res == 1 then Lang.t("toast.deleted1") else Lang.t("toast.deleted", { n = res })) else Lang.msg(res), if ok then "success" else "error")
 				end
 				deleteMode = false
 				table.clear(selected)

@@ -119,7 +119,7 @@ function EggPanel.init()
 			t.AutoLocalize = false
 		end
 	end
-	Theme.button({ Text = "X", Color = Theme.Red, Size = UDim2.fromOffset(54, 54), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Corner = 27, Parent = panel, OnClick = function()
+	Theme.button({ Text = "X", Color = Theme.Red, Size = UDim2.fromOffset(56, 56), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Corner = 27, Parent = panel, OnClick = function()
 		EggPanel.close()
 	end })
 

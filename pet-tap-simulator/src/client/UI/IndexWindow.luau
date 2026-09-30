@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Palette = require(ReplicatedStorage.Shared.Palette)
 local Theme = require(script.Parent.Theme)
+local Root = require(script.Parent.Root)
 local Windows = require(script.Parent.Windows)
 local PetIcon = require(script.Parent.PetIcon)
 local Toasts = require(script.Parent.Toasts)
@@ -26,11 +27,11 @@ local function petsOnPage(page: number): { typeof(Config.Pets[1]) }
 end
 
 function IndexWindow.init()
-	local w = Windows.create("Index", "📖", "win.index", Theme.Blue, Vector2.new(820, 540))
+	local w = Windows.create("Index", "📖", "win.index", Theme.Blue, Vector2.new(820, 540), 450)
 	local body = w.body
 	local page = 1
 
-	local tabs = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 54), Parent = body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) })
+	local tabs = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 56), Parent = body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) })
 	local total = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 60), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, Parent = body })
 	local grid = Theme.new("Frame", { BackgroundColor3 = Theme.PaperDark, Size = UDim2.new(1, 0, 1, -158), Position = UDim2.fromOffset(0, 92), Parent = body }, {
 		Theme.corner(14),
@@ -62,7 +63,7 @@ function IndexWindow.init()
 		tabButtons[i] = Theme.button({
 			Key = key,
 			Color = Theme.Grey,
-			Size = UDim2.fromOffset(124, 50),
+			Size = UDim2.fromOffset(if Root.isTouch then 116 else 124, 56),
 			LayoutOrder = i,
 			TextSize = 18,
 			Parent = tabs,

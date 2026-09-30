@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "スーパーラック+{n}分！",
 	["toast.coming_soon"] = "{item}はもうすぐ登場！",
 	["toast.deleted"] = "{n}匹のペットを削除しました",
+	["toast.deleted1"] = "1匹のペットを削除しました",
 	["toast.pet_locked"] = "そのペットはロック中です",
 	["toast.upgraded"] = "{name}をアップグレード！",
 	["toast.not_enough_taps"] = "タップがまだ足りません！",

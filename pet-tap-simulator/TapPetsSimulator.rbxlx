@@ -1362,6 +1362,7 @@ return {
 	["toast.got_luck"] = "Superglück +{n} Min!",
 	["toast.coming_soon"] = "{item} kommt bald!",
 	["toast.deleted"] = "{n} Haustiere gelöscht",
+	["toast.deleted1"] = "1 Haustier gelöscht",
 	["toast.pet_locked"] = "Dieses Haustier ist gesperrt",
 	["toast.upgraded"] = "{name} verbessert!",
 	["toast.not_enough_taps"] = "Noch nicht genug Taps!",
@@ -1793,6 +1794,7 @@ return {
 	["toast.got_luck"] = "Super Luck +{n} min!",
 	["toast.coming_soon"] = "{item} is coming soon!",
 	["toast.deleted"] = "Deleted {n} pets",
+	["toast.deleted1"] = "Deleted 1 pet",
 	["toast.pet_locked"] = "That pet is locked",
 	["toast.upgraded"] = "Upgraded {name}!",
 	["toast.not_enough_taps"] = "Not enough Taps yet!",
@@ -2224,6 +2226,7 @@ return {
 	["toast.got_luck"] = "¡Super Suerte +{n} min!",
 	["toast.coming_soon"] = "¡{item} llega pronto!",
 	["toast.deleted"] = "Se eliminaron {n} mascotas",
+	["toast.deleted1"] = "Se eliminó 1 mascota",
 	["toast.pet_locked"] = "Esa mascota está bloqueada",
 	["toast.upgraded"] = "¡{name} mejorada!",
 	["toast.not_enough_taps"] = "¡Todavía no tienes suficientes Taps!",
@@ -2655,6 +2658,7 @@ return {
 	["toast.got_luck"] = "Super Chance +{n} min !",
 	["toast.coming_soon"] = "{item} arrive bientôt !",
 	["toast.deleted"] = "{n} compagnons supprimés",
+	["toast.deleted1"] = "1 compagnon supprimé",
 	["toast.pet_locked"] = "Ce compagnon est verrouillé",
 	["toast.upgraded"] = "{name} amélioré !",
 	["toast.not_enough_taps"] = "Pas encore assez de Taps !",
@@ -3086,6 +3090,7 @@ return {
 	["toast.got_luck"] = "Keberuntungan Super +{n} menit!",
 	["toast.coming_soon"] = "{item} segera hadir!",
 	["toast.deleted"] = "{n} hewan dihapus",
+	["toast.deleted1"] = "1 hewan dihapus",
 	["toast.pet_locked"] = "Hewan itu terkunci",
 	["toast.upgraded"] = "{name} ditingkatkan!",
 	["toast.not_enough_taps"] = "Tap belum cukup!",
@@ -3517,6 +3522,7 @@ return {
 	["toast.got_luck"] = "スーパーラック+{n}分！",
 	["toast.coming_soon"] = "{item}はもうすぐ登場！",
 	["toast.deleted"] = "{n}匹のペットを削除しました",
+	["toast.deleted1"] = "1匹のペットを削除しました",
 	["toast.pet_locked"] = "そのペットはロック中です",
 	["toast.upgraded"] = "{name}をアップグレード！",
 	["toast.not_enough_taps"] = "タップがまだ足りません！",
@@ -3948,6 +3954,7 @@ return {
 	["toast.got_luck"] = "슈퍼 행운 +{n}분!",
 	["toast.coming_soon"] = "{item} 곧 출시!",
 	["toast.deleted"] = "펫 {n}마리 삭제됨",
+	["toast.deleted1"] = "펫 1마리 삭제됨",
 	["toast.pet_locked"] = "그 펫은 잠겨 있어요",
 	["toast.upgraded"] = "{name} 업그레이드!",
 	["toast.not_enough_taps"] = "탭이 아직 부족해요!",
@@ -4379,6 +4386,7 @@ return {
 	["toast.got_luck"] = "Super Sorte +{n} min!",
 	["toast.coming_soon"] = "{item} chega em breve!",
 	["toast.deleted"] = "{n} pets excluídos",
+	["toast.deleted1"] = "1 pet excluído",
 	["toast.pet_locked"] = "Esse pet está bloqueado",
 	["toast.upgraded"] = "{name} melhorado!",
 	["toast.not_enough_taps"] = "Taps insuficientes ainda!",
@@ -4810,6 +4818,7 @@ return {
 	["toast.got_luck"] = "Суперудача +{n} мин!",
 	["toast.coming_soon"] = "{item} скоро появится!",
 	["toast.deleted"] = "Удалено питомцев: {n}",
+	["toast.deleted1"] = "Удалён питомец: 1",
 	["toast.pet_locked"] = "Этот питомец заблокирован",
 	["toast.upgraded"] = "Улучшено: {name}!",
 	["toast.not_enough_taps"] = "Пока не хватает Тапов!",
@@ -5241,6 +5250,7 @@ return {
 	["toast.got_luck"] = "โชคพิเศษ +{n} นาที!",
 	["toast.coming_soon"] = "{item} จะมาเร็วๆ นี้!",
 	["toast.deleted"] = "ลบสัตว์เลี้ยง {n} ตัวแล้ว",
+	["toast.deleted1"] = "ลบสัตว์เลี้ยง 1 ตัวแล้ว",
 	["toast.pet_locked"] = "สัตว์เลี้ยงตัวนั้นถูกล็อกอยู่",
 	["toast.upgraded"] = "อัปเกรด {name} แล้ว!",
 	["toast.not_enough_taps"] = "แตะยังไม่พอ!",
@@ -5672,6 +5682,7 @@ return {
 	["toast.got_luck"] = "Süper Şans +{n} dk!",
 	["toast.coming_soon"] = "{item} yakında geliyor!",
 	["toast.deleted"] = "{n} evcil hayvan silindi",
+	["toast.deleted1"] = "1 evcil hayvan silindi",
 	["toast.pet_locked"] = "Bu evcil hayvan kilitli",
 	["toast.upgraded"] = "{name} yükseltildi!",
 	["toast.not_enough_taps"] = "Henüz yeterli Tık yok!",
@@ -6103,6 +6114,7 @@ return {
 	["toast.got_luck"] = "Siêu May Mắn +{n} phút!",
 	["toast.coming_soon"] = "{item} sắp ra mắt!",
 	["toast.deleted"] = "Đã xóa {n} thú cưng",
+	["toast.deleted1"] = "Đã xóa 1 thú cưng",
 	["toast.pet_locked"] = "Thú cưng này đang khóa",
 	["toast.upgraded"] = "Đã nâng cấp {name}!",
 	["toast.not_enough_taps"] = "Chưa đủ Chạm!",
@@ -14550,7 +14562,7 @@ function EggPanel.init()
 			t.AutoLocalize = false
 		end
 	end
-	Theme.button({ Text = "X", Color = Theme.Red, Size = UDim2.fromOffset(54, 54), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Corner = 27, Parent = panel, OnClick = function()
+	Theme.button({ Text = "X", Color = Theme.Red, Size = UDim2.fromOffset(56, 56), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Corner = 27, Parent = panel, OnClick = function()
 		EggPanel.close()
 	end })
 
@@ -15447,6 +15459,9 @@ function Hud.init()
 			OnClick = onClick,
 			Parent = parent,
 		})
+		-- earlier buttons draw above later ones, so a badge poking out to the right is not
+		-- hidden by the neighbour (ZIndexBehavior.Sibling)
+		b.ZIndex = 20 - order
 		local label = b:FindFirstChild("Label") :: TextLabel
 		Theme.setIcon(label, icon)
 		label.Size = UDim2.new(1, -16, 0.58, 0)
@@ -15464,14 +15479,14 @@ function Hud.init()
 	---------------------------------------------------------------------------
 	-- Currencies + menu (left)
 	---------------------------------------------------------------------------
-	local COLS, CELL, GAP = if touch then 4 else 3, if touch then 70 else 80, if touch then 8 else 10
+	local COLS, CELL, GAP = if touch then 4 else 3, if touch then 62 else 80, if touch then 6 else 10
 	local rows = math.ceil(#MENU / COLS)
 	local menuW, menuH = COLS * CELL + (COLS - 1) * GAP, rows * CELL + (rows - 1) * GAP
-	local CUR_H = if touch then 104 else 142 -- currency block height
+	local CUR_H = if touch then 94 else 142 -- currency block height
 	local left = Theme.new("Frame", {
 		Name = "Left",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(math.max(menuW, 264), CUR_H + menuH),
+		Size = UDim2.fromOffset(math.max(menuW, if touch then 240 else 264), CUR_H + menuH),
 		Position = if touch then UDim2.fromOffset(14, 8) else UDim2.new(0, 14, 0.6, 0),
 		AnchorPoint = if touch then Vector2.zero else Vector2.new(0, 0.5),
 		Parent = gui,
@@ -15489,11 +15504,11 @@ function Hud.init()
 		Visible = not touch,
 		Parent = currencies,
 	})
-	local gemsPill, gemsLabel = pill(currencies, "💎", "gem", Theme.Teal, if touch then 170 else 214, if touch then 42 else 44)
-	local tapsPill, tapsLabel = pill(currencies, "👆", "coin", Theme.Blue, 250, 50)
+	local gemsPill, gemsLabel = pill(currencies, "💎", "gem", Theme.Teal, if touch then 170 else 214, if touch then 40 else 44)
+	local tapsPill, tapsLabel = pill(currencies, "👆", "coin", Theme.Blue, if touch then 220 else 250, if touch then 44 else 50)
 	if touch then
 		tapsPill.Position = UDim2.fromOffset(4, 0)
-		gemsPill.Position = UDim2.fromOffset(4, 58)
+		gemsPill.Position = UDim2.fromOffset(4, 52)
 	else
 		gemsPill.Position = UDim2.fromOffset(4, 30)
 		tapsPill.Position = UDim2.fromOffset(4, 84)
@@ -15537,7 +15552,8 @@ function Hud.init()
 	local rewardsB = iconButton(dock, "Rewards", "🎁", Theme.Pink, 1, function()
 		Windows.toggle("Rewards")
 	end)
-	rewardsB.Size = UDim2.fromOffset(84, 84)
+	rewardsB.ZIndex = 5 -- its badge overlaps the TAP button
+		rewardsB.Size = UDim2.fromOffset(84, 84)
 	rewardsB.Position = UDim2.fromOffset(0, 36)
 	local petsB = iconButton(dock, "Pets", "🐾", Theme.Orange, 3, function()
 		Windows.toggle("Pets")
@@ -15619,7 +15635,7 @@ function Hud.init()
 		Text = "",
 		AutoButtonColor = false,
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(380, 60),
+		Size = UDim2.fromOffset(if touch then 320 else 380, 60),
 		Position = UDim2.new(if touch then 0.53 else 0.5, 0, 0, 4),
 		AnchorPoint = Vector2.new(0.5, 0),
 		Parent = gui,
@@ -16118,6 +16134,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Palette = require(ReplicatedStorage.Shared.Palette)
 local Theme = require(script.Parent.Theme)
+local Root = require(script.Parent.Root)
 local Windows = require(script.Parent.Windows)
 local PetIcon = require(script.Parent.PetIcon)
 local Toasts = require(script.Parent.Toasts)
@@ -16138,11 +16155,11 @@ local function petsOnPage(page: number): { typeof(Config.Pets[1]) }
 end
 
 function IndexWindow.init()
-	local w = Windows.create("Index", "📖", "win.index", Theme.Blue, Vector2.new(820, 540))
+	local w = Windows.create("Index", "📖", "win.index", Theme.Blue, Vector2.new(820, 540), 450)
 	local body = w.body
 	local page = 1
 
-	local tabs = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 54), Parent = body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) })
+	local tabs = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 56), Parent = body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) })
 	local total = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 60), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, Parent = body })
 	local grid = Theme.new("Frame", { BackgroundColor3 = Theme.PaperDark, Size = UDim2.new(1, 0, 1, -158), Position = UDim2.fromOffset(0, 92), Parent = body }, {
 		Theme.corner(14),
@@ -16174,7 +16191,7 @@ function IndexWindow.init()
 		tabButtons[i] = Theme.button({
 			Key = key,
 			Color = Theme.Grey,
-			Size = UDim2.fromOffset(124, 50),
+			Size = UDim2.fromOffset(if Root.isTouch then 116 else 124, 56),
 			LayoutOrder = i,
 			TextSize = 18,
 			Parent = tabs,
@@ -16464,16 +16481,16 @@ function PetsWindow.init()
 		Name = "MoreSlots",
 		Text = "+",
 		Color = Theme.Green,
-		Size = UDim2.fromOffset(44, 44),
-		Position = UDim2.new(1, -394, 0, 5),
-		Corner = 22,
+		Size = UDim2.fromOffset(56, 56),
+		Position = UDim2.new(1, -398, 0, -1),
+		Corner = 28,
 		TextSize = 30,
 		Parent = top,
 		OnClick = function()
 			Windows.open("Upgrades")
 		end,
 	})
-	local countLabel = Theme.text({ Text = "", Size = UDim2.new(1, -404, 1, -8), Position = UDim2.fromOffset(0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = top })
+	local countLabel = Theme.text({ Text = "", Size = UDim2.new(1, -410, 1, -8), Position = UDim2.fromOffset(0, 4), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 26, Parent = top })
 	local deleteMode = false
 	local selected: { [string]: boolean } = {}
 	local selectedUid: string? = nil
@@ -16483,8 +16500,8 @@ function PetsWindow.init()
 	Theme.button({
 		Key = "pets.equip_best",
 		Color = Theme.Green,
-		Size = UDim2.fromOffset(160, 54),
-		Position = UDim2.new(1, -340, 0, 0),
+		Size = UDim2.fromOffset(160, 56),
+		Position = UDim2.new(1, -340, 0, -1),
 		TextSize = 26,
 		Parent = top,
 		OnClick = function()
@@ -16495,9 +16512,9 @@ function PetsWindow.init()
 	deleteButton = Theme.button({
 		Key = "pets.delete_mode",
 		Color = Theme.Red,
-		Size = UDim2.fromOffset(170, 54),
+		Size = UDim2.fromOffset(170, 56),
 		TextSize = 26,
-		Position = UDim2.new(1, -170, 0, 0),
+		Position = UDim2.new(1, -170, 0, -1),
 		Parent = top,
 		OnClick = function()
 			if deleteMode then
@@ -16507,7 +16524,7 @@ function PetsWindow.init()
 				end
 				if #uids > 0 then
 					local ok, res = Net.request("Delete", { uids = uids })
-					Toasts.show(if ok then Lang.t("toast.deleted", { n = res }) else Lang.msg(res), if ok then "success" else "error")
+					Toasts.show(if ok then (if res == 1 then Lang.t("toast.deleted1") else Lang.t("toast.deleted", { n = res })) else Lang.msg(res), if ok then "success" else "error")
 				end
 				deleteMode = false
 				table.clear(selected)
@@ -17135,6 +17152,7 @@ local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Palette = require(ReplicatedStorage.Shared.Palette)
 local Theme = require(script.Parent.Theme)
+local Root = require(script.Parent.Root)
 local Windows = require(script.Parent.Windows)
 local Toasts = require(script.Parent.Toasts)
 local Net = require(script.Parent.Parent.Net)
@@ -17161,7 +17179,7 @@ local UPGRADE_ICONS = { TapPower = "👆", Luck = "🍀", PetSlots = "🐾", Wal
 local UPGRADE_ICON_NAMES = { TapPower = "fist", Luck = "luck", PetSlots = "paw", WalkSpeed = "rocket", AutoTap = "auto" }
 
 local function upgrades()
-	local w = Windows.create("Upgrades", "⬆️", "win.upgrades", Theme.Teal, Vector2.new(640, 500))
+	local w = Windows.create("Upgrades", "⬆️", "win.upgrades", Theme.Teal, Vector2.new(640, 500), 412)
 	local list = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = w.body }, { Theme.list(Enum.FillDirection.Vertical, 8) })
 	type Row = { level: TextLabel, buy: TextButton, bar: Frame }
 	local rows: { [string]: Row } = {}
@@ -17218,27 +17236,28 @@ end
 local function rebirth()
 	local w = Windows.create("Rebirth", "🔁", "win.rebirth", Theme.Purple, Vector2.new(600, 440))
 	local body = w.body
+	local touch = Root.isTouch -- phone window body is only ~270 px tall: tighter rows
 	local info = Theme.text({ Text = "", RichText = true, Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 0), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 28, Parent = body })
 	-- two cards: what a rebirth takes (red) and what it gives (green)
 	local function column(x: number, titleKey: string, color: Color3): TextLabel
-		local card = Theme.panel({ Size = UDim2.new(0.5, -16, 0, 116), Position = UDim2.new(x, if x == 0 then 10 else 6, 0, 36), BackgroundColor3 = Theme.lighten(color, 0.82), Parent = body })
+		local card = Theme.panel({ Size = UDim2.new(0.5, -16, 0, if touch then 88 else 116), Position = UDim2.new(x, if x == 0 then 10 else 6, 0, 34), BackgroundColor3 = Theme.lighten(color, 0.82), Parent = body })
 		Theme.text({ Key = titleKey, Size = UDim2.new(1, -12, 0, 28), Position = UDim2.fromOffset(6, 4), TextColor3 = Theme.darken(color, 0.15), Stroke = false, MaxTextSize = 24, Parent = card })
 		return Theme.text({ Text = "", RichText = true, TextWrapped = true, Size = UDim2.new(1, -16, 1, -38), Position = UDim2.fromOffset(8, 34), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 21, Parent = card })
 	end
 	local loseText = column(0, "rebirth.lose", Theme.Red)
 	local getText = column(0.5, "rebirth.get", Theme.Green)
-	local barBg = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 162), BackgroundColor3 = Theme.PaperDark, Parent = body }, { Theme.corner(17), Theme.stroke(3) })
+	local barBg = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, if touch then 130 else 162), BackgroundColor3 = Theme.PaperDark, Parent = body }, { Theme.corner(17), Theme.stroke(3) })
 	local bar = Theme.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = barBg }, { Theme.corner(18), Theme.gradient(Theme.lighten(Theme.Purple, 0.3), Theme.Purple) })
 	local barText = Theme.text({ Text = "", Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, 0.1), MaxTextSize = 22, Parent = barBg })
 	barText.AutoLocalize = false
-	Theme.text({ Key = "rebirth.note", TextWrapped = true, Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 202), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 19, Parent = body })
+	Theme.text({ Key = "rebirth.note", TextWrapped = true, Size = UDim2.new(1, -20, 0, if touch then 40 else 44), Position = UDim2.fromOffset(10, if touch then 168 else 202), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 19, Parent = body })
 	local confirm = false
 	local button: TextButton
 	button = Theme.button({
 		Key = "rebirth.button",
 		Color = Theme.Purple,
-		Size = UDim2.fromOffset(300, 70),
-		Position = UDim2.new(0.5, 0, 1, -10),
+		Size = UDim2.fromOffset(300, if touch then 56 else 70),
+		Position = UDim2.new(0.5, 0, 1, if touch then -2 else -10),
 		AnchorPoint = Vector2.new(0.5, 1),
 		TextSize = 36,
 		Parent = body,
@@ -17293,7 +17312,7 @@ local function rebirth()
 end
 
 local function teleport()
-	local w = Windows.create("Teleport", "🌀", "win.teleport", Theme.Yellow, Vector2.new(560, 500))
+	local w = Windows.create("Teleport", "🌀", "win.teleport", Theme.Yellow, Vector2.new(560, 500), 410)
 	local list = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = w.body }, { Theme.list(Enum.FillDirection.Vertical, 8) })
 	local buttons: { TextButton } = {}
 	local parkButton = Theme.button({
@@ -17362,7 +17381,7 @@ local function teleport()
 end
 
 local function codes()
-	local w = Windows.create("Codes", "🎟️", "win.codes", Theme.Red, Vector2.new(580, 500))
+	local w = Windows.create("Codes", "🎟️", "win.codes", Theme.Red, Vector2.new(580, 500), 360)
 	local body = w.body
 	local box = Theme.new("TextBox", {
 		Size = UDim2.new(1, -200, 0, 60),
@@ -17470,7 +17489,7 @@ local QuestsWindow = {}
 local ICONS = { hatch = "🥚", taps = "👆", craft = "⭐", gems = "💎", playMinutes = "⏱️", rarity = "🟣" }
 
 function QuestsWindow.init()
-	local w = Windows.create("Quests", "📜", "win.quests", Theme.Orange, Vector2.new(640, 500))
+	local w = Windows.create("Quests", "📜", "win.quests", Theme.Orange, Vector2.new(640, 500), 400)
 	local body = w.body
 	local resets = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 26), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 22, Parent = body })
 	local list = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -34), Position = UDim2.fromOffset(0, 34), Parent = body }, { Theme.list(Enum.FillDirection.Vertical, 10) })
@@ -17603,7 +17622,7 @@ local ICONS = { taps = "👆", gems = "💎", luck = "🍀", egg = "🔮" }
 local ICON_NAMES = { taps = "coin", gems = "gem", luck = "luck", egg = "egg" }
 
 function RewardsWindow.init()
-	local w = Windows.create("Rewards", "🎁", "win.rewards", Theme.Pink, Vector2.new(820, 520))
+	local w = Windows.create("Rewards", "🎁", "win.rewards", Theme.Pink, Vector2.new(820, 520), 450)
 	local body = w.body
 
 	-- Daily
@@ -17782,6 +17801,11 @@ local function compute(): number
 			return 1
 		end
 		size = cam.ViewportSize
+	end
+	if Root.isTouch then
+		-- Phones: never below 0.8 (44 px buttons, 11 px text stay real); the touch layout in
+		-- Hud/Windows is compact enough to fit at that scale. Tablets top out at 1.
+		return math.clamp(math.min(size.X / 940, size.Y / 390), 0.8, 1)
 	end
 	return math.clamp(math.min(size.X / 1100, size.Y / 560), 0.5, 1.1)
 end
@@ -18716,12 +18740,18 @@ local function setDim(on: boolean)
 end
 
 -- Creates window chrome and returns it; the caller fills `body`. titleKey is a translation key.
-function Windows.create(name: string, icon: string, titleKey: string, color: Color3, size: Vector2?): Window
+-- canvasH: on touch the body becomes a vertical ScrollingFrame with this canvas height (design
+-- px), because phone windows are only ~270 px of body tall; ignored on PC.
+function Windows.create(name: string, icon: string, titleKey: string, color: Color3, size: Vector2?, canvasH: number?): Window
 	local sz = size or Vector2.new(720, 470)
+	if Root.isTouch then
+		-- Phones are ~330 px tall once the topbar is out: compact window (scaled 0.8 by Root).
+		sz = Vector2.new(math.min(sz.X, 780), math.min(sz.Y, 350))
+	end
 	local frame = Theme.panel({
 		Name = name .. "Window",
 		Size = UDim2.fromOffset(sz.X, sz.Y),
-		Position = UDim2.fromScale(0.5, 0.52),
+		Position = UDim2.fromScale(0.5, if Root.isTouch then 0.5 else 0.52),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Visible = false,
 		ZIndex = 20,
@@ -18801,14 +18831,31 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 			d.ZIndex = 31
 		end
 	end
-	local body = Theme.new("Frame", {
-		Name = "Body",
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, -28, 1, -76),
-		Position = UDim2.new(0, 14, 0, 64),
-		ZIndex = 21,
-		Parent = frame,
-	}) :: Frame
+	local body: Frame
+	if Root.isTouch and canvasH then
+		body = Theme.new("ScrollingFrame", {
+			Name = "Body",
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Size = UDim2.new(1, -20, 1, -72),
+			Position = UDim2.new(0, 10, 0, 64),
+			CanvasSize = UDim2.new(0, 0, 0, canvasH),
+			ScrollBarThickness = 6,
+			ScrollBarImageColor3 = Theme.Ink,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ZIndex = 21,
+			Parent = frame,
+		}) :: any
+	else
+		body = Theme.new("Frame", {
+			Name = "Body",
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -28, 1, -76),
+			Position = UDim2.new(0, 14, 0, 64),
+			ZIndex = 21,
+			Parent = frame,
+		}) :: Frame
+	end
 	local w: Window = { name = name, frame = frame, body = body }
 	windows[name] = w
 	return w

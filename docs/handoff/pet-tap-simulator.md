@@ -249,3 +249,32 @@ Sección 4.3 de `docs/research/top-juegos-y-precios.md`. Los IDs siguen en 0 (lo
 - Con la biblioteca vacía el mundo debe ser idéntico. Con un modelo: que apoye en el piso, tamaño/orientación (frente a -Z; molino e iglú giran según `facing`) y que no bloquee el camino.
 - Con modelos puestos el RNG del escenario cambia (el fallback consume `rng` y el modelo no), así que las posiciones de las props siguientes se corren. No afecta el juego.
 - Correr el playtest (`test.project.json`): los budgets (partes, shadow casters, touchable) cuentan los modelos.
+
+## Ronda 4: UI arreglada con la vista previa
+
+Todo verificado con `tools/uipreview` (PNG/txt regenerados en `docs/previews/pet-tap-simulator/`). Rojo build, luau-lsp y los tests puros quedan en verde.
+
+### Qué se arregló
+- **Escala en celular** (`src/client/UI/Root.luau:57`): en táctil la escala ahora es `clamp(min(X/940, Y/390), 0.8, 1)` en vez de 0.55 (PC igual que antes). Antes: botones de 31-39 px y textos de 8 px. Ahora: todos los botones del HUD >= 44 px reales.
+- **HUD táctil compacto** (`UI/Hud.luau:129-132,151-159,283`): menú de 4 columnas con celdas de 62 (antes 70), bloque de monedas de 94 de alto, objetivo de 320 de ancho. Con escala 0.8 el bloque izquierdo termina arriba del joystick, el objetivo entra entre las dos columnas y el dock queda entre joystick y salto.
+- **Badges "!" tapados** (`Hud.luau:111`, `:202`): `ZIndex = 20 - orden` en los botones del menú (el vecino de la derecha ya no los pisa) y `ZIndex = 5` en Rewards del dock (su badge quedaba debajo del botón TAP).
+- **Ventanas en celular** (`UI/Windows.luau:62-70,154-180`): alto máximo 350 y, si la ventana pasa un `canvasH`, el cuerpo es un `ScrollingFrame` en táctil (Upgrades, Teleport, Codes, Quests, Rewards, Index; llamadas en `ProgressWindows.luau`, `QuestsWindow.luau`, `RewardsWindow.luau`, `IndexWindow.luau`). Antes todas se salían de la pantalla (hasta 520 x 0.55 más el escalado). En PC no cambia nada.
+- **Botones chicos**: Pets (Equip Best / Delete / "+") pasan a 56 de alto en `PetsWindow.luau:32-70`, pestañas del Index a 56 (`IndexWindow.luau:64`), X del panel de huevos a 56 (`EggPanel.luau:122`).
+- **Rebirth en celular** (`ProgressWindows.luau:92-110`): filas más compactas para que el botón no pise la nota.
+- **Plural**: "Deleted 1 pets" -> clave nueva `toast.deleted1` en los 12 idiomas (`shared/Locales/*.luau`), usada en `PetsWindow.luau:83`. El resto de textos con `{n}` ya tenían singular o no hay caso n=1 (`reward.egg1`, quests craft/rarity ya están en singular).
+
+### Antes / después
+- Celular mid: 8 hallazgos (2 high) -> 0. Todas las ventanas en PC: 0 hallazgos (antes badge tapado en cada captura).
+- Celular con ventana abierta: quedan solo avisos `core-overlap` de bajo valor (contenido de una ventana modal sobre la zona del joystick/salto). La ventana es modal y tapa el joystick, así que no afecta el juego.
+- Laptop (1366x768) y tablet (1180x820): 0 hallazgos, se ven limpios (no se dejaron PNG extra).
+
+### Lo que queda
+- Columna derecha en celular: si aparecen a la vez evento, chips de boost, Starter Pack y botón de anuncio, la columna crece hacia el botón de salto (caso raro; en el estado normal termina en y~250 de 390).
+- Probabilidades del huevo con 4 decimales (57.6923%): se leen bien, no las toqué (vienen de `Formulas.displayOdds`).
+- Nombres en japonés/coreano/tailandés como cajitas: falta de fuente CJK de la herramienta, no del juego.
+- "Lv 6/3" en Pet Slots (Upgrades) sale del perfil de prueba del fixture (nivel por encima del máximo), no es bug de UI.
+
+### Para confirmar en Studio
+- Con `ForceTouchLayout` (o el emulador de celular): que el bloque izquierdo no toque el joystick y que el dock quede entre joystick y salto en un iPhone real (el área útil cambia con el notch).
+- Que el scroll de las ventanas en táctil se sienta bien (Upgrades, Teleport, Codes, Quests, Rewards, Index) y que el ZIndex de los badges no rompa las animaciones de "pop" al desbloquear botones.
+- Que los textos del menú (Upgrades, Teleport) se lean a 0.8 con la fuente real.

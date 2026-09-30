@@ -8,6 +8,7 @@ local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Palette = require(ReplicatedStorage.Shared.Palette)
 local Theme = require(script.Parent.Theme)
+local Root = require(script.Parent.Root)
 local Windows = require(script.Parent.Windows)
 local Toasts = require(script.Parent.Toasts)
 local Net = require(script.Parent.Parent.Net)
@@ -34,7 +35,7 @@ local UPGRADE_ICONS = { TapPower = "👆", Luck = "🍀", PetSlots = "🐾", Wal
 local UPGRADE_ICON_NAMES = { TapPower = "fist", Luck = "luck", PetSlots = "paw", WalkSpeed = "rocket", AutoTap = "auto" }
 
 local function upgrades()
-	local w = Windows.create("Upgrades", "⬆️", "win.upgrades", Theme.Teal, Vector2.new(640, 500))
+	local w = Windows.create("Upgrades", "⬆️", "win.upgrades", Theme.Teal, Vector2.new(640, 500), 412)
 	local list = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = w.body }, { Theme.list(Enum.FillDirection.Vertical, 8) })
 	type Row = { level: TextLabel, buy: TextButton, bar: Frame }
 	local rows: { [string]: Row } = {}
@@ -91,27 +92,28 @@ end
 local function rebirth()
 	local w = Windows.create("Rebirth", "🔁", "win.rebirth", Theme.Purple, Vector2.new(600, 440))
 	local body = w.body
+	local touch = Root.isTouch -- phone window body is only ~270 px tall: tighter rows
 	local info = Theme.text({ Text = "", RichText = true, Size = UDim2.new(1, -20, 0, 30), Position = UDim2.fromOffset(10, 0), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 28, Parent = body })
 	-- two cards: what a rebirth takes (red) and what it gives (green)
 	local function column(x: number, titleKey: string, color: Color3): TextLabel
-		local card = Theme.panel({ Size = UDim2.new(0.5, -16, 0, 116), Position = UDim2.new(x, if x == 0 then 10 else 6, 0, 36), BackgroundColor3 = Theme.lighten(color, 0.82), Parent = body })
+		local card = Theme.panel({ Size = UDim2.new(0.5, -16, 0, if touch then 88 else 116), Position = UDim2.new(x, if x == 0 then 10 else 6, 0, 34), BackgroundColor3 = Theme.lighten(color, 0.82), Parent = body })
 		Theme.text({ Key = titleKey, Size = UDim2.new(1, -12, 0, 28), Position = UDim2.fromOffset(6, 4), TextColor3 = Theme.darken(color, 0.15), Stroke = false, MaxTextSize = 24, Parent = card })
 		return Theme.text({ Text = "", RichText = true, TextWrapped = true, Size = UDim2.new(1, -16, 1, -38), Position = UDim2.fromOffset(8, 34), TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 21, Parent = card })
 	end
 	local loseText = column(0, "rebirth.lose", Theme.Red)
 	local getText = column(0.5, "rebirth.get", Theme.Green)
-	local barBg = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, 162), BackgroundColor3 = Theme.PaperDark, Parent = body }, { Theme.corner(17), Theme.stroke(3) })
+	local barBg = Theme.new("Frame", { Size = UDim2.new(1, -40, 0, 34), Position = UDim2.fromOffset(20, if touch then 130 else 162), BackgroundColor3 = Theme.PaperDark, Parent = body }, { Theme.corner(17), Theme.stroke(3) })
 	local bar = Theme.new("Frame", { Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = barBg }, { Theme.corner(18), Theme.gradient(Theme.lighten(Theme.Purple, 0.3), Theme.Purple) })
 	local barText = Theme.text({ Text = "", Size = UDim2.fromScale(1, 0.8), Position = UDim2.fromScale(0, 0.1), MaxTextSize = 22, Parent = barBg })
 	barText.AutoLocalize = false
-	Theme.text({ Key = "rebirth.note", TextWrapped = true, Size = UDim2.new(1, -20, 0, 44), Position = UDim2.fromOffset(10, 202), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 19, Parent = body })
+	Theme.text({ Key = "rebirth.note", TextWrapped = true, Size = UDim2.new(1, -20, 0, if touch then 40 else 44), Position = UDim2.fromOffset(10, if touch then 168 else 202), TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 19, Parent = body })
 	local confirm = false
 	local button: TextButton
 	button = Theme.button({
 		Key = "rebirth.button",
 		Color = Theme.Purple,
-		Size = UDim2.fromOffset(300, 70),
-		Position = UDim2.new(0.5, 0, 1, -10),
+		Size = UDim2.fromOffset(300, if touch then 56 else 70),
+		Position = UDim2.new(0.5, 0, 1, if touch then -2 else -10),
 		AnchorPoint = Vector2.new(0.5, 1),
 		TextSize = 36,
 		Parent = body,
@@ -166,7 +168,7 @@ local function rebirth()
 end
 
 local function teleport()
-	local w = Windows.create("Teleport", "🌀", "win.teleport", Theme.Yellow, Vector2.new(560, 500))
+	local w = Windows.create("Teleport", "🌀", "win.teleport", Theme.Yellow, Vector2.new(560, 500), 410)
 	local list = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.fromScale(1, 1), Parent = w.body }, { Theme.list(Enum.FillDirection.Vertical, 8) })
 	local buttons: { TextButton } = {}
 	local parkButton = Theme.button({
@@ -235,7 +237,7 @@ local function teleport()
 end
 
 local function codes()
-	local w = Windows.create("Codes", "🎟️", "win.codes", Theme.Red, Vector2.new(580, 500))
+	local w = Windows.create("Codes", "🎟️", "win.codes", Theme.Red, Vector2.new(580, 500), 360)
 	local body = w.body
 	local box = Theme.new("TextBox", {
 		Size = UDim2.new(1, -200, 0, 60),

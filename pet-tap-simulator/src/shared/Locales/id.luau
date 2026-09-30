@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "Keberuntungan Super +{n} menit!",
 	["toast.coming_soon"] = "{item} segera hadir!",
 	["toast.deleted"] = "{n} hewan dihapus",
+	["toast.deleted1"] = "1 hewan dihapus",
 	["toast.pet_locked"] = "Hewan itu terkunci",
 	["toast.upgraded"] = "{name} ditingkatkan!",
 	["toast.not_enough_taps"] = "Tap belum cukup!",

@@ -15,7 +15,7 @@ local QuestsWindow = {}
 local ICONS = { hatch = "🥚", taps = "👆", craft = "⭐", gems = "💎", playMinutes = "⏱️", rarity = "🟣" }
 
 function QuestsWindow.init()
-	local w = Windows.create("Quests", "📜", "win.quests", Theme.Orange, Vector2.new(640, 500))
+	local w = Windows.create("Quests", "📜", "win.quests", Theme.Orange, Vector2.new(640, 500), 400)
 	local body = w.body
 	local resets = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 26), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Grey, Stroke = false, MaxTextSize = 22, Parent = body })
 	local list = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -34), Position = UDim2.fromOffset(0, 34), Parent = body }, { Theme.list(Enum.FillDirection.Vertical, 10) })

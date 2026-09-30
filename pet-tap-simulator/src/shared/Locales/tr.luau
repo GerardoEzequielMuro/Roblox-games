@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "Süper Şans +{n} dk!",
 	["toast.coming_soon"] = "{item} yakında geliyor!",
 	["toast.deleted"] = "{n} evcil hayvan silindi",
+	["toast.deleted1"] = "1 evcil hayvan silindi",
 	["toast.pet_locked"] = "Bu evcil hayvan kilitli",
 	["toast.upgraded"] = "{name} yükseltildi!",
 	["toast.not_enough_taps"] = "Henüz yeterli Tık yok!",

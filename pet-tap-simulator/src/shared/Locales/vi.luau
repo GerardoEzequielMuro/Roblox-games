@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "Siêu May Mắn +{n} phút!",
 	["toast.coming_soon"] = "{item} sắp ra mắt!",
 	["toast.deleted"] = "Đã xóa {n} thú cưng",
+	["toast.deleted1"] = "Đã xóa 1 thú cưng",
 	["toast.pet_locked"] = "Thú cưng này đang khóa",
 	["toast.upgraded"] = "Đã nâng cấp {name}!",
 	["toast.not_enough_taps"] = "Chưa đủ Chạm!",

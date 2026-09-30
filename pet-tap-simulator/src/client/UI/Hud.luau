@@ -106,6 +106,9 @@ function Hud.init()
 			OnClick = onClick,
 			Parent = parent,
 		})
+		-- earlier buttons draw above later ones, so a badge poking out to the right is not
+		-- hidden by the neighbour (ZIndexBehavior.Sibling)
+		b.ZIndex = 20 - order
 		local label = b:FindFirstChild("Label") :: TextLabel
 		Theme.setIcon(label, icon)
 		label.Size = UDim2.new(1, -16, 0.58, 0)
@@ -123,14 +126,14 @@ function Hud.init()
 	---------------------------------------------------------------------------
 	-- Currencies + menu (left)
 	---------------------------------------------------------------------------
-	local COLS, CELL, GAP = if touch then 4 else 3, if touch then 70 else 80, if touch then 8 else 10
+	local COLS, CELL, GAP = if touch then 4 else 3, if touch then 62 else 80, if touch then 6 else 10
 	local rows = math.ceil(#MENU / COLS)
 	local menuW, menuH = COLS * CELL + (COLS - 1) * GAP, rows * CELL + (rows - 1) * GAP
-	local CUR_H = if touch then 104 else 142 -- currency block height
+	local CUR_H = if touch then 94 else 142 -- currency block height
 	local left = Theme.new("Frame", {
 		Name = "Left",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(math.max(menuW, 264), CUR_H + menuH),
+		Size = UDim2.fromOffset(math.max(menuW, if touch then 240 else 264), CUR_H + menuH),
 		Position = if touch then UDim2.fromOffset(14, 8) else UDim2.new(0, 14, 0.6, 0),
 		AnchorPoint = if touch then Vector2.zero else Vector2.new(0, 0.5),
 		Parent = gui,
@@ -148,11 +151,11 @@ function Hud.init()
 		Visible = not touch,
 		Parent = currencies,
 	})
-	local gemsPill, gemsLabel = pill(currencies, "💎", "gem", Theme.Teal, if touch then 170 else 214, if touch then 42 else 44)
-	local tapsPill, tapsLabel = pill(currencies, "👆", "coin", Theme.Blue, 250, 50)
+	local gemsPill, gemsLabel = pill(currencies, "💎", "gem", Theme.Teal, if touch then 170 else 214, if touch then 40 else 44)
+	local tapsPill, tapsLabel = pill(currencies, "👆", "coin", Theme.Blue, if touch then 220 else 250, if touch then 44 else 50)
 	if touch then
 		tapsPill.Position = UDim2.fromOffset(4, 0)
-		gemsPill.Position = UDim2.fromOffset(4, 58)
+		gemsPill.Position = UDim2.fromOffset(4, 52)
 	else
 		gemsPill.Position = UDim2.fromOffset(4, 30)
 		tapsPill.Position = UDim2.fromOffset(4, 84)
@@ -196,7 +199,8 @@ function Hud.init()
 	local rewardsB = iconButton(dock, "Rewards", "🎁", Theme.Pink, 1, function()
 		Windows.toggle("Rewards")
 	end)
-	rewardsB.Size = UDim2.fromOffset(84, 84)
+	rewardsB.ZIndex = 5 -- its badge overlaps the TAP button
+		rewardsB.Size = UDim2.fromOffset(84, 84)
 	rewardsB.Position = UDim2.fromOffset(0, 36)
 	local petsB = iconButton(dock, "Pets", "🐾", Theme.Orange, 3, function()
 		Windows.toggle("Pets")
@@ -278,7 +282,7 @@ function Hud.init()
 		Text = "",
 		AutoButtonColor = false,
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(380, 60),
+		Size = UDim2.fromOffset(if touch then 320 else 380, 60),
 		Position = UDim2.new(if touch then 0.53 else 0.5, 0, 0, 4),
 		AnchorPoint = Vector2.new(0.5, 0),
 		Parent = gui,

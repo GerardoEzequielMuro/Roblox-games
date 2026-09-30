@@ -17,7 +17,7 @@ local ICONS = { taps = "👆", gems = "💎", luck = "🍀", egg = "🔮" }
 local ICON_NAMES = { taps = "coin", gems = "gem", luck = "luck", egg = "egg" }
 
 function RewardsWindow.init()
-	local w = Windows.create("Rewards", "🎁", "win.rewards", Theme.Pink, Vector2.new(820, 520))
+	local w = Windows.create("Rewards", "🎁", "win.rewards", Theme.Pink, Vector2.new(820, 520), 450)
 	local body = w.body
 
 	-- Daily

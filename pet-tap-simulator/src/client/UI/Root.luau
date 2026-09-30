@@ -54,6 +54,11 @@ local function compute(): number
 		end
 		size = cam.ViewportSize
 	end
+	if Root.isTouch then
+		-- Phones: never below 0.8 (44 px buttons, 11 px text stay real); the touch layout in
+		-- Hud/Windows is compact enough to fit at that scale. Tablets top out at 1.
+		return math.clamp(math.min(size.X / 940, size.Y / 390), 0.8, 1)
+	end
 	return math.clamp(math.min(size.X / 1100, size.Y / 560), 0.5, 1.1)
 end
 

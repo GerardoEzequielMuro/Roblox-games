@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "Super Luck +{n} min!",
 	["toast.coming_soon"] = "{item} is coming soon!",
 	["toast.deleted"] = "Deleted {n} pets",
+	["toast.deleted1"] = "Deleted 1 pet",
 	["toast.pet_locked"] = "That pet is locked",
 	["toast.upgraded"] = "Upgraded {name}!",
 	["toast.not_enough_taps"] = "Not enough Taps yet!",

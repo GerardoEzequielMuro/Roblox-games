@@ -59,12 +59,18 @@ local function setDim(on: boolean)
 end
 
 -- Creates window chrome and returns it; the caller fills `body`. titleKey is a translation key.
-function Windows.create(name: string, icon: string, titleKey: string, color: Color3, size: Vector2?): Window
+-- canvasH: on touch the body becomes a vertical ScrollingFrame with this canvas height (design
+-- px), because phone windows are only ~270 px of body tall; ignored on PC.
+function Windows.create(name: string, icon: string, titleKey: string, color: Color3, size: Vector2?, canvasH: number?): Window
 	local sz = size or Vector2.new(720, 470)
+	if Root.isTouch then
+		-- Phones are ~330 px tall once the topbar is out: compact window (scaled 0.8 by Root).
+		sz = Vector2.new(math.min(sz.X, 780), math.min(sz.Y, 350))
+	end
 	local frame = Theme.panel({
 		Name = name .. "Window",
 		Size = UDim2.fromOffset(sz.X, sz.Y),
-		Position = UDim2.fromScale(0.5, 0.52),
+		Position = UDim2.fromScale(0.5, if Root.isTouch then 0.5 else 0.52),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		Visible = false,
 		ZIndex = 20,
@@ -144,14 +150,31 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 			d.ZIndex = 31
 		end
 	end
-	local body = Theme.new("Frame", {
-		Name = "Body",
-		BackgroundTransparency = 1,
-		Size = UDim2.new(1, -28, 1, -76),
-		Position = UDim2.new(0, 14, 0, 64),
-		ZIndex = 21,
-		Parent = frame,
-	}) :: Frame
+	local body: Frame
+	if Root.isTouch and canvasH then
+		body = Theme.new("ScrollingFrame", {
+			Name = "Body",
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Size = UDim2.new(1, -20, 1, -72),
+			Position = UDim2.new(0, 10, 0, 64),
+			CanvasSize = UDim2.new(0, 0, 0, canvasH),
+			ScrollBarThickness = 6,
+			ScrollBarImageColor3 = Theme.Ink,
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			ZIndex = 21,
+			Parent = frame,
+		}) :: any
+	else
+		body = Theme.new("Frame", {
+			Name = "Body",
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, -28, 1, -76),
+			Position = UDim2.new(0, 14, 0, 64),
+			ZIndex = 21,
+			Parent = frame,
+		}) :: Frame
+	end
 	local w: Window = { name = name, frame = frame, body = body }
 	windows[name] = w
 	return w

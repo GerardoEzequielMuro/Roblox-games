@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "Суперудача +{n} мин!",
 	["toast.coming_soon"] = "{item} скоро появится!",
 	["toast.deleted"] = "Удалено питомцев: {n}",
+	["toast.deleted1"] = "Удалён питомец: 1",
 	["toast.pet_locked"] = "Этот питомец заблокирован",
 	["toast.upgraded"] = "Улучшено: {name}!",
 	["toast.not_enough_taps"] = "Пока не хватает Тапов!",

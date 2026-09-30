@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "슈퍼 행운 +{n}분!",
 	["toast.coming_soon"] = "{item} 곧 출시!",
 	["toast.deleted"] = "펫 {n}마리 삭제됨",
+	["toast.deleted1"] = "펫 1마리 삭제됨",
 	["toast.pet_locked"] = "그 펫은 잠겨 있어요",
 	["toast.upgraded"] = "{name} 업그레이드!",
 	["toast.not_enough_taps"] = "탭이 아직 부족해요!",

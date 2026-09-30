@@ -22,6 +22,7 @@ return {
 	["toast.got_luck"] = "โชคพิเศษ +{n} นาที!",
 	["toast.coming_soon"] = "{item} จะมาเร็วๆ นี้!",
 	["toast.deleted"] = "ลบสัตว์เลี้ยง {n} ตัวแล้ว",
+	["toast.deleted1"] = "ลบสัตว์เลี้ยง 1 ตัวแล้ว",
 	["toast.pet_locked"] = "สัตว์เลี้ยงตัวนั้นถูกล็อกอยู่",
 	["toast.upgraded"] = "อัปเกรด {name} แล้ว!",
 	["toast.not_enough_taps"] = "แตะยังไม่พอ!",

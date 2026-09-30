@@ -2,24 +2,6 @@
 # image: mid-phone-egg.png  (coordinates below are in the full 844x390 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
-## Layout findings (6)
-[high] small-touch: TapPetsUI.EggPanelHolder.EggPanel.Button rect=[589, 58, 619, 88]
-    touch target 30x30px (< 44px on a touch screen)
-    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/EggPanel.luau:122
-[med] small-touch: TapPetsUI.EggPanelHolder.EggPanel.Frame.Button rect=[243, 183, 328, 215]
-    touch target 84x32px (< 44px on a touch screen)
-    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/EggPanel.luau:92
-[med] small-touch: TapPetsUI.EggPanelHolder.EggPanel.Frame.Button rect=[334, 183, 419, 215]
-    touch target 84x32px (< 44px on a touch screen)
-    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/EggPanel.luau:95
-[med] small-touch: TapPetsUI.EggPanelHolder.EggPanel.Frame.Button rect=[425, 183, 510, 215]
-    touch target 84x32px (< 44px on a touch screen)
-    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/EggPanel.luau:98
-[med] small-touch: TapPetsUI.EggPanelHolder.EggPanel.Frame.Button rect=[516, 183, 601, 215]
-    touch target 84x32px (< 44px on a touch screen)
-    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/EggPanel.luau:112
-[med] tiny-text: TapPetsUI.EggPanelHolder.EggPanel.Frame.Frame.Frame.TextLabel rect=[278, 160, 326, 172] (x5 similar)
-    TextScaled resolves to 8px (< 9px, unreadable)
-    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/EggPanel.luau:204
+## Layout findings (0)
 
 ## Runtime log (0)
