@@ -59,6 +59,9 @@ end
 window("form blazing", first("form:blazing"), 4 * MIN, 14 * MIN, MIN, "min")
 window("form tempest", first("form:tempest"), 15 * MIN, 40 * MIN, MIN, "min")
 window("form eclipse", first("form:eclipse"), 35 * MIN, 70 * MIN, MIN, "min")
+-- Round 6: two forms fill the stretch between Eclipse and the Frostreach arrival
+window("form corona", first("form:corona"), 50 * MIN, 66 * MIN, MIN, "min")
+window("form solstice", first("form:solstice"), 60 * MIN, 74 * MIN, MIN, "min")
 window("planet 2", first("planet:" .. Config.Planets[2].id), 4 * MIN, 12 * MIN, MIN, "min")
 window("planet 3", first("planet:" .. Config.Planets[3].id), 8 * MIN, 22 * MIN, MIN, "min")
 window("planet 4", first("planet:" .. Config.Planets[4].id), 25 * MIN, 50 * MIN, MIN, "min")
@@ -86,6 +89,15 @@ for seed, st in runs do
 end
 check("median seed: never more than 10 min without something new", (Core.median(gaps) :: number) <= 10 * MIN, (Core.median(gaps) :: number) / MIN)
 
+-- the same for the first two hours of play (Round 6: there used to be a 20 min hole around minute 55)
+local gaps2 = {}
+for seed, st in runs do
+	local all = Core.maxGap(st, 2 * HOUR, false)
+	table.insert(gaps2, all)
+	check("seed " .. seed .. ": never more than 11 min without something new in the first 2 hours", all <= 11 * MIN, all / MIN)
+end
+check("median seed: never more than 10 min without something new in the first 2 hours", (Core.median(gaps2) :: number) <= 10 * MIN, (Core.median(gaps2) :: number) / MIN)
+
 -- long tail: measured in hours of play (days of calendar)
 window("planet 5", first("planet:" .. Config.Planets[5].id), 50 * MIN, 150 * MIN, HOUR, "h")
 window("planet 6", first("planet:" .. Config.Planets[6].id), 1.5 * HOUR, 5 * HOUR, HOUR, "h")
@@ -103,8 +115,18 @@ for _, id in { "s1", "s2" } do
 		local d = st.bpLog[id]
 		local rel = if d then d - (if id == "s2" then 56 else 0) else nil
 		check(string.format("battle pass %s finishes within the season (seed %d, day %s of %d)", id, seed, tostring(rel), season.days), rel ~= nil and rel < season.days)
-		check(string.format("battle pass %s is not finished in under 14 days (seed %d)", id, seed), rel == nil or rel >= 14, rel)
+		check(string.format("battle pass %s is not finished in under 18 days (seed %d)", id, seed), rel == nil or rel >= 18, rel)
 		check(string.format("battle pass %s: active player done in under 5 weeks (seed %d)", id, seed), rel ~= nil and rel <= 35, rel)
+	end
+end
+
+-- Round 6: a casual player (25 min a day) also finishes both passes, with some room left in the season
+local casual = Core.runSeeds(SEEDS, Core.schedules.casual, 112)
+for _, id in { "s1", "s2" } do
+	for seed, st in casual do
+		local d = st.bpLog[id]
+		local rel = if d then d - (if id == "s2" then 56 else 0) else nil
+		check(string.format("casual finishes battle pass %s (seed %d, day %s)", id, seed, tostring(rel)), rel ~= nil and rel <= 52, rel)
 	end
 end
 

@@ -92,6 +92,10 @@ local function newState(seed: number)
 		bp = {}, -- season id -> { xp, tier }
 		bpLog = {},
 		bpTier = {},
+		weekly = nil, -- Round 6: weekly pass challenges
+		fwDay = -1, -- day of the last daily first-win bonus
+		fwPending = false,
+		bpBoost = 0, -- XP added by the Round 6 sources (first win / weekly / catch-up), for the report
 		sessionGems = 0,
 	}
 	for _, s in Config.Stats do
@@ -146,10 +150,18 @@ local function addSparks(st, n: number, scaled: boolean)
 	st.sparks += math.floor(n + 0.5)
 end
 
-local function bpXp(st, amount: number)
+local function bpNow(st): number
+	return Config.BattlePass.seasons[1].startsAt + st.t
+end
+
+local function bpXp(st, amount: number, flat: boolean?)
 	local season = st.season
 	if not season then
 		return
+	end
+	if not flat then
+		local cur = st.bp[season.id]
+		amount = BP.boosted(amount, BP.catchUpMult(cur and cur.xp or 0, season, bpNow(st)))
 	end
 	local rec = st.bp[season.id]
 	if not rec then
@@ -178,6 +190,19 @@ local function bpXp(st, amount: number)
 		if rec.tier == Config.BattlePass.tiers then
 			st.bpLog[season.id] = st.bpDay
 		end
+	end
+end
+
+-- Round 6: weekly pass challenges and the daily first win (same rules as Services/Season).
+local function bpWeekly(st, id: string, n: number)
+	if not st.season then
+		return
+	end
+	local now = bpNow(st)
+	st.weekly = BP.rollWeekly(st.weekly, now)
+	local xp = if id == "days" then BP.weeklyTouchDay(st.weekly, BP.dayIndex(now)) else BP.weeklyAdd(st.weekly, id, n)
+	if xp then
+		bpXp(st, xp)
 	end
 end
 
@@ -583,6 +608,7 @@ local function tick(st, dt: number)
 			st.gems += boss.gems or 0
 			st.bossKills[boss.id] = (st.bossKills[boss.id] or 0) + 1
 			bpXp(st, Config.BattlePass.xp.bossKill)
+			bpWeekly(st, "bosses", 1)
 		end
 	end
 	if step and step.kind == "boss" and mode == "hunt" and st.progress >= step.target then
@@ -591,6 +617,7 @@ local function tick(st, dt: number)
 		addSparks(st, boss.sparks, true)
 		st.gems += boss.gems or 0
 		bpXp(st, Config.BattlePass.xp.bossKill)
+		bpWeekly(st, "bosses", 1)
 	end
 	if step and step.kind ~= "power" and step.kind ~= "gear" and step.kind ~= "technique" and step.kind ~= "travel" and step.kind ~= "rebirth" and st.progress >= step.target then
 		storyDone(st)
@@ -679,6 +706,7 @@ local function tick(st, dt: number)
 				done += 1
 				st.gems += q.gems
 				bpXp(st, Config.BattlePass.xp.questClaim)
+				bpWeekly(st, "quests", 1)
 			end
 		end
 		if done == #list then
@@ -706,6 +734,14 @@ local function tick(st, dt: number)
 		st.gems += tier.gems
 		addSparks(st, F.sparksPerMinute(bestPlanet(st)) * tier.sparkMinutes, false)
 		bpXp(st, Config.BattlePass.xp.worldBoss)
+		bpWeekly(st, "bosses", 1)
+	end
+	-- daily first win: the first enemy of the day (a minute into the session)
+	if st.fwPending and st.sessionT >= 60 then
+		st.fwPending = false
+		st.fwDay = st.day
+		bpXp(st, Config.BattlePass.firstWinXp)
+		bpWeekly(st, "days", 1)
 	end
 	if st.spins > 0 then
 		rollSpins(st)
@@ -722,6 +758,7 @@ local function startSession(st, day: number)
 	st.wbDone = 0
 	st.day = day
 	st.bpDay = day
+	st.fwPending = st.fwDay ~= day
 	local season = BP.active(Config.BattlePass.seasons[1].startsAt + day * 86400 + 12 * 3600)
 	st.season = season
 	st.dailyPending = st.dailyDay ~= day

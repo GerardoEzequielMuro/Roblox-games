@@ -21,7 +21,7 @@ Todos los nombres visibles salen de **un solo archivo**: `src/shared/Names.luau`
 | Raza alienígena sabia | Lumen (cristales) | `race.lumen` |
 | Raza de cuernos | Drakhar | `race.drakhar` |
 | Humano | Terran | `race.terran` |
-| Escalera de transformaciones | Kindled → Blazing → Tempest → Eclipse → Nova → Celestial → Primordial | `form.*` |
+| Escalera de transformaciones | Kindled → Blazing → Tempest → Eclipse → Corona → Solstice → Nova → Celestial → Primordial | `form.*` |
 | Rayo insignia cargado | Star Lance (el rayo base) | `tech.star_lance` |
 | Ráfaga de bolas de energía | Pulse Volley | `tech.pulse_volley` |
 | Bola gigante de energía | Sunfall | `tech.sunfall` |
@@ -53,7 +53,7 @@ Todos los nombres visibles salen de **un solo archivo**: `src/shared/Names.luau`
 - Vida = 100 + 4·Defense. Golpe = (4 + Strength) × forma. Ráfaga = (3 + 0,8·Ki) × forma. Rayo = (12 + 5·Ki) × (0,3 a 1 según carga) × forma.
 - Ki en fracción de barra: ráfaga 4%, dash 5%, rayo 10–32%, recarga pasiva 3%/s (0 transformado), cargando 34%/s.
 - Planetas: Verdia (0) → Kaldera (25K poder, 5K Sparks) → Frostreach (2M) → Zephyra (200M) → The Rift (25B).
-- Formas: Kindled x2 (1K) · Blazing x5 (50K) · Tempest x15 (20M) · Eclipse x50 (100M) · Nova x200 (15B) · Celestial x1000 (1,5T) · Primordial x5000 (200T + 3 ascensiones).
+- Formas: Kindled x2 (1K) · Blazing x5 (50K) · Tempest x15 (20M) · Eclipse x50 (100M) · Corona x80 (600M) · Solstice x130 (1,25B) · Nova x200 (15B) · Celestial x1000 (1,5T) · Primordial x5000 (200T + 3 ascensiones).
 - Ascensión: 40M × 40^n de poder (cada ascensión pide el poder de entrada del planeta siguiente); +100% de entrenamiento cada una; +25 Gems.
 - Ritmo (simulador `sim/pacing_sim.luau`, guardado por `tests/pacing_check.luau`): planeta 2 ~6 min, 3 ~13 min, 4 ~33 min, primera ascensión ~33 min, planeta 5 ~1,3 h, planeta 10 ~35 h de juego (~1 mes activo).
 - Autos (server): auto-entrenar 1,5 rep/s (+0,5 por nivel de mejora, x2 con TurboAuto), auto-ki (carga sola bajo 20%), auto-pelea 1,1 ataques/s (x2 con TurboAuto). Ninguno funciona dentro de la arena.
@@ -94,7 +94,7 @@ Todos los nombres visibles salen de **un solo archivo**: `src/shared/Names.luau`
 - **Semillas** (`Config.Seeds`, `Services/Items`): Vigor (cura todo + 50% ki, 15 s de espera), Titan (+50% de daño a enemigos 10 min), Spark (ki lleno y regen x2,5 10 min). Se compran con Sparks (precio = minutos de ingreso del mejor planeta) con stock por hora que se repone en punto (reloj en la tienda), o con los packs de Robux (sin límite). Teclas J / K / L. No funcionan en la arena.
 - **Skins de saga / monturas / auras exclusivas** (`Config.Skins`, `Mounts`, `Auras`, `Services/Cosmetics`): cada una se consigue jugando (`earn`: jefe del arco, ascensiones, victorias en arena) o con el pass. Solo cosméticos (el aura suma al entrenamiento como todas). Ventana "Style".
 - **Formas y ataques especiales**: forma Unbound (x8.000) y ataques oscuros (N / M). `special = { boss, count, pass }`: se ganan matando al jefe N veces o se compran con el pass, que solo salta el requisito del jefe (poder y ascensiones siguen). `Collection.specialOk`.
-- **Pases de batalla** (`Config.BattlePass`, `Services/Season`): 30 niveles de 90 XP, pista gratis y premium, temporadas de 8 semanas con reloj visible: S1 "Dream Eater" (demonio rosa, desde 2026-10-01 UTC) y S2 "Sleeping God" (dioses). XP por misión diaria, jefes, jefe mundial, victoria en arena y tiempo jugado. Sin cajas al azar.
+- **Pases de batalla** (`Config.BattlePass`, `Services/Season`): 30 niveles de 90 XP, pista gratis y premium, temporadas de 8 semanas con reloj visible: S1 "Dream Eater" (demonio rosa, desde 2026-10-01 UTC) y S2 "Sleeping God" (dioses). XP por misión diaria, jefes, jefe mundial, victoria en arena y tiempo jugado; más (Ronda 6) primera victoria del día (+6), 3 desafíos semanales (+20 c/u) y multiplicador de recuperación x1,5 / x2 si vas atrás del ritmo de la temporada. Sin cajas al azar.
 - **Arena sin pay-to-win**: dentro del Coliseo se apagan Ki Mastery, Fast Flight, las semillas y los ataques oscuros / especiales; el daño PvP ya dependía solo de la relación de poder (no de formas ni de pases). Al entrar, aviso en pantalla.
 - **Meta siguiente** (`Shared/Goals`): terminada la historia, el tracker muestra la forma / planeta / ascensión más cercana con barra.
 

@@ -62,6 +62,8 @@ export type Profile = {
 	mounts: { [string]: boolean },
 	mount: string,
 	bp: { [string]: { xp: number, premium: boolean, free: { [string]: boolean }, paid: { [string]: boolean } } },
+	bpWeekly: { week: number, lastDay: number, prog: { [string]: number }, done: { [string]: boolean } }, -- Round 6 weekly pass challenges
+	bpFirstWin: number, -- UTC day index of the last daily first-win bonus
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
@@ -151,6 +153,8 @@ local function defaultProfile(): Profile
 		mounts = {},
 		mount = "",
 		bp = {},
+		bpWeekly = { week = -1, lastDay = -1, prog = {}, done = {} },
+		bpFirstWin = -1,
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
@@ -277,6 +281,20 @@ local function reconcile(p: any): Profile
 			rec.paid = if type(rec.paid) == "table" then rec.paid else {}
 		end
 	end
+	-- weekly pass challenges (old saves have none)
+	if type(p.bpWeekly) ~= "table" then
+		p.bpWeekly = { week = -1, lastDay = -1, prog = {}, done = {} }
+	end
+	local w = p.bpWeekly
+	w.week = math.floor(num(w.week, -1))
+	w.lastDay = math.floor(num(w.lastDay, -1))
+	w.prog = if type(w.prog) == "table" then w.prog else {}
+	w.done = if type(w.done) == "table" then w.done else {}
+	for _, c in Config.BattlePass.weekly do
+		w.prog[c.id] = math.clamp(math.floor(num(w.prog[c.id], 0)), 0, c.target)
+		w.done[c.id] = w.done[c.id] == true
+	end
+	p.bpFirstWin = math.floor(num(p.bpFirstWin, -1))
 	return p :: Profile
 end
 Data.reconcile = reconcile

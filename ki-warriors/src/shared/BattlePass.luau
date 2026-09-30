@@ -93,4 +93,94 @@ function BattlePass.claimableCount(rec: Record, seasonId: string): number
 	return n
 end
 
+---------------------------------------------------------------------------
+-- Round 6: free pass XP for coming back (weekly challenges, daily first win) and the
+-- catch-up multiplier. All pure; the server stores `Weekly` in the profile.
+---------------------------------------------------------------------------
+export type Weekly = { week: number, lastDay: number, prog: { [string]: number }, done: { [string]: boolean } }
+
+function BattlePass.dayIndex(now: number): number
+	return now // 86400
+end
+
+function BattlePass.weekIndex(now: number): number
+	return math.floor((now - Config.BattlePass.seasons[1].startsAt) / Config.BattlePass.weekSeconds)
+end
+
+-- Seconds until the next weekly reset.
+function BattlePass.weekResetIn(now: number): number
+	local w = BattlePass.weekIndex(now) + 1
+	return Config.BattlePass.seasons[1].startsAt + w * Config.BattlePass.weekSeconds - now
+end
+
+function BattlePass.newWeekly(week: number): Weekly
+	return { week = week, lastDay = -1, prog = {}, done = {} }
+end
+
+-- The record of the current week: a stale one is replaced by a fresh one (progress is lost on purpose).
+function BattlePass.rollWeekly(w: Weekly?, now: number): Weekly
+	local week = BattlePass.weekIndex(now)
+	if w == nil or w.week ~= week then
+		return BattlePass.newWeekly(week)
+	end
+	return w
+end
+
+local function challenge(id: string): any?
+	for _, c in Config.BattlePass.weekly do
+		if c.id == id then
+			return c
+		end
+	end
+	return nil
+end
+
+-- Adds progress to a challenge. Returns the XP to award when this call completes it (else nil).
+function BattlePass.weeklyAdd(w: Weekly, id: string, n: number): number?
+	local c = challenge(id)
+	if not c or w.done[id] or n <= 0 then
+		return nil
+	end
+	w.prog[id] = math.min(c.target, (w.prog[id] or 0) + n)
+	if w.prog[id] >= c.target then
+		w.done[id] = true
+		return c.xp
+	end
+	return nil
+end
+
+-- "Play on N different days": counts a day once, however many times it is touched.
+function BattlePass.weeklyTouchDay(w: Weekly, today: number): number?
+	if w.lastDay == today then
+		return nil
+	end
+	w.lastDay = today
+	return BattlePass.weeklyAdd(w, "days", 1)
+end
+
+-- Tier a steady player would have now: tier `tiers` after paceFrac of the season.
+function BattlePass.expectedTier(season: any, now: number): number
+	local cu = Config.BattlePass.catchUp
+	local span = season.days * 86400 * cu.paceFrac
+	return math.clamp(math.floor(Config.BattlePass.tiers * (now - season.startsAt) / span), 0, Config.BattlePass.tiers)
+end
+
+-- XP multiplier while behind the expected tier (1 when on pace or ahead).
+function BattlePass.catchUpMult(xp: number, season: any, now: number): number
+	local cu = Config.BattlePass.catchUp
+	local behind = BattlePass.expectedTier(season, now) - BattlePass.tier(xp)
+	if BattlePass.tier(xp) >= Config.BattlePass.tiers then
+		return 1
+	elseif behind >= cu.deepGap then
+		return cu.deepMult
+	elseif behind >= cu.grace then
+		return cu.mult
+	end
+	return 1
+end
+
+function BattlePass.boosted(amount: number, mult: number): number
+	return math.max(1, math.floor(amount * mult + 0.5))
+end
+
 return BattlePass

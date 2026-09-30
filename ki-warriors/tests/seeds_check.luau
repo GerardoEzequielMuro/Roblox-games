@@ -77,7 +77,7 @@ local all = {}
 for i = 1, #Config.Planets do
 	all[i] = i
 end
-local g4 = Goals.next(Formulas.rebirthRequirement(0) * 2, 7, all, 0)
+local g4 = Goals.next(Formulas.rebirthRequirement(0) * 2, Config.FormById.primordial.index, all, 0)
 check("everything met: ascend now", g4.kind == "rebirth" and g4.frac == 1, g4.kind)
 local g5 = Goals.next(5_000_000, 3, all, 0)
 check("goal frac in 0..1", g5.frac >= 0 and g5.frac <= 1)

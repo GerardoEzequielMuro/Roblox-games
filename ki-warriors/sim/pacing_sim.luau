@@ -94,6 +94,12 @@ for seed, st in active do
 	print(string.format("seed %d: longest gap without anything new %4.1f min (from min %4.1f) | without a form/planet/zone/chapter/technique/ascension %4.1f min (from min %4.1f)", seed, all / 60, at1 / 60, major / 60, at2 / 60))
 end
 
+print("-- same, first 2 hours of play (active, per seed)")
+for seed, st in active do
+	local all, at1 = Core.maxGap(st, 7200, false)
+	print(string.format("seed %d: longest gap without anything new %4.1f min (from min %4.1f)", seed, all / 60, at1 / 60))
+end
+
 print("")
 print("-- battle pass (free track, XP 90/tier, 30 tiers, 56-day seasons; joined at season start)")
 for _, name in { "active", "casual" } do

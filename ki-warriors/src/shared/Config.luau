@@ -203,6 +203,10 @@ Config.Forms = {
 	{ id = "blazing", reqPower = 50_000, mult = 5, drain = 0.02, color = { 255, 70, 50 }, color2 = { 255, 190, 90 }, style = "flame" },
 	{ id = "tempest", reqPower = 20_000_000, mult = 15, drain = 0.025, color = { 70, 220, 255 }, color2 = { 230, 250, 255 }, style = "lightning" },
 	{ id = "eclipse", reqPower = 100_000_000, mult = 50, drain = 0.03, color = { 150, 70, 255 }, color2 = { 30, 10, 60 }, style = "shadow" },
+	-- Round 6: two forms between Eclipse (~47 min) and Nova (~2.4 h) so the stretch where the
+	-- player is saving for Frostreach always has a next goal. Same pattern as the others.
+	{ id = "corona", reqPower = 600_000_000, mult = 80, drain = 0.032, color = { 255, 150, 40 }, color2 = { 255, 245, 190 }, style = "flame" },
+	{ id = "solstice", reqPower = 1_250_000_000, mult = 130, drain = 0.034, color = { 255, 215, 90 }, color2 = { 120, 60, 255 }, style = "prism" },
 	{ id = "nova", reqPower = 15_000_000_000, mult = 200, drain = 0.035, color = { 255, 250, 220 }, color2 = { 255, 200, 80 }, style = "lightning" },
 	{ id = "celestial", reqPower = 1_500_000_000_000, mult = 1_000, drain = 0.04, color = { 120, 255, 220 }, color2 = { 255, 140, 240 }, style = "prism" },
 	{ id = "primordial", reqPower = 200_000_000_000_000, reqRebirths = 3, mult = 5_000, drain = 0.045, color = { 255, 255, 255 }, color2 = { 255, 60, 120 }, style = "prism" },
@@ -709,6 +713,17 @@ Config.BattlePass = {
 	xpPerTier = 90,
 	skipRefundGems = 60, -- a tier skip bought while no season runs (rare race) pays back Gems
 	xp = { questClaim = 10, questBonus = 10, minutes = 1, bossKill = 6, worldBoss = 12, arenaWin = 8, relic = 2 }, -- minutes: per 5 min played
+	-- Round 6: free ways to earn pass XP that reward coming back (all server-side, no grinding).
+	firstWinXp = 6, -- first enemy defeated (or arena win) of each UTC day
+	weekly = { -- 3 challenges, reset every 7 days counted from the first season start
+		{ id = "days", target = 3, xp = 20 }, -- play on 3 different days
+		{ id = "quests", target = 5, xp = 20 }, -- claim 5 daily quests
+		{ id = "bosses", target = 2, xp = 20 }, -- defeat 2 bosses
+	},
+	weekSeconds = 7 * 86400,
+	-- Catch-up: when the tier is below the tier a steady player would have on this day of the
+	-- season (tier 30 on day `paceFrac` * season length), all pass XP is multiplied.
+	catchUp = { paceFrac = 0.8, grace = 2, mult = 1.5, deepGap = 6, deepMult = 2 },
 	seasons = {
 		{ id = "s1", arc = 8, product = "BattlePassS1", startsAt = 1790812800, days = 56, color = { 250, 130, 200 }, freeMid = { kind = "mount", id = "zephyr_puff", amount = 1 }, freeFinal = { kind = "aura", id = "nebula", amount = 1 }, premiumFinal = { kind = "skin", id = "glutt_hood", amount = 1 } },
 		{ id = "s2", arc = 9, product = "BattlePassS2", startsAt = 1790812800 + 56 * 86400, days = 56, color = { 90, 130, 255 }, freeMid = { kind = "aura", id = "umbral", amount = 1 }, freeFinal = { kind = "mount", id = "thunderhead", amount = 1 }, premiumFinal = { kind = "skin", id = "sky_warden", amount = 1 } },

@@ -27,19 +27,61 @@ local function record(p: Data.Profile, id: string): BattlePass.Record
 	return rec :: any
 end
 
-function Season.addXp(player: Player, amount: number)
+-- Adds pass XP (multiplied by the catch-up bonus while behind the season pace unless `flat`).
+-- Returns the XP actually added.
+function Season.addXp(player: Player, amount: number, flat: boolean?): number
 	local p = Data.get(player)
-	local season = BattlePass.active(os.time())
+	local now = os.time()
+	local season = BattlePass.active(now)
 	if not p or not season or amount <= 0 then
-		return
+		return 0
 	end
 	local rec = record(p, season.id)
 	local before = BattlePass.tier(rec.xp)
+	local xpBefore = rec.xp
+	if not flat then
+		amount = BattlePass.boosted(amount, BattlePass.catchUpMult(rec.xp, season, now))
+	end
 	BattlePass.addXp(rec, amount)
 	if BattlePass.tier(rec.xp) > before then
 		Remotes.notify(player, M("msg.bp_tier", { n = BattlePass.tier(rec.xp) }), "success")
 	end
 	State.dirty(player)
+	return rec.xp - xpBefore
+end
+
+-- Weekly challenge progress (only while a season runs: the XP has nowhere to go otherwise).
+local function weeklyProgress(player: Player, id: string, n: number)
+	local p = Data.get(player)
+	local now = os.time()
+	if not p or not BattlePass.active(now) then
+		return
+	end
+	local w = BattlePass.rollWeekly(p.bpWeekly, now)
+	p.bpWeekly = w :: any
+	local xp = if id == "days" then BattlePass.weeklyTouchDay(w, BattlePass.dayIndex(now)) else BattlePass.weeklyAdd(w, id, n)
+	if xp then
+		local got = Season.addXp(player, xp)
+		Remotes.notify(player, M("msg.bp_weekly", { n = got }), "success")
+	end
+	State.dirty(player)
+end
+
+-- Daily first win: the first enemy defeated (or arena win) of each UTC day.
+local function firstWin(player: Player)
+	local p = Data.get(player)
+	local now = os.time()
+	if not p or not BattlePass.active(now) then
+		return
+	end
+	local today = BattlePass.dayIndex(now)
+	if p.bpFirstWin == today then
+		return
+	end
+	p.bpFirstWin = today
+	local got = Season.addXp(player, Config.BattlePass.firstWinXp)
+	Remotes.notify(player, M("msg.bp_firstwin", { n = got }), "success")
+	weeklyProgress(player, "days", 1)
 end
 
 -- Product receipts: the premium track of a season (even if it just ended: the player paid).
@@ -86,7 +128,19 @@ local function snapshot(_player: Player, p: Data.Profile): any
 	end
 	local rec = p.bp[season.id] or BattlePass.newRecord()
 	local missing, frac = BattlePass.progress(rec.xp)
+	local w = BattlePass.rollWeekly(p.bpWeekly, now)
+	p.bpWeekly = w :: any
+	local weekly = {}
+	for _, c in Config.BattlePass.weekly do
+		table.insert(weekly, { id = c.id, target = c.target, xp = c.xp, have = w.prog[c.id] or 0, done = w.done[c.id] == true })
+	end
 	return {
+		weekly = weekly,
+		weekResetIn = BattlePass.weekResetIn(now),
+		firstWinReady = p.bpFirstWin ~= BattlePass.dayIndex(now),
+		firstWinXp = Config.BattlePass.firstWinXp,
+		catchUp = BattlePass.catchUpMult(rec.xp, season, now),
+		expectedTier = BattlePass.expectedTier(season, now),
 		id = season.id,
 		endsAt = season.endsAt,
 		xp = rec.xp,
@@ -107,15 +161,23 @@ function Season.init()
 	local X = Config.BattlePass.xp
 	Hooks.on("npcKilled", function(player: Player, _id: string, def: any)
 		Season.addXp(player, if def.world then X.worldBoss elseif def.boss then X.bossKill else 0)
+		if def.boss then
+			weeklyProgress(player, "bosses", 1)
+		end
+		firstWin(player)
 	end)
 	Hooks.on("arenaWin", function(player: Player)
 		Season.addXp(player, X.arenaWin)
+		firstWin(player)
 	end)
 	Hooks.on("relic", function(player: Player)
 		Season.addXp(player, X.relic)
 	end)
 	Hooks.on("questClaimed", function(player: Player, kind: string)
 		Season.addXp(player, if kind == "bonus" then X.questBonus else X.questClaim)
+		if kind ~= "bonus" then
+			weeklyProgress(player, "quests", 1)
+		end
 	end)
 
 	local function claim(player: Player, track: string, tier: number): (boolean, any)
@@ -182,6 +244,7 @@ function Season.init()
 			for _, player in Players:GetPlayers() do
 				if State.ready[player] then
 					Season.addXp(player, X.minutes)
+					weeklyProgress(player, "days", 1) -- being online counts as a day even without a fight
 				end
 			end
 		end

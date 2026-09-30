@@ -2,6 +2,9 @@
 # image: mid-phone-season.png  (coordinates below are in the full 844x390 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
-## Layout findings (0)
+## Layout findings (1)
+[low] core-overlap: KiWarriorsUI.SeasonWindowHolder.SeasonWindow.Body.List.Row.TextLabel rect=[131, 261, 419, 281] (x4 similar)
+    covered by the touch control (thumbstick/jump)
+    created at: ki-warriors/src/client/UI/Theme.luau:46 < ki-warriors/src/client/UI/Theme.luau:112 < ki-warriors/src/client/UI/Kit.luau:67
 
 ## Runtime log (0)

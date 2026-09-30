@@ -154,7 +154,7 @@ function Social.init()
 	end)
 	-- server-wide announcement of a rare milestone: one of the three strongest forms
 	Hooks.on("formUnlocked", function(player: Player, index: number)
-		if index >= 6 then
+		if index >= Config.FormById.celestial.index then
 			Remotes.fireAll("Toast", { key = "toast.form_rare", args = { player = player.DisplayName, form = { key = "form." .. Config.Forms[index].id } }, color = Config.Forms[index].color })
 		end
 	end)

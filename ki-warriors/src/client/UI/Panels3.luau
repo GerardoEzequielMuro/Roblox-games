@@ -193,8 +193,27 @@ local function renderSeason(body: Frame)
 			Kit.request("ClaimPassAll")
 		end, 34)
 	end
+	-- Round 6: daily first win + catch-up bonus, and the weekly challenges
+	if se.weekly then
+		local daily = Kit.row(list, 66, 3, Theme.Yellow)
+		Kit.text(daily, { Text = Lang.t("season.firstwin", { n = se.firstWinXp }), Size = UDim2.new(0.5, -20, 0, 24), Position = UDim2.fromOffset(20, 8), MaxTextSize = 18, TextXAlignment = Enum.TextXAlignment.Left })
+		Kit.text(daily, { Text = Lang.t(if se.firstWinReady then "season.firstwin_ready" else "season.firstwin_done"), Size = UDim2.new(0.5, -20, 0, 20), Position = UDim2.fromOffset(20, 36), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = if se.firstWinReady then Theme.Dim else Theme.Green, Font = Theme.FontBold })
+		if (se.catchUp or 1) > 1 then
+			Kit.text(daily, { Text = Lang.t("season.catchup", { m = string.format("%g", se.catchUp) }), Size = UDim2.new(0.46, -10, 0, 24), Position = UDim2.new(1, -14, 0, 8), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 18, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Green })
+			Kit.text(daily, { Text = Lang.t("season.catchup_hint"), Size = UDim2.new(0.46, -10, 0, 30), Position = UDim2.new(1, -14, 0, 32), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Right, TextYAlignment = Enum.TextYAlignment.Top, TextColor3 = Theme.Dim, Font = Theme.FontBold })
+		end
+		local card = Kit.row(list, 38 + #se.weekly * 34, 4, Theme.Cyan)
+		Kit.text(card, { Text = Lang.t("season.weekly_title"), Font = Theme.Display, Size = UDim2.new(0.4, 0, 0, 26), Position = UDim2.fromOffset(20, 6), MaxTextSize = 22, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.lighten(Theme.Cyan, 0.3) })
+		Kit.text(card, { Text = Lang.t("season.weekly_reset", { time = Format.time(math.max(0, se.weekResetIn - (os.clock() - Net.receivedAt))) }), Size = UDim2.new(0.4, 0, 0, 18), Position = UDim2.new(1, -14, 0, 10), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow })
+		for i, c in se.weekly do
+			local y = 38 + (i - 1) * 34
+			Kit.text(card, { Text = Lang.t("weekly." .. c.id, { n = c.target }), Size = UDim2.new(0.48, -20, 0, 28), Position = UDim2.fromOffset(20, y), MaxTextSize = 15, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = if c.done then Theme.Green else Color3.new(1, 1, 1) })
+			Kit.bar(card, UDim2.new(0.32, 0, 0, 22), UDim2.new(0.5, 0, 0, y + 3), if c.done then Theme.Green else Theme.Cyan, c.have / c.target, if c.done then "✔" else c.have .. "/" .. c.target)
+			Kit.text(card, { Text = "+" .. c.xp .. " XP", Size = UDim2.new(0.14, -14, 0, 28), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = if c.done then Theme.Dim else Theme.Yellow })
+		end
+	end
 	-- column titles
-	local titles = Kit.row(list, 28, 3)
+	local titles = Kit.row(list, 28, 5)
 	Kit.text(titles, { Text = Lang.t("season.free"), Size = UDim2.new(0.4, 0, 1, -6), Position = UDim2.new(0.18, 0, 0, 3), MaxTextSize = 15, TextColor3 = Theme.Green })
 	Kit.text(titles, { Text = Lang.t("season.premium_track"), Size = UDim2.new(0.4, 0, 1, -6), Position = UDim2.new(0.6, 0, 0, 3), MaxTextSize = 15, TextColor3 = Theme.Yellow })
 	for tier = 1, Config.BattlePass.tiers do

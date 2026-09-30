@@ -103,6 +103,48 @@ for t = 1, B.tiers do
 end
 check("free track has gems too", freeGems >= 30, freeGems)
 
+-- Round 6: weekly challenges, first win and the catch-up multiplier ---------------------
+local t0 = s1.startsAt
+check("week index starts at 0 on the first season start", BattlePass.weekIndex(t0) == 0 and BattlePass.weekIndex(t0 + 7 * 86400 - 1) == 0 and BattlePass.weekIndex(t0 + 7 * 86400) == 1)
+check("weeks before the first season are negative", BattlePass.weekIndex(t0 - 1) == -1)
+check("week reset countdown", BattlePass.weekResetIn(t0 + 86400) == 6 * 86400 and BattlePass.weekResetIn(t0) == 7 * 86400)
+local w = BattlePass.rollWeekly(nil, t0 + 10)
+check("fresh weekly record", w.week == 0 and next(w.prog) == nil)
+check("same week keeps the record", BattlePass.rollWeekly(w, t0 + 3 * 86400) == w)
+check("new week replaces the record", BattlePass.rollWeekly(w, t0 + 8 * 86400) ~= w)
+for _, c in B.weekly do
+	check("challenge has target and xp " .. c.id, c.target > 0 and c.xp > 0)
+end
+local wk = BattlePass.newWeekly(0)
+check("bosses: progress is not a completion", BattlePass.weeklyAdd(wk, "bosses", 1) == nil and wk.prog.bosses == 1)
+check("bosses: completes once", BattlePass.weeklyAdd(wk, "bosses", 1) == 20 and wk.done.bosses == true)
+check("bosses: no double pay", BattlePass.weeklyAdd(wk, "bosses", 5) == nil)
+check("unknown challenge ignored", BattlePass.weeklyAdd(wk, "nope", 1) == nil)
+check("days: same day counts once", BattlePass.weeklyTouchDay(wk, 100) == nil and BattlePass.weeklyTouchDay(wk, 100) == nil and wk.prog.days == 1)
+check("days: third different day completes", BattlePass.weeklyTouchDay(wk, 101) == nil and BattlePass.weeklyTouchDay(wk, 102) == 20)
+local perWeek = 0
+for _, c in B.weekly do
+	perWeek += c.xp
+end
+check("weekly XP is small next to the pass (under 1 tier a week, under 25% of a season)", perWeek <= B.xpPerTier and perWeek * 8 <= B.xpPerTier * B.tiers * 0.25, perWeek)
+check("first win XP is small", B.firstWinXp > 0 and B.firstWinXp <= 10)
+
+local dayN = function(d: number): number
+	return s1.startsAt + d * 86400 + 12 * 3600
+end
+check("expected tier is 0 at the start", BattlePass.expectedTier(s1, s1.startsAt) == 0)
+check("expected tier reaches the top at paceFrac of the season", BattlePass.expectedTier(s1, s1.startsAt + s1.days * 86400 * B.catchUp.paceFrac) == B.tiers)
+check("expected tier never above the cap", BattlePass.expectedTier(s1, s1.endsAt) == B.tiers)
+check("on pace: no multiplier", BattlePass.catchUpMult(per * 7, s1, dayN(10)) == 1)
+check("ahead: no multiplier", BattlePass.catchUpMult(per * 25, s1, dayN(10)) == 1)
+local exp20 = BattlePass.expectedTier(s1, dayN(20))
+check("a little behind (grace): no multiplier", BattlePass.catchUpMult(per * (exp20 - B.catchUp.grace + 1), s1, dayN(20)) == 1)
+check("behind: x" .. B.catchUp.mult, BattlePass.catchUpMult(per * (exp20 - B.catchUp.grace), s1, dayN(20)) == B.catchUp.mult)
+check("far behind: x" .. B.catchUp.deepMult, BattlePass.catchUpMult(0, s1, dayN(40)) == B.catchUp.deepMult)
+check("maxed pass: no multiplier", BattlePass.catchUpMult(per * B.tiers, s1, dayN(50)) == 1)
+check("boosted rounds and never loses XP", BattlePass.boosted(10, 1.5) == 15 and BattlePass.boosted(1, 1.5) == 2 and BattlePass.boosted(1, 1) == 1)
+check("multipliers are sane (1 < mult <= deepMult <= 2.5)", B.catchUp.mult > 1 and B.catchUp.mult <= B.catchUp.deepMult and B.catchUp.deepMult <= 2.5)
+
 if fails == 0 then
 	print(string.format("BATTLE PASS CHECKS PASSED (%d tiers x %d seasons, %d XP/tier)", B.tiers, #B.seasons, B.xpPerTier))
 else

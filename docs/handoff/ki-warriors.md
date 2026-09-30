@@ -265,3 +265,40 @@ XP por día de un activo (~70 min): ~1,2 tiers/día -> tier 10 el día ~7, tier 
 - Offline: entrenamiento de 4 h máx al 25%, reclamado al volver.
 - Historia modelada con duraciones aproximadas por tipo de paso (tutorial x2).
 - No corrí el AutoTest de Studio. Conviene confirmar ahí: `forms == 3` tras ascender (con poder 40M: Kindled, Blazing, Tempest siguen siendo 3) y que los textos de zonas/ascensión muestren los números nuevos.
+
+## Ronda 6: contenido para el hueco
+
+### Qué agregué
+- **Pase de batalla, XP gratis que premia volver** (todo server-authoritative en `Services/Season.luau`, lógica pura en `Shared/BattlePass.luau`, números en `Config.BattlePass`):
+  - **Primera victoria del día**: +6 XP la primera vez por día UTC que matás un enemigo (o ganás en la arena).
+  - **3 desafíos semanales** (+20 XP c/u, se reinician cada 7 días contados desde el inicio de la S1): jugar en 3 días distintos, reclamar 5 misiones diarias, vencer 2 jefes. Se pagan solos al completarse (toast), no hay que reclamar. Solo cuentan mientras hay temporada.
+  - **Multiplicador de recuperación**: si el nivel está 2+ por debajo del que tendría un jugador constante (nivel 30 al 80% de la temporada, `catchUp.paceFrac`), todo el XP del pase x1,5; si está 6+ por debajo, x2. Un activo nunca lo activa.
+- **Ventana Season**: dos tarjetas nuevas entre el encabezado y la pista (primera victoria + banner de recuperación, y "Esta semana" con 3 barras y reloj de reinicio). No hay props nuevos, no hay Robux, no hay IDs de assets.
+- **Dos formas nuevas para el hueco de los minutos 54-73**: **Corona** (600M de poder, x80, llama dorada) y **Solstice** (1,25B, x130, prisma). Usan estilos de efecto ya existentes (`flame`, `prism`), nombres en `Names.luau`. Insertadas entre Eclipse y Nova (Nova/Celestial/Primordial/Unbound suben de índice; `Social` ahora usa `FormById.celestial.index` para el aviso global en vez del 6 fijo).
+- Guardado: `bpWeekly` y `bpFirstWin` en el perfil, con defaults y saneo en `Data.reconcile` (saves viejos entran con todo en cero). Como `p.forms` es un conteo, un save viejo con Nova (5) queda un escalón atrás y `refreshForms` lo reacomoda solo al primer chequeo (puede salir el banner de alguna forma nueva).
+- Locales: 12 claves nuevas en los 12 idiomas (`season.weekly_*`, `weekly.*`, `season.firstwin*`, `season.catchup*`, `msg.bp_weekly`, `msg.bp_firstwin`). `locale_check` pasa.
+- `DESIGN.md` y `KiWarriors.rbxlx` actualizados.
+
+### Hitos, antes y después (mediana de 5 semillas)
+| Hito | Antes | Después |
+|---|---|---|
+| Mayor tramo sin nada nuevo en las primeras 2 h de juego (activo) | 19,7 min (del min 54 al 73) | 9,0 min (peor semilla) |
+| Forma Corona / Solstice | no existían | ~59 / ~68 min |
+| Mayor tramo en la 1ª hora | 8,9 min | 8,9 min (igual) |
+| Pase s1 / s2, activo | día 24 / 27 | día 21 / 23 |
+| Pase s1 / s2, casual (25 min/día) | 91% / 78% (no cierra) | termina el día 46 / 45 de 56 |
+
+El activo sigue sin terminar antes de ~3 semanas (día 21), aunque quedó más cerca del piso: no subir más los XP gratis sin revisar `pacing_check`.
+
+### Tests
+- `tests/pacing_check.luau`: ventanas de Corona/Solstice, **tramo máximo en las primeras 2 h <= 11 min por semilla y <= 10 en la mediana**, pase activo >= 18 días (antes 14), y **el casual termina ambos pases (<= día 52)**.
+- `tests/battlepass_check.luau`: semana, reinicio, desafíos (no pagan dos veces, un día cuenta una vez), esperado de nivel, multiplicadores (gracia, x1,5, x2, pase completo = x1) y tope de XP gratis.
+- `tests/seeds_check.luau`: el caso "todo cumplido" usa el índice de Primordial en vez de un 7 fijo.
+- El simulador (`sim/pacing_core.luau`) ahora modela primera victoria, desafíos y multiplicador con las mismas funciones reales.
+
+### Qué mirar en Studio
+- Ventana Season con la temporada real activa (`Season.forceActive` desde el AutoTest): las tarjetas de arriba, el "x2 XP" cuando se está atrás, y que los toasts "Primera victoria" / "Desafío semanal" salgan una sola vez.
+- Matar un jefe mundial suma al desafío de jefes; cambiar de día UTC reinicia la primera victoria.
+- Forms: Corona y Solstice se desbloquean a 600M y 1,25B y los efectos se ven bien (colores dorado y dorado/violeta). Tras ascender, con poder 40M siguen siendo 3 formas (Kindled, Blazing, Tempest).
+- No corrí el AutoTest de Studio; no agregué pruebas de los desafíos ahí (solo puras). En el celular la ventana es larga: los desafíos quedan justo bajo el encabezado y se ve con un scroll corto.
+- Límite del simulador: el casual juega todos los días; uno que falta 3 de 7 días no llega a cerrar el pase, pero el multiplicador lo acerca bastante.

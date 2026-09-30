@@ -120,6 +120,96 @@ function BattlePass.claimableCount(rec: Record, seasonId: string): number
 	return n
 end
 
+---------------------------------------------------------------------------
+-- Round 6: free pass XP for coming back (weekly challenges, daily first win) and the
+-- catch-up multiplier. All pure; the server stores `Weekly` in the profile.
+---------------------------------------------------------------------------
+export type Weekly = { week: number, lastDay: number, prog: { [string]: number }, done: { [string]: boolean } }
+
+function BattlePass.dayIndex(now: number): number
+	return now // 86400
+end
+
+function BattlePass.weekIndex(now: number): number
+	return math.floor((now - Config.BattlePass.seasons[1].startsAt) / Config.BattlePass.weekSeconds)
+end
+
+-- Seconds until the next weekly reset.
+function BattlePass.weekResetIn(now: number): number
+	local w = BattlePass.weekIndex(now) + 1
+	return Config.BattlePass.seasons[1].startsAt + w * Config.BattlePass.weekSeconds - now
+end
+
+function BattlePass.newWeekly(week: number): Weekly
+	return { week = week, lastDay = -1, prog = {}, done = {} }
+end
+
+-- The record of the current week: a stale one is replaced by a fresh one (progress is lost on purpose).
+function BattlePass.rollWeekly(w: Weekly?, now: number): Weekly
+	local week = BattlePass.weekIndex(now)
+	if w == nil or w.week ~= week then
+		return BattlePass.newWeekly(week)
+	end
+	return w
+end
+
+local function challenge(id: string): any?
+	for _, c in Config.BattlePass.weekly do
+		if c.id == id then
+			return c
+		end
+	end
+	return nil
+end
+
+-- Adds progress to a challenge. Returns the XP to award when this call completes it (else nil).
+function BattlePass.weeklyAdd(w: Weekly, id: string, n: number): number?
+	local c = challenge(id)
+	if not c or w.done[id] or n <= 0 then
+		return nil
+	end
+	w.prog[id] = math.min(c.target, (w.prog[id] or 0) + n)
+	if w.prog[id] >= c.target then
+		w.done[id] = true
+		return c.xp
+	end
+	return nil
+end
+
+-- "Play on N different days": counts a day once, however many times it is touched.
+function BattlePass.weeklyTouchDay(w: Weekly, today: number): number?
+	if w.lastDay == today then
+		return nil
+	end
+	w.lastDay = today
+	return BattlePass.weeklyAdd(w, "days", 1)
+end
+
+-- Tier a steady player would have now: tier `tiers` after paceFrac of the season.
+function BattlePass.expectedTier(season: any, now: number): number
+	local cu = Config.BattlePass.catchUp
+	local span = season.days * 86400 * cu.paceFrac
+	return math.clamp(math.floor(Config.BattlePass.tiers * (now - season.startsAt) / span), 0, Config.BattlePass.tiers)
+end
+
+-- XP multiplier while behind the expected tier (1 when on pace or ahead).
+function BattlePass.catchUpMult(xp: number, season: any, now: number): number
+	local cu = Config.BattlePass.catchUp
+	local behind = BattlePass.expectedTier(season, now) - BattlePass.tier(xp)
+	if BattlePass.tier(xp) >= Config.BattlePass.tiers then
+		return 1
+	elseif behind >= cu.deepGap then
+		return cu.deepMult
+	elseif behind >= cu.grace then
+		return cu.mult
+	end
+	return 1
+end
+
+function BattlePass.boosted(amount: number, mult: number): number
+	return math.max(1, math.floor(amount * mult + 0.5))
+end
+
 return BattlePass
 ]]></string>
         </Properties>
@@ -438,6 +528,10 @@ Config.Forms = {
 	{ id = "blazing", reqPower = 50_000, mult = 5, drain = 0.02, color = { 255, 70, 50 }, color2 = { 255, 190, 90 }, style = "flame" },
 	{ id = "tempest", reqPower = 20_000_000, mult = 15, drain = 0.025, color = { 70, 220, 255 }, color2 = { 230, 250, 255 }, style = "lightning" },
 	{ id = "eclipse", reqPower = 100_000_000, mult = 50, drain = 0.03, color = { 150, 70, 255 }, color2 = { 30, 10, 60 }, style = "shadow" },
+	-- Round 6: two forms between Eclipse (~47 min) and Nova (~2.4 h) so the stretch where the
+	-- player is saving for Frostreach always has a next goal. Same pattern as the others.
+	{ id = "corona", reqPower = 600_000_000, mult = 80, drain = 0.032, color = { 255, 150, 40 }, color2 = { 255, 245, 190 }, style = "flame" },
+	{ id = "solstice", reqPower = 1_250_000_000, mult = 130, drain = 0.034, color = { 255, 215, 90 }, color2 = { 120, 60, 255 }, style = "prism" },
 	{ id = "nova", reqPower = 15_000_000_000, mult = 200, drain = 0.035, color = { 255, 250, 220 }, color2 = { 255, 200, 80 }, style = "lightning" },
 	{ id = "celestial", reqPower = 1_500_000_000_000, mult = 1_000, drain = 0.04, color = { 120, 255, 220 }, color2 = { 255, 140, 240 }, style = "prism" },
 	{ id = "primordial", reqPower = 200_000_000_000_000, reqRebirths = 3, mult = 5_000, drain = 0.045, color = { 255, 255, 255 }, color2 = { 255, 60, 120 }, style = "prism" },
@@ -944,6 +1038,17 @@ Config.BattlePass = {
 	xpPerTier = 90,
 	skipRefundGems = 60, -- a tier skip bought while no season runs (rare race) pays back Gems
 	xp = { questClaim = 10, questBonus = 10, minutes = 1, bossKill = 6, worldBoss = 12, arenaWin = 8, relic = 2 }, -- minutes: per 5 min played
+	-- Round 6: free ways to earn pass XP that reward coming back (all server-side, no grinding).
+	firstWinXp = 6, -- first enemy defeated (or arena win) of each UTC day
+	weekly = { -- 3 challenges, reset every 7 days counted from the first season start
+		{ id = "days", target = 3, xp = 20 }, -- play on 3 different days
+		{ id = "quests", target = 5, xp = 20 }, -- claim 5 daily quests
+		{ id = "bosses", target = 2, xp = 20 }, -- defeat 2 bosses
+	},
+	weekSeconds = 7 * 86400,
+	-- Catch-up: when the tier is below the tier a steady player would have on this day of the
+	-- season (tier 30 on day `paceFrac` * season length), all pass XP is multiplied.
+	catchUp = { paceFrac = 0.8, grace = 2, mult = 1.5, deepGap = 6, deepMult = 2 },
 	seasons = {
 		{ id = "s1", arc = 8, product = "BattlePassS1", startsAt = 1790812800, days = 56, color = { 250, 130, 200 }, freeMid = { kind = "mount", id = "zephyr_puff", amount = 1 }, freeFinal = { kind = "aura", id = "nebula", amount = 1 }, premiumFinal = { kind = "skin", id = "glutt_hood", amount = 1 } },
 		{ id = "s2", arc = 9, product = "BattlePassS2", startsAt = 1790812800 + 56 * 86400, days = 56, color = { 90, 130, 255 }, freeMid = { kind = "aura", id = "umbral", amount = 1 }, freeFinal = { kind = "mount", id = "thunderhead", amount = 1 }, premiumFinal = { kind = "skin", id = "sky_warden", amount = 1 } },
@@ -2237,6 +2342,18 @@ return {
 	["season.waiting"] = "{n} Belohnungen warten",
 	["season.claim_all"] = "Alle abholen",
 	["season.skip"] = "Stufe überspringen",
+	["season.weekly_title"] = "Diese Woche",
+	["season.weekly_reset"] = "Zurücksetzung in {time}",
+	["weekly.days"] = "Spiele an {n} verschiedenen Tagen",
+	["weekly.quests"] = "Hole {n} Tagesaufgaben ab",
+	["weekly.bosses"] = "Besiege {n} Bosse",
+	["season.firstwin"] = "Erster Sieg des Tages: +{n} XP",
+	["season.firstwin_ready"] = "Besiege heute irgendeinen Gegner",
+	["season.firstwin_done"] = "Für heute erledigt",
+	["season.catchup"] = "Aufholbonus: x{m} XP",
+	["season.catchup_hint"] = "Du liegst hinter dem Tempo der Saison, deshalb wird alle Pass-XP erhöht.",
+	["msg.bp_weekly"] = "Wochenaufgabe erledigt: +{n} Pass-XP",
+	["msg.bp_firstwin"] = "Erster Sieg des Tages: +{n} Pass-XP",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Skin: {name}",
 	["rewardlabel.mount"] = "Reittier: {name}",
@@ -2719,6 +2836,18 @@ return {
 	["season.waiting"] = "{n} rewards waiting",
 	["season.claim_all"] = "Claim all",
 	["season.skip"] = "Skip a tier",
+	["season.weekly_title"] = "This week",
+	["season.weekly_reset"] = "Resets in {time}",
+	["weekly.days"] = "Play on {n} different days",
+	["weekly.quests"] = "Claim {n} daily quests",
+	["weekly.bosses"] = "Defeat {n} bosses",
+	["season.firstwin"] = "Daily first win: +{n} XP",
+	["season.firstwin_ready"] = "Defeat any enemy today",
+	["season.firstwin_done"] = "Done today",
+	["season.catchup"] = "Catch-up bonus: x{m} XP",
+	["season.catchup_hint"] = "You are behind the season pace, so all pass XP is boosted.",
+	["msg.bp_weekly"] = "Weekly challenge done: +{n} pass XP",
+	["msg.bp_firstwin"] = "First win of the day: +{n} pass XP",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Skin: {name}",
 	["rewardlabel.mount"] = "Mount: {name}",
@@ -3200,6 +3329,18 @@ return {
 	["season.waiting"] = "{n} premios esperando",
 	["season.claim_all"] = "Reclamar todo",
 	["season.skip"] = "Saltar un nivel",
+	["season.weekly_title"] = "Esta semana",
+	["season.weekly_reset"] = "Se reinicia en {time}",
+	["weekly.days"] = "Juega en {n} días distintos",
+	["weekly.quests"] = "Reclama {n} misiones diarias",
+	["weekly.bosses"] = "Vence a {n} jefes",
+	["season.firstwin"] = "Primera victoria del día: +{n} XP",
+	["season.firstwin_ready"] = "Vence a cualquier enemigo hoy",
+	["season.firstwin_done"] = "Listo por hoy",
+	["season.catchup"] = "Bonus de recuperación: x{m} XP",
+	["season.catchup_hint"] = "Vas atrás del ritmo de la temporada, así que todo el XP del pase se multiplica.",
+	["msg.bp_weekly"] = "¡Desafío semanal completo: +{n} XP de pase!",
+	["msg.bp_firstwin"] = "Primera victoria del día: +{n} XP de pase",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Skin: {name}",
 	["rewardlabel.mount"] = "Montura: {name}",
@@ -3681,6 +3822,18 @@ return {
 	["season.waiting"] = "{n} récompenses à récupérer",
 	["season.claim_all"] = "Tout récupérer",
 	["season.skip"] = "Sauter un palier",
+	["season.weekly_title"] = "Cette semaine",
+	["season.weekly_reset"] = "Réinitialisation dans {time}",
+	["weekly.days"] = "Joue pendant {n} jours différents",
+	["weekly.quests"] = "Récupère {n} quêtes quotidiennes",
+	["weekly.bosses"] = "Bats {n} boss",
+	["season.firstwin"] = "Première victoire du jour : +{n} XP",
+	["season.firstwin_ready"] = "Bats n'importe quel ennemi aujourd'hui",
+	["season.firstwin_done"] = "Fait pour aujourd'hui",
+	["season.catchup"] = "Bonus de rattrapage : x{m} XP",
+	["season.catchup_hint"] = "Tu es en retard sur le rythme de la saison, donc tout l'XP du pass est multiplié.",
+	["msg.bp_weekly"] = "Défi hebdomadaire terminé : +{n} XP de pass",
+	["msg.bp_firstwin"] = "Première victoire du jour : +{n} XP de pass",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Skin : {name}",
 	["rewardlabel.mount"] = "Monture : {name}",
@@ -4162,6 +4315,18 @@ return {
 	["season.waiting"] = "{n} hadiah menunggu",
 	["season.claim_all"] = "Klaim semua",
 	["season.skip"] = "Lewati satu tier",
+	["season.weekly_title"] = "Minggu ini",
+	["season.weekly_reset"] = "Reset dalam {time}",
+	["weekly.days"] = "Main di {n} hari berbeda",
+	["weekly.quests"] = "Klaim {n} misi harian",
+	["weekly.bosses"] = "Kalahkan {n} bos",
+	["season.firstwin"] = "Kemenangan pertama hari ini: +{n} XP",
+	["season.firstwin_ready"] = "Kalahkan musuh mana pun hari ini",
+	["season.firstwin_done"] = "Selesai hari ini",
+	["season.catchup"] = "Bonus mengejar: x{m} XP",
+	["season.catchup_hint"] = "Kamu tertinggal dari tempo musim, jadi semua XP pass dilipatgandakan.",
+	["msg.bp_weekly"] = "Tantangan mingguan selesai: +{n} XP pass",
+	["msg.bp_firstwin"] = "Kemenangan pertama hari ini: +{n} XP pass",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Skin: {name}",
 	["rewardlabel.mount"] = "Tunggangan: {name}",
@@ -4643,6 +4808,18 @@ return {
 	["season.waiting"] = "受け取れる報酬：{n}",
 	["season.claim_all"] = "すべて受け取る",
 	["season.skip"] = "1ティア進める",
+	["season.weekly_title"] = "今週",
+	["season.weekly_reset"] = "{time}後にリセット",
+	["weekly.days"] = "{n}日別々の日にプレイ",
+	["weekly.quests"] = "デイリークエストを{n}個受け取る",
+	["weekly.bosses"] = "ボスを{n}体倒す",
+	["season.firstwin"] = "今日の初勝利：+{n} XP",
+	["season.firstwin_ready"] = "今日どれかの敵を倒す",
+	["season.firstwin_done"] = "今日は完了",
+	["season.catchup"] = "追い上げボーナス：x{m} XP",
+	["season.catchup_hint"] = "シーズンのペースより遅れているので、パスXPがすべて増えます。",
+	["msg.bp_weekly"] = "週間チャレンジ達成：パスXP +{n}",
+	["msg.bp_firstwin"] = "今日の初勝利：パスXP +{n}",
 	["rewardlabel.seed"] = "{name} {n}個",
 	["rewardlabel.skin"] = "スキン：{name}",
 	["rewardlabel.mount"] = "乗り物：{name}",
@@ -5124,6 +5301,18 @@ return {
 	["season.waiting"] = "받을 보상 {n}개",
 	["season.claim_all"] = "모두 받기",
 	["season.skip"] = "1티어 건너뛰기",
+	["season.weekly_title"] = "이번 주",
+	["season.weekly_reset"] = "{time} 후 초기화",
+	["weekly.days"] = "서로 다른 {n}일 플레이",
+	["weekly.quests"] = "일일 퀘스트 {n}개 수령",
+	["weekly.bosses"] = "보스 {n}마리 처치",
+	["season.firstwin"] = "오늘의 첫 승리: +{n} XP",
+	["season.firstwin_ready"] = "오늘 적을 아무나 처치",
+	["season.firstwin_done"] = "오늘 완료",
+	["season.catchup"] = "따라잡기 보너스: x{m} XP",
+	["season.catchup_hint"] = "시즌 진행 속도보다 뒤처져서 모든 패스 XP가 늘어납니다.",
+	["msg.bp_weekly"] = "주간 도전 완료: 패스 XP +{n}",
+	["msg.bp_firstwin"] = "오늘의 첫 승리: 패스 XP +{n}",
 	["rewardlabel.seed"] = "{name} {n}개",
 	["rewardlabel.skin"] = "스킨: {name}",
 	["rewardlabel.mount"] = "탈것: {name}",
@@ -5605,6 +5794,18 @@ return {
 	["season.waiting"] = "{n} prêmios esperando",
 	["season.claim_all"] = "Coletar tudo",
 	["season.skip"] = "Pular um nível",
+	["season.weekly_title"] = "Esta semana",
+	["season.weekly_reset"] = "Reinicia em {time}",
+	["weekly.days"] = "Jogue em {n} dias diferentes",
+	["weekly.quests"] = "Resgate {n} missões diárias",
+	["weekly.bosses"] = "Derrote {n} chefes",
+	["season.firstwin"] = "Primeira vitória do dia: +{n} XP",
+	["season.firstwin_ready"] = "Derrote qualquer inimigo hoje",
+	["season.firstwin_done"] = "Feito por hoje",
+	["season.catchup"] = "Bônus de recuperação: x{m} XP",
+	["season.catchup_hint"] = "Você está atrás do ritmo da temporada, então todo o XP do passe é multiplicado.",
+	["msg.bp_weekly"] = "Desafio semanal concluído: +{n} XP do passe",
+	["msg.bp_firstwin"] = "Primeira vitória do dia: +{n} XP do passe",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Skin: {name}",
 	["rewardlabel.mount"] = "Montaria: {name}",
@@ -6086,6 +6287,18 @@ return {
 	["season.waiting"] = "Наград ждёт: {n}",
 	["season.claim_all"] = "Забрать всё",
 	["season.skip"] = "Пропустить ранг",
+	["season.weekly_title"] = "На этой неделе",
+	["season.weekly_reset"] = "Обновится через {time}",
+	["weekly.days"] = "Играй в {n} разных дня",
+	["weekly.quests"] = "Забери {n} ежедневных заданий",
+	["weekly.bosses"] = "Победи {n} боссов",
+	["season.firstwin"] = "Первая победа дня: +{n} XP",
+	["season.firstwin_ready"] = "Победи любого врага сегодня",
+	["season.firstwin_done"] = "На сегодня готово",
+	["season.catchup"] = "Бонус отставания: x{m} XP",
+	["season.catchup_hint"] = "Ты отстаёшь от темпа сезона, поэтому весь XP пропуска умножается.",
+	["msg.bp_weekly"] = "Недельное задание выполнено: +{n} XP пропуска",
+	["msg.bp_firstwin"] = "Первая победа дня: +{n} XP пропуска",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Скин: {name}",
 	["rewardlabel.mount"] = "Ездовое: {name}",
@@ -6567,6 +6780,18 @@ return {
 	["season.waiting"] = "มีรางวัลรอ {n} รายการ",
 	["season.claim_all"] = "รับทั้งหมด",
 	["season.skip"] = "ข้าม 1 เทียร์",
+	["season.weekly_title"] = "สัปดาห์นี้",
+	["season.weekly_reset"] = "รีเซ็ตใน {time}",
+	["weekly.days"] = "เล่นใน {n} วันที่ต่างกัน",
+	["weekly.quests"] = "รับเควสต์ประจำวัน {n} อัน",
+	["weekly.bosses"] = "เอาชนะบอส {n} ตัว",
+	["season.firstwin"] = "ชัยชนะแรกของวัน: +{n} XP",
+	["season.firstwin_ready"] = "เอาชนะศัตรูตัวใดก็ได้วันนี้",
+	["season.firstwin_done"] = "เสร็จสำหรับวันนี้",
+	["season.catchup"] = "โบนัสไล่ตาม: x{m} XP",
+	["season.catchup_hint"] = "คุณตามหลังจังหวะของซีซัน XP พาสทั้งหมดจึงถูกคูณเพิ่ม",
+	["msg.bp_weekly"] = "ภารกิจรายสัปดาห์สำเร็จ: +{n} XP พาส",
+	["msg.bp_firstwin"] = "ชัยชนะแรกของวัน: +{n} XP พาส",
 	["rewardlabel.seed"] = "{name} {n} เมล็ด",
 	["rewardlabel.skin"] = "สกิน: {name}",
 	["rewardlabel.mount"] = "พาหนะ: {name}",
@@ -7048,6 +7273,18 @@ return {
 	["season.waiting"] = "{n} ödül bekliyor",
 	["season.claim_all"] = "Hepsini al",
 	["season.skip"] = "Bir kademe atla",
+	["season.weekly_title"] = "Bu hafta",
+	["season.weekly_reset"] = "{time} sonra sıfırlanır",
+	["weekly.days"] = "{n} farklı günde oyna",
+	["weekly.quests"] = "{n} günlük görev al",
+	["weekly.bosses"] = "{n} boss yen",
+	["season.firstwin"] = "Günün ilk zaferi: +{n} XP",
+	["season.firstwin_ready"] = "Bugün herhangi bir düşmanı yen",
+	["season.firstwin_done"] = "Bugünlük tamam",
+	["season.catchup"] = "Yetişme bonusu: x{m} XP",
+	["season.catchup_hint"] = "Sezon temposunun gerisindesin, bu yüzden tüm geçiş XP'si artırıldı.",
+	["msg.bp_weekly"] = "Haftalık görev tamam: +{n} geçiş XP",
+	["msg.bp_firstwin"] = "Günün ilk zaferi: +{n} geçiş XP",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Kostüm: {name}",
 	["rewardlabel.mount"] = "Binek: {name}",
@@ -7529,6 +7766,18 @@ return {
 	["season.waiting"] = "{n} phần thưởng đang chờ",
 	["season.claim_all"] = "Nhận tất cả",
 	["season.skip"] = "Nhảy 1 bậc",
+	["season.weekly_title"] = "Tuần này",
+	["season.weekly_reset"] = "Đặt lại sau {time}",
+	["weekly.days"] = "Chơi trong {n} ngày khác nhau",
+	["weekly.quests"] = "Nhận {n} nhiệm vụ hằng ngày",
+	["weekly.bosses"] = "Hạ {n} trùm",
+	["season.firstwin"] = "Chiến thắng đầu tiên trong ngày: +{n} XP",
+	["season.firstwin_ready"] = "Hạ bất kỳ kẻ địch nào hôm nay",
+	["season.firstwin_done"] = "Xong hôm nay",
+	["season.catchup"] = "Thưởng bắt kịp: x{m} XP",
+	["season.catchup_hint"] = "Bạn đang chậm hơn nhịp của mùa, nên toàn bộ XP thẻ được nhân lên.",
+	["msg.bp_weekly"] = "Xong thử thách tuần: +{n} XP thẻ",
+	["msg.bp_firstwin"] = "Chiến thắng đầu tiên trong ngày: +{n} XP thẻ",
 	["rewardlabel.seed"] = "{n} {name}",
 	["rewardlabel.skin"] = "Skin: {name}",
 	["rewardlabel.mount"] = "Thú cưỡi: {name}",
@@ -7718,6 +7967,8 @@ return {
 	["form.blazing"] = "Blazing",
 	["form.tempest"] = "Tempest",
 	["form.eclipse"] = "Eclipse",
+	["form.corona"] = "Corona",
+	["form.solstice"] = "Solstice",
 	["form.nova"] = "Nova",
 	["form.celestial"] = "Celestial",
 	["form.primordial"] = "Primordial",
@@ -9596,6 +9847,8 @@ export type Profile = {
 	mounts: { [string]: boolean },
 	mount: string,
 	bp: { [string]: { xp: number, premium: boolean, free: { [string]: boolean }, paid: { [string]: boolean } } },
+	bpWeekly: { week: number, lastDay: number, prog: { [string]: number }, done: { [string]: boolean } }, -- Round 6 weekly pass challenges
+	bpFirstWin: number, -- UTC day index of the last daily first-win bonus
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
@@ -9685,6 +9938,8 @@ local function defaultProfile(): Profile
 		mounts = {},
 		mount = "",
 		bp = {},
+		bpWeekly = { week = -1, lastDay = -1, prog = {}, done = {} },
+		bpFirstWin = -1,
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
@@ -9811,6 +10066,20 @@ local function reconcile(p: any): Profile
 			rec.paid = if type(rec.paid) == "table" then rec.paid else {}
 		end
 	end
+	-- weekly pass challenges (old saves have none)
+	if type(p.bpWeekly) ~= "table" then
+		p.bpWeekly = { week = -1, lastDay = -1, prog = {}, done = {} }
+	end
+	local w = p.bpWeekly
+	w.week = math.floor(num(w.week, -1))
+	w.lastDay = math.floor(num(w.lastDay, -1))
+	w.prog = if type(w.prog) == "table" then w.prog else {}
+	w.done = if type(w.done) == "table" then w.done else {}
+	for _, c in Config.BattlePass.weekly do
+		w.prog[c.id] = math.clamp(math.floor(num(w.prog[c.id], 0)), 0, c.target)
+		w.done[c.id] = w.done[c.id] == true
+	end
+	p.bpFirstWin = math.floor(num(p.bpFirstWin, -1))
 	return p :: Profile
 end
 Data.reconcile = reconcile
@@ -12898,19 +13167,61 @@ local function record(p: Data.Profile, id: string): BattlePass.Record
 	return rec :: any
 end
 
-function Season.addXp(player: Player, amount: number)
+-- Adds pass XP (multiplied by the catch-up bonus while behind the season pace unless `flat`).
+-- Returns the XP actually added.
+function Season.addXp(player: Player, amount: number, flat: boolean?): number
 	local p = Data.get(player)
-	local season = BattlePass.active(os.time())
+	local now = os.time()
+	local season = BattlePass.active(now)
 	if not p or not season or amount <= 0 then
-		return
+		return 0
 	end
 	local rec = record(p, season.id)
 	local before = BattlePass.tier(rec.xp)
+	local xpBefore = rec.xp
+	if not flat then
+		amount = BattlePass.boosted(amount, BattlePass.catchUpMult(rec.xp, season, now))
+	end
 	BattlePass.addXp(rec, amount)
 	if BattlePass.tier(rec.xp) > before then
 		Remotes.notify(player, M("msg.bp_tier", { n = BattlePass.tier(rec.xp) }), "success")
 	end
 	State.dirty(player)
+	return rec.xp - xpBefore
+end
+
+-- Weekly challenge progress (only while a season runs: the XP has nowhere to go otherwise).
+local function weeklyProgress(player: Player, id: string, n: number)
+	local p = Data.get(player)
+	local now = os.time()
+	if not p or not BattlePass.active(now) then
+		return
+	end
+	local w = BattlePass.rollWeekly(p.bpWeekly, now)
+	p.bpWeekly = w :: any
+	local xp = if id == "days" then BattlePass.weeklyTouchDay(w, BattlePass.dayIndex(now)) else BattlePass.weeklyAdd(w, id, n)
+	if xp then
+		local got = Season.addXp(player, xp)
+		Remotes.notify(player, M("msg.bp_weekly", { n = got }), "success")
+	end
+	State.dirty(player)
+end
+
+-- Daily first win: the first enemy defeated (or arena win) of each UTC day.
+local function firstWin(player: Player)
+	local p = Data.get(player)
+	local now = os.time()
+	if not p or not BattlePass.active(now) then
+		return
+	end
+	local today = BattlePass.dayIndex(now)
+	if p.bpFirstWin == today then
+		return
+	end
+	p.bpFirstWin = today
+	local got = Season.addXp(player, Config.BattlePass.firstWinXp)
+	Remotes.notify(player, M("msg.bp_firstwin", { n = got }), "success")
+	weeklyProgress(player, "days", 1)
 end
 
 -- Product receipts: the premium track of a season (even if it just ended: the player paid).
@@ -12957,7 +13268,19 @@ local function snapshot(_player: Player, p: Data.Profile): any
 	end
 	local rec = p.bp[season.id] or BattlePass.newRecord()
 	local missing, frac = BattlePass.progress(rec.xp)
+	local w = BattlePass.rollWeekly(p.bpWeekly, now)
+	p.bpWeekly = w :: any
+	local weekly = {}
+	for _, c in Config.BattlePass.weekly do
+		table.insert(weekly, { id = c.id, target = c.target, xp = c.xp, have = w.prog[c.id] or 0, done = w.done[c.id] == true })
+	end
 	return {
+		weekly = weekly,
+		weekResetIn = BattlePass.weekResetIn(now),
+		firstWinReady = p.bpFirstWin ~= BattlePass.dayIndex(now),
+		firstWinXp = Config.BattlePass.firstWinXp,
+		catchUp = BattlePass.catchUpMult(rec.xp, season, now),
+		expectedTier = BattlePass.expectedTier(season, now),
 		id = season.id,
 		endsAt = season.endsAt,
 		xp = rec.xp,
@@ -12978,15 +13301,23 @@ function Season.init()
 	local X = Config.BattlePass.xp
 	Hooks.on("npcKilled", function(player: Player, _id: string, def: any)
 		Season.addXp(player, if def.world then X.worldBoss elseif def.boss then X.bossKill else 0)
+		if def.boss then
+			weeklyProgress(player, "bosses", 1)
+		end
+		firstWin(player)
 	end)
 	Hooks.on("arenaWin", function(player: Player)
 		Season.addXp(player, X.arenaWin)
+		firstWin(player)
 	end)
 	Hooks.on("relic", function(player: Player)
 		Season.addXp(player, X.relic)
 	end)
 	Hooks.on("questClaimed", function(player: Player, kind: string)
 		Season.addXp(player, if kind == "bonus" then X.questBonus else X.questClaim)
+		if kind ~= "bonus" then
+			weeklyProgress(player, "quests", 1)
+		end
 	end)
 
 	local function claim(player: Player, track: string, tier: number): (boolean, any)
@@ -13053,6 +13384,7 @@ function Season.init()
 			for _, player in Players:GetPlayers() do
 				if State.ready[player] then
 					Season.addXp(player, X.minutes)
+					weeklyProgress(player, "days", 1) -- being online counts as a day even without a fight
 				end
 			end
 		end
@@ -13222,7 +13554,7 @@ function Social.init()
 	end)
 	-- server-wide announcement of a rare milestone: one of the three strongest forms
 	Hooks.on("formUnlocked", function(player: Player, index: number)
-		if index >= 6 then
+		if index >= Config.FormById.celestial.index then
 			Remotes.fireAll("Toast", { key = "toast.form_rare", args = { player = player.DisplayName, form = { key = "form." .. Config.Forms[index].id } }, color = Config.Forms[index].color })
 		end
 	end)
@@ -22443,8 +22775,27 @@ local function renderSeason(body: Frame)
 			Kit.request("ClaimPassAll")
 		end, 34)
 	end
+	-- Round 6: daily first win + catch-up bonus, and the weekly challenges
+	if se.weekly then
+		local daily = Kit.row(list, 66, 3, Theme.Yellow)
+		Kit.text(daily, { Text = Lang.t("season.firstwin", { n = se.firstWinXp }), Size = UDim2.new(0.5, -20, 0, 24), Position = UDim2.fromOffset(20, 8), MaxTextSize = 18, TextXAlignment = Enum.TextXAlignment.Left })
+		Kit.text(daily, { Text = Lang.t(if se.firstWinReady then "season.firstwin_ready" else "season.firstwin_done"), Size = UDim2.new(0.5, -20, 0, 20), Position = UDim2.fromOffset(20, 36), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = if se.firstWinReady then Theme.Dim else Theme.Green, Font = Theme.FontBold })
+		if (se.catchUp or 1) > 1 then
+			Kit.text(daily, { Text = Lang.t("season.catchup", { m = string.format("%g", se.catchUp) }), Size = UDim2.new(0.46, -10, 0, 24), Position = UDim2.new(1, -14, 0, 8), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 18, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Green })
+			Kit.text(daily, { Text = Lang.t("season.catchup_hint"), Size = UDim2.new(0.46, -10, 0, 30), Position = UDim2.new(1, -14, 0, 32), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 12, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Right, TextYAlignment = Enum.TextYAlignment.Top, TextColor3 = Theme.Dim, Font = Theme.FontBold })
+		end
+		local card = Kit.row(list, 38 + #se.weekly * 34, 4, Theme.Cyan)
+		Kit.text(card, { Text = Lang.t("season.weekly_title"), Font = Theme.Display, Size = UDim2.new(0.4, 0, 0, 26), Position = UDim2.fromOffset(20, 6), MaxTextSize = 22, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.lighten(Theme.Cyan, 0.3) })
+		Kit.text(card, { Text = Lang.t("season.weekly_reset", { time = Format.time(math.max(0, se.weekResetIn - (os.clock() - Net.receivedAt))) }), Size = UDim2.new(0.4, 0, 0, 18), Position = UDim2.new(1, -14, 0, 10), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow })
+		for i, c in se.weekly do
+			local y = 38 + (i - 1) * 34
+			Kit.text(card, { Text = Lang.t("weekly." .. c.id, { n = c.target }), Size = UDim2.new(0.48, -20, 0, 28), Position = UDim2.fromOffset(20, y), MaxTextSize = 15, TextWrapped = true, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = if c.done then Theme.Green else Color3.new(1, 1, 1) })
+			Kit.bar(card, UDim2.new(0.32, 0, 0, 22), UDim2.new(0.5, 0, 0, y + 3), if c.done then Theme.Green else Theme.Cyan, c.have / c.target, if c.done then "✔" else c.have .. "/" .. c.target)
+			Kit.text(card, { Text = "+" .. c.xp .. " XP", Size = UDim2.new(0.14, -14, 0, 28), Position = UDim2.new(1, -14, 0, y), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 15, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = if c.done then Theme.Dim else Theme.Yellow })
+		end
+	end
 	-- column titles
-	local titles = Kit.row(list, 28, 3)
+	local titles = Kit.row(list, 28, 5)
 	Kit.text(titles, { Text = Lang.t("season.free"), Size = UDim2.new(0.4, 0, 1, -6), Position = UDim2.new(0.18, 0, 0, 3), MaxTextSize = 15, TextColor3 = Theme.Green })
 	Kit.text(titles, { Text = Lang.t("season.premium_track"), Size = UDim2.new(0.4, 0, 1, -6), Position = UDim2.new(0.6, 0, 0, 3), MaxTextSize = 15, TextColor3 = Theme.Yellow })
 	for tier = 1, Config.BattlePass.tiers do

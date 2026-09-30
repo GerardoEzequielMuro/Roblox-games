@@ -71,6 +71,8 @@ return {
 	["form.blazing"] = "Blazing",
 	["form.tempest"] = "Tempest",
 	["form.eclipse"] = "Eclipse",
+	["form.corona"] = "Corona",
+	["form.solstice"] = "Solstice",
 	["form.nova"] = "Nova",
 	["form.celestial"] = "Celestial",
 	["form.primordial"] = "Primordial",
