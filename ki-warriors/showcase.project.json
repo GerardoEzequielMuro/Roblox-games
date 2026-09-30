@@ -1,0 +1,65 @@
+{
+  "name": "KiWarriorsShowcase",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "Showcase": {
+        "$path": "tests/Showcase.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        },
+        "ShowcaseClient": {
+          "$path": "tests/ShowcaseClient.client.luau"
+        }
+      },
+      "$properties": {
+        "CameraMaxZoomDistance": 60,
+        "CameraMinZoomDistance": 6
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "Gravity": 196.2,
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 320,
+        "StreamingTargetRadius": 900,
+        "StreamOutBehavior": "Opportunistic",
+        "FallenPartsDestroyHeight": -400
+      },
+      "$attributes": {
+        "ForceLanguage": "es"
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "Brightness": 2.6,
+        "ClockTime": 13.6,
+        "GlobalShadows": true
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "__AutoTest": {
+        "$className": "BoolValue"
+      }
+    }
+  }
+}

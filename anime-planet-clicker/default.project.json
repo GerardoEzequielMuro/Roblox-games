@@ -1,0 +1,37 @@
+{
+  "name": "PlanetCrackers",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": { "$path": "src/shared" }
+    },
+    "ServerScriptService": {
+      "Server": { "$path": "src/server" }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": { "$path": "src/client" }
+      },
+      "$properties": {
+        "CameraMaxZoomDistance": 70
+      }
+    },
+    "Players": { "$properties": { "CharacterAutoLoads": true } },
+    "Workspace": {
+      "$properties": {
+        "Gravity": 196.2,
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 160,
+        "StreamingTargetRadius": 420
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "ShadowMap",
+        "Brightness": 2.4,
+        "ClockTime": 15,
+        "GlobalShadows": true
+      }
+    }
+  }
+}

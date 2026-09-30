@@ -1,0 +1,13 @@
+economy sim: 6 seeds x 14 h (free player)
+  zone2     0h 05m 16s  (6/6 runs)
+  zone3     0h 33m 37s  (6/6 runs)
+  rebirth1  1h 04m 37s  (6/6 runs)
+  zone4     1h 54m 51s  (6/6 runs)
+  rebirth2  1h 56m 10s  (6/6 runs)
+  zone5     2h 54m 46s  (6/6 runs)
+  rebirth3  2h 54m 56s  (6/6 runs)
+  zone6     5h 00m 01s  (6/6 runs)
+  rebirth4  3h 06m 46s  (6/6 runs)
+  rebirth5  5h 00m 18s  (6/6 runs)
+  rebirth6  5h 43m 09s  (6/6 runs)
+  last run: rebirths=6 zone=6 tool=12 power=320 cargo=20 capsules=119 crystals=8256 temper=27 starPower=12 trait=x5.00

@@ -1,0 +1,9 @@
+tools/*.zip
+*.rbxl
+*.rbxlx
+sourcemap.json
+tools/*.exe
+tools/globalTypes.d.luau
+tools/.studio.lock
+uiaudit.project.json
+*.rbxlx.lock

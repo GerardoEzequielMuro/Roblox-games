@@ -1,0 +1,70 @@
+{
+  "name": "CropKingdom",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "__UiAuditEnd": {
+        "$path": "C:/work/_Personal/proyectos/huerta-tycoon/tools/uiaudit/UiAuditEnd.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        },
+        "__UiAudit": {
+          "$path": "C:/work/_Personal/proyectos/huerta-tycoon/tools/uiaudit/UiAudit.client.luau"
+        },
+        "__I18nAudit": {
+          "$path": "tests/I18nAudit.client.luau"
+        }
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "Brightness": 2.5,
+        "ClockTime": 14.5,
+        "GlobalShadows": true
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "__AutoTest": {
+        "$className": "BoolValue"
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "$attributes": {
+        "AuditSeconds": {
+          "Float64": 100
+        }
+      },
+      "Terrain": {
+        "$className": "Terrain",
+        "$properties": {
+          "Decoration": true
+        }
+      },
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 256,
+        "StreamingTargetRadius": 768
+      }
+    }
+  }
+}

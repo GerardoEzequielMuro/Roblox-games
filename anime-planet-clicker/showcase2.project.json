@@ -1,0 +1,62 @@
+{
+  "name": "showcase2",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "Showcase": {
+        "$path": "tests/Showcase.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        },
+        "ShowcaseClient": {
+          "$path": "tests/ShowcaseClient.client.luau"
+        }
+      },
+      "$properties": {
+        "CameraMaxZoomDistance": 70
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "Gravity": 196.2,
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 160,
+        "StreamingTargetRadius": 420
+      },
+      "$attributes": {
+        "ShowcaseSet": 2
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "ShadowMap",
+        "Brightness": 2.4,
+        "ClockTime": 15,
+        "GlobalShadows": true
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "__AutoTest": {
+        "$className": "BoolValue"
+      }
+    }
+  }
+}

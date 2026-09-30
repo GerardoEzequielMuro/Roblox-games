@@ -1,0 +1,18 @@
+=== Tap Pets Simulator economy sim: 6 taps/s, 6 h, seed 1 ===
+ 0h 04m 39s  unlock zone 2 (Candy Land)  tap=31
+ 0h 21m 50s  unlock zone 3 (Frost Peak)  tap=363
+ 0h 52m 04s  REBIRTH #1  (cost 63000000)
+ 1h 44m 01s  unlock zone 4 (Lava Caves)  tap=23403
+ 1h 57m 40s  REBIRTH #2  (cost 504000000)
+ 3h 04m 42s  REBIRTH #3  (cost 4032000000)
+ 3h 35m 01s  unlock zone 5 (Cosmic Void)  tap=573755
+ 3h 51m 02s  REBIRTH #4  (cost 32256000000)
+ 4h 29m 19s  REBIRTH #5  (cost 258048000000)
+hatches=6784  final tap value=25025009  upgrades: TapPower=6 PetSlots=1 Luck=3
+
+=== Averages over 20 seeds ===
+Zone 2 Candy Land     avg unlock  0h 04m 48s   (reached in 20/20 runs)
+Zone 3 Frost Peak     avg unlock  0h 35m 37s   (reached in 20/20 runs)
+Zone 4 Lava Caves     avg unlock  1h 46m 13s   (reached in 20/20 runs)
+Zone 5 Cosmic Void    avg unlock  3h 29m 50s   (reached in 20/20 runs)
+First rebirth           avg  1h 02m 04s   (reached in 20/20 runs)

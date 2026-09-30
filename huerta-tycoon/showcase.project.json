@@ -1,0 +1,73 @@
+{
+  "name": "CropKingdom",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "__UiAuditEnd": {
+        "$path": "tools/uiaudit/UiAuditEnd.server.luau"
+      },
+      "__Showcase": {
+        "$path": "tests/Showcase.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        },
+        "__UiAudit": {
+          "$path": "tools/uiaudit/UiAudit.client.luau"
+        },
+        "__Showcase": {
+          "$path": "tests/Showcase.client.luau"
+        }
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "Brightness": 2.5,
+        "ClockTime": 14.5,
+        "GlobalShadows": true
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "Terrain": {
+        "$className": "Terrain",
+        "$properties": {
+          "Decoration": true
+        }
+      },
+      "$attributes": {
+        "AuditSeconds": {
+          "Float64": 235
+        }
+      },
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 256,
+        "StreamingTargetRadius": 768
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "__AutoTest": {
+        "$className": "BoolValue"
+      }
+    }
+  }
+}

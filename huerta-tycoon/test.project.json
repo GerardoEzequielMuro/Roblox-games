@@ -1,0 +1,54 @@
+{
+  "name": "CropKingdomTest",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "AutoTest": {
+        "$path": "tests/AutoTest.server.luau"
+      }
+    },
+    "ServerStorage": {
+      "__AutoTest": {
+        "$className": "BoolValue"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        },
+        "AutoTestClient": {
+          "$path": "tests/AutoTestClient.client.luau"
+        }
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "ClockTime": 14.5
+      }
+    },
+    "Workspace": {
+      "$className": "Workspace",
+      "Terrain": {
+        "$className": "Terrain",
+        "$properties": {
+          "Decoration": true
+        }
+      },
+      "$properties": {
+        "StreamingEnabled": true,
+        "StreamingMinRadius": 256,
+        "StreamingTargetRadius": 768
+      }
+    }
+  }
+}

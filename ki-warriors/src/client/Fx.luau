@@ -1,0 +1,258 @@
+--!nonstrict
+-- Client effect toolkit: part pool, quality profile (lite for phones), camera shake / FOV
+-- kicks, hit-stop clock and the colours of each form. Everything visual runs on the client.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local Net = require(script.Parent.Net)
+
+local Fx = {}
+
+local player = Players.LocalPlayer
+
+-- Lite profile: phones/tablets by default, or the player's setting. Fewer particles, no
+-- dynamic lights, shorter draw distances for effects.
+local touchDevice = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+Fx.lite = touchDevice or workspace:GetAttribute("ForceLite") == true
+function Fx.refreshQuality()
+	local setting = Net.setting("lite")
+	Fx.lite = touchDevice or setting == true or workspace:GetAttribute("ForceLite") == true
+end
+Net.Changed:Connect(function(kind)
+	if kind == "full" then
+		Fx.refreshQuality()
+	end
+end)
+
+Fx.folder = Instance.new("Folder")
+Fx.folder.Name = "KiwFx"
+Fx.folder.Parent = workspace
+
+---------------------------------------------------------------------------
+-- Colours
+---------------------------------------------------------------------------
+local BASE = Color3.fromRGB(110, 210, 255) -- untransformed ki
+local BASE2 = Color3.fromRGB(235, 250, 255)
+function Fx.formColors(form: number?): (Color3, Color3, string)
+	local f = Config.Forms[form or 0]
+	if f then
+		return Color3.fromRGB(f.color[1], f.color[2], f.color[3]), Color3.fromRGB(f.color2[1], f.color2[2], f.color2[3]), f.style
+	end
+	return BASE, BASE2, "flame"
+end
+
+function Fx.auraColor(auraId: string?): Color3?
+	local a = auraId and Config.AuraById[auraId]
+	if a then
+		return Color3.fromRGB(a.color[1], a.color[2], a.color[3])
+	end
+	return nil
+end
+
+---------------------------------------------------------------------------
+-- Pool
+---------------------------------------------------------------------------
+local pools: { [string]: { BasePart } } = {}
+Fx.alive = 0 -- pooled parts currently in use (budget check)
+Fx.created = 0
+
+local function make(kind: string): BasePart
+	local p: BasePart
+	if kind == "ball" then
+		local b = Instance.new("Part")
+		b.Shape = Enum.PartType.Ball
+		p = b
+	elseif kind == "cyl" then
+		local b = Instance.new("Part")
+		b.Shape = Enum.PartType.Cylinder
+		p = b
+	elseif kind == "blob" then
+		p = Instance.new("Part")
+		local m = Instance.new("SpecialMesh")
+		m.MeshType = Enum.MeshType.Sphere
+		m.Parent = p
+	else
+		p = Instance.new("Part")
+	end
+	p.Anchored = true
+	p.CanCollide = false
+	p.CanQuery = false
+	p.CanTouch = false
+	p.CastShadow = false
+	p.Material = Enum.Material.Neon
+	p.TopSurface = Enum.SurfaceType.Smooth
+	p.BottomSurface = Enum.SurfaceType.Smooth
+	p.Name = "fx_" .. kind
+	Fx.created += 1
+	return p
+end
+
+-- kinds: "ball" | "cyl" | "block" | "blob"
+function Fx.get(kind: string): BasePart
+	local pool = pools[kind]
+	local p = pool and table.remove(pool)
+	if not p then
+		p = make(kind)
+	end
+	p.Transparency = 0
+	p.Material = Enum.Material.Neon
+	p.Parent = Fx.folder
+	Fx.alive += 1
+	return p
+end
+
+function Fx.release(p: BasePart)
+	if not p or p.Parent == nil then
+		return
+	end
+	p.Parent = nil
+	local kind = p.Name:sub(4)
+	local pool = pools[kind]
+	if not pool then
+		pool = {}
+		pools[kind] = pool
+	end
+	Fx.alive -= 1
+	if #pool < 80 then
+		table.insert(pool, p)
+	else
+		p:Destroy()
+	end
+end
+
+function Fx.tween(obj: Instance, time: number, props: { [string]: any }, style: Enum.EasingStyle?, dir: Enum.EasingDirection?): Tween
+	local t = TweenService:Create(obj, TweenInfo.new(time, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props)
+	t:Play()
+	return t
+end
+
+-- Pooled part that animates to `props` and returns to the pool.
+function Fx.flash(kind: string, cf: CFrame, size: Vector3, color: Color3, time: number, props: { [string]: any }, trans: number?): BasePart
+	local p = Fx.get(kind)
+	p.Size = size
+	p.CFrame = cf
+	p.Color = color
+	p.Transparency = trans or 0
+	Fx.tween(p, time, props)
+	task.delay(time, Fx.release, p)
+	return p
+end
+
+-- Expanding ring on the ground (flat cylinder).
+function Fx.ring(pos: Vector3, fromR: number, toR: number, color: Color3, time: number, thickness: number?)
+	local h = thickness or 0.4
+	Fx.flash("cyl", CFrame.new(pos) * CFrame.Angles(0, 0, math.rad(90)), Vector3.new(h, fromR * 2, fromR * 2), color, time, { Size = Vector3.new(h * 0.5, toR * 2, toR * 2), Transparency = 1 }, 0.25)
+end
+
+-- Expanding sphere shell.
+function Fx.burst(pos: Vector3, fromR: number, toR: number, color: Color3, time: number, trans: number?)
+	Fx.flash("ball", CFrame.new(pos), Vector3.one * fromR * 2, color, time, { Size = Vector3.one * toR * 2, Transparency = 1 }, trans or 0.3)
+end
+
+-- Shards flying out of a point (geometry sparks: visible at any graphics quality).
+function Fx.sparks(pos: Vector3, color: Color3, count: number, speed: number, size: number?)
+	local n = if Fx.lite then math.ceil(count / 2) else count
+	local s = size or 0.5
+	for _ = 1, n do
+		local dir = Vector3.new(math.random() - 0.5, math.random() * 0.8, math.random() - 0.5)
+		if dir.Magnitude < 0.05 then
+			dir = Vector3.yAxis
+		end
+		dir = dir.Unit
+		local len = s * (2 + math.random() * 3)
+		local from = pos + dir * 0.6
+		local to = pos + dir * speed * (0.18 + math.random() * 0.2)
+		Fx.flash("block", CFrame.lookAt(from, to), Vector3.new(s * 0.45, s * 0.45, len), color, 0.22 + math.random() * 0.12, { CFrame = CFrame.lookAt(to, to + dir), Size = Vector3.new(0.05, 0.05, len * 0.3), Transparency = 0.6 })
+	end
+end
+
+---------------------------------------------------------------------------
+-- Camera: shake + FOV kick (one RenderStepped for both)
+---------------------------------------------------------------------------
+local shake = 0
+local fovKick = 0
+local baseFov = 70
+function Fx.shake(amount: number)
+	if Net.setting("shake") == false then
+		return
+	end
+	shake = math.min(1.6, math.max(shake, amount))
+end
+function Fx.kick(amount: number)
+	fovKick = math.max(fovKick, amount)
+end
+Fx.fovBoost = 0 -- sustained (flight boost), set by Flight
+
+-- Hit-stop: a very short freeze of local animation (poses / enemy models / shots) that sells
+-- the impact. Other modules read Fx.frozen().
+local frozenUntil = 0
+function Fx.hitStop(seconds: number)
+	frozenUntil = math.max(frozenUntil, os.clock() + seconds)
+end
+function Fx.frozen(): boolean
+	return os.clock() < frozenUntil
+end
+
+RunService:BindToRenderStep("KiwCamera", Enum.RenderPriority.Camera.Value + 1, function(dt)
+	local cam = workspace.CurrentCamera
+	if not cam then
+		return
+	end
+	local char = player.Character
+	local hum = char and char:FindFirstChildOfClass("Humanoid")
+	if hum then
+		if shake > 0.01 then
+			local s = shake * 0.7
+			hum.CameraOffset = Vector3.new((math.random() - 0.5) * s, (math.random() - 0.5) * s, (math.random() - 0.5) * s * 0.5)
+			shake = math.max(0, shake - dt * 3.2)
+		elseif hum.CameraOffset.Magnitude > 0 then
+			hum.CameraOffset = Vector3.zero
+			shake = 0
+		end
+	end
+	fovKick = math.max(0, fovKick - dt * 40)
+	local want = baseFov + fovKick + Fx.fovBoost
+	if cam.CameraType ~= Enum.CameraType.Scriptable and math.abs(cam.FieldOfView - want) > 0.05 then
+		cam.FieldOfView += (want - cam.FieldOfView) * math.min(1, dt * 10)
+	end
+end)
+
+---------------------------------------------------------------------------
+-- Sounds (built-in rbxasset sounds only)
+---------------------------------------------------------------------------
+local SoundService = game:GetService("SoundService")
+local SOUND_IDS = {
+	punch = "rbxasset://sounds/impact_explosion_03.mp3",
+	swing = "rbxasset://sounds/action_jump.mp3",
+	blast = "rbxasset://sounds/action_get_up.mp3",
+	boom = "rbxasset://sounds/impact_explosion_03.mp3",
+	click = "rbxasset://sounds/volume_slider.ogg",
+	land = "rbxasset://sounds/action_jump_land.mp3",
+	splash = "rbxasset://sounds/impact_water.mp3",
+}
+local sounds: { [string]: Sound } = {}
+function Fx.sound(name: string, volume: number?, pitch: number?)
+	if Net.setting("sfx") == false then
+		return
+	end
+	local id = SOUND_IDS[name]
+	if not id then
+		return
+	end
+	local snd = sounds[name]
+	if not snd then
+		snd = Instance.new("Sound")
+		snd.SoundId = id
+		snd.Parent = SoundService
+		sounds[name] = snd
+	end
+	snd.Volume = volume or 0.4
+	snd.PlaybackSpeed = pitch or 1
+	SoundService:PlayLocalSound(snd)
+end
+
+return Fx
