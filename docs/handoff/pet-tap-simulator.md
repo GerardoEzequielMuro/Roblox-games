@@ -227,3 +227,25 @@ Sección 4.3 de `docs/research/top-juegos-y-precios.md`. Los IDs siguen en 0 (lo
   Toca las odds mostradas en vivo y la economía, así que prefiero hacerlo con Gerar viendo el resultado en Studio.
 - Íconos subidos a Roblox (sin IDs inventados), mascotas con mejor silueta y fuente nueva, siguen como en la ronda 1.
 - Con un exploit, un restringido que fuerce el prompt de compra igual recibe el ítem si paga (limitación de la ronda 1, sin cambios).
+
+## Ronda 3: ranuras de modelos
+
+### Qué cambié
+
+- Carpeta `assets/models/` (solo README) mapeada como `ServerStorage.ModelLibrary` en los 6 `*.project.json`.
+- `src/server/World/ModelSlots.luau`: `ModelSlots.spawn(slot, cf, targetSize, parent, fallback, {collide, maxParts})`. Clona el modelo (o variante `slot_N` elegida por posición), borra todo script, escala a la caja, lo apoya en el piso, anclado, sin sombras ni touch. Si no hay modelo, o pasa las 300 partes (1500 en total), llama al `fallback` (el código de antes, sin cambios).
+- `ModelSlotsMath.luau`: fit, variantes y presupuesto como funciones puras.
+- `WorldBuilder.luau`: 14 ranuras (tree, pine, rock, bush, mushroom, lollipop, cupcake, crystal, snowman, windmill, igloo, cake, volcano, rocket). Las funciones originales pasaron a `xxxPrimitive`; el wrapper usa la ranura solo con los parámetros por defecto (los árboles/pinos/cristales del horizonte con escala y los cristales de colores siguen primitivos). Huevos, portal, OVNI y obby/plataformas no se tocaron.
+- Doc con tabla y paso a paso: `docs/modelos/pet-tap-simulator.md`.
+
+### Cómo lo verifiqué
+
+- `rojo build` de los 6 project files: OK con la carpeta solo con README.
+- Prueba de swap: un `.rbxmx` temporal (Model con Part + Script llamado `tree`) en `assets/models`; el build incluyó `ServerStorage.ModelLibrary.tree`. Lo borré.
+- `luau-lsp analyze` sobre `src`: sin salida. Tests puros: todos pasan, incluido `tests/model_slots.luau` nuevo (19 checks). No pude correr Studio.
+
+### Qué mirar en Studio
+
+- Con la biblioteca vacía el mundo debe ser idéntico. Con un modelo: que apoye en el piso, tamaño/orientación (frente a -Z; molino e iglú giran según `facing`) y que no bloquee el camino.
+- Con modelos puestos el RNG del escenario cambia (el fallback consume `rng` y el modelo no), así que las posiciones de las props siguientes se corren. No afecta el juego.
+- Correr el playtest (`test.project.json`): los budgets (partes, shadow casters, touchable) cuentan los modelos.

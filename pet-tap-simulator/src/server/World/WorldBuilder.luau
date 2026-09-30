@@ -14,6 +14,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Palette = require(ReplicatedStorage.Shared.Palette)
+local ModelSlots = require(script.Parent.ModelSlots)
 
 local WorldBuilder = {}
 
@@ -245,7 +246,7 @@ end
 ---------------------------------------------------------------------------
 type Deco = (folder: Instance, pos: Vector3, rng: Random) -> ()
 
-local function tree(folder: Instance, pos: Vector3, rng: Random, scale: number?)
+local function treePrimitive(folder: Instance, pos: Vector3, rng: Random, scale: number?)
 	local k = scale or 1
 	local h = rng:NextNumber(7, 12) * k
 	if k == 1 then
@@ -260,6 +261,17 @@ local function tree(folder: Instance, pos: Vector3, rng: Random, scale: number?)
 	end
 end
 
+local function tree(folder: Instance, pos: Vector3, rng: Random, scale: number?)
+	if not (scale == nil or scale == 1) then
+		treePrimitive(folder, pos, rng, scale)
+		return
+	end
+	ModelSlots.spawn("tree", CFrame.new(pos), V(14, 16, 14), folder, function()
+		treePrimitive(folder, pos, rng, scale)
+		return nil
+	end, { collide = true })
+end
+
 local function flower(folder: Instance, pos: Vector3, rng: Random)
 	local cols = { C(255, 90, 120), C(255, 220, 60), C(170, 120, 255), WHITE, C(255, 150, 60) }
 	local col = cols[rng:NextInteger(1, #cols)]
@@ -269,7 +281,7 @@ local function flower(folder: Instance, pos: Vector3, rng: Random)
 	ball(folder, "Heart", pos + V(0, h + 0.3, 0), 0.5, C(255, 215, 70))
 end
 
-local function bush(folder: Instance, pos: Vector3, rng: Random)
+local function bushPrimitive(folder: Instance, pos: Vector3, rng: Random)
 	local greens = { C(60, 150, 60), C(75, 170, 70), C(95, 185, 80) }
 	for i = 1, 3 do
 		local r = rng:NextNumber(3, 4.6)
@@ -282,7 +294,18 @@ local function bush(folder: Instance, pos: Vector3, rng: Random)
 	end
 end
 
-local function mushroom(folder: Instance, pos: Vector3, rng: Random)
+local function bush(folder: Instance, pos: Vector3, rng: Random)
+	if not (true) then
+		bushPrimitive(folder, pos, rng)
+		return
+	end
+	ModelSlots.spawn("bush", CFrame.new(pos), V(6, 4, 6), folder, function()
+		bushPrimitive(folder, pos, rng)
+		return nil
+	end, { collide = false })
+end
+
+local function mushroomPrimitive(folder: Instance, pos: Vector3, rng: Random)
 	local k = rng:NextNumber(0.8, 1.7)
 	local cap = if rng:NextNumber() < 0.7 then C(235, 60, 70) else C(255, 170, 60)
 	blob(folder, pos, 4 * k)
@@ -294,7 +317,18 @@ local function mushroom(folder: Instance, pos: Vector3, rng: Random)
 	end
 end
 
-local function rock(folder: Instance, pos: Vector3, rng: Random, color: Color3?, mat: Enum.Material?)
+local function mushroom(folder: Instance, pos: Vector3, rng: Random)
+	if not (true) then
+		mushroomPrimitive(folder, pos, rng)
+		return
+	end
+	ModelSlots.spawn("mushroom", CFrame.new(pos), V(5, 5, 5), folder, function()
+		mushroomPrimitive(folder, pos, rng)
+		return nil
+	end, { collide = false })
+end
+
+local function rockPrimitive(folder: Instance, pos: Vector3, rng: Random, color: Color3?, mat: Enum.Material?)
 	local s = rng:NextNumber(2, 5)
 	part(folder, { Name = "Rock", Size = V(s, s * 0.7, s * 0.9), CFrame = CFrame.new(pos + V(0, s * 0.25, 0)) * CFrame.Angles(rng:NextNumber(0, 0.5), rng:NextNumber(0, 6), rng:NextNumber(0, 0.5)), Color = color or C(140, 140, 150), Material = mat or Enum.Material.Slate, CastShadow = false })
 	if rng:NextNumber() < 0.5 then
@@ -303,7 +337,18 @@ local function rock(folder: Instance, pos: Vector3, rng: Random, color: Color3?,
 	end
 end
 
-local function lollipop(folder: Instance, pos: Vector3, rng: Random, scale: number?)
+local function rock(folder: Instance, pos: Vector3, rng: Random, color: Color3?, mat: Enum.Material?)
+	if not (color == nil) then
+		rockPrimitive(folder, pos, rng, color, mat)
+		return
+	end
+	ModelSlots.spawn("rock", CFrame.new(pos), V(5, 3.5, 5), folder, function()
+		rockPrimitive(folder, pos, rng, color, mat)
+		return nil
+	end, { collide = true })
+end
+
+local function lollipopPrimitive(folder: Instance, pos: Vector3, rng: Random, scale: number?)
 	local k = scale or 1
 	local h = rng:NextNumber(6, 11) * k
 	local cols = { C(255, 80, 150), C(90, 200, 255), C(255, 200, 60), C(150, 110, 255), C(120, 230, 150) }
@@ -317,6 +362,17 @@ local function lollipop(folder: Instance, pos: Vector3, rng: Random, scale: numb
 	deco(folder, { Name = "Candy", Shape = Enum.PartType.Cylinder, Size = V(1.2 * k, 6 * k, 6 * k), CFrame = cf, Color = c })
 	deco(folder, { Name = "Swirl", Shape = Enum.PartType.Cylinder, Size = V(1.3 * k, 4.2 * k, 4.2 * k), CFrame = cf, Color = WHITE })
 	deco(folder, { Name = "Swirl", Shape = Enum.PartType.Cylinder, Size = V(1.4 * k, 2.4 * k, 2.4 * k), CFrame = cf, Color = c })
+end
+
+local function lollipop(folder: Instance, pos: Vector3, rng: Random, scale: number?)
+	if not (scale == nil or scale == 1) then
+		lollipopPrimitive(folder, pos, rng, scale)
+		return
+	end
+	ModelSlots.spawn("lollipop", CFrame.new(pos), V(7, 13, 7), folder, function()
+		lollipopPrimitive(folder, pos, rng, scale)
+		return nil
+	end, { collide = true })
 end
 
 local function candyCane(folder: Instance, pos: Vector3, rng: Random, scale: number?)
@@ -337,7 +393,7 @@ local function gumdrop(folder: Instance, pos: Vector3, rng: Random)
 	part(folder, { Name = "Gumdrop", Shape = Enum.PartType.Ball, Size = Vector3.one * s, Position = pos + V(0, s * 0.2, 0), Color = cols[rng:NextInteger(1, #cols)], Material = Enum.Material.Glass, Transparency = 0.15, CastShadow = false })
 end
 
-local function cupcake(folder: Instance, pos: Vector3, rng: Random)
+local function cupcakePrimitive(folder: Instance, pos: Vector3, rng: Random)
 	local k = rng:NextNumber(1, 1.8)
 	local wraps = { C(120, 200, 255), C(255, 210, 90), C(180, 140, 255) }
 	local frosts = { C(255, 150, 200), C(255, 245, 235), C(150, 235, 200) }
@@ -347,6 +403,17 @@ local function cupcake(folder: Instance, pos: Vector3, rng: Random)
 	ell(folder, "Frosting", pos + V(0, 2.7 * k, 0), V(4.2 * k, 2.2 * k, 4.2 * k), frost)
 	ell(folder, "Frosting", pos + V(0, 3.7 * k, 0), V(2.8 * k, 1.7 * k, 2.8 * k), frost)
 	ball(folder, "Cherry", pos + V(0, 4.8 * k, 0), 1.1 * k, C(230, 40, 70))
+end
+
+local function cupcake(folder: Instance, pos: Vector3, rng: Random)
+	if not (true) then
+		cupcakePrimitive(folder, pos, rng)
+		return
+	end
+	ModelSlots.spawn("cupcake", CFrame.new(pos), V(7, 7, 7), folder, function()
+		cupcakePrimitive(folder, pos, rng)
+		return nil
+	end, { collide = true })
 end
 
 local function iceCream(folder: Instance, pos: Vector3, rng: Random)
@@ -361,7 +428,7 @@ local function iceCream(folder: Instance, pos: Vector3, rng: Random)
 	ball(folder, "Cherry", pos + V(0, 8.2 * k, 0), 0.9 * k, C(230, 40, 70))
 end
 
-local function pine(folder: Instance, pos: Vector3, rng: Random, scale: number?)
+local function pinePrimitive(folder: Instance, pos: Vector3, rng: Random, scale: number?)
 	local k = scale or 1
 	local h = rng:NextNumber(9, 15) * k
 	if k == 1 then
@@ -378,7 +445,18 @@ local function pine(folder: Instance, pos: Vector3, rng: Random, scale: number?)
 	end
 end
 
-local function crystal(folder: Instance, pos: Vector3, rng: Random, color: Color3?, neon: boolean?, scale: number?)
+local function pine(folder: Instance, pos: Vector3, rng: Random, scale: number?)
+	if not (scale == nil or scale == 1) then
+		pinePrimitive(folder, pos, rng, scale)
+		return
+	end
+	ModelSlots.spawn("pine", CFrame.new(pos), V(12, 16, 12), folder, function()
+		pinePrimitive(folder, pos, rng, scale)
+		return nil
+	end, { collide = true })
+end
+
+local function crystalPrimitive(folder: Instance, pos: Vector3, rng: Random, color: Color3?, neon: boolean?, scale: number?)
 	local c = color or C(150, 210, 255)
 	local k = scale or 1
 	for _ = 1, rng:NextInteger(2, 4) do
@@ -387,7 +465,18 @@ local function crystal(folder: Instance, pos: Vector3, rng: Random, color: Color
 	end
 end
 
-local function snowman(folder: Instance, pos: Vector3, _rng: Random)
+local function crystal(folder: Instance, pos: Vector3, rng: Random, color: Color3?, neon: boolean?, scale: number?)
+	if not (color == nil and neon == nil and scale == nil) then
+		crystalPrimitive(folder, pos, rng, color, neon, scale)
+		return
+	end
+	ModelSlots.spawn("crystal", CFrame.new(pos), V(4, 8, 4), folder, function()
+		crystalPrimitive(folder, pos, rng, color, neon, scale)
+		return nil
+	end, { collide = true })
+end
+
+local function snowmanPrimitive(folder: Instance, pos: Vector3, _rng: Random)
 	local white = C(250, 252, 255)
 	blob(folder, pos, 5.5, C(200, 215, 235))
 	part(folder, { Name = "Snow1", Shape = Enum.PartType.Ball, Size = Vector3.one * 4, Position = pos + V(0, 1.8, 0), Color = white, Material = Enum.Material.Snow, CastShadow = false })
@@ -401,6 +490,17 @@ local function snowman(folder: Instance, pos: Vector3, _rng: Random)
 	cyl(folder, "HatBrim", pos + V(0, 7.85, 0), 2.4, 0.2, C(35, 35, 45))
 	cyl(folder, "Hat", pos + V(0, 8.5, 0), 1.6, 1.2, C(35, 35, 45))
 	ell(folder, "Scarf", pos + V(0, 5.95, 0), V(2.6, 0.7, 2.6), C(230, 50, 60), Enum.Material.Fabric)
+end
+
+local function snowman(folder: Instance, pos: Vector3, _rng: Random)
+	if not (true) then
+		snowmanPrimitive(folder, pos, _rng)
+		return
+	end
+	ModelSlots.spawn("snowman", CFrame.new(pos), V(5, 9, 5), folder, function()
+		snowmanPrimitive(folder, pos, _rng)
+		return nil
+	end, { collide = true })
 end
 
 local function snowMound(folder: Instance, pos: Vector3, rng: Random)
@@ -604,7 +704,7 @@ end
 ---------------------------------------------------------------------------
 -- Landmarks: two per zone, off the path. Each returns the circle it occupies.
 ---------------------------------------------------------------------------
-local function windmill(folder: Instance, pos: Vector3, facing: number): Reserved
+local function windmillPrimitive(folder: Instance, pos: Vector3, facing: number): Reserved
 	local model = Instance.new("Model")
 	model.Name = "Windmill"
 	local towerH = 24
@@ -627,6 +727,14 @@ local function windmill(folder: Instance, pos: Vector3, facing: number): Reserve
 	blades.Parent = model
 	anim(blades, V(1, 0, 0), 0.7)
 	model.Parent = folder
+	return { pos = pos, r = 18 }
+end
+
+local function windmill(folder: Instance, pos: Vector3, facing: number): Reserved
+	ModelSlots.spawn("windmill", CFrame.new(pos) * CFrame.Angles(0, -math.pi / 2 * facing, 0), V(26, 34, 26), folder, function()
+		windmillPrimitive(folder, pos, facing)
+		return nil
+	end, { collide = true })
 	return { pos = pos, r = 18 }
 end
 
@@ -663,7 +771,7 @@ local function pond(folder: Instance, pos: Vector3): Reserved
 	return { pos = pos, r = 22 }
 end
 
-local function cake(folder: Instance, pos: Vector3): Reserved
+local function cakePrimitive(folder: Instance, pos: Vector3): Reserved
 	local tiers = { { d = 26, h = 8, c = C(255, 150, 200) }, { d = 19, h = 7, c = C(255, 245, 225) }, { d = 12, h = 6, c = C(150, 235, 205) } }
 	local y = 0
 	for t, tier in tiers do
@@ -685,6 +793,14 @@ local function cake(folder: Instance, pos: Vector3): Reserved
 	end
 	ball(folder, "Cherry", pos + V(0, y + 1.6, 0), 3.2, C(230, 40, 70))
 	return { pos = pos, r = 20 }
+end
+
+local function cake(folder: Instance, pos: Vector3): Reserved
+	ModelSlots.spawn("cake", CFrame.new(pos), V(28, 24, 28), folder, function()
+		cakePrimitive(folder, pos)
+		return nil
+	end, { collide = true })
+	return { pos = pos, r = 22 }
 end
 
 local function chocolatePond(folder: Instance, pos: Vector3): Reserved
@@ -709,7 +825,7 @@ local function chocolatePond(folder: Instance, pos: Vector3): Reserved
 	return { pos = pos, r = 22 }
 end
 
-local function igloo(folder: Instance, pos: Vector3, facing: number): Reserved
+local function iglooPrimitive(folder: Instance, pos: Vector3, facing: number): Reserved
 	local white = C(245, 250, 255)
 	part(folder, { Name = "Igloo", Shape = Enum.PartType.Ball, Size = V(24, 24, 24), Position = pos + V(0, -1, 0), Color = white, Material = Enum.Material.Snow })
 	for i = 1, 3 do
@@ -718,6 +834,14 @@ local function igloo(folder: Instance, pos: Vector3, facing: number): Reserved
 	deco(folder, { Name = "Tunnel", Shape = Enum.PartType.Cylinder, Size = V(7, 8, 8), Position = pos + V(facing * 11.5, 2.2, 0), Color = white, Material = Enum.Material.Snow, CanCollide = true })
 	deco(folder, { Name = "Door", Shape = Enum.PartType.Cylinder, Size = V(7.3, 5.4, 5.4), Position = pos + V(facing * 11.6, 1.8, 0), Color = C(40, 50, 75) })
 	ball(folder, "Lantern", pos + V(facing * 15.4, 6.4, 0), 1.4, C(255, 215, 120), Enum.Material.Neon)
+	return { pos = pos, r = 19 }
+end
+
+local function igloo(folder: Instance, pos: Vector3, facing: number): Reserved
+	ModelSlots.spawn("igloo", CFrame.new(pos) * CFrame.Angles(0, -math.pi / 2 * facing, 0), V(28, 16, 28), folder, function()
+		iglooPrimitive(folder, pos, facing)
+		return nil
+	end, { collide = true })
 	return { pos = pos, r = 19 }
 end
 
@@ -737,7 +861,7 @@ local function frozenLake(folder: Instance, pos: Vector3): Reserved
 	return { pos = pos, r = 24 }
 end
 
-local function volcano(folder: Instance, pos: Vector3): Reserved
+local function volcanoPrimitive(folder: Instance, pos: Vector3): Reserved
 	local rock = C(58, 44, 44)
 	local tiers = { { d = 34, h = 8 }, { d = 26, h = 7 }, { d = 18, h = 7 }, { d = 11, h = 6 } }
 	local y = 0
@@ -759,6 +883,14 @@ local function volcano(folder: Instance, pos: Vector3): Reserved
 		local yaw = i * 2.2 + 0.4
 		deco(folder, { Name = "LavaFlow", Size = V(3, 0.5, 33), CFrame = CFrame.new(pos + V(0, y, 0)) * CFrame.Angles(0, yaw, 0) * CFrame.Angles(math.rad(-58), 0, 0) * CFrame.new(0, 0.2, 17.5), Color = C(255, 120, 25), Material = Enum.Material.Neon })
 	end
+	return { pos = pos, r = 22 }
+end
+
+local function volcano(folder: Instance, pos: Vector3): Reserved
+	ModelSlots.spawn("volcano", CFrame.new(pos), V(36, 34, 36), folder, function()
+		volcanoPrimitive(folder, pos)
+		return nil
+	end, { collide = true })
 	return { pos = pos, r = 22 }
 end
 
@@ -798,7 +930,7 @@ local function ufo(folder: Instance, pos: Vector3): Reserved
 	return { pos = pos, r = 18 }
 end
 
-local function rocket(folder: Instance, pos: Vector3): Reserved
+local function rocketPrimitive(folder: Instance, pos: Vector3): Reserved
 	cyl(folder, "Pad", pos + V(0, 0.4, 0), 22, 0.8, C(70, 60, 120), Enum.Material.Metal, { CanCollide = true })
 	cyl(folder, "PadRing", pos + V(0, 0.85, 0), 18, 0.2, C(255, 210, 80), Enum.Material.Neon)
 	part(folder, { Name = "RocketBody", Shape = Enum.PartType.Cylinder, Size = V(22, 8, 8), CFrame = CFrame.new(pos + V(0, 15, 0)) * CFrame.Angles(0, 0, math.rad(90)), Color = C(245, 245, 250) })
@@ -813,6 +945,14 @@ local function rocket(folder: Instance, pos: Vector3): Reserved
 	local smoke = emitter(nozzle, SMOKE, C(230, 230, 245), 6, 3.5, 3, 2.2)
 	smoke.EmissionDirection = Enum.NormalId.Left
 	smoke.LightEmission = 0.2
+	return { pos = pos, r = 15 }
+end
+
+local function rocket(folder: Instance, pos: Vector3): Reserved
+	ModelSlots.spawn("rocket", CFrame.new(pos), V(22, 34, 22), folder, function()
+		rocketPrimitive(folder, pos)
+		return nil
+	end, { collide = true })
 	return { pos = pos, r = 15 }
 end
 
@@ -1343,6 +1483,7 @@ end
 -- Build
 ---------------------------------------------------------------------------
 function WorldBuilder.build(): WorldInfo
+	ModelSlots.resetBudget()
 	local info: WorldInfo = { plots = {}, eggPositions = {}, zoneSpawns = {}, gates = {}, boards = {} }
 
 	local old = Workspace:FindFirstChild("World")
