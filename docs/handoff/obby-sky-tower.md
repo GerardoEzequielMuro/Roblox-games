@@ -181,3 +181,30 @@ Desde `obby-sky-tower/`, con `PATH=/tmp/tools:$PATH`:
 - Índice de colección % (trails/efectos/regalos) y progreso "te faltan X" en números: no hecho.
 - Anuncios entre servers (MessagingService) y racha visible en el HUD: hoy el anuncio es solo del server actual.
 - Del Pendiente de ronda 1 (íconos, productos, medir partes en torres altas) no toqué nada: no son código seguro sin Studio. Los "detalles menores" los dejé: el evento `Win` en cumbre ya cobrada abre un panel útil (portal/rebirth), y repagar monedas por nivel tras teletransportarse es el mismo caso que el rebirth.
+
+## Ronda 3: ranuras de modelos
+
+Sesión en la nube, sin Studio: **no vi nada corriendo**.
+
+### Qué cambié
+
+- Nueva carpeta `obby-sky-tower/assets/models/` (solo README, en español). Está mapeada como `ServerStorage.ModelLibrary` en `default.project.json` y en los otros 5 `*.project.json` (test, shots, shotslow, uishots, i18nshots).
+- `src/server/World/ModelSlots.luau`: `ModelSlots.spawn(slot, cf, targetSize, parent, fallback, opts)`. Si hay `slot.rbxm` (o `slot_1`, `slot_2`...) en la biblioteca, lo clona, **borra todos los scripts** (con warning), lo escala parejo al tamaño objetivo, lo apoya con la base en `cf`, lo ancla, sin colisión/touch/query/sombra (igual que `Scenery.deco`). Si no hay, o se pasa del tope de partes (por ranura y 2000 en total), corre `fallback()` tal cual estaba.
+- `src/shared/ModelFit.luau`: matemática pura (escala que entra en la caja, variante por posición, topes). Test: `tests/modelfit_test.luau` (13140 checks, 0 fallas).
+- `src/server/Scenery.luau`: 14 ranuras cableadas, el código primitivo quedó adentro de los fallbacks sin cambios: `island`, `tree`, `pine`, `windmill`, `cupcake`, `snowman`, `pyramid`, `cloud`, `rock`, `bush`, `lamp_post`, `balloon`, `trophy`, `portal_frame`. Detalles: el globo se devuelve sin parent para poner el atributo `Bob` antes de replicar (Juice lo lee al aparecer); en nubes/rocas el `rng` se consume en el mismo orden que antes, así la disposición no cambia.
+- Doc con la tabla de ranuras y el paso a paso: `docs/modelos/obby-sky-tower.md`.
+- Decisiones: todo se construye en el server, así que no hay biblioteca en ReplicatedStorage. No toqué plataformas, obstáculos, tienda, pedestales ni el disco del portal (la lógica de toque vive ahí). Los modelos no se tiñen con el mood de cada torre. El marco del portal de modelo no colisiona (el primitivo sí).
+
+### Cómo lo verifiqué
+
+- `rojo build` de los 6 project files: todos incluyen `ServerStorage.ModelLibrary` (carpeta vacía; el README no molesta).
+- Prueba del camino de swap: un `.rbxmx` temporal (Model `tree` con un Part y un Script) en `assets/models`: el build incluyó `ModelLibrary.tree` con el script adentro (se borra en runtime). Lo borré después y rebuildé.
+- `luau-lsp analyze` sin salida. Tests puros: icons 82, layout 144843, locale 10164, modelfit 13140, p0 48, pricing 71, rules 3631, visual 12942, todos con 0 fallas.
+
+### Qué mirar en Studio
+
+1. Con la carpeta vacía, el mundo tiene que verse idéntico (AutoTest de `test.project.json`: presupuestos, "scenery has no collisions", "stays out of the lanes").
+2. Poner un `tree.rbxm` o `island.rbxm` de prueba: ver que quede apoyado (la isla con la cara de arriba al nivel del piso), sin deformarse, y que los árboles sobre la isla no floten ni se hundan.
+3. `balloon.rbxm` (Model): tiene que seguir bamboleándose. `portal_frame.rbxm`: que el disco quede en el hueco y se pueda entrar.
+4. Mirar Output: warnings de scripts borrados o de modelos que se pasan del tope de partes.
+5. Con modelos cargados, repetir el AutoTest: el tope "scenery parts" (4200) y el de sombras (<25%).

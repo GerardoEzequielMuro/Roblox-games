@@ -59,6 +59,9 @@
     "ServerStorage": {
       "__AutoTest": {
         "$className": "BoolValue"
+      },
+      "ModelLibrary": {
+        "$path": "assets/models"
       }
     }
   }

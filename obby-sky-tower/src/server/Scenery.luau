@@ -20,6 +20,8 @@ local Gifts = require(ReplicatedStorage.Shared.Gifts)
 local Powerups = require(ReplicatedStorage.Shared.Powerups)
 local Perks = require(ReplicatedStorage.Shared.Perks)
 
+local ModelSlots = require(script.Parent.World.ModelSlots)
+
 local Scenery = {}
 
 local SPARKLES = "rbxasset://textures/particles/sparkles_main.dds"
@@ -182,21 +184,31 @@ end
 
 -- Floating island: a top disc over rock that tapers to a point.
 local function island(parent: Instance, cf: CFrame, r: number, top: Color3, topMat: Enum.Material, rock: Color3, rockMat: Enum.Material?)
-	cyl(parent, r * 2, 2.4, cf * CFrame.new(0, -1.2, 0), top, topMat)
-	local mat = rockMat or Enum.Material.Slate
-	cyl(parent, r * 1.7, r * 0.45, cf * CFrame.new(0, -2.4 - r * 0.225, 0), rock, mat)
-	cyl(parent, r * 1.1, r * 0.5, cf * CFrame.new(r * 0.08, -2.4 - r * 0.7, 0), rock:Lerp(Color3.new(), 0.12), mat)
-	cyl(parent, r * 0.5, r * 0.5, cf * CFrame.new(r * 0.12, -2.4 - r * 1.2, -r * 0.05), rock:Lerp(Color3.new(), 0.22), mat)
+	local depth = 2.4 + r * 1.45 -- top of the disc (at cf) down to the tip of the rock
+	ModelSlots.spawn("island", cf * CFrame.new(0, -depth, 0), Vector3.new(r * 2, depth, r * 2), parent, function()
+		cyl(parent, r * 2, 2.4, cf * CFrame.new(0, -1.2, 0), top, topMat)
+		local mat = rockMat or Enum.Material.Slate
+		cyl(parent, r * 1.7, r * 0.45, cf * CFrame.new(0, -2.4 - r * 0.225, 0), rock, mat)
+		cyl(parent, r * 1.1, r * 0.5, cf * CFrame.new(r * 0.08, -2.4 - r * 0.7, 0), rock:Lerp(Color3.new(), 0.12), mat)
+		cyl(parent, r * 0.5, r * 0.5, cf * CFrame.new(r * 0.12, -2.4 - r * 1.2, -r * 0.05), rock:Lerp(Color3.new(), 0.22), mat)
+		return nil
+	end, { maxParts = 120 })
 end
 
 local function tree(parent: Instance, base: CFrame, h: number, trunk: Color3, leaves: Color3, leafMat: Enum.Material?)
-	cyl(parent, h * 0.18, h, base * CFrame.new(0, h / 2, 0), trunk, Enum.Material.Wood)
-	ball(parent, h * 0.95, (base * CFrame.new(0, h + h * 0.25, 0)).Position, leaves, leafMat or Enum.Material.Grass)
+	ModelSlots.spawn("tree", base, Vector3.new(h * 0.95, h * 1.725, h * 0.95), parent, function()
+		cyl(parent, h * 0.18, h, base * CFrame.new(0, h / 2, 0), trunk, Enum.Material.Wood)
+		ball(parent, h * 0.95, (base * CFrame.new(0, h + h * 0.25, 0)).Position, leaves, leafMat or Enum.Material.Grass)
+		return nil
+	end, { maxParts = 60 })
 end
 
 local function pine(parent: Instance, base: CFrame, h: number, leaves: Color3)
-	cyl(parent, h * 0.12, h * 0.3, base * CFrame.new(0, h * 0.15, 0), rgb(110, 80, 60), Enum.Material.Wood)
-	cone(parent, h * 0.62, h * 0.8, base * CFrame.new(0, h * 0.25, 0), leaves, Enum.Material.Grass, 3)
+	ModelSlots.spawn("pine", base, Vector3.new(h * 0.62, h * 1.05, h * 0.62), parent, function()
+		cyl(parent, h * 0.12, h * 0.3, base * CFrame.new(0, h * 0.15, 0), rgb(110, 80, 60), Enum.Material.Wood)
+		cone(parent, h * 0.62, h * 0.8, base * CFrame.new(0, h * 0.25, 0), leaves, Enum.Material.Grass, 3)
+		return nil
+	end, { maxParts = 60 })
 end
 
 ---------------------------------------------------------------------------------------------
@@ -210,12 +222,15 @@ Outer[1] = function(parent, cf, r, variant, rng)
 	island(parent, cf, r, rgb(105, 200, 90), Enum.Material.Grass, rgb(140, 105, 75))
 	if variant == 3 then
 		local h = r * 1.3
-		cone(parent, r * 0.55, h, cf, rgb(245, 235, 215), Enum.Material.SmoothPlastic, 2)
-		cone(parent, r * 0.5, r * 0.35, cf * CFrame.new(0, h, 0), rgb(200, 80, 70), Enum.Material.SmoothPlastic, 2)
-		local hub = cf * CFrame.new(0, h * 0.85, -r * 0.3)
-		for i = 0, 3 do
-			deco(parent, Vector3.new(r * 0.16, r * 0.95, 0.4), hub * CFrame.Angles(0, 0, i * math.pi / 2 + 0.4) * CFrame.new(0, r * 0.5, 0), rgb(250, 245, 235), Enum.Material.Wood)
-		end
+		ModelSlots.spawn("windmill", cf, Vector3.new(r * 1.9, r * 2.1, r * 1.9), parent, function()
+			cone(parent, r * 0.55, h, cf, rgb(245, 235, 215), Enum.Material.SmoothPlastic, 2)
+			cone(parent, r * 0.5, r * 0.35, cf * CFrame.new(0, h, 0), rgb(200, 80, 70), Enum.Material.SmoothPlastic, 2)
+			local hub = cf * CFrame.new(0, h * 0.85, -r * 0.3)
+			for i = 0, 3 do
+				deco(parent, Vector3.new(r * 0.16, r * 0.95, 0.4), hub * CFrame.Angles(0, 0, i * math.pi / 2 + 0.4) * CFrame.new(0, r * 0.5, 0), rgb(250, 245, 235), Enum.Material.Wood)
+			end
+			return nil
+		end)
 	else
 		for i = 1, 3 do
 			local a = rng.range(0, math.pi * 2)
@@ -231,12 +246,15 @@ Outer[2] = function(parent, cf, r, variant, rng)
 	local pinks = { rgb(255, 120, 190), rgb(120, 220, 255), rgb(255, 230, 90), rgb(170, 130, 255) }
 	if variant == 3 then
 		-- cupcake
-		cyl(parent, r * 1.5, r * 0.5, cf * CFrame.new(0, -r * 0.15, 0), rgb(255, 230, 150))
-		cyl(parent, r * 1.25, r * 0.5, cf * CFrame.new(0, -r * 0.6, 0), rgb(245, 205, 120))
-		blob(parent, Vector3.new(r * 1.9, r * 0.8, r * 1.9), cf * CFrame.new(0, r * 0.25, 0), rgb(255, 150, 210))
-		blob(parent, Vector3.new(r * 1.35, r * 0.7, r * 1.35), cf * CFrame.new(0, r * 0.7, 0), rgb(255, 245, 250))
-		blob(parent, Vector3.new(r * 0.8, r * 0.55, r * 0.8), cf * CFrame.new(0, r * 1.1, 0), rgb(255, 150, 210))
-		ball(parent, r * 0.35, (cf * CFrame.new(0, r * 1.45, 0)).Position, rgb(230, 30, 60))
+		ModelSlots.spawn("cupcake", cf * CFrame.new(0, -r * 0.85, 0), Vector3.new(r * 1.9, r * 2.5, r * 1.9), parent, function()
+			cyl(parent, r * 1.5, r * 0.5, cf * CFrame.new(0, -r * 0.15, 0), rgb(255, 230, 150))
+			cyl(parent, r * 1.25, r * 0.5, cf * CFrame.new(0, -r * 0.6, 0), rgb(245, 205, 120))
+			blob(parent, Vector3.new(r * 1.9, r * 0.8, r * 1.9), cf * CFrame.new(0, r * 0.25, 0), rgb(255, 150, 210))
+			blob(parent, Vector3.new(r * 1.35, r * 0.7, r * 1.35), cf * CFrame.new(0, r * 0.7, 0), rgb(255, 245, 250))
+			blob(parent, Vector3.new(r * 0.8, r * 0.55, r * 0.8), cf * CFrame.new(0, r * 1.1, 0), rgb(255, 150, 210))
+			ball(parent, r * 0.35, (cf * CFrame.new(0, r * 1.45, 0)).Position, rgb(230, 30, 60))
+			return nil
+		end)
 	else
 		island(parent, cf, r, rgb(255, 245, 250), Enum.Material.SmoothPlastic, rgb(255, 150, 210), Enum.Material.SmoothPlastic)
 		for i = 1, 2 do
@@ -266,9 +284,12 @@ Outer[3] = function(parent, cf, r, variant, rng)
 			pine(parent, cf * CFrame.new(math.cos(a) * d, 0, math.sin(a) * d), rng.range(0.5, 0.8) * r, rgb(230, 245, 250):Lerp(rgb(70, 140, 110), 0.55))
 		end
 		local s = cf * CFrame.new(r * 0.5, 0, -r * 0.4)
-		ball(parent, r * 0.3, (s * CFrame.new(0, r * 0.13, 0)).Position, WHITE, Enum.Material.Snow)
-		ball(parent, r * 0.22, (s * CFrame.new(0, r * 0.34, 0)).Position, WHITE, Enum.Material.Snow)
-		ball(parent, r * 0.15, (s * CFrame.new(0, r * 0.5, 0)).Position, WHITE, Enum.Material.Snow)
+		ModelSlots.spawn("snowman", s * CFrame.new(0, -r * 0.02, 0), Vector3.new(r * 0.3, r * 0.6, r * 0.3), parent, function()
+			ball(parent, r * 0.3, (s * CFrame.new(0, r * 0.13, 0)).Position, WHITE, Enum.Material.Snow)
+			ball(parent, r * 0.22, (s * CFrame.new(0, r * 0.34, 0)).Position, WHITE, Enum.Material.Snow)
+			ball(parent, r * 0.15, (s * CFrame.new(0, r * 0.5, 0)).Position, WHITE, Enum.Material.Snow)
+			return nil
+		end, { maxParts = 100 })
 	else
 		for i = 1, 5 do
 			local a = i / 5 * math.pi * 2 + rng.range(-0.3, 0.3)
@@ -287,13 +308,16 @@ Outer[4] = function(parent, cf, r, variant, rng)
 	local sand = rgb(235, 200, 130)
 	local stone = rgb(205, 165, 100)
 	if variant == 3 then
-		for i = 0, 3 do
-			local w = r * 1.7 * (1 - i * 0.24)
-			deco(parent, Vector3.new(w, r * 0.32, w), cf * CFrame.new(0, -r * 0.4 + i * r * 0.32, 0), if i % 2 == 0 then sand else stone, Enum.Material.Sandstone)
-		end
-		local cap = deco(parent, Vector3.new(r * 0.3, r * 0.3, r * 0.3), cf * CFrame.new(0, r * 0.95, 0) * CFrame.Angles(0, math.pi / 4, 0), rgb(80, 230, 240), Enum.Material.Neon)
-		light(cap, rgb(80, 230, 240), 30, 1.5)
-		cyl(parent, r * 1.2, r * 0.5, cf * CFrame.new(0, -r * 0.8, 0), stone:Lerp(Color3.new(), 0.15), Enum.Material.Sandstone)
+		ModelSlots.spawn("pyramid", cf * CFrame.new(0, -r * 1.05, 0), Vector3.new(r * 1.7, r * 2.2, r * 1.7), parent, function()
+			for i = 0, 3 do
+				local w = r * 1.7 * (1 - i * 0.24)
+				deco(parent, Vector3.new(w, r * 0.32, w), cf * CFrame.new(0, -r * 0.4 + i * r * 0.32, 0), if i % 2 == 0 then sand else stone, Enum.Material.Sandstone)
+			end
+			local cap = deco(parent, Vector3.new(r * 0.3, r * 0.3, r * 0.3), cf * CFrame.new(0, r * 0.95, 0) * CFrame.Angles(0, math.pi / 4, 0), rgb(80, 230, 240), Enum.Material.Neon)
+			light(cap, rgb(80, 230, 240), 30, 1.5)
+			cyl(parent, r * 1.2, r * 0.5, cf * CFrame.new(0, -r * 0.8, 0), stone:Lerp(Color3.new(), 0.15), Enum.Material.Sandstone)
+			return nil
+		end)
 	else
 		island(parent, cf, r, sand, Enum.Material.Sand, rgb(190, 140, 80), Enum.Material.Sandstone)
 		local n = 4
@@ -921,9 +945,14 @@ function Scenery.buildLobby(parent: Instance, start: Vector3, spawnPos: Vector3)
 		local a = i / 26 * math.pi * 2 + rng.range(-0.08, 0.08)
 		local r = rng.range(190, 330)
 		local s = rng.range(50, 95)
-		local cloud = blob(folder, Vector3.new(s, s * 0.32, s * 0.8), CFrame.new(math.cos(a) * r, rng.range(-70, -34), math.sin(a) * r) * CFrame.Angles(0, a, 0), WHITE)
-		cloud.Transparency = 0.08
-		cloud.Name = "CloudSea"
+		local cy = rng.range(-70, -34)
+		local cloudCF = CFrame.new(math.cos(a) * r, cy, math.sin(a) * r) * CFrame.Angles(0, a, 0)
+		ModelSlots.spawn("cloud", cloudCF * CFrame.new(0, -s * 0.16, 0), Vector3.new(s, s * 0.32, s * 0.8), folder, function()
+			local cloud = blob(folder, Vector3.new(s, s * 0.32, s * 0.8), cloudCF, WHITE)
+			cloud.Transparency = 0.08
+			cloud.Name = "CloudSea"
+			return cloud
+		end, { name = "CloudSea", maxParts = 40 })
 	end
 	-- boulders and bushes along the rim hide the hard edge of the disc
 	for i = 1, 44 do
@@ -931,7 +960,10 @@ function Scenery.buildLobby(parent: Instance, start: Vector3, spawnPos: Vector3)
 		local r = rng.range(143, 149)
 		local bush = rng.next() < 0.45
 		local s = rng.range(5, 10)
-		blob(folder, Vector3.new(s * 1.3, s * 0.8, s), CFrame.new(math.cos(a) * r, s * 0.15, math.sin(a) * r) * CFrame.Angles(0, rng.range(0, 3), 0), if bush then rgb(70, 165, 80) else rgb(150, 150, 158), if bush then Enum.Material.Grass else Enum.Material.Slate)
+		local propCF = CFrame.new(math.cos(a) * r, s * 0.15, math.sin(a) * r) * CFrame.Angles(0, rng.range(0, 3), 0)
+		ModelSlots.spawn(if bush then "bush" else "rock", propCF * CFrame.new(0, -s * 0.4, 0), Vector3.new(s * 1.3, s * 0.8, s), folder, function()
+			return blob(folder, Vector3.new(s * 1.3, s * 0.8, s), propCF, if bush then rgb(70, 165, 80) else rgb(150, 150, 158), if bush then Enum.Material.Grass else Enum.Material.Slate)
+		end, { maxParts = 50 })
 	end
 
 	-- plaza around the spawn, stone kerbs along the path
@@ -951,11 +983,14 @@ function Scenery.buildLobby(parent: Instance, start: Vector3, spawnPos: Vector3)
 		local z = 72 + i * 15
 		for _, side in { -1, 1 } do
 			local x = side * 10
-			cyl(folder, 0.7, 9, CFrame.new(x, 4.5, z), rgb(60, 62, 80), Enum.Material.Metal)
-			cyl(folder, 1.6, 0.5, CFrame.new(x, 0.25, z), rgb(60, 62, 80), Enum.Material.Metal)
-			local lamp = ball(folder, 2.2, Vector3.new(x, 9.8, z), rgb(255, 236, 170), Enum.Material.Neon)
-			lamp.Name = "Lamp"
-			light(lamp, rgb(255, 225, 160), 20, 1.2)
+			ModelSlots.spawn("lamp_post", CFrame.new(x, 0, z), Vector3.new(1.6, 10.9, 1.6), folder, function()
+				cyl(folder, 0.7, 9, CFrame.new(x, 4.5, z), rgb(60, 62, 80), Enum.Material.Metal)
+				cyl(folder, 1.6, 0.5, CFrame.new(x, 0.25, z), rgb(60, 62, 80), Enum.Material.Metal)
+				local lamp = ball(folder, 2.2, Vector3.new(x, 9.8, z), rgb(255, 236, 170), Enum.Material.Neon)
+				lamp.Name = "Lamp"
+				light(lamp, rgb(255, 225, 160), 20, 1.2)
+				return nil
+			end, { maxParts = 60 })
 			-- flower bed between lamps
 			local bedZ = z + 7.5
 			if i < 2 then
@@ -1022,18 +1057,25 @@ function Scenery.buildLobby(parent: Instance, start: Vector3, spawnPos: Vector3)
 	-- two hot-air balloons drifting beside the island
 	for i, spec in { { pos = Vector3.new(-120, 70, 150), color = rgb(255, 110, 130) }, { pos = Vector3.new(150, 110, 60), color = rgb(90, 180, 255) } } do
 		local p = spec.pos
-		local model = Instance.new("Model")
-		model.Name = "Balloon"
-		ball(model, 26, p, spec.color)
-		cyl(model, 26.4, 3, CFrame.new(p), WHITE)
-		cyl(model, 21, 3, CFrame.new(p + Vector3.new(0, 7.5, 0)), rgb(255, 225, 90))
-		cyl(model, 21, 3, CFrame.new(p + Vector3.new(0, -7.5, 0)), rgb(255, 225, 90))
-		deco(model, Vector3.new(5, 4, 5), CFrame.new(p + Vector3.new(0, -21, 0)), rgb(165, 120, 80), Enum.Material.WoodPlanks)
-		for _, o in { Vector3.new(2.2, 0, 2.2), Vector3.new(-2.2, 0, 2.2), Vector3.new(2.2, 0, -2.2), Vector3.new(-2.2, 0, -2.2) } do
-			deco(model, Vector3.new(0.2, 9, 0.2), CFrame.new(p + o + Vector3.new(0, -15, 0)), rgb(245, 240, 230))
+		-- the fallback (or the library model) is returned unparented: "Bob" must be set before it
+		-- replicates, the client reads it when the model appears
+		local model = ModelSlots.spawn("balloon", CFrame.new(p + Vector3.new(0, -23, 0)), Vector3.new(26.4, 36, 26.4), nil, function()
+			local m = Instance.new("Model")
+			m.Name = "Balloon"
+			ball(m, 26, p, spec.color)
+			cyl(m, 26.4, 3, CFrame.new(p), WHITE)
+			cyl(m, 21, 3, CFrame.new(p + Vector3.new(0, 7.5, 0)), rgb(255, 225, 90))
+			cyl(m, 21, 3, CFrame.new(p + Vector3.new(0, -7.5, 0)), rgb(255, 225, 90))
+			deco(m, Vector3.new(5, 4, 5), CFrame.new(p + Vector3.new(0, -21, 0)), rgb(165, 120, 80), Enum.Material.WoodPlanks)
+			for _, o in { Vector3.new(2.2, 0, 2.2), Vector3.new(-2.2, 0, 2.2), Vector3.new(2.2, 0, -2.2), Vector3.new(-2.2, 0, -2.2) } do
+				deco(m, Vector3.new(0.2, 9, 0.2), CFrame.new(p + o + Vector3.new(0, -15, 0)), rgb(245, 240, 230))
+			end
+			return m
+		end, { name = "Balloon" })
+		if model then
+			model:SetAttribute("Bob", i)
+			model.Parent = folder
 		end
-		model:SetAttribute("Bob", i)
-		model.Parent = folder
 	end
 
 	folder.Parent = parent
@@ -1063,23 +1105,26 @@ function Scenery.buildVictory(parent: Instance, center: Vector3, outward: Vector
 	-- two giant golden cups flanking the WINNER sign
 	for _, tx in { -16, 16 } do
 		local t = frame * CFrame.new(tx, 0, 9)
-		cyl(folder, 8, 1.4, t * CFrame.new(0, 0.7, 0), rgb(90, 70, 50), Enum.Material.Wood)
-		cyl(folder, 5.4, 1.2, t * CFrame.new(0, 2, 0), GOLD, Enum.Material.Metal)
-		cyl(folder, 1.8, 4.4, t * CFrame.new(0, 4.8, 0), GOLD, Enum.Material.Metal)
-		for i = 0, 3 do
-			cyl(folder, 4.4 + i * 1.5, 1.5, t * CFrame.new(0, 7.7 + i * 1.5, 0), GOLD, Enum.Material.Metal)
-		end
-		local glow = cyl(folder, 7.2, 0.5, t * CFrame.new(0, 13.3, 0), rgb(255, 245, 170), Enum.Material.Neon)
-		for _, side in { -1, 1 } do
-			deco(folder, Vector3.new(0.8, 4, 0.8), t * CFrame.new(side * 5.6, 10.6, 0), GOLD, Enum.Material.Metal)
-			deco(folder, Vector3.new(2.2, 0.8, 0.8), t * CFrame.new(side * 4.7, 12.3, 0), GOLD, Enum.Material.Metal)
-			deco(folder, Vector3.new(2.6, 0.8, 0.8), t * CFrame.new(side * 4.4, 9, 0), GOLD, Enum.Material.Metal)
-		end
-		for i = 0, 1 do
-			deco(folder, Vector3.new(3, 3, 0.6), t * CFrame.new(0, 16.4, 0) * CFrame.Angles(0, 0, i * math.pi / 4), rgb(255, 250, 190), Enum.Material.Neon)
-		end
-		light(glow, rgb(255, 230, 140), 36, 1.6)
-		emitter(glow, { texture = SPARKLES, color = rgb(255, 250, 190), color2 = rgb(255, 200, 80), rate = 8, life = 2.2, speed = 8, size = 1.3, size2 = 0.2, spread = 35, emission = 0.9, accel = Vector3.new(0, -6, 0) })
+		ModelSlots.spawn("trophy", t, Vector3.new(12, 17, 9), folder, function()
+			cyl(folder, 8, 1.4, t * CFrame.new(0, 0.7, 0), rgb(90, 70, 50), Enum.Material.Wood)
+			cyl(folder, 5.4, 1.2, t * CFrame.new(0, 2, 0), GOLD, Enum.Material.Metal)
+			cyl(folder, 1.8, 4.4, t * CFrame.new(0, 4.8, 0), GOLD, Enum.Material.Metal)
+			for i = 0, 3 do
+				cyl(folder, 4.4 + i * 1.5, 1.5, t * CFrame.new(0, 7.7 + i * 1.5, 0), GOLD, Enum.Material.Metal)
+			end
+			local glow = cyl(folder, 7.2, 0.5, t * CFrame.new(0, 13.3, 0), rgb(255, 245, 170), Enum.Material.Neon)
+			for _, side in { -1, 1 } do
+				deco(folder, Vector3.new(0.8, 4, 0.8), t * CFrame.new(side * 5.6, 10.6, 0), GOLD, Enum.Material.Metal)
+				deco(folder, Vector3.new(2.2, 0.8, 0.8), t * CFrame.new(side * 4.7, 12.3, 0), GOLD, Enum.Material.Metal)
+				deco(folder, Vector3.new(2.6, 0.8, 0.8), t * CFrame.new(side * 4.4, 9, 0), GOLD, Enum.Material.Metal)
+			end
+			for i = 0, 1 do
+				deco(folder, Vector3.new(3, 3, 0.6), t * CFrame.new(0, 16.4, 0) * CFrame.Angles(0, 0, i * math.pi / 4), rgb(255, 250, 190), Enum.Material.Neon)
+			end
+			light(glow, rgb(255, 230, 140), 36, 1.6)
+			emitter(glow, { texture = SPARKLES, color = rgb(255, 250, 190), color2 = rgb(255, 200, 80), rate = 8, life = 2.2, speed = 8, size = 1.3, size2 = 0.2, spread = 35, emission = 0.9, accel = Vector3.new(0, -6, 0) })
+			return nil
+		end)
 	end
 
 	-- rainbow over the far side of the room
@@ -1291,11 +1336,17 @@ end
 function Scenery.buildPortal(parent: Instance, cf: CFrame, color: Color3, key: string, args: { [string]: any }?, loc: LocFn): Part
 	local model = Instance.new("Model")
 	model.Name = "PortalFrame"
-	for _, side in { -1, 1 } do
-		solid(model, Vector3.new(2, 12, 2), cf * CFrame.new(side * 5.5, 6, 0), rgb(235, 235, 242), Enum.Material.Marble)
-		ball(model, 2.4, (cf * CFrame.new(side * 5.5, 12.8, 0)).Position, color, Enum.Material.Neon)
-	end
-	deco(model, Vector3.new(13, 1.6, 2.2), cf * CFrame.new(0, 12.4, 0), rgb(215, 215, 228), Enum.Material.Marble)
+	-- the frame (pillars + lintel) can be a library model; the swirling disc, light, sparkles and
+	-- caption below stay code-built because the walk-in trigger lives there. A model frame is
+	-- decorative (no collision), the primitive pillars were solid.
+	ModelSlots.spawn("portal_frame", cf, Vector3.new(13, 14, 2.4), model, function()
+		for _, side in { -1, 1 } do
+			solid(model, Vector3.new(2, 12, 2), cf * CFrame.new(side * 5.5, 6, 0), rgb(235, 235, 242), Enum.Material.Marble)
+			ball(model, 2.4, (cf * CFrame.new(side * 5.5, 12.8, 0)).Position, color, Enum.Material.Neon)
+		end
+		deco(model, Vector3.new(13, 1.6, 2.2), cf * CFrame.new(0, 12.4, 0), rgb(215, 215, 228), Enum.Material.Marble)
+		return nil
+	end)
 	local disc = cyl(model, 9.4, 0.6, cf * CFrame.new(0, 6, 0) * CFrame.Angles(math.pi / 2, 0, 0), color, Enum.Material.Neon)
 	disc.Transparency = 0.25
 	disc.CanTouch = true
