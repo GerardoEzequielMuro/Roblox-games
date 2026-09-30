@@ -85,15 +85,25 @@ local function grant(s: Session.S, prod: Config.Product): boolean
 		Remotes.notify(s.player, R("reward.seeds", { n = 1, seed = Locale.seedName(boughtSeed) }), "success")
 		return true
 	end
-	if key == "CashSmall" or key == "CashLarge" then
+	if Config.CashPackMinutes[key] then
 		local minutes = Config.CashPackMinutes[key]
-		local amount = math.max(Config.CashPackFloor[key], math.floor(s.bestRate * minutes), math.floor(s.profile.cash * (if key == "CashLarge" then 0.5 else 0.1)))
+		local amount = math.max(Config.CashPackFloor[key], math.floor(s.bestRate * minutes), math.floor(s.profile.cash * Config.CashPackCashShare[key]))
 		Session.addCash(s, amount)
 		Remotes.notify(s.player, R("msg.cashAdded", { cash = Format.cash(amount) }), "success")
 		return true
 	elseif key == "InstantGrow" then
 		Garden.instantGrow(s)
 		Remotes.notify(s.player, R("msg.instantGrow"), "success")
+		return true
+	elseif key == "InstantGrowOne" then
+		if Garden.instantGrowOne(s) then
+			Remotes.notify(s.player, R("msg.instantGrowOne"), "success")
+		else
+			-- nothing was growing: the purchase still has to give something, so it pays out a little cash
+			local amount = math.max(Config.CashPackFloor.CashSmall // 5, math.floor(s.bestRate * Config.InstantGrowOneFallbackMinutes))
+			Session.addCash(s, amount)
+			Remotes.notify(s.player, R("msg.instantGrowOneNone", { cash = Format.cash(amount) }), "success")
+		end
 		return true
 	elseif key == "Restock" then
 		Shop.personalRestock(s)

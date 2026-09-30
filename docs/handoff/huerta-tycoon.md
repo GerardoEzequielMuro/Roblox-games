@@ -130,3 +130,64 @@ en darle más textura a cultivos y props.
 - Sonidos: siguen en 0 en `Config.Sounds`. El módulo está listo y no hace nada sin IDs.
 - Los cultivos siguen siendo de partes primitivas. Un salto grande de calidad necesita meshes subidos, y eso no se
   puede hacer sin assets.
+
+## Ronda 2
+
+Sin Studio otra vez: **no vi nada corriendo**. Todo está verificado con build, analizador y tests puros.
+
+### Precios
+Ids de productos siguen en 0 (los crea Gerar). Los precios de `Config.GamePasses` / `Config.DevProducts` son `priceHint`: la tienda muestra el precio real de la plataforma (`GetProductInfo`).
+
+| Ítem | Antes | Ahora | Por qué |
+|---|---|---|---|
+| 2x Cash (pase) | 249 | **349** | refs 300-600 en tycoons, 399 X2 Money |
+| 2x Grow Speed (pase, NUEVO) | - | **399** | ref X2 Growth ~467; stackea con VIP (x1.5) |
+| Instant Grow (1 planta) (producto, NUEVO) | - | **9** | primera compra impulsiva (Instant Hatch ~9) |
+| Cash Vault (NUEVO) | - | **499** | escalera 49/199/499/999 |
+| Cash Hoard (NUEVO) | - | **999** | idem, +62% de minutos por R$ vs el chico |
+| Instant Grow (todo), Restock 39, Cash Pouch 49, Cash Chest 199, Lucky Pack 99 | igual | igual | ya estaban en rango recomendado |
+| Auto Harvest 199, VIP 399, Super Luck 299, Big Basket 99, Sell Anywhere 149 | igual | igual | ya estaban en rango |
+| Starter Pack | 15 (tachado 49) | **sin cambios** | lo decide Gerar. La investigación recomienda **29-49 con tachado 149**. Ojo: el tachado de 49 no es un precio real de nada en el juego; si se sube, conviene tachar la suma real de lo que trae o sacar el tachado |
+| Season pass premium 399 + skip de tier 49 | - | **no hecho** | es un sistema entero (tiers, XP, UI, 12 idiomas); ver Pendiente |
+
+Detalles de implementación:
+- Cash packs: `Config.CashPackMinutes/Floor/CashShare` (`src/shared/Config.luau`), grant en `src/server/Services/Monetization.luau` (un solo camino para los 4 packs). Minutos por R$: 0.20 / 0.30 / 0.32 / 0.33.
+- Instant Grow (1): `Garden.instantGrowOne` (`src/server/Services/Garden.luau`) madura el cultivo que más tarda (`Goals.slowest`, pura). Si no había nada creciendo, igual se entrega (cash = 3 min de ritmo, `Config.InstantGrowOneFallbackMinutes`) para no dejar una compra sin grant. Pasa por el mismo `ProcessReceipt` idempotente (PurchaseId guardado + save inmediato).
+- 2x Grow Speed: `Session.growthMult` (`src/server/Services/Session.luau`), se carga con `loadPasses` como los otros pases.
+- Todo con texto en los 12 idiomas (`src/shared/Locales/*.luau`), emoji en `Theme.ProductEmoji`, y aparece solo en la tienda (`StorePanel` itera Config, ya ocultando ids en 0).
+- Ninguno de los nuevos es aleatorio, así que no entran a `Odds.RandomItems`. Lucky Pack y Super Luck siguen detrás de odds + `ArePaidRandomItemsRestricted`.
+
+### Retención
+| # | Ítem | Estado | Dónde |
+|---|---|---|---|
+| 1 | Loop de segundos con feedback | ya estaba | `UI/Fx`, `UI/Juice`, cash count-up en `UI/Hud`, hooks de sonido en `UI/Sound` (IDs en 0) |
+| 2 | Próxima meta siempre visible con barra | **agregado** | `src/shared/Goals.luau` (pura) + chip "🎯 ... faltan $X" con barra arriba de la barra de canasta en `src/client/UI/Hud.luau` (`refreshGoal`). Muestra lo más barato que todavía no podés pagar entre tile, semillas, upgrades y rebirth; se oculta mientras aparece "Teleport to Sell" |
+| 3 | Metas de sesión y largas | ya estaba | zonas/tiles, rebirth, Index de cultivos x mutación (`IndexPanel`), trofeos, leaderboard global (`Services/Leaderboard`), mutaciones raras |
+| 4 | Razones para volver | ya estaba | daily + racha (`DailyPanel`), regalos por tiempo jugado (`GiftsPanel`), crecimiento offline (`Garden.applyOffline`), evento semanal sábado 18 UTC + LuckyHour cada 3 h con reloj (`UI/LiveEvent`), restock cada 5 min visible, Wild Patch por hora, códigos, regalo de grupo |
+| 5 | Social | ya estaba (salvo gifting) | anuncio server-wide de hallazgos raros (`Garden.harvest` -> `msg.rareHarvest`, y stock raro en `Shop`), invitar/referido (`Shared/Referral`), leaderboard físico. **Gifting entre jugadores: no agregado** (ver Pendiente) |
+| 6 | Primer minuto | **agregado** (parcial) | el tutorial ya guiaba comprar, plantar, cosechar y vender (`UI/Tutorial`); ahora al terminarlo y haber vendido algo hay un regalo de bienvenida (`Config.TutorialGift`: 60 + 3 tomates, `FinishTutorial` en `Garden.luau`). Solo una vez, y skipear sin vender no paga. El HUD sigue igual de minimalista |
+
+### Otros cambios
+- `src/shared/Config.luau`: `Color3` cae a un stub si corre fuera de Roblox, para poder testear precios con Luau plano. No cambia nada dentro de Roblox.
+- Ronda 1 "Pendiente" en código seguro: no había nada nuevo que fuera solo código (íconos y sonidos necesitan assets, Starter lo decide Gerar, las sombras de paneles son visuales sin poder verlas).
+- Regla ética cumplida: nada de urgencia/escasez falsa (el único reloj de oferta es el Starter de 24 h reales por jugador, y el restock/eventos son reales), odds visibles, sin apuestas, sin PvP.
+
+### Cómo lo verifiqué
+- `rojo build` de `default`, `test` y `showcase`: OK.
+- `luau-lsp analyze ... src`: sin salida (0 errores); también sobre los 2 tests nuevos.
+- Tests puros: autofarm 28/0, goals 13/0 (nuevo), locale 11 idiomas 341 claves 3762 checks/0, odds 46/0, p0 47/0, pricing 45/0 (nuevo: precios recomendados, escalera de cash packs, anclas honestas, ids únicos, textos en 12 idiomas, regalo de tutorial y meta inicial), trophies 27/0, ui 11/0, wild 28/0, world 72/0 (todos "failures" = 0).
+- No hay carpeta `sim/` en este juego. No corrí el playtest de Studio.
+
+### Qué mirar en Studio
+1. Chip de meta sobre la barra de canasta: que no pise el cartel del tutorial ni el botón "Teleport to Sell", en PC y en celular (en celular el chip mide 250 px de ancho y la canasta 300+). Que la barra avance y el texto cambie de meta al comprar.
+2. Completar el tutorial vendiendo: llega el regalo de bienvenida con toast. Con "Skip" sin vender no debe llegar.
+3. Con ids de prueba: comprar Instant Grow (1) con cultivos creciendo (madura el más lento) y sin nada plantado (paga cash). Comprar 2x Grow Speed y ver el 🌱 del HUD (x2, y x3 con VIP).
+4. Tienda: los 12 cards nuevos/viejos ordenados por precio, sin texto cortado en idiomas largos (ru, de, vi).
+5. Cash Vault / Hoard: que el monto otorgado sea razonable para un jugador de mitad de juego.
+
+### Pendiente
+- Decidir precio del Starter Pack (recomendado 29-49 con tachado honesto).
+- Season pass (399 + skip 49): no hecho, es un sistema completo.
+- Gifting/trading de semillas entre jugadores: no hecho (requiere selector de jugador, límites anti-alts y reglas de PolicyService si vienen de packs pagos).
+- Crear los productos/pases en el Creator Dashboard y pegar los ids: `DoubleGrow`, `InstantGrowOne`, `CashMedium`, `CashHuge` son nuevos.
+- Los precios de referencia vienen de fuentes secundarias (ver aviso en el research); confirmar antes de lanzar.

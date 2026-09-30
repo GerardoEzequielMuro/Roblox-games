@@ -10,6 +10,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Odds = require(ReplicatedStorage.Shared.Odds)
 local TrophyRules = require(ReplicatedStorage.Shared.Trophies)
+local Goals = require(ReplicatedStorage.Shared.Goals)
 local R = Locale.ref
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
@@ -216,6 +217,28 @@ function Garden.instantGrow(s: Session.S)
 		end
 	end
 	Session.markDirty(s)
+end
+
+-- Instant Grow (1): ripen the growing crop with the most time left. Returns false when nothing is growing.
+function Garden.instantGrowOne(s: Session.S): boolean
+	local growing: { Goals.Growing } = {}
+	for i = 1, s.profile.tilesOwned do
+		local t = tileData(s, i)
+		if t and t.progress < 1 then
+			table.insert(growing, { tile = i, remaining = (1 - t.progress) * growTime(t) })
+		end
+	end
+	local pick = Goals.slowest(growing)
+	if not pick then
+		return false
+	end
+	local t = tileData(s, pick) :: TileData
+	t.progress = 1
+	t.mut = Garden.rollMutation(s)
+	t.size = TrophyRules.rollSize(rng:NextNumber())
+	Garden.renderTile(s, pick)
+	Session.markDirty(s)
+	return true
 end
 
 -- ===== actions =====
@@ -523,6 +546,12 @@ Remotes.handle("FinishTutorial", function(player)
 	local s = Session.get(player)
 	if s and not s.profile.tutorialDone then
 		s.profile.tutorialDone = true
+		-- first-minute reward: one time only (guarded by tutorialDone, saved in the profile) and only for players
+		-- who really sold a harvest, so skipping the tutorial does not pay
+		if s.profile.totalEarned > 0 then
+			local text = Rewards.grant(s, Config.TutorialGift)
+			Remotes.notify(player, R("msg.tutorialGift", { reward = text }), "success")
+		end
 		Session.markDirty(s)
 	end
 	return true

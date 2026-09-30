@@ -180,6 +180,9 @@ function Session.growthMult(s: S): number
 	if s.passes.VIP then
 		m *= Config.PassBonuses.VipGrowth
 	end
+	if s.passes.DoubleGrow then
+		m *= Config.PassBonuses.DoubleGrowMult
+	end
 	m *= Session.boostMult(s, "growth")
 	return m
 end

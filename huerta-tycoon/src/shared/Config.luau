@@ -1,6 +1,9 @@
 --!strict
 -- Crop Kingdom: every tunable number lives here.
 
+-- Color3 only exists inside Roblox; tests/pricing_test.luau loads this file with plain Luau, where the stub is used.
+local Color3: typeof(Color3) = Color3 or ({ fromRGB = function() return nil end } :: any)
+
 local Config = {}
 
 Config.GameName = "Crop Kingdom"
@@ -164,7 +167,10 @@ Config.WeatherDurationMax = 150
 -- An ID of 0 hides that item from the in-game store.
 export type Pass = { key: string, id: number, name: string, description: string, priceHint: number }
 Config.GamePasses = {
-	{ key = "DoubleCash", id = 0, name = "2x Cash", description = "Double money from every sale, forever.", priceHint = 249 },
+	-- Prices follow docs/research/top-juegos-y-precios.md (2.3 and 4.1). priceHint is only a fallback label:
+	-- the store shows the real price from MarketplaceService (GetProductInfo).
+	{ key = "DoubleCash", id = 0, name = "2x Cash", description = "Double money from every sale, forever.", priceHint = 349 },
+	{ key = "DoubleGrow", id = 0, name = "2x Grow Speed", description = "Every crop grows twice as fast, forever.", priceHint = 399 },
 	{ key = "AutoHarvest", id = 0, name = "Auto Harvest", description = "Ripe crops go straight to your basket.", priceHint = 199 },
 	{ key = "SellAnywhere", id = 0, name = "Sell Anywhere", description = "Sell your basket from anywhere on the map.", priceHint = 149 },
 	{ key = "VIP", id = 0, name = "VIP", description = "+50% grow speed, +25% cash, VIP chat tag.", priceHint = 399 },
@@ -174,11 +180,15 @@ Config.GamePasses = {
 
 export type Product = { key: string, id: number, name: string, description: string, priceHint: number }
 Config.DevProducts = {
-	{ key = "CashSmall", id = 0, name = "Cash Pouch", description = "10 minutes of your best earnings.", priceHint = 49 },
-	{ key = "CashLarge", id = 0, name = "Cash Chest", description = "1 hour of your best earnings.", priceHint = 199 },
-	{ key = "InstantGrow", id = 0, name = "Instant Grow", description = "Every crop in your garden is ripe right now.", priceHint = 79 },
+	-- ordered by price: the cheap impulse buys come first in the store
+	{ key = "InstantGrowOne", id = 0, name = "Instant Grow (1)", description = "The crop that would take longest to grow is ripe right now.", priceHint = 9 },
 	{ key = "Restock", id = 0, name = "Restock Shop", description = "Reroll your seed shop stock instantly.", priceHint = 39 },
+	{ key = "CashSmall", id = 0, name = "Cash Pouch", description = "10 minutes of your best earnings.", priceHint = 49 },
+	{ key = "InstantGrow", id = 0, name = "Instant Grow", description = "Every crop in your garden is ripe right now.", priceHint = 79 },
 	{ key = "LuckyPack", id = 0, name = "Lucky Seed Pack", description = "3 random seeds, Rare or better guaranteed.", priceHint = 99 },
+	{ key = "CashLarge", id = 0, name = "Cash Chest", description = "1 hour of your best earnings.", priceHint = 199 },
+	{ key = "CashMedium", id = 0, name = "Cash Vault", description = "160 minutes of your best earnings.", priceHint = 499 },
+	{ key = "CashHuge", id = 0, name = "Cash Hoard", description = "330 minutes of your best earnings.", priceHint = 999 },
 	-- one-time offer during the first 24 h (own popup; never listed in the Robux store)
 	-- fixed contents on purpose: a pack with a random item inside would itself count as a paid random item
 	{ key = "StarterPack", id = 0, name = "Starter Pack", description = "6 rare seeds and 30 min of 2x cash", priceHint = 15 },
@@ -196,6 +206,7 @@ Config.StarterPackListPrice = 49 -- crossed-out "was" price shown in the popup (
 
 Config.PassBonuses = {
 	DoubleCashMult = 2,
+	DoubleGrowMult = 2,
 	VipGrowth = 1.5,
 	VipCash = 1.25,
 	SuperLuckMult = 2,
@@ -208,8 +219,16 @@ Config.GroupId = 0 -- set to your Roblox group ID for the +10% group bonus
 Config.GroupCashMult = 1.1
 
 -- Cash packs are sized from the player's recent earning rate, with a floor.
-Config.CashPackMinutes = { CashSmall = 10, CashLarge = 60 }
-Config.CashPackFloor = { CashSmall = 500, CashLarge = 5000 }
+-- Value per Robux grows with the pack (ladder 49 / 199 / 499 / 999 R$ = +0 / +48 / +57 / +62 % minutes per R$ vs the
+-- smallest pack). Each pack pays the largest of: minutes of best earn rate, a share of current cash, the floor.
+Config.CashPackMinutes = { CashSmall = 10, CashLarge = 60, CashMedium = 160, CashHuge = 330 }
+Config.CashPackFloor = { CashSmall = 500, CashLarge = 5000, CashMedium = 25000, CashHuge = 60000 }
+Config.CashPackCashShare = { CashSmall = 0.1, CashLarge = 0.5, CashMedium = 0.75, CashHuge = 1 }
+-- Instant Grow (1) bought with nothing growing still has to give something: this many minutes of earn rate
+Config.InstantGrowOneFallbackMinutes = 3
+
+-- ===== First-minute gift: given once when the tutorial ends (buy -> plant -> harvest -> sell done, or skipped) =====
+Config.TutorialGift = { cash = 60, seeds = { tomato = 3 } }
 
 -- ===== Daily rewards (streak day -> reward) =====
 Config.DailyRewards = {

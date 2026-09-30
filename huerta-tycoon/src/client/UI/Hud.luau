@@ -4,6 +4,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Goals = require(ReplicatedStorage.Shared.Goals)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Theme = require(script.Parent.Theme)
 local C = require(script.Parent.Components)
@@ -129,6 +130,15 @@ function Hud.build(root: Instance)
 	basketBar.label.TextSize = 18
 	basketBar.label.Text = "🎒 0/0"
 
+	-- Next goal: always-visible progress toward the cheapest thing you cannot afford yet (tile / seed / upgrade / rebirth)
+	local goalBar = C.progressBar(basket, UDim2.fromOffset(250, 26), Theme.C.Teal, {
+		Name = "NextGoal",
+		AnchorPoint = Vector2.new(0, 1),
+		Position = UDim2.new(0, 0, 0, -6),
+	})
+	goalBar.label.TextSize = 14
+	goalBar.frame.Visible = false
+
 	local sellBtn = C.button({
 		Name = "Sell",
 		Parent = basket,
@@ -153,6 +163,11 @@ function Hud.build(root: Instance)
 	})
 	tpSellBtn.Visible = false
 	local tpHideToken = 0
+	local goalShown = false
+	local function syncGoalVisible()
+		goalBar.frame.Visible = goalShown and not tpSellBtn.Visible
+	end
+	tpSellBtn:GetPropertyChangedSignal("Visible"):Connect(syncGoalVisible)
 
 	local function showTeleportSell()
 		tpHideToken += 1
@@ -394,6 +409,39 @@ function Hud.build(root: Instance)
 		lastFull = full
 	end
 
+	local function refreshGoal()
+		local d = State.data
+		if not d then
+			return
+		end
+		local cands: { Goals.Candidate } = {}
+		if d.tileCost then
+			table.insert(cands, { kind = "tile", cost = d.tileCost })
+		end
+		for id, cost in d.upgradeCosts or {} do
+			table.insert(cands, { kind = "upgrade", id = id, cost = cost })
+		end
+		for _, seed in Config.Seeds do
+			table.insert(cands, { kind = "seed", id = seed.id, cost = seed.price })
+		end
+		if d.rebirthCost then
+			table.insert(cands, { kind = "rebirth", cost = d.rebirthCost })
+		end
+		local g = Goals.nextGoal(d.cash or 0, cands)
+		goalShown = g ~= nil
+		if g then
+			local args = { cash = Format.cash(g.remaining) }
+			if g.kind == "seed" then
+				args.seed = { key = "seed." .. (g.id :: string) }
+			elseif g.kind == "upgrade" then
+				args.name = { key = "upgrade." .. (g.id :: string) .. ".name" }
+			end
+			goalBar.set(g.fraction)
+			goalBar.label.Text = I18n.t("goal." .. g.kind, args)
+		end
+		syncGoalVisible()
+	end
+
 	local lastAuto: boolean? = nil
 	local function refreshAuto()
 		local a = State.data and State.data.auto
@@ -413,6 +461,7 @@ function Hud.build(root: Instance)
 	State.onChanged(function(kind)
 		if kind == "state" then
 			refresh()
+			refreshGoal()
 			refreshPlant()
 			lastAuto = nil
 			refreshAuto()
@@ -420,6 +469,8 @@ function Hud.build(root: Instance)
 			refreshPlant()
 		end
 	end)
+
+	I18n.onChanged(refreshGoal)
 
 	-- Cash count-up + basket-full pulse
 	local lastShownText = ""
