@@ -67,7 +67,7 @@ function DailyPanel.build(root: Instance)
 	})
 	C.list(strip, false, 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center)
 
-	type Cell = { card: Frame, check: TextLabel, scale: UIScale, border: UIStroke }
+	type Cell = { card: Frame, check: TextLabel, prize: TextLabel, scale: UIScale, border: UIStroke }
 	local cells: { Cell } = {}
 	for i, r in Config.DailyRewards do
 		local emoji, txt = rewardText(r)
@@ -85,7 +85,7 @@ function DailyPanel.build(root: Instance)
 			TextSize = 36,
 			Outline = false,
 		})
-		C.label(card, txt, UDim2.new(1, -8, 0, 52), {
+		local prize = C.label(card, txt, UDim2.new(1, -8, 0, 52), {
 			Position = UDim2.fromOffset(4, 76),
 			Font = Theme.FontAlt,
 			TextSize = 13,
@@ -93,8 +93,10 @@ function DailyPanel.build(root: Instance)
 			TextYAlignment = Enum.TextYAlignment.Top,
 			Outline = false,
 		})
-		local check = C.label(card, "✅", UDim2.fromScale(1, 1), {
-			TextSize = 48,
+		-- claimed: the tick replaces the prize name (same slot) instead of painting over it
+		local check = C.label(card, "✅", UDim2.new(1, 0, 0, 60), {
+			Position = UDim2.fromOffset(0, 74),
+			TextSize = 40,
 			BackgroundTransparency = 0.35,
 			BackgroundColor3 = Color3.fromRGB(220, 255, 220),
 			Outline = false,
@@ -102,7 +104,7 @@ function DailyPanel.build(root: Instance)
 			ZIndex = 3,
 		})
 		C.corner(check, 16)
-		cells[i] = { card = card, check = check, scale = scale, border = border }
+		cells[i] = { card = card, check = check, prize = prize, scale = scale, border = border }
 	end
 
 	local streakLbl = C.label(body, L("daily.streak", { n = 0 }), UDim2.new(1, 0, 0, 30), {
@@ -145,6 +147,7 @@ function DailyPanel.build(root: Instance)
 			local claimed = i <= claimedInCycle
 			local isNext = can and i == currentIdx
 			cell.check.Visible = claimed
+			cell.prize.Visible = not claimed
 			cell.card.BackgroundColor3 = if isNext then Color3.fromRGB(255, 244, 200) else Theme.C.Card
 			cell.border.Color = if isNext then Theme.C.Gold elseif claimed then Theme.C.Green else Theme.darken(Theme.C.Panel, 0.25)
 			cell.border.Thickness = if isNext then 5 else 3

@@ -7,6 +7,4 @@
     covered by the touch control (thumbstick/jump)
     created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/ShopPanel.luau:121
 
-## Runtime log (1)
-[deprecated] (client) x13 deprecated property BillboardGui.DistanceLowerLimit assigned
-    at: huerta-tycoon/src/client/UI/Components.luau:21 < huerta-tycoon/src/client/UI/Tiles.luau:261
+## Runtime log (0)

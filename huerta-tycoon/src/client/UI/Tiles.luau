@@ -266,8 +266,6 @@ local function makeBillboard(tile: BasePart, withBar: boolean): (BillboardGui, F
 		AlwaysOnTop = true,
 		LightInfluence = 0,
 		MaxDistance = if withBar then Tiles.BAR_RANGE else Tiles.TAG_RANGE,
-		-- closer than this the tag stops growing (it would fill the screen when you stand on the tile)
-		DistanceLowerLimit = 26,
 		Parent = markerFolder,
 	})
 	local text = C.label(bb, "", UDim2.fromScale(1, 1), { TextSize = 60, TextWrapped = false, Visible = not withBar })
@@ -355,7 +353,12 @@ local function updateMarkers()
 	local growD: { number } = {}
 	for tile, m in markers do
 		local bb = m.bb
-		if bb and (m.kind == "ripe" or m.kind == "grow") then
+		if bb and m.kind == "buy" then
+			-- stud-sized tags balloon up close (BillboardGui.DistanceLowerLimit is deprecated): shrink with proximity
+			local dist = if from then (tile.Position - from).Magnitude else 0
+			local k = math.clamp(dist / 26, 0.35, 1)
+			bb.Size = UDim2.fromScale(4.4 * k, 1.2 * k)
+		elseif bb and (m.kind == "ripe" or m.kind == "grow") then
 			local dist = if from then (tile.Position - from).Magnitude else 0
 			if m.kind == "ripe" then
 				table.insert(ripe, bb)
@@ -376,6 +379,8 @@ local function updateMarkers()
 	local showGrow = UiMath.nearest(growD, Tiles.MAX_GROW_BARS, Tiles.BAR_RANGE)
 	for i, bb in grow do
 		bb.Enabled = showGrow[i]
+		local k = math.clamp(growD[i] / 26, 0.35, 1)
+		bb.Size = UDim2.fromScale(2.8 * k, 0.42 * k)
 	end
 end
 

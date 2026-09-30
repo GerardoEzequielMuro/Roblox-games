@@ -2,20 +2,9 @@
 # image: mid-phone-daily.png  (coordinates below are in the full 844x390 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
-## Layout findings (4)
-[med] text-overlap: CropKingdomUI.Root.DailyPanel.ContentViewport.Content.Frame.Frame.TextLabel rect=[159, 202, 228, 238] (x5 similar)
-    text overlaps the text of CropKingdomUI.Root.DailyPanel.ContentViewport.Content.Frame.Frame.TextLabel "✅" (72%)
-    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/Components.luau:191
-[med] text-overlap: CropKingdomUI.Root.DailyPanel.ContentViewport.Content.Frame.Frame.TextLabel rect=[162, 240, 224, 282] (x5 similar)
-    text overlaps the text of CropKingdomUI.Root.DailyPanel.ContentViewport.Content.Frame.Frame.TextLabel "✅" (100%)
-    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/DailyPanel.luau:88
-[low] core-overlap: CropKingdomUI.Root.DailyPanel.ContentViewport.Content.Frame.Frame.TextLabel rect=[162, 240, 224, 282]
+## Layout findings (1)
+[low] core-overlap: CropKingdomUI.Root.DailyPanel.ContentViewport.Content.Frame.Frame.TextLabel rect=[159, 238, 228, 287]
     covered by the touch control (thumbstick/jump)
-    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/DailyPanel.luau:88
-[low] core-overlap: CropKingdomUI.Root.DailyPanel.ContentViewport.Content.Frame.Frame.TextLabel rect=[159, 178, 228, 289]
-    covered by the touch control (thumbstick/jump)
-    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/DailyPanel.luau:96
+    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/DailyPanel.luau:97
 
-## Runtime log (1)
-[deprecated] (client) x13 deprecated property BillboardGui.DistanceLowerLimit assigned
-    at: huerta-tycoon/src/client/UI/Components.luau:21 < huerta-tycoon/src/client/UI/Tiles.luau:261
+## Runtime log (0)

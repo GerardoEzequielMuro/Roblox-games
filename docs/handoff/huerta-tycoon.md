@@ -214,3 +214,21 @@ Detalles de implementación:
 - Soltá un `tree.rbxm` y un `farmhouse.rbxm`: que apoyen en el piso, miren hacia la puerta/plaza (-Z), escalen bien y colisionen como se espera (casa sólida, árbol solo el tronco).
 - Fuente y casa pierden el chorro y el humo con modelo. El globo tiene que seguir flotando; los faroles con luz.
 - Output: buscar `[ModelSlots]` por scripts borrados o modelos que pasan el tope de partes.
+
+## Ronda 4: UI arreglada con la vista previa
+
+Re-renderizado todo (new+mid pc/phone, cada ventana pc/phone, laptop y tablet): 0 errores de runtime y 0 hallazgos en HUD, laptop y tablet.
+
+**Arreglado**
+- `src/client/UI/Tiles.luau` (`makeBillboard`, `updateMarkers`): saqué `BillboardGui.DistanceLowerLimit` (deprecada; se asignaba en Components.luau:21 via `C.new`). No tiene reemplazo directo, así que el "no crecer cuando estás encima" lo hace el código: los carteles de tile ya se achicaban con la cercanía para "READY!"; ahora también los de "buy" y las barras de crecimiento (`k = clamp(dist/26, 0.35, 1)`). Antes: propiedad deprecada x13; ahora: nada.
+- `src/client/UI/DailyPanel.luau:96-106, ~147`: el tilde de "reclamado" ya no se dibuja encima del premio (dejaba asomar "Pumpkin"). Ahora ocupa el lugar del nombre del premio, que se oculta al reclamar. Se fueron los `text-overlap`.
+- Clima en celular: ya no se sale de la píldora (el texto entra en 2 renglones); el "confirmar" era falso.
+
+**Lo que queda**
+- Tienda de Robux "coming soon": esperado, ids en 0 hasta que el dueño cree los productos. No inventé ids.
+- `core-overlap` (low/med) en celular dentro de paneles con scroll (Gifts Claim del primer regalo, Language coreano, filas de Shop/Upgrades/Index/Daily): es contenido que puede quedar bajo el joystick según el scroll; se puede scrollear, y el panel no se puede achicar sin perder legibilidad. Lo dejé.
+- Barra del SELL "cortada" junto a la mochila: la marqué como artefacto probable, no la toqué.
+
+**Confirmar en Studio**
+- Que los carteles de tile se vean bien de cerca y de lejos sin `DistanceLowerLimit` (tamaño mínimo 0.35 del base).
+- Tilde de Daily: que el emoji ✅ se vea centrado en la tarjeta en Fredoka real.
