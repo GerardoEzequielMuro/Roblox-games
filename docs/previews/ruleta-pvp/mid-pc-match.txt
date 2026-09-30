@@ -1,0 +1,10 @@
+# uipreview ruleta-pvp state=mid screen=pc (1920x1080) window=match -> ok
+# image: mid-pc-match.png  (coordinates below are in the full 1920x1080 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (0)
+
+## Runtime log (0)
+
+## Other log: warn/info/print (1, first 60)
+[info] (client) [fixture] QuickPlay -> true t1

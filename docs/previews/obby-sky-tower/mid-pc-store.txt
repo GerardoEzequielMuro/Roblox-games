@@ -1,0 +1,13 @@
+# uipreview obby-sky-tower state=mid screen=pc (1920x1080) window=store -> ok
+# image: mid-pc-store.png  (coordinates below are in the full 1920x1080 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (2)
+[high] tiny-text: SkyTowerUI.Actions.Bottom.Checkpoint rect=[964, 986, 1138, 1070]
+    TextSize=-8 -> 1.5px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:338 < obby-sky-tower/src/client/init.client.luau:34
+[high] tiny-text: SkyTowerUI.Actions.Bottom.Lobby rect=[1148, 986, 1240, 1070]
+    TextSize=-8 -> 1.5px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:343 < obby-sky-tower/src/client/init.client.luau:34
+
+## Runtime log (0)

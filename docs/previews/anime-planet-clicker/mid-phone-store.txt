@@ -1,0 +1,37 @@
+# uipreview anime-planet-clicker state=mid screen=phone (844x390, touch) window=store -> ok
+# image: mid-phone-store.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (10)
+[high] small-touch: PlanetUI.BottomHolder.Bottom.Cargo.Sell rect=[523, 328, 576, 359]
+    touch target 53x31px (< 44px on a touch screen)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:333 < anime-planet-clicker/src/client/UI/Hud.luau:246
+[high] small-touch: PlanetUI.LeftHolder.Left.Menu.Auto rect=[128, 187, 159, 218] (x10 similar)
+    touch target 31x31px (< 44px on a touch screen)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:333 < anime-planet-clicker/src/client/UI/Hud.luau:174
+[high] small-touch: PlanetUI.LeftHolder.Left.Store rect=[59, 125, 228, 150]
+    touch target 169x24px (< 44px on a touch screen)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:333 < anime-planet-clicker/src/client/UI/Hud.luau:151
+[high] small-touch: PlanetUI.RightHolder.Right.GiftTimer rect=[682, 64, 785, 87]
+    touch target 103x23px (< 44px on a touch screen)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:333 < anime-planet-clicker/src/client/UI/Hud.luau:274
+[high] small-touch: PlanetUI.StoreWindowHolder.StoreWindow.Body.Grid.Pass_AutoMiner.Buy rect=[222, 167, 414, 187] (x6 similar)
+    touch target 192x20px (< 44px on a touch screen)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:333 < anime-planet-clicker/src/client/UI/StoreWindow.luau:33
+[high] small-touch: PlanetUI.StoreWindowHolder.StoreWindow.Button rect=[616, 75, 647, 106]
+    touch target 31x31px (< 44px on a touch screen)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:333 < anime-planet-clicker/src/client/UI/Windows.luau:130
+[high] tiny-text: PlanetUI.LeftHolder.Left.Menu.Upgrades.TextLabel rect=[95, 175, 123, 183]
+    TextScaled resolves to 6px (< 9px, unreadable)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:101 < anime-planet-clicker/src/client/UI/Hud.luau:190
+[med] tiny-text: PlanetUI.LeftHolder.Left.Menu.Auto.TextLabel rect=[130, 209, 157, 218] (x7 similar)
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:101 < anime-planet-clicker/src/client/UI/Hud.luau:190
+[med] tiny-text: PlanetUI.LeftHolder.Left.Menu.Rewards.TextLabel rect=[95, 209, 123, 218] (x2 similar)
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:101 < anime-planet-clicker/src/client/UI/Hud.luau:190
+[med] tiny-text: PlanetUI.StoreWindowHolder.StoreWindow.Body.Grid.Pass_AutoMiner.TextLabel rect=[260, 141, 414, 161] (x6 similar)
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:101 < anime-planet-clicker/src/client/UI/StoreWindow.luau:32
+
+## Runtime log (0)

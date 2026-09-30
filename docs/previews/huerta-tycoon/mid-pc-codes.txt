@@ -1,0 +1,9 @@
+# uipreview huerta-tycoon state=mid screen=pc (1920x1080) window=codes -> ok
+# image: mid-pc-codes.png  (coordinates below are in the full 1920x1080 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (0)
+
+## Runtime log (1)
+[deprecated] (client) x13 deprecated property BillboardGui.DistanceLowerLimit assigned
+    at: huerta-tycoon/src/client/UI/Components.luau:21 < huerta-tycoon/src/client/UI/Tiles.luau:261

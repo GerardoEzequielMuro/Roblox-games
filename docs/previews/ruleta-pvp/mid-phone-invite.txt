@@ -1,0 +1,73 @@
+# uipreview ruleta-pvp state=mid screen=phone (844x390, touch) window=invite -> ok
+# image: mid-phone-invite.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (22)
+[high] small-touch: SpinUI.InviteWindowHolder.InviteWindow.Body.Scroll.Frame.CodeBox rect=[262, 241, 490, 261]
+    touch target 228x20px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/MenuWindows.luau:713 < ruleta-pvp/src/client/UI/Windows.luau:216
+[high] small-touch: SpinUI.InviteWindowHolder.InviteWindow.Body.Scroll.Frame.InviteFriends rect=[263, 175, 416, 194] (x2 similar)
+    touch target 153x19px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/MenuWindows.luau:70
+[high] small-touch: SpinUI.InviteWindowHolder.InviteWindow.Body.Scroll.Frame.Redeem rect=[494, 241, 575, 261]
+    touch target 81x20px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/MenuWindows.luau:70
+[high] small-touch: SpinUI.InviteWindowHolder.InviteWindow.Close rect=[572, 95, 602, 125]
+    touch target 30x30px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/Windows.luau:125
+[high] small-touch: SpinUI.LobbyHud.CoreHolder.Core.AutoCharge rect=[685, 223, 782, 245]
+    touch target 98x21px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/Hud.luau:208
+[high] small-touch: SpinUI.LobbyHud.CoreHolder.Core.Tap rect=[685, 188, 782, 219]
+    touch target 98x31px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/Hud.luau:201
+[high] small-touch: SpinUI.LobbyHud.PlayBarHolder.PlayBar.AutoQueue rect=[511, 318, 566, 349]
+    touch target 56x31px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/Hud.luau:122
+[high] small-touch: SpinUI.LobbyHud.TopHolder.Top.Coins.Plus rect=[770, 67, 787, 83]
+    touch target 17x17px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/Hud.luau:63
+[med] core-overlap: SpinUI.LobbyHud.MenuHolder.Menu.Settings rect=[94, 247, 129, 282]
+    covered by the touch control (thumbstick/jump)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Hud.luau:95 < ruleta-pvp/src/client/Main.client.luau:16
+[med] covered: SpinUI.LobbyHud.GoalsHolder.Goals.Season rect=[655, 157, 785, 168]
+    82% hidden under SpinUI.LobbyHud.CoreHolder.Core (drawn on top)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:75
+[med] small-touch: SpinUI.LobbyHud.MenuHolder.Menu.Invite rect=[55, 247, 91, 282] (x8 similar)
+    touch target 36x34px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Hud.luau:95 < ruleta-pvp/src/client/Main.client.luau:16
+[med] tiny-text: SpinUI.InviteWindowHolder.InviteWindow.Body.Scroll.Frame.InviteFriends.Label rect=[266, 178, 413, 191] (x4 similar)
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Theme.luau:300
+[med] tiny-text: SpinUI.InviteWindowHolder.InviteWindow.Body.Scroll.Frame.TextLabel rect=[263, 156, 574, 174]
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MenuWindows.luau:64
+[med] tiny-text: SpinUI.InviteWindowHolder.InviteWindow.Body.Scroll.TextLabel rect=[258, 202, 580, 213]
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MenuWindows.luau:64
+[med] tiny-text: SpinUI.LobbyHud.CoreHolder.Core.Bar.Count rect=[685, 176, 782, 185]
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:200
+[med] tiny-text: SpinUI.LobbyHud.GoalsHolder.Goals.League rect=[655, 146, 785, 156]
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:74
+[med] tiny-text: SpinUI.LobbyHud.GoalsHolder.Goals.Season rect=[655, 157, 785, 168]
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:75
+[med] tiny-text: SpinUI.LobbyHud.MenuHolder.Menu.Invite.TextLabel rect=[56, 268, 89, 278] (x8 similar)
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:102
+[med] tiny-text: SpinUI.LobbyHud.ProfileHolder.Profile.League rect=[91, 78, 188, 87]
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:50
+[med] tiny-text: SpinUI.LobbyHud.ProfileHolder.Profile.Level.TextLabel rect=[74, 86, 88, 97]
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:48
+[low] core-overlap: SpinUI.LobbyHud.MenuHolder.Menu.Settings.Icon rect=[94, 249, 129, 268]
+    covered by the touch control (thumbstick/jump)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Theme.luau:169
+[low] core-overlap: SpinUI.LobbyHud.MenuHolder.Menu.Settings.TextLabel rect=[95, 268, 128, 278]
+    covered by the touch control (thumbstick/jump)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/Hud.luau:102
+
+## Runtime log (0)

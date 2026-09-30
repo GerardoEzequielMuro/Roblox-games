@@ -1,0 +1,12 @@
+# uipreview huerta-tycoon state=mid screen=phone (844x390, touch) window=upgrades -> ok
+# image: mid-phone-upgrades.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (1)
+[low] core-overlap: CropKingdomUI.Root.UpgradesPanel.Content.ScrollingFrame.Frame.Frame.TextLabel rect=[171, 250, 235, 313]
+    covered by the touch control (thumbstick/jump)
+    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/Components.luau:191
+
+## Runtime log (1)
+[deprecated] (client) x13 deprecated property BillboardGui.DistanceLowerLimit assigned
+    at: huerta-tycoon/src/client/UI/Components.luau:21 < huerta-tycoon/src/client/UI/Tiles.luau:261

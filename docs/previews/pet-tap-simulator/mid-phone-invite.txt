@@ -1,0 +1,40 @@
+# uipreview pet-tap-simulator state=mid screen=phone (844x390, touch) window=invite -> ok
+# image: mid-phone-invite.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (11)
+[high] small-touch: TapPetsUI.InviteWindowHolder.InviteWindow.Button rect=[566, 80, 597, 111]
+    touch target 31x31px (< 44px on a touch screen)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/Windows.luau:129
+[high] small-touch: TapPetsUI.RightHolder.Right.Auto.AutoEquip rect=[672, 136, 726, 167] (x4 similar)
+    touch target 54x31px (< 44px on a touch screen)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/Hud.luau:454
+[high] small-touch: TapPetsUI.RightHolder.Right.GiftTimer rect=[672, 66, 783, 97]
+    touch target 111x31px (< 44px on a touch screen)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/Hud.luau:340
+[med] covered: TapPetsUI.DockHolder.Dock.Rewards.Badge.TextLabel rect=[426, 305, 442, 322]
+    39% hidden under TapPetsUI.DockHolder.Dock.TapButton (drawn on top)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/Theme.luau:457
+[med] covered: TapPetsUI.LeftHolder.Left.Menu.Index.Badge.TextLabel rect=[95, 163, 112, 179]
+    33% hidden under TapPetsUI.LeftHolder.Left.Menu.Teleport (drawn on top)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/Theme.luau:457
+[med] small-touch: TapPetsUI.InviteWindowHolder.InviteWindow.Body.Frame.Button rect=[280, 194, 419, 229]
+    touch target 139x34px (< 44px on a touch screen)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/InviteWindow.luau:48
+[med] small-touch: TapPetsUI.InviteWindowHolder.InviteWindow.Body.Frame.Button rect=[425, 194, 564, 229]
+    touch target 139x34px (< 44px on a touch screen)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/InviteWindow.luau:49
+[med] small-touch: TapPetsUI.LeftHolder.Left.Menu.Codes rect=[191, 167, 230, 206] (x8 similar)
+    touch target 39x39px (< 44px on a touch screen)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:380 < pet-tap-simulator/src/client/UI/Hud.luau:101
+[med] small-touch: TapPetsUI.ObjectiveHolder.Objective rect=[339, 62, 550, 95]
+    touch target 211x33px (< 44px on a touch screen)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Hud.luau:276 < pet-tap-simulator/src/client/Main.client.luau:33
+[med] tiny-text: TapPetsUI.LeftHolder.Left.Menu.Upgrades.TextLabel rect=[63, 151, 98, 162]
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/Hud.luau:117
+[med] tiny-text: TapPetsUI.ObjectiveHolder.Objective.Bar.Pct rect=[350, 81, 539, 91]
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/Hud.luau:293
+
+## Runtime log (0)

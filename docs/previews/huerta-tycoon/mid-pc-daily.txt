@@ -1,0 +1,15 @@
+# uipreview huerta-tycoon state=mid screen=pc (1920x1080) window=daily -> ok
+# image: mid-pc-daily.png  (coordinates below are in the full 1920x1080 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (2)
+[med] text-overlap: CropKingdomUI.Root.DailyPanel.Content.Frame.Frame.TextLabel rect=[641, 515, 725, 559] (x5 similar)
+    text overlaps the text of CropKingdomUI.Root.DailyPanel.Content.Frame.Frame.TextLabel "✅" (72%)
+    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/Components.luau:191
+[med] text-overlap: CropKingdomUI.Root.DailyPanel.Content.Frame.Frame.TextLabel rect=[645, 561, 721, 613] (x5 similar)
+    text overlaps the text of CropKingdomUI.Root.DailyPanel.Content.Frame.Frame.TextLabel "✅" (100%)
+    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/DailyPanel.luau:88
+
+## Runtime log (1)
+[deprecated] (client) x13 deprecated property BillboardGui.DistanceLowerLimit assigned
+    at: huerta-tycoon/src/client/UI/Components.luau:21 < huerta-tycoon/src/client/UI/Tiles.luau:261

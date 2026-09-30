@@ -1,0 +1,18 @@
+# uipreview huerta-tycoon state=mid screen=phone (844x390, touch) window=gifts -> ok
+# image: mid-phone-gifts.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (3)
+[med] core-overlap: CropKingdomUI.Root.GiftsPanel.ContentViewport.Content.Frame.Gift1.Claim rect=[168, 254, 318, 299]
+    covered by the touch control (thumbstick/jump)
+    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:288 < huerta-tycoon/src/client/UI/GiftsPanel.luau:130
+[low] core-overlap: CropKingdomUI.Root.GiftsPanel.ContentViewport.Content.Frame.Gift1.Claim.Label rect=[168, 254, 318, 299]
+    covered by the touch control (thumbstick/jump)
+    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/Components.luau:303
+[low] core-overlap: CropKingdomUI.Root.GiftsPanel.ContentViewport.Content.Frame.Gift4.TextLabel rect=[166, 321, 207, 356]
+    covered by the touch control (thumbstick/jump)
+    created at: huerta-tycoon/src/client/UI/Components.luau:14 < huerta-tycoon/src/client/UI/Components.luau:153 < huerta-tycoon/src/client/UI/Components.luau:191
+
+## Runtime log (1)
+[deprecated] (client) x13 deprecated property BillboardGui.DistanceLowerLimit assigned
+    at: huerta-tycoon/src/client/UI/Components.luau:21 < huerta-tycoon/src/client/UI/Tiles.luau:261

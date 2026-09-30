@@ -1,0 +1,43 @@
+# uipreview ruleta-pvp state=mid screen=phone (844x390, touch) window=match -> ok
+# image: mid-phone-match.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (11)
+[high] small-touch: SpinUI.MatchHud.SideHolder.Side.AutoPlay rect=[711, 162, 789, 186]
+    touch target 78x24px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/MatchHud.luau:121
+[high] small-touch: SpinUI.MatchHud.SideHolder.Side.Leave rect=[711, 134, 789, 158]
+    touch target 78x24px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/MatchHud.luau:116
+[high] tiny-text: SpinUI.MatchHud.BottomHolder.Bottom.Hand.Card_oracle.TextLabel rect=[375, 311, 418, 323] (x2 similar)
+    TextScaled resolves to 6px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MatchHud.luau:390
+[high] tiny-text: SpinUI.MatchHud.PlayersHolder.Players.Chip_u90000001.Name rect=[258, 65, 302, 76]
+    TextScaled resolves to 6px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MatchHud.luau:197
+[med] small-touch: SpinUI.MatchHud.PlayersHolder.Players.Chip_b1_2 rect=[308, 63, 379, 98] (x4 similar)
+    touch target 71x34px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/MatchHud.luau:181 < ruleta-pvp/src/client/UI/MatchHud.luau:232
+[med] small-touch: SpinUI.MatchHud.PlayersHolder.Players.Chip_b1_5 rect=[457, 63, 536, 98]
+    touch target 79x34px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/MatchHud.luau:181 < ruleta-pvp/src/client/UI/MatchHud.luau:232
+[med] small-touch: SpinUI.MatchHud.SideHolder.Side.Emote rect=[756, 190, 789, 223]
+    touch target 33x33px (< 44px on a touch screen)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:283 < ruleta-pvp/src/client/UI/MatchHud.luau:122
+[med] tiny-text: SpinUI.MatchHud.InfoHolder.Info.Sub rect=[59, 150, 178, 162]
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MatchHud.luau:83
+[med] tiny-text: SpinUI.MatchHud.PlayersHolder.Players.Chip_b1_2.Extra rect=[311, 87, 376, 96] (x5 similar)
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MatchHud.luau:199
+[med] tiny-text: SpinUI.MatchHud.PlayersHolder.Players.Chip_b1_2.Hearts rect=[332, 76, 376, 85] (x5 similar)
+    TextScaled resolves to 7px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MatchHud.luau:198
+[med] tiny-text: SpinUI.MatchHud.PlayersHolder.Players.Chip_b1_2.Name rect=[332, 65, 376, 76] (x4 similar)
+    TextScaled resolves to 8px (< 9px, unreadable)
+    created at: ruleta-pvp/src/client/UI/Theme.luau:37 < ruleta-pvp/src/client/UI/Theme.luau:102 < ruleta-pvp/src/client/UI/MatchHud.luau:197
+
+## Runtime log (0)
+
+## Other log: warn/info/print (1, first 60)
+[info] (client) [fixture] QuickPlay -> true t1

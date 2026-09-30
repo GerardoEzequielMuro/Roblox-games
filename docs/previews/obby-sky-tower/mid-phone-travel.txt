@@ -1,0 +1,28 @@
+# uipreview obby-sky-tower state=mid screen=phone (844x390, touch) window=travel -> ok
+# image: mid-phone-travel.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (7)
+[high] tiny-text: SkyTowerUI.Actions.Bottom.Checkpoint rect=[579, 214, 679, 257]
+    TextSize=-8 -> 0.9px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:338 < obby-sky-tower/src/client/init.client.luau:34
+[high] tiny-text: SkyTowerUI.Actions.Bottom.Lobby rect=[684, 214, 738, 257]
+    TextSize=-8 -> 0.9px on screen after UIScale (< 9px) (Roblox clamps TextSize < 1 to 1: the text is invisible)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:343 < obby-sky-tower/src/client/init.client.luau:34
+[med] small-touch: SkyTowerUI.Actions.Bottom.Checkpoint rect=[579, 214, 679, 257]
+    touch target 100x43px (< 44px on a touch screen)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:338 < obby-sky-tower/src/client/init.client.luau:34
+[med] small-touch: SkyTowerUI.Actions.Bottom.Lobby rect=[684, 214, 738, 257]
+    touch target 54x43px (< 44px on a touch screen)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:343 < obby-sky-tower/src/client/init.client.luau:34
+[med] small-touch: SkyTowerUI.Corner.MenuButton rect=[59, 107, 145, 144]
+    touch target 86x37px (< 44px on a touch screen)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Hud.luau:207 < obby-sky-tower/src/client/init.client.luau:34
+[med] small-touch: SkyTowerUI.Panel_travel.Window.Body.Content.ScrollingFrame.To_0 rect=[236, 125, 323, 162] (x24 similar)
+    touch target 87x37px (< 44px on a touch screen)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/TravelPanel.luau:37 < obby-sky-tower/src/client/UI/Kit.luau:609
+[med] small-touch: SkyTowerUI.Panel_travel.Window.Body.Frame.TextButton rect=[583, 80, 615, 112]
+    touch target 32x32px (< 44px on a touch screen)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/Kit.luau:580 < obby-sky-tower/src/client/UI/TravelPanel.luau:17
+
+## Runtime log (0)

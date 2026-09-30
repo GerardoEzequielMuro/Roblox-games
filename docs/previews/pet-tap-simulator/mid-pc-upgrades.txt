@@ -1,0 +1,10 @@
+# uipreview pet-tap-simulator state=mid screen=pc (1920x1080) window=upgrades -> ok
+# image: mid-pc-upgrades.png  (coordinates below are in the full 1920x1080 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (1)
+[med] covered: TapPetsUI.DockHolder.Dock.Rewards.Badge.TextLabel rect=[879, 962, 911, 994]
+    39% hidden under TapPetsUI.DockHolder.Dock.TapButton (drawn on top)
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/Theme.luau:457
+
+## Runtime log (0)
