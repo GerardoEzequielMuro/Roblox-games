@@ -73,6 +73,9 @@ function Eggs.hatch(player: Player, eggId: string, count: number): (boolean, any
 	if not State.hasZone(p, egg.zone) then
 		return false, M("msg.unlock_first", { zone = M("zone." .. Config.Zones[egg.zone].id) })
 	end
+	if not Formulas.eggUnlocked(eggId, p.rebirths) then
+		return false, M("msg.egg_needs_rebirth", { n = Formulas.eggMinRebirths(eggId) })
+	end
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local pos = eggPositions[eggId]
@@ -122,6 +125,10 @@ function Eggs.init(positions: { [string]: Vector3 })
 		local egg = if type(payload.egg) == "string" then Formulas.EggById[payload.egg] else nil
 		if not egg or egg.exclusive then
 			return false, M("msg.unknown_egg")
+		end
+		local pd = Data.get(player)
+		if not pd or not Formulas.eggUnlocked(egg.id, pd.rebirths) then
+			return false, M("msg.egg_needs_rebirth", { n = Formulas.eggMinRebirths(egg.id) })
 		end
 		State.autoHatch[player] = payload.egg
 		State.dirty(player)

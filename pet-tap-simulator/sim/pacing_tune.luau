@@ -13,7 +13,7 @@ local sessions = Core.firstSession(130)
 -- than its own gate (Sprinkle Egg), so prices stay ordered while gates move.
 local eggRatio, eggAnchor = {}, {}
 for _, egg in Config.Eggs do
-	if egg.zone >= 2 then
+	if egg.zone >= 2 and not egg.minRebirths then -- rebirth-gated eggs are priced by hand (they follow the rebirth cost, not a gate)
 		local own = egg.price / Config.Zones[egg.zone].cost
 		local anchor = if own > 1 and Config.Zones[egg.zone + 1] then egg.zone + 1 else egg.zone
 		eggAnchor[egg.id] = anchor

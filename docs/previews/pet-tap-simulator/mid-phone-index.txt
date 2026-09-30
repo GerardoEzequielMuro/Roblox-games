@@ -3,8 +3,8 @@
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
 ## Layout findings (1)
-[low] core-overlap: TapPetsUI.IndexWindowHolder.IndexWindow.Body.Frame.Frame.Frame.TextLabel rect=[153, 279, 227, 298]
+[low] core-overlap: TapPetsUI.IndexWindowHolder.IndexWindow.Body.ScrollingFrame.Frame.Frame.TextLabel rect=[153, 279, 227, 298]
     covered by the touch control (thumbstick/jump)
-    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/IndexWindow.luau:127
+    created at: pet-tap-simulator/src/client/UI/Theme.luau:29 < pet-tap-simulator/src/client/UI/Theme.luau:91 < pet-tap-simulator/src/client/UI/IndexWindow.luau:139
 
 ## Runtime log (0)

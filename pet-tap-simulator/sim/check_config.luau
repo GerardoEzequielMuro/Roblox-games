@@ -24,4 +24,14 @@ for z = 1, #Config.Zones do
 	if not has then fail("zone " .. z .. " has no egg") end
 	if z > 1 and Config.Zones[z].cost <= Config.Zones[z - 1].cost then fail("zone costs not increasing at " .. z) end
 end
+-- rebirth-gated eggs: whole rebirth counts, a real zone, and no two eggs closer than 34 studs (pedestals are 15 wide)
+for _, egg in Config.Eggs do
+	if egg.minRebirths ~= nil and (egg.minRebirths < 1 or egg.minRebirths ~= math.floor(egg.minRebirths) or egg.exclusive) then fail(egg.id .. " bad minRebirths") end
+	for _, other in Config.Eggs do
+		if other.id < egg.id and (other.zone == egg.zone or (other.zone == 0 and egg.zone == 1) or (egg.zone == 0 and other.zone == 1)) then
+			local dx, dz = egg.offsetX - other.offsetX, egg.offsetZ - other.offsetZ
+			if (egg.zone == other.zone) and math.sqrt(dx * dx + dz * dz) < 34 then fail(egg.id .. " is too close to " .. other.id) end
+		end
+	end
+end
 print(string.format("%d pets, %d eggs, %d zones, %d passes, %d products -> %s", #Config.Pets, #Config.Eggs, #Config.Zones, #Config.Passes, #Config.Products, if errors == 0 then "ALL CHECKS PASSED" else errors .. " FAILURES"))

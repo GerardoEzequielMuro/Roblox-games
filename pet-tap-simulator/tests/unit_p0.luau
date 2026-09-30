@@ -203,4 +203,17 @@ check("trait roll covers the whole range", Formulas.rollTrait(0) == 1 and Formul
 check("trait multiplies pet power, none leaves it alone", Formulas.petPower("dog", 0, 1) == 1 and Formulas.petPower("dog", 0, 1, nil) == 1 and math.abs(Formulas.petPower("bear", 1, 1, 5) - 9 * 3 * 1.6) < 1e-9 and Formulas.traitMult(99) == 1)
 check("trait dice are not a product", Config.ProductByKey.TraitDice == nil)
 
+---------------------------------------------------------------------------
+-- Rebirth-gated eggs
+---------------------------------------------------------------------------
+check("gated egg: locked at 0 rebirths, open at its count", not Formulas.eggUnlocked("obsidian", 0) and Formulas.eggUnlocked("obsidian", 1) and Formulas.eggUnlocked("aurora", 2) and not Formulas.eggUnlocked("aurora", 1))
+check("ungated egg: always open", Formulas.eggUnlocked("basic", 0) and Formulas.eggUnlocked("basalt", 0) and Formulas.eggMinRebirths("magma") == 0 and Formulas.eggMinRebirths("nope") == 0)
+check("eggsUnlockedAt(1) is the obsidian egg, 0 unlocks nothing", #Formulas.eggsUnlockedAt(1) == 1 and Formulas.eggsUnlockedAt(1)[1] == "obsidian" and #Formulas.eggsUnlockedAt(0) == 0)
+local gatedEveryRebirth = true
+for r = 1, 4 do
+	gatedEveryRebirth = gatedEveryRebirth and #Formulas.eggsUnlockedAt(r) >= 1
+end
+check("every rebirth from 1 to 4 opens at least one egg", gatedEveryRebirth)
+check("gated pets do not move the power exclusive pets scale with", Formulas.petPower("sparklecat", 0, 3) == 1.5 * 15000 and Formulas.petPower("sparklecat", 0, 4) == 1.5 * 250000 and Formulas.petPower("sparklecat", 0, 5) == 1.5 * 4200000, Formulas.petPower("sparklecat", 0, 3))
+
 print(string.format("%d unit checks, %d failures%s", total, fails, if fails == 0 then " -> UNIT TESTS PASSED" else ""))

@@ -39,7 +39,7 @@ print(string.format("  %-34s %d (of which gem upgrades: %d)   target >= 3", "pur
 print("Tiers (eggs become affordable / zones / rebirth), times = when the player can first afford it")
 for _, egg in Config.Eggs do
 	if not egg.exclusive then
-		row(string.format("egg %-8s (%s, %s taps)", egg.id, "z" .. egg.zone, tostring(egg.price)), "egg:" .. egg.id)
+		row(string.format("egg %-8s (%s%s, %s taps)", egg.id, "z" .. egg.zone, if egg.minRebirths then " R" .. egg.minRebirths else "", tostring(egg.price)), "egg:" .. egg.id)
 	end
 end
 for z = 2, #Config.Zones do
@@ -50,4 +50,9 @@ for r = 1, 8 do
 end
 print(string.format("  longest gap between new tiers (eggs/zones/rebirth), first hour: median %s, worst seed %s   target <= 15 min", fmt(agg.gapMedian), fmt(agg.gapWorst)))
 print(string.format("  longest stretch with NOTHING new (tier, gift, quest, upgrade), first hour: median %s, worst seed %s   target <= 10 min", fmt(agg.rewardGapMedian), fmt(agg.rewardGapWorst)))
+if not WEEK then
+	local long = Core.aggregate(SEEDS, sessions, Core.LONG_WINDOW)
+	print(string.format("  longest gap between new tiers, first 2 hours: median %s, worst seed %s   target <= 12 min", fmt(long.gapMedian), fmt(long.gapWorst)))
+	print(string.format("  longest stretch with NOTHING new, first 2 hours: median %s, worst seed %s", fmt(long.rewardGapMedian), fmt(long.rewardGapWorst)))
+end
 print(string.format("  rebirths by end of run (median): %d", agg.rebirthsMedian))

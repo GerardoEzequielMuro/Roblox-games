@@ -9,6 +9,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Lang = require(script.Parent.Lang)
+local Net = require(script.Parent.Net)
 
 local WorldText = {}
 
@@ -21,8 +22,11 @@ local function render(obj: Instance)
 		if type(eggId) == "string" then
 			local egg = Formulas.EggById[eggId]
 			if egg then
+				local state = Net.state
+				local need = Formulas.eggMinRebirths(eggId)
 				local price = if egg.exclusive
 					then ('<font color="#7CFF7C">' .. Lang.t("world.robux_exclusive") .. "</font>")
+					elseif state and (state.rebirths or 0) < need then ('<font color="#FF8A8A">' .. Lang.t("world.egg_locked", { n = need }) .. "</font>")
 					else Lang.t("world.price_taps", { n = Format.abbrev(egg.price) })
 				obj.Text = string.format('%s\n<font color="#FFE066">%s</font>', Lang.egg(eggId), price)
 			end
@@ -66,6 +70,15 @@ function WorldText.init()
 			task.defer(render, d)
 		end)
 		Lang.Changed:Connect(all)
+		-- rebirth-gated egg signs flip from "locked" to the price when the player rebirths
+		local lastRebirths = -1
+		Net.Changed:Connect(function(kind)
+			local r = (Net.get("rebirths") :: number?) or 0
+			if kind == "full" and r ~= lastRebirths then
+				lastRebirths = r
+				all()
+			end
+		end)
 	end)
 end
 

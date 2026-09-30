@@ -27,6 +27,7 @@ Core.REBIRTH_GATE_WAIT = 300 -- don't rebirth if the next gate is affordable wit
 Core.QUEST_EVERY = 12 * 60 -- a daily quest gets done this often while playing
 Core.DAILY_DELAY = 30 -- the first-session player notices the Rewards badge after ~30 s
 Core.TIER_WINDOW = 3600 -- "first hour" for the dead-stretch check
+Core.LONG_WINDOW = 7200 -- "first two hours": the rebirth-gated eggs keep a new tier coming every ~10 min
 
 export type Session = { start: number, duration: number }
 
@@ -229,7 +230,7 @@ function Core.simulate(seed: number, sessions: { Session }): Result
 		local lk = luck()
 		local bestEgg, bestGain = nil, 0
 		for _, egg in Config.Eggs do
-			if not egg.exclusive and egg.zone <= s.maxZone and s.taps >= egg.price then
+			if not egg.exclusive and egg.zone <= s.maxZone and s.rebirths >= (egg.minRebirths or 0) and s.taps >= egg.price then
 				local gain = 0
 				for _, o in F.odds(egg.id, lk) do
 					local p = F.petPower(o.pet, 0, s.maxZone)
@@ -259,7 +260,7 @@ function Core.simulate(seed: number, sessions: { Session }): Result
 	local function checkTiers()
 		-- a new egg is available (its zone is open and the player can pay for it)
 		for _, egg in Config.Eggs do
-			if not egg.exclusive and not eggSeen[egg.id] and egg.zone <= s.maxZone and s.taps >= egg.price then
+			if not egg.exclusive and not eggSeen[egg.id] and egg.zone <= s.maxZone and s.rebirths >= (egg.minRebirths or 0) and s.taps >= egg.price then
 				eggSeen[egg.id] = true
 				mark("egg:" .. egg.id, true)
 			end
@@ -415,7 +416,7 @@ end
 
 -- Runs `seeds` simulations and returns the median play time of every milestone key, plus the
 -- median of the scalar outputs. reached = how many seeds hit the key.
-function Core.aggregate(seeds: number, sessions: { Session })
+function Core.aggregate(seeds: number, sessions: { Session }, window: number?)
 	local times: { [string]: { number } } = {}
 	local days: { [string]: { number } } = {}
 	local gaps, rgaps, p3, u3, rb = {}, {}, {}, {}, {}
@@ -427,8 +428,8 @@ function Core.aggregate(seeds: number, sessions: { Session })
 			days[k] = days[k] or {}
 			table.insert(days[k], r.day[k])
 		end
-		table.insert(gaps, Core.maxDeadGap(r.tierEvents, Core.TIER_WINDOW))
-		table.insert(rgaps, Core.maxDeadGap(r.rewardEvents, Core.TIER_WINDOW))
+		table.insert(gaps, Core.maxDeadGap(r.tierEvents, window or Core.TIER_WINDOW))
+		table.insert(rgaps, Core.maxDeadGap(r.rewardEvents, window or Core.TIER_WINDOW))
 		table.insert(p3, r.purchasesBy3)
 		table.insert(u3, r.upgradesBy3)
 		table.insert(rb, r.rebirths)

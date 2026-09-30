@@ -184,6 +184,24 @@ offline earnings and multi-day sessions; median play time over seeds):
 | First rebirth (2B) | 30-60 min | **~37 min** |
 | Zone 5 Cosmic Void (40B) | hours | **~1 h 13 m** |
 
+**Content between rebirths (round 6).** Eight eggs open with rebirths (`minRebirths` in `Config.Eggs`)
+or fill a wait, so a new tier shows up every ~10 min up to hour 2 (median seed, `Core.LONG_WINDOW`):
+
+| Egg | Zone | Opens | Affordable at (median) |
+|---|---|---|---|
+| Basalt | Lava Caves | with the zone | ~30 min |
+| Obsidian | Lava Caves | rebirth 1 | ~43 min |
+| Aurora | Frost Peak | rebirth 2 | ~57 min |
+| Geode | Lava Caves | rebirth 2 | ~67 min |
+| Pulsar / Starforge / Singularity | Cosmic Void | rebirth 3 | ~86 / ~93 / ~100 min |
+| Helios | Cosmic Void | rebirth 4 | ~118 min |
+
+Gated eggs stay visible: the sign shows the lock, the panel shows the odds and "opens after Rebirth N",
+and the server refuses the hatch (`msg.egg_needs_rebirth`). Each has 4 pets (Uncommon to Legendary/Mythic,
+no Common) with better odds than the zone's open eggs, priced ~10^4 above them because income has grown.
+Their pets do not move the power the Robux pets scale with (`gatedPets` in `Formulas`). Nothing new
+is saved: the profile's `rebirths` is the only input. The Index pages got bigger (Cosmic Void: 21 pets) and scroll.
+
 `luau sim/pacing_sim.luau -a 9 week` prints the full table and the week view;
 `luau sim/pacing_tune.luau` re-fits gate costs, egg prices (kept in proportion to their gate)
 and the first rebirth cost to the targets; `tests/pacing_targets.luau` fails when a milestone

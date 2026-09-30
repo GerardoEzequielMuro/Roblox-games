@@ -34,12 +34,51 @@ end
 Formulas.PetById = PetById :: { [string]: typeof(Config.Pets[1]) }
 Formulas.EggById = EggById :: { [string]: typeof(Config.Eggs[1]) }
 
+-- Rebirths needed before an egg can be opened (0 for eggs that only need their zone).
+function Formulas.eggMinRebirths(eggId: string): number
+	local egg = EggById[eggId]
+	return if egg and egg.minRebirths then egg.minRebirths else 0
+end
+
+function Formulas.eggUnlocked(eggId: string, rebirths: number): boolean
+	return rebirths >= Formulas.eggMinRebirths(eggId)
+end
+
+-- Eggs that open exactly at this rebirth count (for the "new egg" message after a rebirth).
+function Formulas.eggsUnlockedAt(rebirths: number): { string }
+	local out = {}
+	for _, egg in Config.Eggs do
+		if egg.minRebirths == rebirths and rebirths > 0 then
+			table.insert(out, egg.id)
+		end
+	end
+	return out
+end
+
+-- Pets that only come out of rebirth-gated eggs. They are extra content inside a zone's band and do
+-- not move the power that exclusive pets scale with (that would make Robux pets jump at rebirth 2).
+local gatedPets: { [string]: boolean } = {}
+for _, e in Config.Eggs do
+	if e.minRebirths and e.minRebirths > 0 then
+		for _, entry in e.entries do
+			gatedPets[entry.pet] = true
+		end
+	end
+end
+for _, e in Config.Eggs do
+	if not e.minRebirths then
+		for _, entry in e.entries do
+			gatedPets[entry.pet] = nil -- a pet that also drops from an open egg (the secret pet)
+		end
+	end
+end
+
 -- Strongest regular (tap-bought) pet per zone, used to scale exclusive pets.
 local bestPowerByZone: { number } = {}
 for z = 1, #Config.Zones do
 	local best = 1
 	for _, p in Config.Pets do
-		if p.zone >= 1 and p.zone <= z and p.power > best then
+		if p.zone >= 1 and p.zone <= z and p.power > best and not gatedPets[p.id] then
 			best = p.power
 		end
 	end

@@ -59,6 +59,9 @@ function Progression.rebirth(player: Player): (boolean, Locale.Message?)
 	State.dirty(player)
 	Hooks.fire("rebirth", player)
 	Remotes.notify(player, M("msg.rebirth", { mult = tostring(Formulas.rebirthMult(p.rebirths)), gems = gems }), "success")
+	for _, eggId in Formulas.eggsUnlockedAt(p.rebirths) do
+		Remotes.notify(player, M("msg.egg_unlocked", { egg = M("egg." .. eggId), zone = M("zone." .. Config.Zones[Formulas.EggById[eggId].zone].id) }), "success")
+	end
 	return true, nil
 end
 

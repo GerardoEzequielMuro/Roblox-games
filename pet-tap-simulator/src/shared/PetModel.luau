@@ -589,6 +589,17 @@ local FAMILY: { [string]: string } = {
 	hellhound = "wolf",
 	yeti = "yeti",
 	magmagolem = "golem",
+	geodegolem = "golem",
+	starforgetitan = "golem",
+	obsidianwolf = "wolf",
+	infernodrake = "dragon",
+	solarphoenix = "phoenix",
+	horizonowl = "owl",
+	singularitydragon = "dragon",
+	aurorawyrm = "dragon",
+	eclipsedrake = "dragon",
+	gembasilisk = "dragon",
+	supernovaphoenix = "phoenix",
 	alienpup = "alien",
 }
 local EYES: { [string]: string } = { dragon = "fierce", wolf = "fierce", yeti = "fierce", golem = "rect", alien = "alien" }

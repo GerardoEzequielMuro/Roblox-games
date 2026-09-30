@@ -174,6 +174,50 @@ Config.Pets = {
 	P("nebulaowl", "Nebula Owl", "Legendary", 1300000, "tall", { 120, 70, 200 }, { 255, 120, 220 }, "cat", { "wings", "beak", "halo", "glow" }, 1.35, 5),
 	P("galaxydragon", "Galaxy Dragon", "Mythic", 4200000, "ball", { 40, 30, 90 }, { 120, 220, 255 }, "none", { "horns", "wings", "tail", "halo", "glow" }, 1.6, 5),
 
+	-- Zone 4, Basalt Egg (opens with the zone; fills the wait between Lava Caves and the first rebirth)
+	P("lavagecko", "Lava Gecko", "Uncommon", 16000, "ball", { 200, 90, 40 }, { 255, 210, 80 }, "none", { "tail", "flames" }, 0.95, 4),
+	P("magmacrab", "Magma Crab", "Rare", 32000, "block", { 160, 50, 30 }, { 255, 160, 50 }, "none", { "spikes", "flames" }, 1.05, 4),
+	P("moltentortoise", "Molten Tortoise", "Epic", 70000, "block", { 85, 70, 65 }, { 255, 110, 30 }, "bear", { "spikes", "glow" }, 1.3, 4, "Basalt"),
+	P("infernodrake", "Inferno Drake", "Legendary", 160000, "ball", { 200, 50, 20 }, { 255, 210, 60 }, "none", { "horns", "wings", "tail", "flames", "glow" }, 1.4, 4),
+	-- Zone 5, Helios Egg (rebirth 4)
+	P("sunpup", "Sun Pup", "Uncommon", 3000000, "ball", { 255, 200, 70 }, { 255, 120, 40 }, "dog", { "tail", "flames" }, 1, 5),
+	P("solarcat", "Solar Cat", "Rare", 6000000, "ball", { 255, 170, 60 }, { 255, 245, 160 }, "cat", { "tail", "halo" }, 1.1, 5, "Neon"),
+	P("coronafox", "Corona Fox", "Epic", 11000000, "ball", { 255, 120, 40 }, { 255, 235, 120 }, "fox", { "tail", "flames", "glow" }, 1.25, 5),
+	P("solarphoenix", "Solar Phoenix", "Legendary", 18000000, "tall", { 255, 190, 50 }, { 255, 80, 40 }, "none", { "wings", "beak", "crown", "halo", "flames", "glow" }, 1.4, 5, "Neon"),
+	-- Rebirth-gated eggs (see Config.Eggs minRebirths): the content between the first rebirth and Cosmic Void.
+	-- Zone 4, Obsidian Egg (rebirth 1)
+	P("ashpup", "Ash Pup", "Uncommon", 18000, "ball", { 90, 85, 90 }, { 255, 140, 60 }, "dog", { "tail", "flames" }, 1, 4),
+	P("sootsprite", "Soot Sprite", "Rare", 38000, "ball", { 40, 35, 45 }, { 255, 200, 90 }, "none", { "antenna", "glow" }, 0.95, 4),
+	P("cinderbat", "Cinder Bat", "Epic", 90000, "ball", { 75, 40, 70 }, { 255, 110, 50 }, "cat", { "wings", "flames" }, 1.15, 4),
+	P("obsidianwolf", "Obsidian Wolf", "Legendary", 210000, "ball", { 25, 25, 40 }, { 150, 90, 255 }, "fox", { "tail", "spikes", "glow" }, 1.4, 4, "Glass"),
+	-- Zone 3, Aurora Egg (rebirth 2)
+	P("aurorahare", "Aurora Hare", "Uncommon", 28000, "ball", { 170, 255, 225 }, { 190, 140, 255 }, "bunny", { "glow" }, 1, 3),
+	P("auroralynx", "Aurora Lynx", "Rare", 60000, "ball", { 120, 230, 210 }, { 255, 130, 220 }, "cat", { "tail", "glow" }, 1.1, 3, "Neon"),
+	P("borealisstag", "Borealis Stag", "Epic", 120000, "tall", { 150, 240, 200 }, { 160, 120, 255 }, "none", { "horns", "halo", "glow" }, 1.3, 3),
+	P("aurorawyrm", "Aurora Wyrm", "Legendary", 240000, "ball", { 90, 220, 190 }, { 255, 120, 230 }, "none", { "horns", "wings", "tail", "halo", "glow" }, 1.45, 3, "Neon"),
+	-- Zone 5, Pulsar Egg (rebirth 3)
+	P("cometcat", "Comet Cat", "Uncommon", 500000, "ball", { 120, 130, 230 }, { 255, 240, 160 }, "cat", { "tail", "glow" }, 1, 5),
+	P("quasarfox", "Quasar Fox", "Rare", 1100000, "ball", { 60, 50, 140 }, { 120, 255, 255 }, "fox", { "tail", "glow" }, 1.1, 5, "Neon"),
+	P("pulsarbear", "Pulsar Bear", "Epic", 2200000, "block", { 50, 40, 110 }, { 255, 120, 200 }, "bear", { "halo", "glow" }, 1.3, 5),
+	P("eclipsedrake", "Eclipse Drake", "Legendary", 3600000, "ball", { 25, 20, 60 }, { 255, 200, 90 }, "none", { "horns", "wings", "tail", "halo", "glow" }, 1.5, 5),
+
+	-- Zone 4, Geode Egg (rebirth 2)
+	P("quartzmole", "Quartz Mole", "Uncommon", 55000, "ball", { 210, 200, 235 }, { 255, 255, 255 }, "bear", { "glow" }, 0.95, 4),
+	P("amethystcat", "Amethyst Cat", "Rare", 110000, "ball", { 150, 90, 220 }, { 235, 200, 255 }, "cat", { "tail", "spikes" }, 1.05, 4, "Glass"),
+	P("geodegolem", "Geode Golem", "Epic", 200000, "block", { 120, 105, 140 }, { 200, 120, 255 }, "none", { "spikes", "glow" }, 1.35, 4, "Basalt"),
+	P("gembasilisk", "Gem Basilisk", "Legendary", 340000, "ball", { 80, 200, 170 }, { 255, 120, 220 }, "none", { "horns", "tail", "spikes", "glow" }, 1.4, 4, "Glass"),
+	-- Zone 5, Starforge Egg (rebirth 3)
+	P("stardustpup", "Stardust Pup", "Uncommon", 1000000, "ball", { 200, 190, 255 }, { 255, 235, 140 }, "dog", { "tail", "glow" }, 1, 5),
+	P("meteormole", "Meteor Mole", "Rare", 2000000, "ball", { 110, 85, 70 }, { 255, 150, 60 }, "bear", { "flames" }, 1.05, 5),
+	P("supernovaphoenix", "Supernova Phoenix", "Epic", 3500000, "tall", { 255, 240, 200 }, { 255, 110, 60 }, "none", { "wings", "beak", "halo", "glow" }, 1.3, 5, "Neon"),
+	P("starforgetitan", "Starforge Titan", "Legendary", 5500000, "block", { 60, 50, 90 }, { 255, 210, 90 }, "none", { "horns", "spikes", "halo", "glow" }, 1.55, 5),
+
+	-- Zone 5, Singularity Egg (rebirth 4)
+	P("voidpup", "Void Pup", "Uncommon", 2000000, "ball", { 25, 20, 45 }, { 170, 110, 255 }, "dog", { "tail", "glow" }, 1, 5),
+	P("riftcat", "Rift Cat", "Rare", 4000000, "ball", { 40, 30, 80 }, { 255, 90, 200 }, "cat", { "tail", "halo" }, 1.1, 5, "Neon"),
+	P("horizonowl", "Horizon Owl", "Epic", 7000000, "tall", { 30, 25, 65 }, { 255, 200, 80 }, "cat", { "wings", "beak", "halo", "glow" }, 1.3, 5),
+	P("singularitydragon", "Singularity Dragon", "Mythic", 12000000, "ball", { 15, 10, 30 }, { 200, 120, 255 }, "none", { "horns", "wings", "tail", "halo", "crown", "glow" }, 1.65, 5, "Neon"),
+
 	-- Exclusive (Robux) Magic Egg
 	P("sparklecat", "Sparkle Cat", "Legendary", 0, "ball", { 255, 220, 250 }, { 120, 240, 255 }, "cat", { "tail", "halo", "glow" }, 1.2, 0),
 	P("crystalunicorn", "Crystal Unicorn", "Mythic", 0, "ball", { 200, 240, 255 }, { 255, 150, 255 }, "dog", { "horn", "wings", "glow" }, 1.4, 0, "Glass"),
@@ -233,6 +277,7 @@ export type Egg = {
 	offsetZ: number,
 	entries: { EggEntry },
 	exclusive: boolean?,
+	minRebirths: number?, -- rebirths needed before this egg can be opened (nil / 0 = open with its zone)
 }
 
 local SECRET = 0.001 -- percent (1 in 100,000)
@@ -261,6 +306,32 @@ Config.Eggs = {
 	} },
 	{ id = "cosmic", name = "Cosmic Egg", zone = 5, price = 1200000000, color = { 60, 40, 140 }, spots = { 255, 240, 120 }, offsetX = 0, offsetZ = 25, entries = {
 		{ pet = "mooncat", chance = 60 }, { pet = "starbunny", chance = 30 }, { pet = "alienpup", chance = 9.4 }, { pet = "nebulaowl", chance = 0.58 }, { pet = "galaxydragon", chance = 0.019 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "basalt", name = "Basalt Egg", zone = 4, price = 150000000, color = { 95, 70, 60 }, spots = { 255, 150, 40 }, offsetX = -44, offsetZ = -20, entries = {
+		{ pet = "lavagecko", chance = 50 }, { pet = "magmacrab", chance = 32 }, { pet = "moltentortoise", chance = 16.4 }, { pet = "infernodrake", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	-- Rebirth-gated eggs: each one opens after N rebirths, in a zone the player already owns, so a
+	-- new tier arrives between the first rebirth and Cosmic Void (prices tuned with sim/pacing_tune.luau).
+	{ id = "obsidian", name = "Obsidian Egg", zone = 4, price = 11000000000, minRebirths = 1, color = { 35, 30, 50 }, spots = { 170, 110, 255 }, offsetX = -44, offsetZ = 25, entries = {
+		{ pet = "ashpup", chance = 50 }, { pet = "sootsprite", chance = 32 }, { pet = "cinderbat", chance = 16.4 }, { pet = "obsidianwolf", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "aurora", name = "Aurora Egg", zone = 3, price = 12000000000, minRebirths = 2, color = { 170, 255, 230 }, spots = { 190, 140, 255 }, offsetX = 0, offsetZ = 62, entries = {
+		{ pet = "aurorahare", chance = 50 }, { pet = "auroralynx", chance = 32 }, { pet = "borealisstag", chance = 16.4 }, { pet = "aurorawyrm", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "pulsar", name = "Pulsar Egg", zone = 5, price = 250000000000, minRebirths = 3, color = { 50, 40, 120 }, spots = { 120, 255, 255 }, offsetX = -44, offsetZ = 25, entries = {
+		{ pet = "cometcat", chance = 50 }, { pet = "quasarfox", chance = 32 }, { pet = "pulsarbear", chance = 16.4 }, { pet = "eclipsedrake", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "geode", name = "Geode Egg", zone = 4, price = 28000000000, minRebirths = 2, color = { 120, 105, 140 }, spots = { 200, 120, 255 }, offsetX = 44, offsetZ = 25, entries = {
+		{ pet = "quartzmole", chance = 50 }, { pet = "amethystcat", chance = 32 }, { pet = "geodegolem", chance = 16.4 }, { pet = "gembasilisk", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "starforge", name = "Starforge Egg", zone = 5, price = 500000000000, minRebirths = 3, color = { 70, 55, 100 }, spots = { 255, 210, 90 }, offsetX = 44, offsetZ = 25, entries = {
+		{ pet = "stardustpup", chance = 50 }, { pet = "meteormole", chance = 32 }, { pet = "supernovaphoenix", chance = 16.4 }, { pet = "starforgetitan", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "singularity", name = "Singularity Egg", zone = 5, price = 750000000000, minRebirths = 3, color = { 20, 15, 40 }, spots = { 200, 120, 255 }, offsetX = 0, offsetZ = 62, entries = {
+		{ pet = "voidpup", chance = 50 }, { pet = "riftcat", chance = 32 }, { pet = "horizonowl", chance = 16.4 }, { pet = "singularitydragon", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "helios", name = "Helios Egg", zone = 5, price = 500000000000, minRebirths = 4, color = { 255, 200, 90 }, spots = { 255, 100, 40 }, offsetX = 44, offsetZ = 62, entries = {
+		{ pet = "sunpup", chance = 50 }, { pet = "solarcat", chance = 32 }, { pet = "coronafox", chance = 16.4 }, { pet = "solarphoenix", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
 	} },
 	-- Robux-only egg, sits in spawn. Hatched via developer product, never with taps.
 	{ id = "magic", name = "Magic Egg", zone = 0, price = 0, exclusive = true, color = { 190, 120, 255 }, spots = { 255, 240, 120 }, offsetX = 45, offsetZ = -72, entries = {

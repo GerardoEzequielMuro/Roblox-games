@@ -33,11 +33,23 @@ function IndexWindow.init()
 
 	local tabs = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 56), Parent = body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) })
 	local total = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 60), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, Parent = body })
-	local grid = Theme.new("Frame", { BackgroundColor3 = Theme.PaperDark, Size = UDim2.new(1, 0, 1, -158), Position = UDim2.fromOffset(0, 92), Parent = body }, {
+	-- scrolls: the rebirth-gated eggs put up to 21 pets on one page (Cosmic Void)
+	local grid = Theme.new("ScrollingFrame", {
+		BackgroundColor3 = Theme.PaperDark,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 1, -158),
+		Position = UDim2.fromOffset(0, 92),
+		ScrollBarThickness = 8,
+		ScrollBarImageColor3 = Theme.Ink,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		Parent = body,
+	}, {
 		Theme.corner(14),
 		Theme.padding(10),
 		Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(106, 120), CellPadding = UDim2.fromOffset(10, 10), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }),
-	})
+	}) :: ScrollingFrame
 	local claim = Theme.button({
 		Text = "",
 		Color = Theme.Green,

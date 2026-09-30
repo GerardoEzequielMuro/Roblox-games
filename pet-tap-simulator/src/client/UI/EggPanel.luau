@@ -70,6 +70,11 @@ function EggPanel.init()
 			Purchase.product(if count == 3 then "MagicEgg3" else "MagicEgg1")
 			return
 		end
+		local needRebirths = Formulas.eggMinRebirths(egg)
+		if needRebirths > ((Net.get("rebirths") :: number?) or 0) then
+			Toasts.show(Lang.t("msg.egg_needs_rebirth", { n = needRebirths }), "error")
+			return
+		end
 		local needPass = Formulas.hatchPass(count)
 		if needPass and count > Formulas.maxHatch((Net.get("passes") :: { [string]: boolean }?) or {}) then
 			Purchase.pass(needPass)
@@ -130,6 +135,7 @@ function EggPanel.init()
 		end
 		local def = Formulas.EggById[egg]
 		local s = Net.state
+		luckLabel.TextColor3 = Theme.Green
 		local golden = Lang.t("egg.golden", { pct = Format.chance((if s then s.goldenChance or 0 else 0) * 100):gsub("%%", "") })
 		if def.exclusive then
 			local p1, p3 = Config.ProductByKey.MagicEgg1, Config.ProductByKey.MagicEgg3
@@ -141,6 +147,17 @@ function EggPanel.init()
 			b8.Visible = false
 			bAuto.Visible = false
 			luckLabel.Text = Lang.t("egg.exclusive_note") .. "  ·  ⭐ " .. golden
+			return
+		end
+		-- rebirth-gated egg the player can't open yet: odds stay visible (the carrot), buttons say why
+		local needRebirths = Formulas.eggMinRebirths(egg)
+		if needRebirths > ((if s then s.rebirths else 0) or 0) then
+			Theme.setButton(b1, Lang.t("egg.locked_btn", { n = needRebirths }), Theme.Grey)
+			b3.Visible = false
+			b8.Visible = false
+			bAuto.Visible = false
+			luckLabel.Text = Lang.t("msg.egg_needs_rebirth", { n = needRebirths })
+			luckLabel.TextColor3 = Theme.Orange
 			return
 		end
 		b3.Visible = true

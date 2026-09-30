@@ -20,7 +20,7 @@
 | Unicorn | Legendary | 0.1% | 120 |
 | Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
 
-**Candy Egg** — Candy Land — 16K Taps
+**Candy Egg** — Candy Land — 47K Taps
 
 | Pet | Rarity | Chance | Power (+taps/tap) |
 |---|---|---|---|
@@ -30,7 +30,7 @@
 | Candy Dragon | Epic | 2% | 170 |
 | Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
 
-**Sprinkle Egg** — Candy Land — 140K Taps
+**Sprinkle Egg** — Candy Land — 70K Taps
 
 | Pet | Rarity | Chance | Power (+taps/tap) |
 |---|---|---|---|
@@ -40,7 +40,7 @@
 | Jelly Phoenix | Legendary | 0.1% | 900 |
 | Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
 
-**Frost Egg** — Frost Peak — 260K Taps
+**Frost Egg** — Frost Peak — 130K Taps
 
 | Pet | Rarity | Chance | Power (+taps/tap) |
 |---|---|---|---|
@@ -50,7 +50,7 @@
 | Ice Wolf | Epic | 1.5% | 2K |
 | Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
 
-**Glacier Egg** — Frost Peak — 2.1M Taps
+**Glacier Egg** — Frost Peak — 1M Taps
 
 | Pet | Rarity | Chance | Power (+taps/tap) |
 |---|---|---|---|
@@ -60,7 +60,7 @@
 | Ice Dragon | Legendary | 0.099% | 15K |
 | Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
 
-**Magma Egg** — Lava Caves — 12M Taps
+**Magma Egg** — Lava Caves — 1.1M Taps
 
 | Pet | Rarity | Chance | Power (+taps/tap) |
 |---|---|---|---|
@@ -71,7 +71,7 @@
 | Hellhound | Mythic | 0.019% | 250K |
 | Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
 
-**Cosmic Egg** — Cosmic Void — 180M Taps
+**Cosmic Egg** — Cosmic Void — 1.2B Taps
 
 | Pet | Rarity | Chance | Power (+taps/tap) |
 |---|---|---|---|
@@ -80,6 +80,86 @@
 | Alien Pup | Epic | 9.4% | 480K |
 | Nebula Owl | Legendary | 0.58% | 1.3M |
 | Galaxy Dragon | Mythic | 0.019% | 4.2M |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Basalt Egg** — Lava Caves — 150M Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Lava Gecko | Uncommon | 50% | 16K |
+| Magma Crab | Rare | 32% | 32K |
+| Molten Tortoise | Epic | 16% | 70K |
+| Inferno Drake | Legendary | 1.6% | 160K |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Obsidian Egg** — Lava Caves — 11B Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Ash Pup | Uncommon | 50% | 18K |
+| Soot Sprite | Rare | 32% | 38K |
+| Cinder Bat | Epic | 16% | 90K |
+| Obsidian Wolf | Legendary | 1.6% | 210K |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Aurora Egg** — Frost Peak — 12B Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Aurora Hare | Uncommon | 50% | 28K |
+| Aurora Lynx | Rare | 32% | 60K |
+| Borealis Stag | Epic | 16% | 120K |
+| Aurora Wyrm | Legendary | 1.6% | 240K |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Pulsar Egg** — Cosmic Void — 250B Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Comet Cat | Uncommon | 50% | 500K |
+| Quasar Fox | Rare | 32% | 1.1M |
+| Pulsar Bear | Epic | 16% | 2.2M |
+| Eclipse Drake | Legendary | 1.6% | 3.6M |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Geode Egg** — Lava Caves — 28B Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Quartz Mole | Uncommon | 50% | 55K |
+| Amethyst Cat | Rare | 32% | 110K |
+| Geode Golem | Epic | 16% | 200K |
+| Gem Basilisk | Legendary | 1.6% | 340K |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Starforge Egg** — Cosmic Void — 500B Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Stardust Pup | Uncommon | 50% | 1M |
+| Meteor Mole | Rare | 32% | 2M |
+| Supernova Phoenix | Epic | 16% | 3.5M |
+| Starforge Titan | Legendary | 1.6% | 5.5M |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Singularity Egg** — Cosmic Void — 750B Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Void Pup | Uncommon | 50% | 2M |
+| Rift Cat | Rare | 32% | 4M |
+| Horizon Owl | Epic | 16% | 7M |
+| Singularity Dragon | Mythic | 1.6% | 12M |
+| Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
+
+**Helios Egg** — Cosmic Void — 500B Taps
+
+| Pet | Rarity | Chance | Power (+taps/tap) |
+|---|---|---|---|
+| Sun Pup | Uncommon | 50% | 3M |
+| Solar Cat | Rare | 32% | 6M |
+| Corona Fox | Epic | 16% | 11M |
+| Solar Phoenix | Legendary | 1.6% | 18M |
 | Shadow Dragon | Secret | 1 in 100,000 | 10x best pet of your top zone |
 
 **Magic Egg** — Spawn (Robux only) — Robux

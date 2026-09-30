@@ -325,3 +325,54 @@ Semana (5 semillas, 2 sesiones por día): rebirth #5 en el día 2, #6 en el día
 - Entre el primer rebirth y Cosmic Void (~35 a ~73 min) los únicos tiers nuevos son rebirth #2 y regalos/quests; si queremos más, falta contenido (más zonas/huevos), no números.
 - Números tuneados a 2 cifras significativas con `pacing_tune.luau` (5 semillas); el test usa 7 y ventanas anchas. Cualquier cambio de pets/multiplicadores obliga a re-correr el sim.
 - Para confirmar en Studio: que el daily se note a los ~30 s (badge en Rewards) y que los precios de huevos nuevos se lean bien en el panel de huevos.
+
+## Ronda 6: contenido para el hueco
+
+**El hueco:** entre el primer rebirth (~38 min) y la zona 5 Cosmic Void (~1h13) no aparecía nada nuevo salvo rebirth #2 y regalos. Medido con el sim: el mayor tramo sin un tier nuevo en las primeras 2 horas era de **31 min (mediana de 9 semillas, peor 39)**.
+
+### Qué agregué (todo en `src/shared/Config.luau`, datos puros)
+Ocho huevos nuevos, cada uno con 4 pets (Uncommon a Legendary/Mythic, sin Common, mejores chances que los huevos abiertos de la zona) + el Shadow Dragon secreto de siempre. 32 pets nuevos en total:
+| Huevo | Zona | Se abre con | Precio | Aparece (mediana) |
+|---|---|---|---|---|
+| Basalt | 4 Lava Caves | la zona (sin rebirth) | 150M | ~30 min |
+| Obsidian | 4 Lava Caves | rebirth 1 | 11B | ~43 min |
+| Aurora | 3 Frost Peak | rebirth 2 | 12B | ~57 min |
+| Geode | 4 Lava Caves | rebirth 2 | 28B | ~67 min |
+| Pulsar, Starforge, Singularity | 5 Cosmic Void | rebirth 3 | 250B, 500B, 750B | ~86, ~93, ~100 min |
+| Helios | 5 Cosmic Void | rebirth 4 | 500B | ~118 min |
+
+- Campo nuevo `minRebirths` en `Config.Eggs`. Helpers puros en `Formulas`: `eggMinRebirths`, `eggUnlocked`, `eggsUnlockedAt`.
+- **Servidor** (autoritativo): `Eggs.hatch` y `SetAutoHatch` rechazan el huevo si `p.rebirths < minRebirths` (`msg.egg_needs_rebirth`). Al hacer rebirth, `Progression.rebirth` avisa "Huevo nuevo desbloqueado" (`msg.egg_unlocked`). **No hay campos nuevos en el perfil**: el único dato es `rebirths`, que ya existía, así que los saves viejos funcionan sin migración (quien ya tiene rebirths ve los huevos abiertos).
+- **Cliente:** el cartel del huevo muestra "🔒 Rebirth N" hasta que lo abrís (`WorldText`, se refresca al cambiar los rebirths); el panel del huevo deja ver las chances pero el botón dice "🔒 Rebirth N" y el texto "Este huevo se abre tras el Renacer N" (naranja). Sigue sirviendo de gancho.
+- **Index:** las páginas de zona tienen más pets (Cosmic Void llega a 21), así que la grilla pasó a `ScrollingFrame` (mismo patrón que `PetsWindow`). Ojo: quien tenía una página completa sin reclamar ahora necesita los pets nuevos; las ya reclamadas quedan reclamadas.
+- **Pets de huevos con rebirth no mueven el poder de los pets exclusivos** (Robux): `Formulas` los excluye del `bestPowerByZone`. Sin esto, un Aurora Wyrm (zona 3) multiplicaba x16 al Sparkle Cat de los jugadores de zona 3 y de paso rompía el ritmo en el sim (lo vi en el primer intento). Lo cubre un test nuevo.
+- Precios: los de rebirth siguen el costo del siguiente rebirth (los taps se reinician en cada rebirth, por eso el de R4 cuesta menos que los de R3). Son ~10^4 veces los de la zona porque el ingreso creció; el valor esperado por apertura es 3-5 veces el del huevo abierto de la zona.
+- Sin Robux, sin assets inventados. Props grandes nuevos: ninguno (los huevos usan `buildEgg` tal cual), así que no hacen falta ranuras nuevas en `ModelSlots` (19 checks siguen verdes). Posiciones nuevas en `Config` (sin pisar landmarks), chequeadas por `sim/check_config.luau` (distancia mínima 34 studs).
+- Textos: 8 nombres de huevo, 32 pets y 4 claves nuevas (`msg.egg_needs_rebirth`, `msg.egg_unlocked`, `world.egg_locked`, `egg.locked_btn`) en **los 12 idiomas** (en es fr de pt ru tr id vi th ja ko). `PetModel.FAMILY`: dragones/fénix/golem/lobo/búho nuevos con su familia.
+
+### Hitos antes / después (mediana de 9 semillas, tiempo de juego activo)
+| | Antes | Después |
+|---|---|---|
+| Primer rebirth | 37:59 | 37:59 (sin cambios) |
+| Rebirth #2 / Zona 5 / Rebirth #3 | 48:11 / 1h13 / 1h18 | sin cambios |
+| Tiers nuevos entre rebirth #1 y zona 5 | 1 (rebirth #2) | 5 (Obsidian, Aurora, Geode + rebirth #2 + zona) |
+| Mayor hueco sin tier nuevo, primeras 2 h (mediana / peor semilla) | **31 min / 39 min** | **10.9 min / 24 min** |
+| Mayor hueco, primera hora (mediana / peor) | 12.6 / 20 min | 10.3 / 11.9 min |
+| Mayor tramo sin NADA nuevo (tier, regalo, quest), 2 h, mediana | 31 min | 10.7 min |
+
+Los tiempos de las zonas, rebirths y todo lo anterior no cambiaron (el jugador del sim ya llega con pets exclusivos de huevos Magic que tapan a los huevos comunes, así que los nuevos no aceleran ni frenan el ritmo). Límite: las semillas más rápidas (rebirth #4 a los ~89 min) agotan el contenido y después de Helios/Singularity no hay nada hasta el rebirth #5; eso queda fuera de las 2 horas y de esta ronda.
+
+### Tests
+- `tests/pacing_targets.luau`: de 16 a 34 checks. Ventanas por huevo (basalt, obsidian, aurora, geode, pulsar, starforge, singularity, helios), cada huevo con rebirth aparece después de su rebirth, hueco de tiers y de "nada nuevo" en 2 h <= 12 min (mediana), y el tramo rebirth 1 -> Cosmic Void <= 12 min. Mutando el precio del Geode a 120B el test falla como corresponde.
+- `sim/pacing_core.luau` respeta `minRebirths`; `aggregate(seeds, sessions, window?)` y `Core.LONG_WINDOW` (2 h); `pacing_sim.luau` imprime el bloque de 2 h y marca "R1".." en la tabla de huevos; `pacing_tune.luau` ahora ignora los huevos con rebirth (van a mano).
+- `tests/unit_p0.luau` +5 checks (huevo trabado/abierto, `eggsUnlockedAt`, pets gated no mueven los exclusivos); `sim/check_config.luau` valida `minRebirths` y separación; `sim/odds_table.md` regenerada (estaba vieja).
+
+### Verificación
+`rojo build` OK, `luau-lsp analyze` sin salida, tests puros en verde (locale 12 idiomas x 410+ claves, model_slots, passes_pricing, policy_hud, unit_p0, check_config, pacing_targets) y el sim. Previews en `docs/previews/pet-tap-simulator/`: `mid-{pc,phone}-egglocked.png` (Aurora trabado), `mid-{pc,phone}-eggopen.png` (Obsidian abierto), `mid-{pc,phone}-index-cosmic.png` (página de 21 pets con scroll), y se regeneró `--all`. 0 errores de runtime; los hallazgos bajos que quedan (superposición con el joystick en ventanas de celular) ya estaban antes. Las capturas `egglocked/eggopen/index-cosmic` las saqué con una copia del fixture en el scratchpad (no toqué `tools/`): rebirths=1, zonas 1-4 y ventanas extra.
+
+### Qué mirar en Studio
+1. Los 8 huevos nuevos: que no pisen landmarks ni se vean pegados (Lava Caves ahora tiene 4: Magma al centro, Basalt al fondo izquierda, Obsidian izquierda y Geode derecha; Cosmic Void 5; Frost Peak 3), y que el pilar de luz y los carteles "🔒 Rebirth N" se lean bien desde lejos.
+2. Rebirth: que llegue el aviso "Huevo nuevo desbloqueado" y el cartel pase de 🔒 al precio sin reentrar.
+3. Los 32 pets nuevos en 3D (sobre todo Borealis Stag, Geode Golem, Singularity Dragon, Solar Phoenix): usan el rig genérico por familia; los que no tienen familia explícita salen como dog/cat/bear según las orejas.
+4. Página Cosmic Void del Index: scroll con el dedo en celular y que el botón de reclamar no tape la grilla.
+5. Que un jugador de 0 rebirths que toca el prompt de un huevo trabado vea el panel con el botón gris y no pueda abrirlo (ni por auto hatch).

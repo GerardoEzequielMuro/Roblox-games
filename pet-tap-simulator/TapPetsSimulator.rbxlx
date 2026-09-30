@@ -201,6 +201,50 @@ Config.Pets = {
 	P("nebulaowl", "Nebula Owl", "Legendary", 1300000, "tall", { 120, 70, 200 }, { 255, 120, 220 }, "cat", { "wings", "beak", "halo", "glow" }, 1.35, 5),
 	P("galaxydragon", "Galaxy Dragon", "Mythic", 4200000, "ball", { 40, 30, 90 }, { 120, 220, 255 }, "none", { "horns", "wings", "tail", "halo", "glow" }, 1.6, 5),
 
+	-- Zone 4, Basalt Egg (opens with the zone; fills the wait between Lava Caves and the first rebirth)
+	P("lavagecko", "Lava Gecko", "Uncommon", 16000, "ball", { 200, 90, 40 }, { 255, 210, 80 }, "none", { "tail", "flames" }, 0.95, 4),
+	P("magmacrab", "Magma Crab", "Rare", 32000, "block", { 160, 50, 30 }, { 255, 160, 50 }, "none", { "spikes", "flames" }, 1.05, 4),
+	P("moltentortoise", "Molten Tortoise", "Epic", 70000, "block", { 85, 70, 65 }, { 255, 110, 30 }, "bear", { "spikes", "glow" }, 1.3, 4, "Basalt"),
+	P("infernodrake", "Inferno Drake", "Legendary", 160000, "ball", { 200, 50, 20 }, { 255, 210, 60 }, "none", { "horns", "wings", "tail", "flames", "glow" }, 1.4, 4),
+	-- Zone 5, Helios Egg (rebirth 4)
+	P("sunpup", "Sun Pup", "Uncommon", 3000000, "ball", { 255, 200, 70 }, { 255, 120, 40 }, "dog", { "tail", "flames" }, 1, 5),
+	P("solarcat", "Solar Cat", "Rare", 6000000, "ball", { 255, 170, 60 }, { 255, 245, 160 }, "cat", { "tail", "halo" }, 1.1, 5, "Neon"),
+	P("coronafox", "Corona Fox", "Epic", 11000000, "ball", { 255, 120, 40 }, { 255, 235, 120 }, "fox", { "tail", "flames", "glow" }, 1.25, 5),
+	P("solarphoenix", "Solar Phoenix", "Legendary", 18000000, "tall", { 255, 190, 50 }, { 255, 80, 40 }, "none", { "wings", "beak", "crown", "halo", "flames", "glow" }, 1.4, 5, "Neon"),
+	-- Rebirth-gated eggs (see Config.Eggs minRebirths): the content between the first rebirth and Cosmic Void.
+	-- Zone 4, Obsidian Egg (rebirth 1)
+	P("ashpup", "Ash Pup", "Uncommon", 18000, "ball", { 90, 85, 90 }, { 255, 140, 60 }, "dog", { "tail", "flames" }, 1, 4),
+	P("sootsprite", "Soot Sprite", "Rare", 38000, "ball", { 40, 35, 45 }, { 255, 200, 90 }, "none", { "antenna", "glow" }, 0.95, 4),
+	P("cinderbat", "Cinder Bat", "Epic", 90000, "ball", { 75, 40, 70 }, { 255, 110, 50 }, "cat", { "wings", "flames" }, 1.15, 4),
+	P("obsidianwolf", "Obsidian Wolf", "Legendary", 210000, "ball", { 25, 25, 40 }, { 150, 90, 255 }, "fox", { "tail", "spikes", "glow" }, 1.4, 4, "Glass"),
+	-- Zone 3, Aurora Egg (rebirth 2)
+	P("aurorahare", "Aurora Hare", "Uncommon", 28000, "ball", { 170, 255, 225 }, { 190, 140, 255 }, "bunny", { "glow" }, 1, 3),
+	P("auroralynx", "Aurora Lynx", "Rare", 60000, "ball", { 120, 230, 210 }, { 255, 130, 220 }, "cat", { "tail", "glow" }, 1.1, 3, "Neon"),
+	P("borealisstag", "Borealis Stag", "Epic", 120000, "tall", { 150, 240, 200 }, { 160, 120, 255 }, "none", { "horns", "halo", "glow" }, 1.3, 3),
+	P("aurorawyrm", "Aurora Wyrm", "Legendary", 240000, "ball", { 90, 220, 190 }, { 255, 120, 230 }, "none", { "horns", "wings", "tail", "halo", "glow" }, 1.45, 3, "Neon"),
+	-- Zone 5, Pulsar Egg (rebirth 3)
+	P("cometcat", "Comet Cat", "Uncommon", 500000, "ball", { 120, 130, 230 }, { 255, 240, 160 }, "cat", { "tail", "glow" }, 1, 5),
+	P("quasarfox", "Quasar Fox", "Rare", 1100000, "ball", { 60, 50, 140 }, { 120, 255, 255 }, "fox", { "tail", "glow" }, 1.1, 5, "Neon"),
+	P("pulsarbear", "Pulsar Bear", "Epic", 2200000, "block", { 50, 40, 110 }, { 255, 120, 200 }, "bear", { "halo", "glow" }, 1.3, 5),
+	P("eclipsedrake", "Eclipse Drake", "Legendary", 3600000, "ball", { 25, 20, 60 }, { 255, 200, 90 }, "none", { "horns", "wings", "tail", "halo", "glow" }, 1.5, 5),
+
+	-- Zone 4, Geode Egg (rebirth 2)
+	P("quartzmole", "Quartz Mole", "Uncommon", 55000, "ball", { 210, 200, 235 }, { 255, 255, 255 }, "bear", { "glow" }, 0.95, 4),
+	P("amethystcat", "Amethyst Cat", "Rare", 110000, "ball", { 150, 90, 220 }, { 235, 200, 255 }, "cat", { "tail", "spikes" }, 1.05, 4, "Glass"),
+	P("geodegolem", "Geode Golem", "Epic", 200000, "block", { 120, 105, 140 }, { 200, 120, 255 }, "none", { "spikes", "glow" }, 1.35, 4, "Basalt"),
+	P("gembasilisk", "Gem Basilisk", "Legendary", 340000, "ball", { 80, 200, 170 }, { 255, 120, 220 }, "none", { "horns", "tail", "spikes", "glow" }, 1.4, 4, "Glass"),
+	-- Zone 5, Starforge Egg (rebirth 3)
+	P("stardustpup", "Stardust Pup", "Uncommon", 1000000, "ball", { 200, 190, 255 }, { 255, 235, 140 }, "dog", { "tail", "glow" }, 1, 5),
+	P("meteormole", "Meteor Mole", "Rare", 2000000, "ball", { 110, 85, 70 }, { 255, 150, 60 }, "bear", { "flames" }, 1.05, 5),
+	P("supernovaphoenix", "Supernova Phoenix", "Epic", 3500000, "tall", { 255, 240, 200 }, { 255, 110, 60 }, "none", { "wings", "beak", "halo", "glow" }, 1.3, 5, "Neon"),
+	P("starforgetitan", "Starforge Titan", "Legendary", 5500000, "block", { 60, 50, 90 }, { 255, 210, 90 }, "none", { "horns", "spikes", "halo", "glow" }, 1.55, 5),
+
+	-- Zone 5, Singularity Egg (rebirth 4)
+	P("voidpup", "Void Pup", "Uncommon", 2000000, "ball", { 25, 20, 45 }, { 170, 110, 255 }, "dog", { "tail", "glow" }, 1, 5),
+	P("riftcat", "Rift Cat", "Rare", 4000000, "ball", { 40, 30, 80 }, { 255, 90, 200 }, "cat", { "tail", "halo" }, 1.1, 5, "Neon"),
+	P("horizonowl", "Horizon Owl", "Epic", 7000000, "tall", { 30, 25, 65 }, { 255, 200, 80 }, "cat", { "wings", "beak", "halo", "glow" }, 1.3, 5),
+	P("singularitydragon", "Singularity Dragon", "Mythic", 12000000, "ball", { 15, 10, 30 }, { 200, 120, 255 }, "none", { "horns", "wings", "tail", "halo", "crown", "glow" }, 1.65, 5, "Neon"),
+
 	-- Exclusive (Robux) Magic Egg
 	P("sparklecat", "Sparkle Cat", "Legendary", 0, "ball", { 255, 220, 250 }, { 120, 240, 255 }, "cat", { "tail", "halo", "glow" }, 1.2, 0),
 	P("crystalunicorn", "Crystal Unicorn", "Mythic", 0, "ball", { 200, 240, 255 }, { 255, 150, 255 }, "dog", { "horn", "wings", "glow" }, 1.4, 0, "Glass"),
@@ -260,6 +304,7 @@ export type Egg = {
 	offsetZ: number,
 	entries: { EggEntry },
 	exclusive: boolean?,
+	minRebirths: number?, -- rebirths needed before this egg can be opened (nil / 0 = open with its zone)
 }
 
 local SECRET = 0.001 -- percent (1 in 100,000)
@@ -288,6 +333,32 @@ Config.Eggs = {
 	} },
 	{ id = "cosmic", name = "Cosmic Egg", zone = 5, price = 1200000000, color = { 60, 40, 140 }, spots = { 255, 240, 120 }, offsetX = 0, offsetZ = 25, entries = {
 		{ pet = "mooncat", chance = 60 }, { pet = "starbunny", chance = 30 }, { pet = "alienpup", chance = 9.4 }, { pet = "nebulaowl", chance = 0.58 }, { pet = "galaxydragon", chance = 0.019 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "basalt", name = "Basalt Egg", zone = 4, price = 150000000, color = { 95, 70, 60 }, spots = { 255, 150, 40 }, offsetX = -44, offsetZ = -20, entries = {
+		{ pet = "lavagecko", chance = 50 }, { pet = "magmacrab", chance = 32 }, { pet = "moltentortoise", chance = 16.4 }, { pet = "infernodrake", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	-- Rebirth-gated eggs: each one opens after N rebirths, in a zone the player already owns, so a
+	-- new tier arrives between the first rebirth and Cosmic Void (prices tuned with sim/pacing_tune.luau).
+	{ id = "obsidian", name = "Obsidian Egg", zone = 4, price = 11000000000, minRebirths = 1, color = { 35, 30, 50 }, spots = { 170, 110, 255 }, offsetX = -44, offsetZ = 25, entries = {
+		{ pet = "ashpup", chance = 50 }, { pet = "sootsprite", chance = 32 }, { pet = "cinderbat", chance = 16.4 }, { pet = "obsidianwolf", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "aurora", name = "Aurora Egg", zone = 3, price = 12000000000, minRebirths = 2, color = { 170, 255, 230 }, spots = { 190, 140, 255 }, offsetX = 0, offsetZ = 62, entries = {
+		{ pet = "aurorahare", chance = 50 }, { pet = "auroralynx", chance = 32 }, { pet = "borealisstag", chance = 16.4 }, { pet = "aurorawyrm", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "pulsar", name = "Pulsar Egg", zone = 5, price = 250000000000, minRebirths = 3, color = { 50, 40, 120 }, spots = { 120, 255, 255 }, offsetX = -44, offsetZ = 25, entries = {
+		{ pet = "cometcat", chance = 50 }, { pet = "quasarfox", chance = 32 }, { pet = "pulsarbear", chance = 16.4 }, { pet = "eclipsedrake", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "geode", name = "Geode Egg", zone = 4, price = 28000000000, minRebirths = 2, color = { 120, 105, 140 }, spots = { 200, 120, 255 }, offsetX = 44, offsetZ = 25, entries = {
+		{ pet = "quartzmole", chance = 50 }, { pet = "amethystcat", chance = 32 }, { pet = "geodegolem", chance = 16.4 }, { pet = "gembasilisk", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "starforge", name = "Starforge Egg", zone = 5, price = 500000000000, minRebirths = 3, color = { 70, 55, 100 }, spots = { 255, 210, 90 }, offsetX = 44, offsetZ = 25, entries = {
+		{ pet = "stardustpup", chance = 50 }, { pet = "meteormole", chance = 32 }, { pet = "supernovaphoenix", chance = 16.4 }, { pet = "starforgetitan", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "singularity", name = "Singularity Egg", zone = 5, price = 750000000000, minRebirths = 3, color = { 20, 15, 40 }, spots = { 200, 120, 255 }, offsetX = 0, offsetZ = 62, entries = {
+		{ pet = "voidpup", chance = 50 }, { pet = "riftcat", chance = 32 }, { pet = "horizonowl", chance = 16.4 }, { pet = "singularitydragon", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
+	} },
+	{ id = "helios", name = "Helios Egg", zone = 5, price = 500000000000, minRebirths = 4, color = { 255, 200, 90 }, spots = { 255, 100, 40 }, offsetX = 44, offsetZ = 62, entries = {
+		{ pet = "sunpup", chance = 50 }, { pet = "solarcat", chance = 32 }, { pet = "coronafox", chance = 16.4 }, { pet = "solarphoenix", chance = 1.599 }, { pet = "shadowdragon", chance = SECRET },
 	} },
 	-- Robux-only egg, sits in spawn. Hatched via developer product, never with taps.
 	{ id = "magic", name = "Magic Egg", zone = 0, price = 0, exclusive = true, color = { 190, 120, 255 }, spots = { 255, 240, 120 }, offsetX = 45, offsetZ = -72, entries = {
@@ -632,12 +703,51 @@ end
 Formulas.PetById = PetById :: { [string]: typeof(Config.Pets[1]) }
 Formulas.EggById = EggById :: { [string]: typeof(Config.Eggs[1]) }
 
+-- Rebirths needed before an egg can be opened (0 for eggs that only need their zone).
+function Formulas.eggMinRebirths(eggId: string): number
+	local egg = EggById[eggId]
+	return if egg and egg.minRebirths then egg.minRebirths else 0
+end
+
+function Formulas.eggUnlocked(eggId: string, rebirths: number): boolean
+	return rebirths >= Formulas.eggMinRebirths(eggId)
+end
+
+-- Eggs that open exactly at this rebirth count (for the "new egg" message after a rebirth).
+function Formulas.eggsUnlockedAt(rebirths: number): { string }
+	local out = {}
+	for _, egg in Config.Eggs do
+		if egg.minRebirths == rebirths and rebirths > 0 then
+			table.insert(out, egg.id)
+		end
+	end
+	return out
+end
+
+-- Pets that only come out of rebirth-gated eggs. They are extra content inside a zone's band and do
+-- not move the power that exclusive pets scale with (that would make Robux pets jump at rebirth 2).
+local gatedPets: { [string]: boolean } = {}
+for _, e in Config.Eggs do
+	if e.minRebirths and e.minRebirths > 0 then
+		for _, entry in e.entries do
+			gatedPets[entry.pet] = true
+		end
+	end
+end
+for _, e in Config.Eggs do
+	if not e.minRebirths then
+		for _, entry in e.entries do
+			gatedPets[entry.pet] = nil -- a pet that also drops from an open egg (the secret pet)
+		end
+	end
+end
+
 -- Strongest regular (tap-bought) pet per zone, used to scale exclusive pets.
 local bestPowerByZone: { number } = {}
 for z = 1, #Config.Zones do
 	local best = 1
 	for _, p in Config.Pets do
-		if p.zone >= 1 and p.zone <= z and p.power > best then
+		if p.zone >= 1 and p.zone <= z and p.power > best and not gatedPets[p.id] then
 			best = p.power
 		end
 	end
@@ -1406,6 +1516,7 @@ return {
 	["egg.buy3"] = "3 kaufen",
 	["egg.coming_soon"] = "Demnächst",
 	["egg.exclusive_note"] = "Robux-exklusiv · Haustiere skalieren mit deiner besten Zone",
+	["egg.locked_btn"] = "🔒 Wiedergeburt {n}",
 	["egg.luck"] = "Glück x{luck}",
 	["egg.super_luck"] = "Superglück aktiv!",
 	["egg.unknown"] = "???",
@@ -1454,6 +1565,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Taps",
+	["world.egg_locked"] = "🔒 Wiedergeburt {n}",
 	["world.robux_exclusive"] = "ROBUX-EXKLUSIV",
 	["world.gate_locked"] = "GESPERRT",
 	["world.board_taps"] = "TOP TAPPER",
@@ -1475,6 +1587,8 @@ return {
 	["msg.need_autohatch"] = "Hol dir den Auto-Schlüpfen-Pass!",
 	["msg.unlock_first"] = "Schalte zuerst {zone} frei!",
 	["msg.get_closer"] = "Geh näher ans Ei!",
+	["msg.egg_needs_rebirth"] = "Dieses Ei öffnet sich nach Wiedergeburt {n}!",
+	["msg.egg_unlocked"] = "Neues Ei freigeschaltet: {egg} ({zone})!",
 	["msg.inventory_full"] = "Haustier-Inventar voll! Lösch ein paar Haustiere.",
 	["msg.not_enough_taps"] = "Nicht genug Taps!",
 	["msg.not_enough_gems"] = "Nicht genug Gems!",
@@ -1539,6 +1653,14 @@ return {
 	["egg.glacier"] = "Gletscher-Ei",
 	["egg.magma"] = "Magma-Ei",
 	["egg.cosmic"] = "Kosmisches Ei",
+	["egg.obsidian"] = "Obsidian-Ei",
+	["egg.aurora"] = "Polarlicht-Ei",
+	["egg.pulsar"] = "Pulsar-Ei",
+	["egg.geode"] = "Geoden-Ei",
+	["egg.starforge"] = "Sternenschmiede-Ei",
+	["egg.singularity"] = "Singularitäts-Ei",
+	["egg.basalt"] = "Basalt-Ei",
+	["egg.helios"] = "Helios-Ei",
 	["egg.magic"] = "Magisches Ei",
 
 	-- pets
@@ -1577,6 +1699,38 @@ return {
 	["pet.alienpup"] = "Alien-Welpe",
 	["pet.nebulaowl"] = "Nebeleule",
 	["pet.galaxydragon"] = "Galaxie-Drache",
+	["pet.ashpup"] = "Aschewelpe",
+	["pet.sootsprite"] = "Rußgeist",
+	["pet.cinderbat"] = "Glutfledermaus",
+	["pet.obsidianwolf"] = "Obsidianwolf",
+	["pet.aurorahare"] = "Polarlichthase",
+	["pet.auroralynx"] = "Polarlichtluchs",
+	["pet.borealisstag"] = "Nordlichthirsch",
+	["pet.aurorawyrm"] = "Polarlichtwurm",
+	["pet.cometcat"] = "Kometenkatze",
+	["pet.quasarfox"] = "Quasarfuchs",
+	["pet.pulsarbear"] = "Pulsarbär",
+	["pet.eclipsedrake"] = "Finsternisdrache",
+	["pet.quartzmole"] = "Quarzmaulwurf",
+	["pet.amethystcat"] = "Amethystkatze",
+	["pet.geodegolem"] = "Geodengolem",
+	["pet.gembasilisk"] = "Edelsteinbasilisk",
+	["pet.stardustpup"] = "Sternenstaub-Welpe",
+	["pet.meteormole"] = "Meteoritmaulwurf",
+	["pet.supernovaphoenix"] = "Supernova-Phönix",
+	["pet.starforgetitan"] = "Sternenschmiede-Titan",
+	["pet.voidpup"] = "Leerewelpe",
+	["pet.riftcat"] = "Risskatze",
+	["pet.horizonowl"] = "Horizonteule",
+	["pet.singularitydragon"] = "Singularitätsdrache",
+	["pet.lavagecko"] = "Lavagecko",
+	["pet.magmacrab"] = "Magmakrabbe",
+	["pet.moltentortoise"] = "Schmelzschildkröte",
+	["pet.infernodrake"] = "Infernodrache",
+	["pet.sunpup"] = "Sonnenwelpe",
+	["pet.solarcat"] = "Sonnenkatze",
+	["pet.coronafox"] = "Koronafuchs",
+	["pet.solarphoenix"] = "Sonnenphönix",
 	["pet.sparklecat"] = "Glitzerkatze",
 	["pet.crystalunicorn"] = "Kristall-Einhorn",
 	["pet.celestialdragon"] = "Himmelsdrache",
@@ -1838,6 +1992,7 @@ return {
 	["egg.buy3"] = "Buy 3",
 	["egg.coming_soon"] = "Coming soon",
 	["egg.exclusive_note"] = "Robux exclusive · pets scale with your best zone",
+	["egg.locked_btn"] = "🔒 Rebirth {n}",
 	["egg.luck"] = "Luck x{luck}",
 	["egg.super_luck"] = "Super Luck active!",
 	["egg.unknown"] = "???",
@@ -1886,6 +2041,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Taps",
+	["world.egg_locked"] = "🔒 Rebirth {n}",
 	["world.robux_exclusive"] = "ROBUX EXCLUSIVE",
 	["world.gate_locked"] = "LOCKED",
 	["world.board_taps"] = "TOP TAPPERS",
@@ -1907,6 +2063,8 @@ return {
 	["msg.need_autohatch"] = "Get the Auto Hatch pass!",
 	["msg.unlock_first"] = "Unlock {zone} first!",
 	["msg.get_closer"] = "Get closer to the egg!",
+	["msg.egg_needs_rebirth"] = "This egg opens after Rebirth {n}!",
+	["msg.egg_unlocked"] = "New egg unlocked: {egg} ({zone})!",
 	["msg.inventory_full"] = "Pet inventory full! Delete some pets.",
 	["msg.not_enough_taps"] = "Not enough Taps!",
 	["msg.not_enough_gems"] = "Not enough Gems!",
@@ -1971,6 +2129,14 @@ return {
 	["egg.glacier"] = "Glacier Egg",
 	["egg.magma"] = "Magma Egg",
 	["egg.cosmic"] = "Cosmic Egg",
+	["egg.obsidian"] = "Obsidian Egg",
+	["egg.aurora"] = "Aurora Egg",
+	["egg.pulsar"] = "Pulsar Egg",
+	["egg.geode"] = "Geode Egg",
+	["egg.starforge"] = "Starforge Egg",
+	["egg.singularity"] = "Singularity Egg",
+	["egg.basalt"] = "Basalt Egg",
+	["egg.helios"] = "Helios Egg",
 	["egg.magic"] = "Magic Egg",
 
 	-- pets
@@ -2009,6 +2175,38 @@ return {
 	["pet.alienpup"] = "Alien Pup",
 	["pet.nebulaowl"] = "Nebula Owl",
 	["pet.galaxydragon"] = "Galaxy Dragon",
+	["pet.ashpup"] = "Ash Pup",
+	["pet.sootsprite"] = "Soot Sprite",
+	["pet.cinderbat"] = "Cinder Bat",
+	["pet.obsidianwolf"] = "Obsidian Wolf",
+	["pet.aurorahare"] = "Aurora Hare",
+	["pet.auroralynx"] = "Aurora Lynx",
+	["pet.borealisstag"] = "Borealis Stag",
+	["pet.aurorawyrm"] = "Aurora Wyrm",
+	["pet.cometcat"] = "Comet Cat",
+	["pet.quasarfox"] = "Quasar Fox",
+	["pet.pulsarbear"] = "Pulsar Bear",
+	["pet.eclipsedrake"] = "Eclipse Drake",
+	["pet.quartzmole"] = "Quartz Mole",
+	["pet.amethystcat"] = "Amethyst Cat",
+	["pet.geodegolem"] = "Geode Golem",
+	["pet.gembasilisk"] = "Gem Basilisk",
+	["pet.stardustpup"] = "Stardust Pup",
+	["pet.meteormole"] = "Meteor Mole",
+	["pet.supernovaphoenix"] = "Supernova Phoenix",
+	["pet.starforgetitan"] = "Starforge Titan",
+	["pet.voidpup"] = "Void Pup",
+	["pet.riftcat"] = "Rift Cat",
+	["pet.horizonowl"] = "Horizon Owl",
+	["pet.singularitydragon"] = "Singularity Dragon",
+	["pet.lavagecko"] = "Lava Gecko",
+	["pet.magmacrab"] = "Magma Crab",
+	["pet.moltentortoise"] = "Molten Tortoise",
+	["pet.infernodrake"] = "Inferno Drake",
+	["pet.sunpup"] = "Sun Pup",
+	["pet.solarcat"] = "Solar Cat",
+	["pet.coronafox"] = "Corona Fox",
+	["pet.solarphoenix"] = "Solar Phoenix",
 	["pet.sparklecat"] = "Sparkle Cat",
 	["pet.crystalunicorn"] = "Crystal Unicorn",
 	["pet.celestialdragon"] = "Celestial Dragon",
@@ -2270,6 +2468,7 @@ return {
 	["egg.buy3"] = "Comprar 3",
 	["egg.coming_soon"] = "Próximamente",
 	["egg.exclusive_note"] = "Exclusivo de Robux · las mascotas escalan con tu mejor zona",
+	["egg.locked_btn"] = "🔒 Renacer {n}",
 	["egg.luck"] = "Suerte x{luck}",
 	["egg.super_luck"] = "¡Super Suerte activa!",
 	["egg.unknown"] = "???",
@@ -2318,6 +2517,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Taps",
+	["world.egg_locked"] = "🔒 Renacer {n}",
 	["world.robux_exclusive"] = "EXCLUSIVO ROBUX",
 	["world.gate_locked"] = "BLOQUEADO",
 	["world.board_taps"] = "TOP TOCADORES",
@@ -2339,6 +2539,8 @@ return {
 	["msg.need_autohatch"] = "¡Consigue el pase Auto Eclosión!",
 	["msg.unlock_first"] = "¡Desbloquea {zone} primero!",
 	["msg.get_closer"] = "¡Acércate más al huevo!",
+	["msg.egg_needs_rebirth"] = "¡Este huevo se abre tras el Renacer {n}!",
+	["msg.egg_unlocked"] = "¡Nuevo huevo desbloqueado: {egg} ({zone})!",
 	["msg.inventory_full"] = "¡Inventario de mascotas lleno! Elimina algunas mascotas.",
 	["msg.not_enough_taps"] = "¡No tienes suficientes Taps!",
 	["msg.not_enough_gems"] = "¡No tienes suficientes Gemas!",
@@ -2403,6 +2605,14 @@ return {
 	["egg.glacier"] = "Huevo Glacial",
 	["egg.magma"] = "Huevo de Magma",
 	["egg.cosmic"] = "Huevo Cósmico",
+	["egg.obsidian"] = "Huevo de Obsidiana",
+	["egg.aurora"] = "Huevo de Aurora",
+	["egg.pulsar"] = "Huevo Púlsar",
+	["egg.geode"] = "Huevo de Geoda",
+	["egg.starforge"] = "Huevo de Forja Estelar",
+	["egg.singularity"] = "Huevo de Singularidad",
+	["egg.basalt"] = "Huevo de Basalto",
+	["egg.helios"] = "Huevo de Helios",
 	["egg.magic"] = "Huevo Mágico",
 
 	-- pets
@@ -2441,6 +2651,38 @@ return {
 	["pet.alienpup"] = "Cachorro Alienígena",
 	["pet.nebulaowl"] = "Búho Nebulosa",
 	["pet.galaxydragon"] = "Dragón Galáctico",
+	["pet.ashpup"] = "Cachorro de Ceniza",
+	["pet.sootsprite"] = "Duende de Hollín",
+	["pet.cinderbat"] = "Murciélago de Brasas",
+	["pet.obsidianwolf"] = "Lobo de Obsidiana",
+	["pet.aurorahare"] = "Liebre Aurora",
+	["pet.auroralynx"] = "Lince Aurora",
+	["pet.borealisstag"] = "Ciervo Boreal",
+	["pet.aurorawyrm"] = "Sierpe Aurora",
+	["pet.cometcat"] = "Gato Cometa",
+	["pet.quasarfox"] = "Zorro Cuásar",
+	["pet.pulsarbear"] = "Oso Púlsar",
+	["pet.eclipsedrake"] = "Dragoncillo Eclipse",
+	["pet.quartzmole"] = "Topo de Cuarzo",
+	["pet.amethystcat"] = "Gato de Amatista",
+	["pet.geodegolem"] = "Gólem de Geoda",
+	["pet.gembasilisk"] = "Basilisco de Gemas",
+	["pet.stardustpup"] = "Cachorro de Polvo Estelar",
+	["pet.meteormole"] = "Topo Meteoro",
+	["pet.supernovaphoenix"] = "Fénix Supernova",
+	["pet.starforgetitan"] = "Titán de la Forja Estelar",
+	["pet.voidpup"] = "Cachorro del Vacío",
+	["pet.riftcat"] = "Gato de la Grieta",
+	["pet.horizonowl"] = "Búho del Horizonte",
+	["pet.singularitydragon"] = "Dragón de Singularidad",
+	["pet.lavagecko"] = "Gecko de Lava",
+	["pet.magmacrab"] = "Cangrejo de Magma",
+	["pet.moltentortoise"] = "Tortuga Fundida",
+	["pet.infernodrake"] = "Dragoncillo Infernal",
+	["pet.sunpup"] = "Cachorro Solar",
+	["pet.solarcat"] = "Gato Solar",
+	["pet.coronafox"] = "Zorro Corona",
+	["pet.solarphoenix"] = "Fénix Solar",
 	["pet.sparklecat"] = "Gato Brillante",
 	["pet.crystalunicorn"] = "Unicornio de Cristal",
 	["pet.celestialdragon"] = "Dragón Celestial",
@@ -2702,6 +2944,7 @@ return {
 	["egg.buy3"] = "Acheter 3",
 	["egg.coming_soon"] = "Bientôt disponible",
 	["egg.exclusive_note"] = "Exclusif Robux · les compagnons évoluent avec ta meilleure zone",
+	["egg.locked_btn"] = "🔒 Renaissance {n}",
 	["egg.luck"] = "Chance x{luck}",
 	["egg.super_luck"] = "Super Chance active !",
 	["egg.unknown"] = "???",
@@ -2750,6 +2993,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Taps",
+	["world.egg_locked"] = "🔒 Renaissance {n}",
 	["world.robux_exclusive"] = "EXCLUSIF ROBUX",
 	["world.gate_locked"] = "VERROUILLÉ",
 	["world.board_taps"] = "TOP TOUCHEURS",
@@ -2771,6 +3015,8 @@ return {
 	["msg.need_autohatch"] = "Obtiens le pass Auto Éclosion !",
 	["msg.unlock_first"] = "Déverrouille {zone} d'abord !",
 	["msg.get_closer"] = "Rapproche-toi de l'œuf !",
+	["msg.egg_needs_rebirth"] = "Cet œuf s'ouvre après la Renaissance {n} !",
+	["msg.egg_unlocked"] = "Nouvel œuf débloqué : {egg} ({zone}) !",
 	["msg.inventory_full"] = "Inventaire de compagnons plein ! Supprime des compagnons.",
 	["msg.not_enough_taps"] = "Pas assez de Taps !",
 	["msg.not_enough_gems"] = "Pas assez de Gemmes !",
@@ -2835,6 +3081,14 @@ return {
 	["egg.glacier"] = "Œuf Glacier",
 	["egg.magma"] = "Œuf de Magma",
 	["egg.cosmic"] = "Œuf Cosmique",
+	["egg.obsidian"] = "Œuf d'Obsidienne",
+	["egg.aurora"] = "Œuf d'Aurore",
+	["egg.pulsar"] = "Œuf Pulsar",
+	["egg.geode"] = "Œuf de Géode",
+	["egg.starforge"] = "Œuf de Forge Stellaire",
+	["egg.singularity"] = "Œuf de Singularité",
+	["egg.basalt"] = "Œuf de Basalte",
+	["egg.helios"] = "Œuf d'Hélios",
 	["egg.magic"] = "Œuf Magique",
 
 	-- pets
@@ -2873,6 +3127,38 @@ return {
 	["pet.alienpup"] = "Chiot Alien",
 	["pet.nebulaowl"] = "Hibou Nébuleuse",
 	["pet.galaxydragon"] = "Dragon Galactique",
+	["pet.ashpup"] = "Chiot Cendré",
+	["pet.sootsprite"] = "Lutin de Suie",
+	["pet.cinderbat"] = "Chauve-souris de Braise",
+	["pet.obsidianwolf"] = "Loup d'Obsidienne",
+	["pet.aurorahare"] = "Lièvre Aurore",
+	["pet.auroralynx"] = "Lynx Aurore",
+	["pet.borealisstag"] = "Cerf Boréal",
+	["pet.aurorawyrm"] = "Wyrm Aurore",
+	["pet.cometcat"] = "Chat Comète",
+	["pet.quasarfox"] = "Renard Quasar",
+	["pet.pulsarbear"] = "Ours Pulsar",
+	["pet.eclipsedrake"] = "Draconneau Éclipse",
+	["pet.quartzmole"] = "Taupe de Quartz",
+	["pet.amethystcat"] = "Chat d'Améthyste",
+	["pet.geodegolem"] = "Golem de Géode",
+	["pet.gembasilisk"] = "Basilic de Gemmes",
+	["pet.stardustpup"] = "Chiot de Poussière d'Étoile",
+	["pet.meteormole"] = "Taupe Météore",
+	["pet.supernovaphoenix"] = "Phénix Supernova",
+	["pet.starforgetitan"] = "Titan de la Forge Stellaire",
+	["pet.voidpup"] = "Chiot du Vide",
+	["pet.riftcat"] = "Chat de la Faille",
+	["pet.horizonowl"] = "Hibou de l'Horizon",
+	["pet.singularitydragon"] = "Dragon de Singularité",
+	["pet.lavagecko"] = "Gecko de Lave",
+	["pet.magmacrab"] = "Crabe de Magma",
+	["pet.moltentortoise"] = "Tortue en Fusion",
+	["pet.infernodrake"] = "Draconneau Infernal",
+	["pet.sunpup"] = "Chiot Solaire",
+	["pet.solarcat"] = "Chat Solaire",
+	["pet.coronafox"] = "Renard Couronne",
+	["pet.solarphoenix"] = "Phénix Solaire",
 	["pet.sparklecat"] = "Chat Scintillant",
 	["pet.crystalunicorn"] = "Licorne de Cristal",
 	["pet.celestialdragon"] = "Dragon Céleste",
@@ -3134,6 +3420,7 @@ return {
 	["egg.buy3"] = "Beli 3",
 	["egg.coming_soon"] = "Segera hadir",
 	["egg.exclusive_note"] = "Eksklusif Robux · hewan menyesuaikan dengan zona terbaikmu",
+	["egg.locked_btn"] = "🔒 Rebirth {n}",
 	["egg.luck"] = "Keberuntungan x{luck}",
 	["egg.super_luck"] = "Keberuntungan Super aktif!",
 	["egg.unknown"] = "???",
@@ -3182,6 +3469,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Tap",
+	["world.egg_locked"] = "🔒 Rebirth {n}",
 	["world.robux_exclusive"] = "EKSKLUSIF ROBUX",
 	["world.gate_locked"] = "TERKUNCI",
 	["world.board_taps"] = "TOP TAPPER",
@@ -3203,6 +3491,8 @@ return {
 	["msg.need_autohatch"] = "Dapatkan pass Auto Tetas!",
 	["msg.unlock_first"] = "Buka {zone} dulu!",
 	["msg.get_closer"] = "Dekati telurnya!",
+	["msg.egg_needs_rebirth"] = "Telur ini terbuka setelah Rebirth {n}!",
+	["msg.egg_unlocked"] = "Telur baru terbuka: {egg} ({zone})!",
 	["msg.inventory_full"] = "Inventaris hewan penuh! Hapus beberapa hewan.",
 	["msg.not_enough_taps"] = "Tap belum cukup!",
 	["msg.not_enough_gems"] = "Gems belum cukup!",
@@ -3267,6 +3557,14 @@ return {
 	["egg.glacier"] = "Telur Gletser",
 	["egg.magma"] = "Telur Magma",
 	["egg.cosmic"] = "Telur Kosmik",
+	["egg.obsidian"] = "Telur Obsidian",
+	["egg.aurora"] = "Telur Aurora",
+	["egg.pulsar"] = "Telur Pulsar",
+	["egg.geode"] = "Telur Geode",
+	["egg.starforge"] = "Telur Tempa Bintang",
+	["egg.singularity"] = "Telur Singularitas",
+	["egg.basalt"] = "Telur Basal",
+	["egg.helios"] = "Telur Helios",
 	["egg.magic"] = "Telur Ajaib",
 
 	-- pets
@@ -3305,6 +3603,38 @@ return {
 	["pet.alienpup"] = "Anjing Alien",
 	["pet.nebulaowl"] = "Burung Hantu Nebula",
 	["pet.galaxydragon"] = "Naga Galaksi",
+	["pet.ashpup"] = "Anak Anjing Abu",
+	["pet.sootsprite"] = "Peri Jelaga",
+	["pet.cinderbat"] = "Kelelawar Bara",
+	["pet.obsidianwolf"] = "Serigala Obsidian",
+	["pet.aurorahare"] = "Kelinci Aurora",
+	["pet.auroralynx"] = "Lynx Aurora",
+	["pet.borealisstag"] = "Rusa Borealis",
+	["pet.aurorawyrm"] = "Naga Aurora",
+	["pet.cometcat"] = "Kucing Komet",
+	["pet.quasarfox"] = "Rubah Kuasar",
+	["pet.pulsarbear"] = "Beruang Pulsar",
+	["pet.eclipsedrake"] = "Naga Gerhana",
+	["pet.quartzmole"] = "Tikus Tanah Kuarsa",
+	["pet.amethystcat"] = "Kucing Kecubung",
+	["pet.geodegolem"] = "Golem Geode",
+	["pet.gembasilisk"] = "Basilisk Permata",
+	["pet.stardustpup"] = "Anak Anjing Debu Bintang",
+	["pet.meteormole"] = "Tikus Tanah Meteor",
+	["pet.supernovaphoenix"] = "Phoenix Supernova",
+	["pet.starforgetitan"] = "Titan Tempa Bintang",
+	["pet.voidpup"] = "Anak Anjing Hampa",
+	["pet.riftcat"] = "Kucing Retakan",
+	["pet.horizonowl"] = "Burung Hantu Cakrawala",
+	["pet.singularitydragon"] = "Naga Singularitas",
+	["pet.lavagecko"] = "Cicak Lava",
+	["pet.magmacrab"] = "Kepiting Magma",
+	["pet.moltentortoise"] = "Kura-kura Lebur",
+	["pet.infernodrake"] = "Naga Inferno",
+	["pet.sunpup"] = "Anak Anjing Surya",
+	["pet.solarcat"] = "Kucing Surya",
+	["pet.coronafox"] = "Rubah Korona",
+	["pet.solarphoenix"] = "Phoenix Surya",
 	["pet.sparklecat"] = "Kucing Kilau",
 	["pet.crystalunicorn"] = "Unicorn Kristal",
 	["pet.celestialdragon"] = "Naga Langit",
@@ -3566,6 +3896,7 @@ return {
 	["egg.buy3"] = "3個購入",
 	["egg.coming_soon"] = "近日公開",
 	["egg.exclusive_note"] = "Robux限定・ペットは最高到達ゾーンに応じて強化",
+	["egg.locked_btn"] = "🔒 転生{n}回",
 	["egg.luck"] = "運 x{luck}",
 	["egg.super_luck"] = "スーパーラック発動中！",
 	["egg.unknown"] = "???",
@@ -3614,6 +3945,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} タップ",
+	["world.egg_locked"] = "🔒 転生{n}回",
 	["world.robux_exclusive"] = "Robux限定",
 	["world.gate_locked"] = "ロック中",
 	["world.board_taps"] = "トップタッパー",
@@ -3635,6 +3967,8 @@ return {
 	["msg.need_autohatch"] = "オートハッチパスを手に入れよう！",
 	["msg.unlock_first"] = "まず{zone}を解放しよう！",
 	["msg.get_closer"] = "タマゴにもっと近づこう！",
+	["msg.egg_needs_rebirth"] = "このタマゴは転生{n}回目で開放されるよ！",
+	["msg.egg_unlocked"] = "新しいタマゴ解放：{egg}（{zone}）！",
 	["msg.inventory_full"] = "ペット枠がいっぱいです！ペットを削除してください。",
 	["msg.not_enough_taps"] = "タップが足りません！",
 	["msg.not_enough_gems"] = "ジェムが足りません！",
@@ -3699,6 +4033,14 @@ return {
 	["egg.glacier"] = "氷河のタマゴ",
 	["egg.magma"] = "マグマタマゴ",
 	["egg.cosmic"] = "宇宙のタマゴ",
+	["egg.obsidian"] = "オブシディアンのタマゴ",
+	["egg.aurora"] = "オーロラのタマゴ",
+	["egg.pulsar"] = "パルサーのタマゴ",
+	["egg.geode"] = "ジオードのタマゴ",
+	["egg.starforge"] = "星の鍛冶場のタマゴ",
+	["egg.singularity"] = "特異点のタマゴ",
+	["egg.basalt"] = "玄武岩のタマゴ",
+	["egg.helios"] = "ヘリオスのタマゴ",
 	["egg.magic"] = "マジックタマゴ",
 
 	-- pets
@@ -3737,6 +4079,38 @@ return {
 	["pet.alienpup"] = "エイリアンワンコ",
 	["pet.nebulaowl"] = "ネビュラフクロウ",
 	["pet.galaxydragon"] = "ギャラクシードラゴン",
+	["pet.ashpup"] = "アッシュパピー",
+	["pet.sootsprite"] = "すすのこだま",
+	["pet.cinderbat"] = "おきバット",
+	["pet.obsidianwolf"] = "黒曜のオオカミ",
+	["pet.aurorahare"] = "オーロラうさぎ",
+	["pet.auroralynx"] = "オーロラリンクス",
+	["pet.borealisstag"] = "ボレアリスのシカ",
+	["pet.aurorawyrm"] = "オーロラワーム",
+	["pet.cometcat"] = "コメットキャット",
+	["pet.quasarfox"] = "クエーサーギツネ",
+	["pet.pulsarbear"] = "パルサーベア",
+	["pet.eclipsedrake"] = "エクリプスドレイク",
+	["pet.quartzmole"] = "クォーツモグラ",
+	["pet.amethystcat"] = "アメジストキャット",
+	["pet.geodegolem"] = "ジオードゴーレム",
+	["pet.gembasilisk"] = "宝石バジリスク",
+	["pet.stardustpup"] = "星くずパピー",
+	["pet.meteormole"] = "メテオモグラ",
+	["pet.supernovaphoenix"] = "超新星フェニックス",
+	["pet.starforgetitan"] = "星の鍛冶場のタイタン",
+	["pet.voidpup"] = "ボイドパピー",
+	["pet.riftcat"] = "リフトキャット",
+	["pet.horizonowl"] = "ホライズンフクロウ",
+	["pet.singularitydragon"] = "特異点ドラゴン",
+	["pet.lavagecko"] = "ラバゲッコー",
+	["pet.magmacrab"] = "マグマガニ",
+	["pet.moltentortoise"] = "とろけるカメ",
+	["pet.infernodrake"] = "インフェルノドレイク",
+	["pet.sunpup"] = "サンパピー",
+	["pet.solarcat"] = "ソーラーキャット",
+	["pet.coronafox"] = "コロナギツネ",
+	["pet.solarphoenix"] = "ソーラーフェニックス",
 	["pet.sparklecat"] = "キラキラキャット",
 	["pet.crystalunicorn"] = "クリスタルユニコーン",
 	["pet.celestialdragon"] = "天空ドラゴン",
@@ -3998,6 +4372,7 @@ return {
 	["egg.buy3"] = "3개 구매",
 	["egg.coming_soon"] = "곧 공개",
 	["egg.exclusive_note"] = "Robux 전용 · 펫은 최고 도달 구역에 맞춰 강해짐",
+	["egg.locked_btn"] = "🔒 환생 {n}회",
 	["egg.luck"] = "행운 x{luck}",
 	["egg.super_luck"] = "슈퍼 행운 발동 중!",
 	["egg.unknown"] = "???",
@@ -4046,6 +4421,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} 탭",
+	["world.egg_locked"] = "🔒 환생 {n}회",
 	["world.robux_exclusive"] = "Robux 전용",
 	["world.gate_locked"] = "잠김",
 	["world.board_taps"] = "탭 랭킹",
@@ -4067,6 +4443,8 @@ return {
 	["msg.need_autohatch"] = "오토부화 패스를 구매하세요!",
 	["msg.unlock_first"] = "먼저 {zone}을(를) 해금하세요!",
 	["msg.get_closer"] = "알에 더 가까이 가세요!",
+	["msg.egg_needs_rebirth"] = "이 알은 환생 {n}회 후에 열려요!",
+	["msg.egg_unlocked"] = "새 알 해금: {egg} ({zone})!",
 	["msg.inventory_full"] = "펫 보관함이 가득 찼어요! 펫을 삭제해 주세요.",
 	["msg.not_enough_taps"] = "탭이 부족해요!",
 	["msg.not_enough_gems"] = "젬이 부족해요!",
@@ -4131,6 +4509,14 @@ return {
 	["egg.glacier"] = "빙하 알",
 	["egg.magma"] = "마그마 알",
 	["egg.cosmic"] = "우주 알",
+	["egg.obsidian"] = "흑요석 알",
+	["egg.aurora"] = "오로라 알",
+	["egg.pulsar"] = "펄서 알",
+	["egg.geode"] = "정동석 알",
+	["egg.starforge"] = "별의 대장간 알",
+	["egg.singularity"] = "특이점 알",
+	["egg.basalt"] = "현무암 알",
+	["egg.helios"] = "헬리오스 알",
 	["egg.magic"] = "마법 알",
 
 	-- pets
@@ -4169,6 +4555,38 @@ return {
 	["pet.alienpup"] = "외계강아지",
 	["pet.nebulaowl"] = "성운부엉이",
 	["pet.galaxydragon"] = "은하드래곤",
+	["pet.ashpup"] = "재 강아지",
+	["pet.sootsprite"] = "그을음 정령",
+	["pet.cinderbat"] = "잿불 박쥐",
+	["pet.obsidianwolf"] = "흑요석 늑대",
+	["pet.aurorahare"] = "오로라 토끼",
+	["pet.auroralynx"] = "오로라 스라소니",
+	["pet.borealisstag"] = "보레알리스 사슴",
+	["pet.aurorawyrm"] = "오로라 와이번",
+	["pet.cometcat"] = "혜성 고양이",
+	["pet.quasarfox"] = "퀘이사 여우",
+	["pet.pulsarbear"] = "펄서 곰",
+	["pet.eclipsedrake"] = "일식 드레이크",
+	["pet.quartzmole"] = "석영 두더지",
+	["pet.amethystcat"] = "자수정 고양이",
+	["pet.geodegolem"] = "정동석 골렘",
+	["pet.gembasilisk"] = "보석 바실리스크",
+	["pet.stardustpup"] = "별먼지 강아지",
+	["pet.meteormole"] = "유성 두더지",
+	["pet.supernovaphoenix"] = "초신성 불사조",
+	["pet.starforgetitan"] = "별의 대장간 타이탄",
+	["pet.voidpup"] = "공허 강아지",
+	["pet.riftcat"] = "균열 고양이",
+	["pet.horizonowl"] = "지평선 올빼미",
+	["pet.singularitydragon"] = "특이점 드래곤",
+	["pet.lavagecko"] = "용암 도마뱀",
+	["pet.magmacrab"] = "마그마 게",
+	["pet.moltentortoise"] = "녹아내린 거북",
+	["pet.infernodrake"] = "인페르노 드레이크",
+	["pet.sunpup"] = "태양 강아지",
+	["pet.solarcat"] = "태양 고양이",
+	["pet.coronafox"] = "코로나 여우",
+	["pet.solarphoenix"] = "태양 불사조",
 	["pet.sparklecat"] = "반짝고양이",
 	["pet.crystalunicorn"] = "크리스탈유니콘",
 	["pet.celestialdragon"] = "천상드래곤",
@@ -4430,6 +4848,7 @@ return {
 	["egg.buy3"] = "Comprar 3",
 	["egg.coming_soon"] = "Em breve",
 	["egg.exclusive_note"] = "Exclusivo Robux · pets escalam com sua melhor zona",
+	["egg.locked_btn"] = "🔒 Renascer {n}",
 	["egg.luck"] = "Sorte x{luck}",
 	["egg.super_luck"] = "Super Sorte ativa!",
 	["egg.unknown"] = "???",
@@ -4478,6 +4897,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Taps",
+	["world.egg_locked"] = "🔒 Renascer {n}",
 	["world.robux_exclusive"] = "EXCLUSIVO ROBUX",
 	["world.gate_locked"] = "BLOQUEADO",
 	["world.board_taps"] = "TOP TOCADORES",
@@ -4499,6 +4919,8 @@ return {
 	["msg.need_autohatch"] = "Consiga o passe Auto Choco!",
 	["msg.unlock_first"] = "Desbloqueie {zone} primeiro!",
 	["msg.get_closer"] = "Chegue mais perto do ovo!",
+	["msg.egg_needs_rebirth"] = "Este ovo abre após o Renascer {n}!",
+	["msg.egg_unlocked"] = "Novo ovo liberado: {egg} ({zone})!",
 	["msg.inventory_full"] = "Inventário de pets cheio! Exclua alguns pets.",
 	["msg.not_enough_taps"] = "Taps insuficientes!",
 	["msg.not_enough_gems"] = "Gemas insuficientes!",
@@ -4563,6 +4985,14 @@ return {
 	["egg.glacier"] = "Ovo Glacial",
 	["egg.magma"] = "Ovo de Magma",
 	["egg.cosmic"] = "Ovo Cósmico",
+	["egg.obsidian"] = "Ovo de Obsidiana",
+	["egg.aurora"] = "Ovo de Aurora",
+	["egg.pulsar"] = "Ovo Pulsar",
+	["egg.geode"] = "Ovo de Geodo",
+	["egg.starforge"] = "Ovo da Forja Estelar",
+	["egg.singularity"] = "Ovo da Singularidade",
+	["egg.basalt"] = "Ovo de Basalto",
+	["egg.helios"] = "Ovo de Hélio",
 	["egg.magic"] = "Ovo Mágico",
 
 	-- pets
@@ -4601,6 +5031,38 @@ return {
 	["pet.alienpup"] = "Filhote Alienígena",
 	["pet.nebulaowl"] = "Coruja Nebulosa",
 	["pet.galaxydragon"] = "Dragão Galáctico",
+	["pet.ashpup"] = "Cãozinho de Cinzas",
+	["pet.sootsprite"] = "Fada de Fuligem",
+	["pet.cinderbat"] = "Morcego de Brasa",
+	["pet.obsidianwolf"] = "Lobo de Obsidiana",
+	["pet.aurorahare"] = "Lebre Aurora",
+	["pet.auroralynx"] = "Lince Aurora",
+	["pet.borealisstag"] = "Cervo Boreal",
+	["pet.aurorawyrm"] = "Serpente Aurora",
+	["pet.cometcat"] = "Gato Cometa",
+	["pet.quasarfox"] = "Raposa Quasar",
+	["pet.pulsarbear"] = "Urso Pulsar",
+	["pet.eclipsedrake"] = "Dragão Eclipse",
+	["pet.quartzmole"] = "Toupeira de Quartzo",
+	["pet.amethystcat"] = "Gato de Ametista",
+	["pet.geodegolem"] = "Golem de Geodo",
+	["pet.gembasilisk"] = "Basilisco de Gemas",
+	["pet.stardustpup"] = "Cãozinho de Poeira Estelar",
+	["pet.meteormole"] = "Toupeira Meteoro",
+	["pet.supernovaphoenix"] = "Fênix Supernova",
+	["pet.starforgetitan"] = "Titã da Forja Estelar",
+	["pet.voidpup"] = "Cãozinho do Vazio",
+	["pet.riftcat"] = "Gato da Fenda",
+	["pet.horizonowl"] = "Coruja do Horizonte",
+	["pet.singularitydragon"] = "Dragão da Singularidade",
+	["pet.lavagecko"] = "Lagartixa de Lava",
+	["pet.magmacrab"] = "Caranguejo de Magma",
+	["pet.moltentortoise"] = "Tartaruga Derretida",
+	["pet.infernodrake"] = "Dragão Inferno",
+	["pet.sunpup"] = "Cãozinho Solar",
+	["pet.solarcat"] = "Gato Solar",
+	["pet.coronafox"] = "Raposa Coroa",
+	["pet.solarphoenix"] = "Fênix Solar",
 	["pet.sparklecat"] = "Gato Brilhante",
 	["pet.crystalunicorn"] = "Unicórnio de Cristal",
 	["pet.celestialdragon"] = "Dragão Celestial",
@@ -4862,6 +5324,7 @@ return {
 	["egg.buy3"] = "Купить 3",
 	["egg.coming_soon"] = "Скоро",
 	["egg.exclusive_note"] = "Только за Robux · питомцы усиливаются лучшей зоной",
+	["egg.locked_btn"] = "🔒 Перерождение {n}",
 	["egg.luck"] = "Удача x{luck}",
 	["egg.super_luck"] = "Суперудача активна!",
 	["egg.unknown"] = "???",
@@ -4910,6 +5373,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Тапов",
+	["world.egg_locked"] = "🔒 Перерождение {n}",
 	["world.robux_exclusive"] = "ТОЛЬКО ЗА ROBUX",
 	["world.gate_locked"] = "ЗАКРЫТО",
 	["world.board_taps"] = "ТОП ТАПЕРОВ",
@@ -4931,6 +5395,8 @@ return {
 	["msg.need_autohatch"] = "Купи пропуск «Автовылуп»!",
 	["msg.unlock_first"] = "Сначала открой {zone}!",
 	["msg.get_closer"] = "Подойди ближе к яйцу!",
+	["msg.egg_needs_rebirth"] = "Это яйцо откроется после перерождения {n}!",
+	["msg.egg_unlocked"] = "Открыто новое яйцо: {egg} ({zone})!",
 	["msg.inventory_full"] = "Инвентарь питомцев полон! Удали кого-нибудь.",
 	["msg.not_enough_taps"] = "Не хватает Тапов!",
 	["msg.not_enough_gems"] = "Не хватает Гемов!",
@@ -4995,6 +5461,14 @@ return {
 	["egg.glacier"] = "Ледниковое яйцо",
 	["egg.magma"] = "Магма-яйцо",
 	["egg.cosmic"] = "Космическое яйцо",
+	["egg.obsidian"] = "Яйцо обсидиана",
+	["egg.aurora"] = "Яйцо сияния",
+	["egg.pulsar"] = "Яйцо пульсара",
+	["egg.geode"] = "Яйцо жеоды",
+	["egg.starforge"] = "Яйцо звёздной кузни",
+	["egg.singularity"] = "Яйцо сингулярности",
+	["egg.basalt"] = "Яйцо базальта",
+	["egg.helios"] = "Яйцо Гелиоса",
 	["egg.magic"] = "Волшебное яйцо",
 
 	-- pets
@@ -5033,6 +5507,38 @@ return {
 	["pet.alienpup"] = "Пришелец-щенок",
 	["pet.nebulaowl"] = "Туманная совушка",
 	["pet.galaxydragon"] = "Галактический дракон",
+	["pet.ashpup"] = "Пепельный щенок",
+	["pet.sootsprite"] = "Сажевик",
+	["pet.cinderbat"] = "Угольная летучая мышь",
+	["pet.obsidianwolf"] = "Обсидиановый волк",
+	["pet.aurorahare"] = "Заяц сияния",
+	["pet.auroralynx"] = "Рысь сияния",
+	["pet.borealisstag"] = "Северный олень",
+	["pet.aurorawyrm"] = "Змей сияния",
+	["pet.cometcat"] = "Кот-комета",
+	["pet.quasarfox"] = "Лис-квазар",
+	["pet.pulsarbear"] = "Медведь-пульсар",
+	["pet.eclipsedrake"] = "Дракон затмения",
+	["pet.quartzmole"] = "Кварцевый крот",
+	["pet.amethystcat"] = "Аметистовый кот",
+	["pet.geodegolem"] = "Голем из жеоды",
+	["pet.gembasilisk"] = "Самоцветный василиск",
+	["pet.stardustpup"] = "Щенок звёздной пыли",
+	["pet.meteormole"] = "Метеоритный крот",
+	["pet.supernovaphoenix"] = "Феникс сверхновой",
+	["pet.starforgetitan"] = "Титан звёздной кузни",
+	["pet.voidpup"] = "Щенок пустоты",
+	["pet.riftcat"] = "Кот разлома",
+	["pet.horizonowl"] = "Сова горизонта",
+	["pet.singularitydragon"] = "Дракон сингулярности",
+	["pet.lavagecko"] = "Лавовый геккон",
+	["pet.magmacrab"] = "Магмовый краб",
+	["pet.moltentortoise"] = "Расплавленная черепаха",
+	["pet.infernodrake"] = "Адский дракончик",
+	["pet.sunpup"] = "Солнечный щенок",
+	["pet.solarcat"] = "Солнечный кот",
+	["pet.coronafox"] = "Лис короны",
+	["pet.solarphoenix"] = "Солнечный феникс",
 	["pet.sparklecat"] = "Сияющий котик",
 	["pet.crystalunicorn"] = "Кристальный единорог",
 	["pet.celestialdragon"] = "Небесный дракон",
@@ -5294,6 +5800,7 @@ return {
 	["egg.buy3"] = "ซื้อ 3",
 	["egg.coming_soon"] = "เร็วๆ นี้",
 	["egg.exclusive_note"] = "เอ็กซ์คลูซีฟ Robux · สัตว์เลี้ยงจะแกร่งตามโซนที่ดีที่สุดของคุณ",
+	["egg.locked_btn"] = "🔒 เกิดใหม่ {n}",
 	["egg.luck"] = "โชค x{luck}",
 	["egg.super_luck"] = "โชคพิเศษกำลังทำงาน!",
 	["egg.unknown"] = "???",
@@ -5342,6 +5849,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} แตะ",
+	["world.egg_locked"] = "🔒 เกิดใหม่ {n}",
 	["world.robux_exclusive"] = "เอ็กซ์คลูซีฟ ROBUX",
 	["world.gate_locked"] = "ล็อกอยู่",
 	["world.board_taps"] = "สุดยอดนักแตะ",
@@ -5363,6 +5871,8 @@ return {
 	["msg.need_autohatch"] = "ซื้อพาสฟักอัตโนมัติก่อนนะ!",
 	["msg.unlock_first"] = "ปลดล็อก {zone} ก่อนนะ!",
 	["msg.get_closer"] = "เข้าไปใกล้ไข่อีกหน่อย!",
+	["msg.egg_needs_rebirth"] = "ไข่นี้เปิดได้หลังเกิดใหม่ครั้งที่ {n}!",
+	["msg.egg_unlocked"] = "ปลดล็อกไข่ใหม่: {egg} ({zone})!",
 	["msg.inventory_full"] = "ช่องสัตว์เลี้ยงเต็มแล้ว! ลบสัตว์เลี้ยงบางตัวก่อนนะ",
 	["msg.not_enough_taps"] = "แตะไม่พอ!",
 	["msg.not_enough_gems"] = "เพชรไม่พอ!",
@@ -5427,6 +5937,14 @@ return {
 	["egg.glacier"] = "ไข่ธารน้ำแข็ง",
 	["egg.magma"] = "ไข่แมกมา",
 	["egg.cosmic"] = "ไข่จักรวาล",
+	["egg.obsidian"] = "ไข่ออบซิเดียน",
+	["egg.aurora"] = "ไข่ออโรร่า",
+	["egg.pulsar"] = "ไข่พัลซาร์",
+	["egg.geode"] = "ไข่จีโอด",
+	["egg.starforge"] = "ไข่เตาหลอมดาว",
+	["egg.singularity"] = "ไข่เอกฐาน",
+	["egg.basalt"] = "ไข่บะซอลต์",
+	["egg.helios"] = "ไข่เฮลิออส",
 	["egg.magic"] = "ไข่วิเศษ",
 
 	-- pets
@@ -5465,6 +5983,38 @@ return {
 	["pet.alienpup"] = "หมาเอเลี่ยน",
 	["pet.nebulaowl"] = "นกฮูกเนบิวลา",
 	["pet.galaxydragon"] = "มังกรกาแล็กซี",
+	["pet.ashpup"] = "ลูกหมาเถ้าถ่าน",
+	["pet.sootsprite"] = "เอลฟ์เขม่า",
+	["pet.cinderbat"] = "ค้างคาวถ่านไฟ",
+	["pet.obsidianwolf"] = "หมาป่าออบซิเดียน",
+	["pet.aurorahare"] = "กระต่ายออโรร่า",
+	["pet.auroralynx"] = "ลิงซ์ออโรร่า",
+	["pet.borealisstag"] = "กวางบอเรลิส",
+	["pet.aurorawyrm"] = "มังกรออโรร่า",
+	["pet.cometcat"] = "แมวดาวหาง",
+	["pet.quasarfox"] = "จิ้งจอกควอซาร์",
+	["pet.pulsarbear"] = "หมีพัลซาร์",
+	["pet.eclipsedrake"] = "มังกรสุริยุปราคา",
+	["pet.quartzmole"] = "ตุ่นควอตซ์",
+	["pet.amethystcat"] = "แมวอเมทิสต์",
+	["pet.geodegolem"] = "โกเลมจีโอด",
+	["pet.gembasilisk"] = "บาซิลิสก์อัญมณี",
+	["pet.stardustpup"] = "ลูกหมาฝุ่นดาว",
+	["pet.meteormole"] = "ตุ่นอุกกาบาต",
+	["pet.supernovaphoenix"] = "ฟีนิกซ์ซูเปอร์โนวา",
+	["pet.starforgetitan"] = "ไททันเตาหลอมดาว",
+	["pet.voidpup"] = "ลูกหมาความว่างเปล่า",
+	["pet.riftcat"] = "แมวรอยแยก",
+	["pet.horizonowl"] = "นกฮูกขอบฟ้า",
+	["pet.singularitydragon"] = "มังกรเอกฐาน",
+	["pet.lavagecko"] = "เกคโคลาวา",
+	["pet.magmacrab"] = "ปูแมกมา",
+	["pet.moltentortoise"] = "เต่าหลอมเหลว",
+	["pet.infernodrake"] = "มังกรอินเฟอร์โน",
+	["pet.sunpup"] = "ลูกหมาสุริยะ",
+	["pet.solarcat"] = "แมวสุริยะ",
+	["pet.coronafox"] = "จิ้งจอกโคโรนา",
+	["pet.solarphoenix"] = "ฟีนิกซ์สุริยะ",
 	["pet.sparklecat"] = "แมวประกาย",
 	["pet.crystalunicorn"] = "ยูนิคอร์นคริสตัล",
 	["pet.celestialdragon"] = "มังกรสวรรค์",
@@ -5726,6 +6276,7 @@ return {
 	["egg.buy3"] = "3 Al",
 	["egg.coming_soon"] = "Yakında",
 	["egg.exclusive_note"] = "Robux'a özel · evcil hayvanlar en iyi bölgene göre ölçeklenir",
+	["egg.locked_btn"] = "🔒 Yeniden Doğuş {n}",
 	["egg.luck"] = "Şans x{luck}",
 	["egg.super_luck"] = "Süper Şans aktif!",
 	["egg.unknown"] = "???",
@@ -5774,6 +6325,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Tık",
+	["world.egg_locked"] = "🔒 Yeniden Doğuş {n}",
 	["world.robux_exclusive"] = "ROBUX'A ÖZEL",
 	["world.gate_locked"] = "KİLİTLİ",
 	["world.board_taps"] = "EN ÇOK TIKLAYANLAR",
@@ -5795,6 +6347,8 @@ return {
 	["msg.need_autohatch"] = "Oto Açma paketini al!",
 	["msg.unlock_first"] = "Önce {zone} bölgesinin kilidini aç!",
 	["msg.get_closer"] = "Yumurtaya yaklaş!",
+	["msg.egg_needs_rebirth"] = "Bu yumurta Yeniden Doğuş {n} sonrasında açılır!",
+	["msg.egg_unlocked"] = "Yeni yumurta açıldı: {egg} ({zone})!",
 	["msg.inventory_full"] = "Evcil hayvan envanteri dolu! Birkaçını sil.",
 	["msg.not_enough_taps"] = "Yeterli Tık yok!",
 	["msg.not_enough_gems"] = "Yeterli Elmas yok!",
@@ -5859,6 +6413,14 @@ return {
 	["egg.glacier"] = "Buzul Yumurtası",
 	["egg.magma"] = "Magma Yumurtası",
 	["egg.cosmic"] = "Kozmik Yumurta",
+	["egg.obsidian"] = "Obsidyen Yumurta",
+	["egg.aurora"] = "Aurora Yumurtası",
+	["egg.pulsar"] = "Pulsar Yumurtası",
+	["egg.geode"] = "Jeod Yumurtası",
+	["egg.starforge"] = "Yıldız Dökümü Yumurtası",
+	["egg.singularity"] = "Tekillik Yumurtası",
+	["egg.basalt"] = "Bazalt Yumurtası",
+	["egg.helios"] = "Helios Yumurtası",
 	["egg.magic"] = "Sihirli Yumurta",
 
 	-- pets
@@ -5897,6 +6459,38 @@ return {
 	["pet.alienpup"] = "Uzaylı Köpek",
 	["pet.nebulaowl"] = "Nebula Baykuşu",
 	["pet.galaxydragon"] = "Galaksi Ejderha",
+	["pet.ashpup"] = "Kül Yavrusu",
+	["pet.sootsprite"] = "Kurum Perisi",
+	["pet.cinderbat"] = "Kor Yarasası",
+	["pet.obsidianwolf"] = "Obsidyen Kurt",
+	["pet.aurorahare"] = "Aurora Tavşanı",
+	["pet.auroralynx"] = "Aurora Vaşağı",
+	["pet.borealisstag"] = "Kuzey Geyiği",
+	["pet.aurorawyrm"] = "Aurora Ejderi",
+	["pet.cometcat"] = "Kuyruklu Yıldız Kedisi",
+	["pet.quasarfox"] = "Kuasar Tilkisi",
+	["pet.pulsarbear"] = "Pulsar Ayısı",
+	["pet.eclipsedrake"] = "Tutulma Ejderi",
+	["pet.quartzmole"] = "Kuvars Köstebeği",
+	["pet.amethystcat"] = "Ametist Kedi",
+	["pet.geodegolem"] = "Jeod Golemi",
+	["pet.gembasilisk"] = "Mücevher Basiliski",
+	["pet.stardustpup"] = "Yıldız Tozu Yavrusu",
+	["pet.meteormole"] = "Meteor Köstebeği",
+	["pet.supernovaphoenix"] = "Süpernova Anka Kuşu",
+	["pet.starforgetitan"] = "Yıldız Dökümü Titanı",
+	["pet.voidpup"] = "Boşluk Yavrusu",
+	["pet.riftcat"] = "Yarık Kedisi",
+	["pet.horizonowl"] = "Ufuk Baykuşu",
+	["pet.singularitydragon"] = "Tekillik Ejderi",
+	["pet.lavagecko"] = "Lav Geko",
+	["pet.magmacrab"] = "Magma Yengeci",
+	["pet.moltentortoise"] = "Erimiş Kaplumbağa",
+	["pet.infernodrake"] = "Cehennem Ejderi",
+	["pet.sunpup"] = "Güneş Yavrusu",
+	["pet.solarcat"] = "Güneş Kedisi",
+	["pet.coronafox"] = "Korona Tilkisi",
+	["pet.solarphoenix"] = "Güneş Anka Kuşu",
 	["pet.sparklecat"] = "Pırıltı Kedi",
 	["pet.crystalunicorn"] = "Kristal Unicorn",
 	["pet.celestialdragon"] = "Gökyüzü Ejderha",
@@ -6158,6 +6752,7 @@ return {
 	["egg.buy3"] = "Mua 3",
 	["egg.coming_soon"] = "Sắp ra mắt",
 	["egg.exclusive_note"] = "Độc quyền Robux · thú cưng mạnh theo khu vực cao nhất của bạn",
+	["egg.locked_btn"] = "🔒 Tái sinh {n}",
 	["egg.luck"] = "May Mắn x{luck}",
 	["egg.super_luck"] = "Siêu May Mắn đang hoạt động!",
 	["egg.unknown"] = "???",
@@ -6206,6 +6801,7 @@ return {
 
 	-- world text
 	["world.price_taps"] = "{n} Chạm",
+	["world.egg_locked"] = "🔒 Tái sinh {n}",
 	["world.robux_exclusive"] = "ĐỘC QUYỀN ROBUX",
 	["world.gate_locked"] = "ĐANG KHÓA",
 	["world.board_taps"] = "TOP CHẠM",
@@ -6227,6 +6823,8 @@ return {
 	["msg.need_autohatch"] = "Hãy mua vé Tự Động Ấp!",
 	["msg.unlock_first"] = "Hãy mở khóa {zone} trước!",
 	["msg.get_closer"] = "Hãy lại gần quả trứng hơn!",
+	["msg.egg_needs_rebirth"] = "Trứng này mở sau lần Tái sinh {n}!",
+	["msg.egg_unlocked"] = "Đã mở trứng mới: {egg} ({zone})!",
 	["msg.inventory_full"] = "Kho thú cưng đã đầy! Hãy xóa bớt thú cưng.",
 	["msg.not_enough_taps"] = "Không đủ Chạm!",
 	["msg.not_enough_gems"] = "Không đủ Đá Quý!",
@@ -6291,6 +6889,14 @@ return {
 	["egg.glacier"] = "Trứng Băng Hà",
 	["egg.magma"] = "Trứng Dung Nham",
 	["egg.cosmic"] = "Trứng Vũ Trụ",
+	["egg.obsidian"] = "Trứng Obsidian",
+	["egg.aurora"] = "Trứng Cực Quang",
+	["egg.pulsar"] = "Trứng Sao Xung",
+	["egg.geode"] = "Trứng Geode",
+	["egg.starforge"] = "Trứng Lò Rèn Sao",
+	["egg.singularity"] = "Trứng Điểm Kỳ Dị",
+	["egg.basalt"] = "Trứng Bazan",
+	["egg.helios"] = "Trứng Helios",
 	["egg.magic"] = "Trứng Phép Thuật",
 
 	-- pets
@@ -6329,6 +6935,38 @@ return {
 	["pet.alienpup"] = "Cún Ngoài Hành Tinh",
 	["pet.nebulaowl"] = "Cú Tinh Vân",
 	["pet.galaxydragon"] = "Rồng Ngân Hà",
+	["pet.ashpup"] = "Cún Tro Bụi",
+	["pet.sootsprite"] = "Tinh Linh Muội",
+	["pet.cinderbat"] = "Dơi Than Hồng",
+	["pet.obsidianwolf"] = "Sói Obsidian",
+	["pet.aurorahare"] = "Thỏ Cực Quang",
+	["pet.auroralynx"] = "Linh Miêu Cực Quang",
+	["pet.borealisstag"] = "Hươu Cực Quang",
+	["pet.aurorawyrm"] = "Giao Long Cực Quang",
+	["pet.cometcat"] = "Mèo Sao Chổi",
+	["pet.quasarfox"] = "Cáo Quasar",
+	["pet.pulsarbear"] = "Gấu Sao Xung",
+	["pet.eclipsedrake"] = "Rồng Nhật Thực",
+	["pet.quartzmole"] = "Chuột Chũi Thạch Anh",
+	["pet.amethystcat"] = "Mèo Thạch Anh Tím",
+	["pet.geodegolem"] = "Golem Geode",
+	["pet.gembasilisk"] = "Xà Vương Bảo Thạch",
+	["pet.stardustpup"] = "Cún Bụi Sao",
+	["pet.meteormole"] = "Chuột Chũi Thiên Thạch",
+	["pet.supernovaphoenix"] = "Phượng Hoàng Siêu Tân Tinh",
+	["pet.starforgetitan"] = "Titan Lò Rèn Sao",
+	["pet.voidpup"] = "Cún Hư Không",
+	["pet.riftcat"] = "Mèo Vết Nứt",
+	["pet.horizonowl"] = "Cú Chân Trời",
+	["pet.singularitydragon"] = "Rồng Kỳ Dị",
+	["pet.lavagecko"] = "Tắc Kè Dung Nham",
+	["pet.magmacrab"] = "Cua Magma",
+	["pet.moltentortoise"] = "Rùa Nóng Chảy",
+	["pet.infernodrake"] = "Rồng Địa Ngục",
+	["pet.sunpup"] = "Cún Mặt Trời",
+	["pet.solarcat"] = "Mèo Mặt Trời",
+	["pet.coronafox"] = "Cáo Nhật Hoa",
+	["pet.solarphoenix"] = "Phượng Hoàng Mặt Trời",
 	["pet.sparklecat"] = "Mèo Lấp Lánh",
 	["pet.crystalunicorn"] = "Kỳ Lân Pha Lê",
 	["pet.celestialdragon"] = "Rồng Thiên Thể",
@@ -7158,6 +7796,17 @@ local FAMILY: { [string]: string } = {
 	hellhound = "wolf",
 	yeti = "yeti",
 	magmagolem = "golem",
+	geodegolem = "golem",
+	starforgetitan = "golem",
+	obsidianwolf = "wolf",
+	infernodrake = "dragon",
+	solarphoenix = "phoenix",
+	horizonowl = "owl",
+	singularitydragon = "dragon",
+	aurorawyrm = "dragon",
+	eclipsedrake = "dragon",
+	gembasilisk = "dragon",
+	supernovaphoenix = "phoenix",
 	alienpup = "alien",
 }
 local EYES: { [string]: string } = { dragon = "fierce", wolf = "fierce", yeti = "fierce", golem = "rect", alien = "alien" }
@@ -8143,6 +8792,9 @@ function Eggs.hatch(player: Player, eggId: string, count: number): (boolean, any
 	if not State.hasZone(p, egg.zone) then
 		return false, M("msg.unlock_first", { zone = M("zone." .. Config.Zones[egg.zone].id) })
 	end
+	if not Formulas.eggUnlocked(eggId, p.rebirths) then
+		return false, M("msg.egg_needs_rebirth", { n = Formulas.eggMinRebirths(eggId) })
+	end
 	local char = player.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	local pos = eggPositions[eggId]
@@ -8192,6 +8844,10 @@ function Eggs.init(positions: { [string]: Vector3 })
 		local egg = if type(payload.egg) == "string" then Formulas.EggById[payload.egg] else nil
 		if not egg or egg.exclusive then
 			return false, M("msg.unknown_egg")
+		end
+		local pd = Data.get(player)
+		if not pd or not Formulas.eggUnlocked(egg.id, pd.rebirths) then
+			return false, M("msg.egg_needs_rebirth", { n = Formulas.eggMinRebirths(egg.id) })
 		end
 		State.autoHatch[player] = payload.egg
 		State.dirty(player)
@@ -9354,6 +10010,9 @@ function Progression.rebirth(player: Player): (boolean, Locale.Message?)
 	State.dirty(player)
 	Hooks.fire("rebirth", player)
 	Remotes.notify(player, M("msg.rebirth", { mult = tostring(Formulas.rebirthMult(p.rebirths)), gems = gems }), "success")
+	for _, eggId in Formulas.eggsUnlockedAt(p.rebirths) do
+		Remotes.notify(player, M("msg.egg_unlocked", { egg = M("egg." .. eggId), zone = M("zone." .. Config.Zones[Formulas.EggById[eggId].zone].id) }), "success")
+	end
 	return true, nil
 end
 
@@ -14513,6 +15172,11 @@ function EggPanel.init()
 			Purchase.product(if count == 3 then "MagicEgg3" else "MagicEgg1")
 			return
 		end
+		local needRebirths = Formulas.eggMinRebirths(egg)
+		if needRebirths > ((Net.get("rebirths") :: number?) or 0) then
+			Toasts.show(Lang.t("msg.egg_needs_rebirth", { n = needRebirths }), "error")
+			return
+		end
 		local needPass = Formulas.hatchPass(count)
 		if needPass and count > Formulas.maxHatch((Net.get("passes") :: { [string]: boolean }?) or {}) then
 			Purchase.pass(needPass)
@@ -14573,6 +15237,7 @@ function EggPanel.init()
 		end
 		local def = Formulas.EggById[egg]
 		local s = Net.state
+		luckLabel.TextColor3 = Theme.Green
 		local golden = Lang.t("egg.golden", { pct = Format.chance((if s then s.goldenChance or 0 else 0) * 100):gsub("%%", "") })
 		if def.exclusive then
 			local p1, p3 = Config.ProductByKey.MagicEgg1, Config.ProductByKey.MagicEgg3
@@ -14584,6 +15249,17 @@ function EggPanel.init()
 			b8.Visible = false
 			bAuto.Visible = false
 			luckLabel.Text = Lang.t("egg.exclusive_note") .. "  ·  ⭐ " .. golden
+			return
+		end
+		-- rebirth-gated egg the player can't open yet: odds stay visible (the carrot), buttons say why
+		local needRebirths = Formulas.eggMinRebirths(egg)
+		if needRebirths > ((if s then s.rebirths else 0) or 0) then
+			Theme.setButton(b1, Lang.t("egg.locked_btn", { n = needRebirths }), Theme.Grey)
+			b3.Visible = false
+			b8.Visible = false
+			bAuto.Visible = false
+			luckLabel.Text = Lang.t("msg.egg_needs_rebirth", { n = needRebirths })
+			luckLabel.TextColor3 = Theme.Orange
 			return
 		end
 		b3.Visible = true
@@ -16161,11 +16837,23 @@ function IndexWindow.init()
 
 	local tabs = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 56), Parent = body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) })
 	local total = Theme.text({ Text = "", Size = UDim2.new(1, 0, 0, 26), Position = UDim2.fromOffset(0, 60), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 24, Parent = body })
-	local grid = Theme.new("Frame", { BackgroundColor3 = Theme.PaperDark, Size = UDim2.new(1, 0, 1, -158), Position = UDim2.fromOffset(0, 92), Parent = body }, {
+	-- scrolls: the rebirth-gated eggs put up to 21 pets on one page (Cosmic Void)
+	local grid = Theme.new("ScrollingFrame", {
+		BackgroundColor3 = Theme.PaperDark,
+		BorderSizePixel = 0,
+		Size = UDim2.new(1, 0, 1, -158),
+		Position = UDim2.fromOffset(0, 92),
+		ScrollBarThickness = 8,
+		ScrollBarImageColor3 = Theme.Ink,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		CanvasSize = UDim2.new(),
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		Parent = body,
+	}, {
 		Theme.corner(14),
 		Theme.padding(10),
 		Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(106, 120), CellPadding = UDim2.fromOffset(10, 10), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center }),
-	})
+	}) :: ScrollingFrame
 	local claim = Theme.button({
 		Text = "",
 		Color = Theme.Green,
@@ -19452,6 +20140,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Lang = require(script.Parent.Lang)
+local Net = require(script.Parent.Net)
 
 local WorldText = {}
 
@@ -19464,8 +20153,11 @@ local function render(obj: Instance)
 		if type(eggId) == "string" then
 			local egg = Formulas.EggById[eggId]
 			if egg then
+				local state = Net.state
+				local need = Formulas.eggMinRebirths(eggId)
 				local price = if egg.exclusive
 					then ('<font color="#7CFF7C">' .. Lang.t("world.robux_exclusive") .. "</font>")
+					elseif state and (state.rebirths or 0) < need then ('<font color="#FF8A8A">' .. Lang.t("world.egg_locked", { n = need }) .. "</font>")
 					else Lang.t("world.price_taps", { n = Format.abbrev(egg.price) })
 				obj.Text = string.format('%s\n<font color="#FFE066">%s</font>', Lang.egg(eggId), price)
 			end
@@ -19509,6 +20201,15 @@ function WorldText.init()
 			task.defer(render, d)
 		end)
 		Lang.Changed:Connect(all)
+		-- rebirth-gated egg signs flip from "locked" to the price when the player rebirths
+		local lastRebirths = -1
+		Net.Changed:Connect(function(kind)
+			local r = (Net.get("rebirths") :: number?) or 0
+			if kind == "full" and r ~= lastRebirths then
+				lastRebirths = r
+				all()
+			end
+		end)
 	end)
 end
 
