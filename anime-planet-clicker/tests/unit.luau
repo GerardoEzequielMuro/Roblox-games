@@ -7,6 +7,7 @@ local LiveEvents = require("../src/shared/LiveEvents")
 local Quests = require("../src/shared/Quests")
 local Referral = require("../src/shared/Referral")
 local Format = require("../src/shared/Format")
+local ModelFit = require("../src/shared/ModelFit")
 
 local total, fails = 0, 0
 local function check(name: string, cond: boolean, detail: any?)
@@ -292,6 +293,28 @@ do
 		return has(tue + 7 * 86400 + 60) and has(tue + 4 * 86400 + 60) and not has(tue + 2 * 86400 + 60)
 	end)())
 	check("Star Surge doubles Stardust", LiveEvents.effects({ { id = "StarSurge", endsAt = 0 } }).stardustMult == 2)
+end
+
+-- model slots: fit math, variant picker, budget
+do
+	check("fitScale limited by the tightest axis", near(ModelFit.fitScale({ 2, 10, 2 }, { 4, 5, 4 }), 0.5))
+	check("fitScale scales up too", near(ModelFit.fitScale({ 1, 1, 1 }, { 3, 6, 9 }), 3))
+	check("fitScale ignores flat axes", near(ModelFit.fitScale({ 4, 0, 2 }, { 2, 9, 9 }), 0.5))
+	check("fitScale of an empty model is 1", ModelFit.fitScale({ 0, 0, 0 }, { 5, 5, 5 }) == 1)
+	check("pickVariant single", ModelFit.pickVariant(1, 12, 34) == 1)
+	local seen, stable = {}, true
+	for i = 1, 200 do
+		local v = ModelFit.pickVariant(3, i * 7.3, i * -11.9)
+		seen[v] = true
+		stable = stable and v == ModelFit.pickVariant(3, i * 7.3, i * -11.9) and v >= 1 and v <= 3
+	end
+	check("pickVariant deterministic, in range, uses every variant", stable and seen[1] and seen[2] and seen[3])
+	local names = ModelFit.variantNames("tree", { tree = true, tree_1 = true, tree_3 = true, rock = true })
+	check("variantNames lists base and numbered", #names == 3 and names[1] == "tree" and names[2] == "tree_1" and names[3] == "tree_3")
+	check("variantNames empty when absent", #ModelFit.variantNames("x", { y = true }) == 0)
+	check("withinBudget ok", ModelFit.withinBudget(100, 300, 0, 1200))
+	check("withinBudget slot cap", not ModelFit.withinBudget(301, 300, 0, 1200))
+	check("withinBudget total cap", not ModelFit.withinBudget(100, 300, 1150, 1200))
 end
 
 print(string.format("UNIT: %d checks, %d failures", total, fails))

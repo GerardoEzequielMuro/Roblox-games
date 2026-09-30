@@ -11,6 +11,7 @@ local Workspace = game:GetService("Workspace")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local Themes = require(ReplicatedStorage.Shared.Themes)
+local ModelSlots = require(script.Parent.ModelSlots)
 
 local WorldBuilder = {}
 
@@ -131,6 +132,12 @@ local function anim(inst: Instance, attrs: { [string]: any })
 	CollectionService:AddTag(inst, "PcAnim")
 end
 
+-- Invisible, non-colliding anchor that keeps prompts/signs/lights attached when a model replaces
+-- the primitive build.
+local function proxy(parent: Instance, name: string, size: Vector3, cf: CFrame): Part
+	return part(parent, name, size, cf, INK, SMOOTH, { transparency = 1 })
+end
+
 ---------------------------------------------------------------------------
 -- Station pieces
 ---------------------------------------------------------------------------
@@ -171,23 +178,33 @@ local function capsuleMachine(folder: Instance, capsuleId: string, theme: Themes
 	local body = if exclusive then Color3.fromRGB(120, 70, 220) else theme.accent
 	local model = Instance.new("Model")
 	model.Name = "Capsule_" .. capsuleId
-	local base = disc(model, "Base", x, 2.2, z, 5.2, 2.2, darken(body, 0.35), SMOOTH, { collide = true })
-	disc(model, "BaseTrim", x, 2.5, z, 4.6, 0.4, lighten(body, 0.3), SMOOTH)
-	disc(model, "Column", x, 5.2, z, 3.2, 2.8, body, SMOOTH, { collide = true })
-	part(model, "Chute", Vector3.new(2.6, 1.6, 1.6), CFrame.new(x, 3.4, z + 3.4), INK, SMOOTH)
-	part(model, "ChuteLip", Vector3.new(3.2, 0.5, 2), CFrame.new(x, 2.5, z + 3.8), lighten(body, 0.3), SMOOTH)
-	local dome = ball(model, "Dome", Vector3.new(x, 9.2, z), 9, lighten(body, 0.55), Enum.Material.Glass, { transparency = 0.45 })
-	dome.Reflectance = 0.1
-	-- capsules inside the dome: they orbit (client) and show the rarity colours
-	for i, c in RARITY_DOTS do
-		local a = i / #RARITY_DOTS * math.pi * 2
-		local b = ball(model, "Mini", Vector3.new(x + math.cos(a) * 2.1, 8.4 + (i % 2) * 1.4, z + math.sin(a) * 2.1), 2, if exclusive then Color3.fromHSV(i / 5, 0.6, 1) else c, SMOOTH)
-		anim(b, { Orbit = 2.1, OrbitSpeed = 0.9, OrbitPhase = a, OrbitY = b.Position.Y, OrbitX = x, OrbitZ = z })
+	local base: Part
+	local dome: Part
+	local function primitive(): Instance?
+		base = disc(model, "Base", x, 2.2, z, 5.2, 2.2, darken(body, 0.35), SMOOTH, { collide = true })
+		disc(model, "BaseTrim", x, 2.5, z, 4.6, 0.4, lighten(body, 0.3), SMOOTH)
+		disc(model, "Column", x, 5.2, z, 3.2, 2.8, body, SMOOTH, { collide = true })
+		part(model, "Chute", Vector3.new(2.6, 1.6, 1.6), CFrame.new(x, 3.4, z + 3.4), INK, SMOOTH)
+		part(model, "ChuteLip", Vector3.new(3.2, 0.5, 2), CFrame.new(x, 2.5, z + 3.8), lighten(body, 0.3), SMOOTH)
+		dome = ball(model, "Dome", Vector3.new(x, 9.2, z), 9, lighten(body, 0.55), Enum.Material.Glass, { transparency = 0.45 })
+		dome.Reflectance = 0.1
+		-- capsules inside the dome: they orbit (client) and show the rarity colours
+		for i, c in RARITY_DOTS do
+			local a = i / #RARITY_DOTS * math.pi * 2
+			local b = ball(model, "Mini", Vector3.new(x + math.cos(a) * 2.1, 8.4 + (i % 2) * 1.4, z + math.sin(a) * 2.1), 2, if exclusive then Color3.fromHSV(i / 5, 0.6, 1) else c, SMOOTH)
+			anim(b, { Orbit = 2.1, OrbitSpeed = 0.9, OrbitPhase = a, OrbitY = b.Position.Y, OrbitX = x, OrbitZ = z })
+		end
+		disc(model, "Cap", x, 14.6, z, 3, 1.2, darken(body, 0.2), SMOOTH)
+		local star = ball(model, "Beacon", Vector3.new(x, 15.8, z), 1.8, if exclusive then Color3.fromRGB(255, 220, 90) else WHITE, NEON)
+		anim(star, { Bob = 0.35, BobSpeed = 2 })
+		return nil
 	end
-	disc(model, "Cap", x, 14.6, z, 3, 1.2, darken(body, 0.2), SMOOTH)
-	local star = ball(model, "Beacon", Vector3.new(x, 15.8, z), 1.8, if exclusive then Color3.fromRGB(255, 220, 90) else WHITE, NEON)
+	local swapped = ModelSlots.spawn("capsule_machine", CFrame.new(x, 0, z), Vector3.new(10.4, 17, 10.4), model, primitive, { collide = true })
+	if swapped then
+		base = proxy(model, "Base", Vector3.new(10.4, 2.2, 10.4), CFrame.new(x, 1.1, z))
+		dome = proxy(model, "Dome", Vector3.new(9, 9, 9), CFrame.new(x, 9.2, z))
+	end
 	addLight(dome, body, 16, 1.4)
-	anim(star, { Bob = 0.35, BobSpeed = 2 })
 	model.PrimaryPart = base
 	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:SetAttribute("CapsuleId", capsuleId)
@@ -209,11 +226,18 @@ local function refinery(folder: Instance, zone: number, theme: Themes.Theme)
 	end
 	-- the hopper building, west of the pad
 	local bx, bz = x - 11.5, z + 3
-	local hopper = part(folder, "Hopper", Vector3.new(8, 9, 8), CFrame.new(bx, 4.5, bz), darken(theme.rim, 0.1), Enum.Material.Metal, { collide = true })
-	part(folder, "HopperBand", Vector3.new(8.4, 1.4, 8.4), CFrame.new(bx, 6.4, bz), yellow, SMOOTH)
-	part(folder, "HopperMouth", Vector3.new(5, 0.6, 5), CFrame.new(bx, 9.3, bz), INK, SMOOTH)
-	disc(folder, "Chimney", bx - 2.2, 14, bz - 2.2, 1.1, 5, lighten(theme.rim, 0.2), Enum.Material.Metal)
-	part(folder, "Conveyor", Vector3.new(6, 0.7, 2.6), CFrame.new(bx + 5.5, 1.4, bz - 1) * CFrame.Angles(0, 0, math.rad(12)), INK, SMOOTH)
+	local hopper: Part
+	local swapped = ModelSlots.spawn("refinery_building", CFrame.new(bx, 0, bz), Vector3.new(14, 15.4, 8.4), folder, function()
+		hopper = part(folder, "Hopper", Vector3.new(8, 9, 8), CFrame.new(bx, 4.5, bz), darken(theme.rim, 0.1), Enum.Material.Metal, { collide = true })
+		part(folder, "HopperBand", Vector3.new(8.4, 1.4, 8.4), CFrame.new(bx, 6.4, bz), yellow, SMOOTH)
+		part(folder, "HopperMouth", Vector3.new(5, 0.6, 5), CFrame.new(bx, 9.3, bz), INK, SMOOTH)
+		disc(folder, "Chimney", bx - 2.2, 14, bz - 2.2, 1.1, 5, lighten(theme.rim, 0.2), Enum.Material.Metal)
+		part(folder, "Conveyor", Vector3.new(6, 0.7, 2.6), CFrame.new(bx + 5.5, 1.4, bz - 1) * CFrame.Angles(0, 0, math.rad(12)), INK, SMOOTH)
+		return nil
+	end, { collide = true })
+	if swapped then
+		hopper = proxy(folder, "Hopper", Vector3.new(8, 9, 8), CFrame.new(bx, 4.5, bz))
+	end
 	local gem = ball(folder, "OreSample", Vector3.new(bx, 11.2, bz), 2.4, theme.accent2, NEON)
 	addLight(hopper, theme.accent2, 14, 1.2)
 	anim(gem, { Bob = 0.5, BobSpeed = 1.6, SpinAxis = "Y", SpinSpeed = 1.2 })
@@ -225,20 +249,27 @@ local function workshop(folder: Instance, zone: number, theme: Themes.Theme)
 	local pos = Layout.workshopPosition(zone)
 	local x, z = pos[1], pos[3]
 	local wood = Color3.fromRGB(150, 104, 70)
-	local counter = part(folder, "Counter", Vector3.new(9, 3.4, 3.4), CFrame.new(x, 1.7, z), wood, Enum.Material.WoodPlanks, { collide = true })
-	part(folder, "CounterTop", Vector3.new(9.8, 0.6, 4.2), CFrame.new(x, 3.7, z), lighten(wood, 0.25), SMOOTH)
-	for _, sx in { -4.4, 4.4 } do
-		part(folder, "Pole", Vector3.new(0.7, 9, 0.7), CFrame.new(x + sx, 4.5, z - 2.2), theme.rim, SMOOTH)
+	local counter: Part
+	local swapped = ModelSlots.spawn("workshop_stall", CFrame.new(x, 0, z), Vector3.new(9.8, 9.5, 5.6), folder, function()
+		counter = part(folder, "Counter", Vector3.new(9, 3.4, 3.4), CFrame.new(x, 1.7, z), wood, Enum.Material.WoodPlanks, { collide = true })
+		part(folder, "CounterTop", Vector3.new(9.8, 0.6, 4.2), CFrame.new(x, 3.7, z), lighten(wood, 0.25), SMOOTH)
+		for _, sx in { -4.4, 4.4 } do
+			part(folder, "Pole", Vector3.new(0.7, 9, 0.7), CFrame.new(x + sx, 4.5, z - 2.2), theme.rim, SMOOTH)
+		end
+		-- striped awning
+		for i = 0, 4 do
+			part(folder, "Awning", Vector3.new(2, 0.5, 5.6), CFrame.new(x - 4 + i * 2, 9, z - 0.6) * CFrame.Angles(math.rad(-16), 0, 0), if i % 2 == 0 then theme.accent else WHITE, SMOOTH)
+		end
+		-- a big pickaxe on the counter as the shop's icon
+		local handle = part(folder, "PickHandle", Vector3.new(0.6, 5.4, 0.6), CFrame.new(x, 6.6, z) * CFrame.Angles(0, 0, math.rad(28)), Color3.fromRGB(120, 84, 60), SMOOTH)
+		part(folder, "PickHead", Vector3.new(4.6, 0.9, 0.9), handle.CFrame * CFrame.new(0, 2.4, 0), Color3.fromRGB(200, 210, 225), Enum.Material.Metal)
+		part(folder, "PickTipL", Vector3.new(1.2, 0.7, 0.7), handle.CFrame * CFrame.new(-2.7, 2.2, 0) * CFrame.Angles(0, 0, math.rad(25)), theme.accent2, SMOOTH)
+		part(folder, "PickTipR", Vector3.new(1.2, 0.7, 0.7), handle.CFrame * CFrame.new(2.7, 2.2, 0) * CFrame.Angles(0, 0, math.rad(-25)), theme.accent2, SMOOTH)
+		return nil
+	end, { collide = true })
+	if swapped then
+		counter = proxy(folder, "Counter", Vector3.new(9, 3.4, 3.4), CFrame.new(x, 1.7, z))
 	end
-	-- striped awning
-	for i = 0, 4 do
-		part(folder, "Awning", Vector3.new(2, 0.5, 5.6), CFrame.new(x - 4 + i * 2, 9, z - 0.6) * CFrame.Angles(math.rad(-16), 0, 0), if i % 2 == 0 then theme.accent else WHITE, SMOOTH)
-	end
-	-- a big pickaxe on the counter as the shop's icon
-	local handle = part(folder, "PickHandle", Vector3.new(0.6, 5.4, 0.6), CFrame.new(x, 6.6, z) * CFrame.Angles(0, 0, math.rad(28)), Color3.fromRGB(120, 84, 60), SMOOTH)
-	part(folder, "PickHead", Vector3.new(4.6, 0.9, 0.9), handle.CFrame * CFrame.new(0, 2.4, 0), Color3.fromRGB(200, 210, 225), Enum.Material.Metal)
-	part(folder, "PickTipL", Vector3.new(1.2, 0.7, 0.7), handle.CFrame * CFrame.new(-2.7, 2.2, 0) * CFrame.Angles(0, 0, math.rad(25)), theme.accent2, SMOOTH)
-	part(folder, "PickTipR", Vector3.new(1.2, 0.7, 0.7), handle.CFrame * CFrame.new(2.7, 2.2, 0) * CFrame.Angles(0, 0, math.rad(-25)), theme.accent2, SMOOTH)
 	sign(counter, "WORKSHOP", { LocKey = "world.workshop" }, 11.5, 20, 5, theme.accent, 140)
 	prompt(counter, "Upgrades", nil, 14)
 end
@@ -247,11 +278,14 @@ local function warpPad(folder: Instance, x: number, z: number, theme: Themes.The
 	local pad = disc(folder, "WarpPad", x, 0.4, z, 6.5, 0.4, theme.rim, SMOOTH)
 	disc(folder, "WarpRing", x, 0.52, z, 5.4, 0.14, theme.accent2, NEON)
 	disc(folder, "WarpCore", x, 0.64, z, 3.6, 0.14, darken(theme.accent2, 0.55), SMOOTH)
-	for _, sx in { -6.6, 6.6 } do
-		part(folder, "WarpPylon", Vector3.new(1.6, 12, 1.6), CFrame.new(x + sx, 6, z), theme.rim, SMOOTH, { collide = true })
-		part(folder, "WarpPylonLight", Vector3.new(1.9, 1.2, 1.9), CFrame.new(x + sx, 12.4, z), theme.accent2, NEON)
-	end
-	part(folder, "WarpBar", Vector3.new(15, 1.6, 1.6), CFrame.new(x, 13.4, z), theme.rim, SMOOTH)
+	ModelSlots.spawn("warp_gate", CFrame.new(x, 0, z), Vector3.new(15, 14.2, 2.6), folder, function()
+		for _, sx in { -6.6, 6.6 } do
+			part(folder, "WarpPylon", Vector3.new(1.6, 12, 1.6), CFrame.new(x + sx, 6, z), theme.rim, SMOOTH, { collide = true })
+			part(folder, "WarpPylonLight", Vector3.new(1.9, 1.2, 1.9), CFrame.new(x + sx, 12.4, z), theme.accent2, NEON)
+		end
+		part(folder, "WarpBar", Vector3.new(15, 1.6, 1.6), CFrame.new(x, 13.4, z), theme.rim, SMOOTH)
+		return nil
+	end, { collide = true })
 	local orb = ball(folder, "WarpOrb", Vector3.new(x, 6.5, z), 3, theme.accent2, NEON, { transparency = 0.25 })
 	addLight(orb, theme.accent2, 18, 2)
 	anim(orb, { Bob = 0.6, BobSpeed = 1.4, SpinAxis = "Y", SpinSpeed = 1 })
@@ -277,15 +311,18 @@ local function systemStation(folder: Instance, zone: number, theme: Themes.Theme
 	local x, z = pos[1], pos[3]
 	local base = disc(folder, "SystemBase", x, 1.4, z, 5, 1.4, theme.rim, SMOOTH, { collide = true })
 	disc(folder, "SystemStep", x, 2.2, z, 3.6, 0.8, lighten(theme.rim, 0.2), SMOOTH, { collide = true })
-	part(folder, "SystemPillar", Vector3.new(2.4, 5, 2.4), CFrame.new(x, 4.7, z), theme.propColor, SMOOTH, { collide = true })
-	local relic = part(folder, "SystemRelic", Vector3.new(3, 3, 3), CFrame.new(x, 10, z) * CFrame.Angles(math.rad(35), math.rad(45), 0), theme.accent, NEON)
 	addLight(base, theme.accent, 16, 1.5)
-	anim(relic, { Bob = 0.6, BobSpeed = 1.3, SpinAxis = "Y", SpinSpeed = 1.5 })
-	for i = 0, 3 do
-		local a = i / 4 * math.pi * 2
-		local shard = part(folder, "SystemShard", Vector3.new(0.7, 1.8, 0.7), CFrame.new(x + math.cos(a) * 3.4, 9.6, z + math.sin(a) * 3.4), theme.accent2, NEON)
-		anim(shard, { Orbit = 3.4, OrbitSpeed = 1.2, OrbitPhase = a, OrbitY = 9.6, OrbitX = x, OrbitZ = z })
-	end
+	ModelSlots.spawn("system_monument", CFrame.new(x, 2.2, z), Vector3.new(7, 10.5, 7), folder, function()
+		part(folder, "SystemPillar", Vector3.new(2.4, 5, 2.4), CFrame.new(x, 4.7, z), theme.propColor, SMOOTH, { collide = true })
+		local relic = part(folder, "SystemRelic", Vector3.new(3, 3, 3), CFrame.new(x, 10, z) * CFrame.Angles(math.rad(35), math.rad(45), 0), theme.accent, NEON)
+		anim(relic, { Bob = 0.6, BobSpeed = 1.3, SpinAxis = "Y", SpinSpeed = 1.5 })
+		for i = 0, 3 do
+			local a = i / 4 * math.pi * 2
+			local shard = part(folder, "SystemShard", Vector3.new(0.7, 1.8, 0.7), CFrame.new(x + math.cos(a) * 3.4, 9.6, z + math.sin(a) * 3.4), theme.accent2, NEON)
+			anim(shard, { Orbit = 3.4, OrbitSpeed = 1.2, OrbitPhase = a, OrbitY = 9.6, OrbitX = x, OrbitZ = z })
+		end
+		return nil
+	end, { collide = true })
 	sign(base, system.id, { LocKey = "system." .. system.id .. ".name" }, 14.5, 20, 5, theme.accent2, 140)
 	prompt(base, "Upgrades", { System = system.id }, 14)
 end
@@ -298,10 +335,17 @@ local function gateFrame(folder: Instance, zone: number, theme: Themes.Theme)
 	local g = Layout.nodePosition(zone, Config.NodeGate)
 	local x, z = g[1], g[3]
 	for _, sx in { -24, 24 } do
-		local pylon = part(folder, "GatePylon", Vector3.new(5, 46, 5), CFrame.new(x + sx, 17, z - 12), theme.rim, SMOOTH, { collide = true })
-		part(folder, "GatePylonBand", Vector3.new(5.6, 2, 5.6), CFrame.new(x + sx, 30, z - 12), theme.accent, NEON)
-		part(folder, "GatePylonBand", Vector3.new(5.6, 2, 5.6), CFrame.new(x + sx, 12, z - 12), theme.accent, NEON)
-		part(folder, "GatePylonTip", Vector3.new(3, 6, 3), CFrame.new(x + sx, 43, z - 12), theme.accent2, NEON)
+		local pylon: Part
+		local swapped = ModelSlots.spawn("gate_pylon", CFrame.new(x + sx, -6, z - 12), Vector3.new(5.6, 52, 5.6), folder, function()
+			pylon = part(folder, "GatePylon", Vector3.new(5, 46, 5), CFrame.new(x + sx, 17, z - 12), theme.rim, SMOOTH, { collide = true })
+			part(folder, "GatePylonBand", Vector3.new(5.6, 2, 5.6), CFrame.new(x + sx, 30, z - 12), theme.accent, NEON)
+			part(folder, "GatePylonBand", Vector3.new(5.6, 2, 5.6), CFrame.new(x + sx, 12, z - 12), theme.accent, NEON)
+			part(folder, "GatePylonTip", Vector3.new(3, 6, 3), CFrame.new(x + sx, 43, z - 12), theme.accent2, NEON)
+			return nil
+		end, { collide = true })
+		if swapped then
+			pylon = proxy(folder, "GatePylon", Vector3.new(5, 46, 5), CFrame.new(x + sx, 17, z - 12))
+		end
 		addLight(pylon, theme.accent, 26, 2)
 		if sx < 0 then
 			sign(pylon, "", { LocGate = zone + 1 }, 30, 44, 9, theme.accent, 260)
@@ -353,7 +397,7 @@ end
 ---------------------------------------------------------------------------
 -- Scenery
 ---------------------------------------------------------------------------
-local function prop(folder: Instance, style: string, x: number, z: number, scale: number, theme: Themes.Theme, rand: Random)
+local function primitiveProp(folder: Instance, style: string, x: number, z: number, scale: number, theme: Themes.Theme, rand: Random)
 	local c1, c2 = theme.propColor, theme.propColor2
 	if style == "rocks" then
 		local h = 4 + scale * 5
@@ -400,6 +444,29 @@ local function prop(folder: Instance, style: string, x: number, z: number, scale
 		local cube = part(folder, "ObeliskCube", Vector3.new(1.6 * scale, 1.6 * scale, 1.6 * scale), CFrame.new(x, h + 2.2, z) * CFrame.Angles(0.6, 0.8, 0), c2, NEON)
 		anim(cube, { Bob = 0.5, BobSpeed = 1.2 + rand:NextNumber(0, 1), SpinAxis = "Y", SpinSpeed = 1.4 })
 	end
+end
+
+-- style -> slot name and target bounding box (scale s = the prop's random size factor)
+local PROP_SLOTS: { [string]: { slot: string, size: (s: number) -> Vector3 } } = {
+	rocks = { slot = "rock_spire", size = function(s) return Vector3.new(5 * s, 4 + 5 * s, 5 * s) end },
+	mushrooms = { slot = "mushroom", size = function(s) return Vector3.new(5.2 * s, 4.7 + 4 * s, 5.2 * s) end },
+	ice = { slot = "ice_crystal", size = function(s) return Vector3.new(5 * s, 3 + 5 * s, 4 * s) end },
+	vents = { slot = "lava_vent", size = function(s) return Vector3.new(5.2 * s, 3, 5.2 * s) end },
+	coils = { slot = "tesla_coil", size = function(s) return Vector3.new(4 * s, 7 + 5 * s, 4 * s) end },
+	obelisks = { slot = "obelisk", size = function(s) return Vector3.new(3 * s, 9 + 6 * s, 3 * s) end },
+}
+
+local function prop(folder: Instance, style: string, x: number, z: number, scale: number, theme: Themes.Theme, rand: Random)
+	local def = PROP_SLOTS[style]
+	if not def then
+		primitiveProp(folder, style, x, z, scale, theme, rand)
+		return
+	end
+	local yaw = ((math.floor(x) * 7 + math.floor(z) * 13) % 628) / 100
+	ModelSlots.spawn(def.slot, CFrame.new(x, 0, z) * CFrame.Angles(0, yaw, 0), def.size(scale), folder, function()
+		primitiveProp(folder, style, x, z, scale, theme, rand)
+		return nil
+	end, { collide = true })
 end
 
 local function scenery(folder: Instance, zone: number, theme: Themes.Theme)
@@ -531,15 +598,21 @@ local function buildArena(world: Folder): Folder
 	for i = 1, 16 do
 		local a = i / 16 * math.pi * 2
 		local x, z = cx + math.sin(a) * (R + 2.5), cz + math.cos(a) * (R + 2.5)
-		part(folder, "Pylon", Vector3.new(2, 9, 2), CFrame.new(x, 4.5, z), if i % 2 == 0 then Color3.fromRGB(240, 200, 60) else INK, SMOOTH, { collide = true })
-		part(folder, "PylonLight", Vector3.new(2.4, 1.2, 2.4), CFrame.new(x, 9.6, z), Color3.fromRGB(235, 60, 60), NEON)
+		ModelSlots.spawn("arena_pylon", CFrame.new(x, 0, z), Vector3.new(2.6, 10.2, 2.6), folder, function()
+			part(folder, "Pylon", Vector3.new(2, 9, 2), CFrame.new(x, 4.5, z), if i % 2 == 0 then Color3.fromRGB(240, 200, 60) else INK, SMOOTH, { collide = true })
+			part(folder, "PylonLight", Vector3.new(2.4, 1.2, 2.4), CFrame.new(x, 9.6, z), Color3.fromRGB(235, 60, 60), NEON)
+			return nil
+		end, { collide = true })
 	end
 	-- cover inside the arena
 	for i = 0, 3 do
 		local a = i / 4 * math.pi * 2 + math.pi / 4
 		local x, z = cx + math.sin(a) * 36, cz + math.cos(a) * 36
-		part(folder, "Cover", Vector3.new(10, 7, 3), CFrame.new(x, 3.5, z) * CFrame.Angles(0, a, 0), Color3.fromRGB(84, 90, 116), Enum.Material.Metal, { collide = true })
-		part(folder, "CoverStripe", Vector3.new(10.2, 1.2, 3.2), CFrame.new(x, 5.4, z) * CFrame.Angles(0, a, 0), Color3.fromRGB(240, 200, 60), SMOOTH)
+		ModelSlots.spawn("arena_cover", CFrame.new(x, 0, z) * CFrame.Angles(0, a, 0), Vector3.new(10.2, 7, 3.2), folder, function()
+			part(folder, "Cover", Vector3.new(10, 7, 3), CFrame.new(x, 3.5, z) * CFrame.Angles(0, a, 0), Color3.fromRGB(84, 90, 116), Enum.Material.Metal, { collide = true })
+			part(folder, "CoverStripe", Vector3.new(10.2, 1.2, 3.2), CFrame.new(x, 5.4, z) * CFrame.Angles(0, a, 0), Color3.fromRGB(240, 200, 60), SMOOTH)
+			return nil
+		end, { collide = true })
 	end
 	local marker = part(folder, "PvpMarker", Vector3.new(1, 1, 1), CFrame.new(cx, 1, cz), INK, SMOOTH, { transparency = 1 })
 	sign(marker, "PVP ZONE", { LocKey = "world.pvp_zone" }, 34, 46, 9, Color3.fromRGB(255, 90, 90), 300)

@@ -141,3 +141,24 @@ Casi todo ya estaba (verificado leyendo el código). Checklist:
 - Regalos entre jugadores y trading: no se hicieron (implican riesgo de estafas y de valor real entre cuentas; pensar con calma).
 - Leaderboard de poder con nametag de ranking y "robar/atacar base ajena" de la research: no se hicieron, son sistemas nuevos grandes.
 - `Config.GroupId` sigue en 0 (el regalo de grupo no se activa hasta cargarlo).
+
+## Ronda 3: ranuras de modelos
+
+### Qué cambié
+- Carpeta `assets/models/` (solo README) mapeada como `ServerStorage.ModelLibrary` en los 7 `*.project.json`.
+- `src/server/World/ModelSlots.luau`: `spawn(slotName, cf, targetSize, parent, fallback, opts)`. Si hay modelo con ese nombre (o `nombre_1`, `nombre_2`... elegido por posición) lo clona, lo escala para entrar en el tamaño objetivo, lo apoya en el piso, ancla todo, pone colisión según el primitivo, borra todo script (con warn) y respeta tope de 300 partes por modelo y 1200 en total; si no, corre el `fallback()` original.
+- `src/shared/ModelFit.luau`: matemática pura (escala, variante, presupuesto).
+- `WorldBuilder.luau`: 14 ranuras (`capsule_machine`, `refinery_building`, `workshop_stall`, `warp_gate`, `system_monument`, `gate_pylon`, `arena_pylon`, `arena_cover`, `rock_spire`, `mushroom`, `ice_crystal`, `lava_vent`, `tesla_coil`, `obelisk`). Con la biblioteca vacía el código primitivo corre igual que antes. Cuando un modelo reemplaza una estación, prompts/carteles/luces quedan en partes invisibles (`proxy`). Disco de warp, pads, deck y nodos no se tocaron.
+- Doc: `docs/modelos/anime-planet-clicker.md`.
+
+### Cómo lo verifiqué
+- `rojo build` de los 7 project files OK con solo el README; con un `.rbxmx` temporal (Model + Script) el build incluye `ServerStorage.ModelLibrary.<slot>` (borrado después).
+- `luau-lsp analyze` sin salida; `tests/unit.luau` (186 checks, con los nuevos de `ModelFit`), `locale_check`, `sim/*` pasan.
+- No corrí Studio: el camino de clonado/escala (`ScaleTo`, `GetBoundingBox`) no está probado en vivo.
+
+### Qué mirar en Studio
+- Soltar un `.rbxm` de prueba (ej. `obelisk.rbxm`) y ver que se apoya en el piso, tamaño y colisión correctos, sin scripts.
+- Capsule machine: que el prompt y el cartel sigan funcionando con un modelo (quedan en `Base`/`Dome` invisibles).
+- Gate pylon / cover: orientación y que no bloquee el paso de más (colisiona por caja de cada parte).
+- Con modelos, las props pierden la animación (flotar/girar); si molesta, agregar un ancla animada.
+- Budget de AutoTest (<= 3600 partes del mundo) con varios modelos puestos.
