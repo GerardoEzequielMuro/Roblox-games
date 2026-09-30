@@ -14,7 +14,7 @@ Config.StartingCash = 25
 Config.StartingSeeds = { carrot = 3 } :: { [string]: number }
 Config.StartingTiles = 6
 Config.MaxTiles = 30
-Config.TileBaseCost = 100
+Config.TileBaseCost = 80
 Config.TileCostGrowth = 1.9
 
 Config.BackpackBase = 25
@@ -51,16 +51,16 @@ export type Seed = {
 }
 
 Config.Seeds = {
-	{ id = "carrot", name = "Carrot", rarity = "Common", price = 10, growTime = 20, sellValue = 15, stockChance = 1, stockMin = 12, stockMax = 25, fruitColor = Color3.fromRGB(255, 130, 30), stemColor = Color3.fromRGB(60, 170, 60), shape = "Long", fruitSize = 1.2 },
-	{ id = "tomato", name = "Tomato", rarity = "Common", price = 40, growTime = 40, sellValue = 55, stockChance = 1, stockMin = 6, stockMax = 15, fruitColor = Color3.fromRGB(230, 40, 40), stemColor = Color3.fromRGB(50, 150, 50), shape = "Ball", fruitSize = 1.4 },
+	{ id = "carrot", name = "Carrot", rarity = "Common", price = 10, growTime = 10, sellValue = 15, stockChance = 1, stockMin = 20, stockMax = 40, fruitColor = Color3.fromRGB(255, 130, 30), stemColor = Color3.fromRGB(60, 170, 60), shape = "Long", fruitSize = 1.2 },
+	{ id = "tomato", name = "Tomato", rarity = "Common", price = 40, growTime = 30, sellValue = 55, stockChance = 1, stockMin = 10, stockMax = 20, fruitColor = Color3.fromRGB(230, 40, 40), stemColor = Color3.fromRGB(50, 150, 50), shape = "Ball", fruitSize = 1.4 },
 	{ id = "corn", name = "Corn", rarity = "Uncommon", price = 150, growTime = 75, sellValue = 210, stockChance = 0.85, stockMin = 4, stockMax = 10, fruitColor = Color3.fromRGB(255, 220, 60), stemColor = Color3.fromRGB(90, 180, 70), shape = "Long", fruitSize = 1.6 },
 	{ id = "blueberry", name = "Blueberry Bush", rarity = "Uncommon", price = 400, growTime = 90, sellValue = 170, regrowTime = 55, stockChance = 0.7, stockMin = 3, stockMax = 8, fruitColor = Color3.fromRGB(70, 90, 230), stemColor = Color3.fromRGB(40, 120, 60), shape = "Ball", fruitSize = 1.0 },
-	{ id = "pumpkin", name = "Pumpkin", rarity = "Rare", price = 1200, growTime = 150, sellValue = 1900, stockChance = 0.55, stockMin = 2, stockMax = 6, fruitColor = Color3.fromRGB(255, 140, 20), stemColor = Color3.fromRGB(60, 140, 40), shape = "Ball", fruitSize = 2.4 },
-	{ id = "watermelon", name = "Watermelon", rarity = "Rare", price = 3500, growTime = 240, sellValue = 5200, stockChance = 0.45, stockMin = 2, stockMax = 5, fruitColor = Color3.fromRGB(40, 150, 60), stemColor = Color3.fromRGB(70, 160, 60), shape = "Ball", fruitSize = 2.6 },
-	{ id = "apple", name = "Apple Tree", rarity = "Epic", price = 10000, growTime = 300, sellValue = 2600, regrowTime = 110, stockChance = 0.3, stockMin = 1, stockMax = 3, fruitColor = Color3.fromRGB(220, 30, 50), stemColor = Color3.fromRGB(110, 70, 40), shape = "Tree", fruitSize = 0.9 },
-	{ id = "dragonfruit", name = "Dragon Fruit", rarity = "Epic", price = 30000, growTime = 420, sellValue = 46000, stockChance = 0.22, stockMin = 1, stockMax = 3, fruitColor = Color3.fromRGB(255, 60, 170), stemColor = Color3.fromRGB(60, 160, 90), shape = "Ball", fruitSize = 1.9 },
-	{ id = "mango", name = "Mango Tree", rarity = "Legendary", price = 100000, growTime = 600, sellValue = 26000, regrowTime = 220, stockChance = 0.12, stockMin = 1, stockMax = 2, fruitColor = Color3.fromRGB(255, 170, 40), stemColor = Color3.fromRGB(100, 65, 35), shape = "Tree", fruitSize = 1.1 },
-	{ id = "starfruit", name = "Starfruit", rarity = "Legendary", price = 300000, growTime = 900, sellValue = 500000, stockChance = 0.08, stockMin = 1, stockMax = 2, fruitColor = Color3.fromRGB(255, 240, 90), stemColor = Color3.fromRGB(70, 170, 80), shape = "Flower", fruitSize = 1.8 },
+	{ id = "pumpkin", name = "Pumpkin", rarity = "Rare", price = 1200, growTime = 150, sellValue = 1900, stockChance = 0.7, stockMin = 2, stockMax = 6, fruitColor = Color3.fromRGB(255, 140, 20), stemColor = Color3.fromRGB(60, 140, 40), shape = "Ball", fruitSize = 2.4 },
+	{ id = "watermelon", name = "Watermelon", rarity = "Rare", price = 3500, growTime = 240, sellValue = 5200, stockChance = 0.6, stockMin = 2, stockMax = 5, fruitColor = Color3.fromRGB(40, 150, 60), stemColor = Color3.fromRGB(70, 160, 60), shape = "Ball", fruitSize = 2.6 },
+	{ id = "apple", name = "Apple Tree", rarity = "Epic", price = 10000, growTime = 300, sellValue = 2600, regrowTime = 110, stockChance = 0.55, stockMin = 1, stockMax = 3, fruitColor = Color3.fromRGB(220, 30, 50), stemColor = Color3.fromRGB(110, 70, 40), shape = "Tree", fruitSize = 0.9 },
+	{ id = "dragonfruit", name = "Dragon Fruit", rarity = "Epic", price = 30000, growTime = 420, sellValue = 46000, stockChance = 0.42, stockMin = 1, stockMax = 3, fruitColor = Color3.fromRGB(255, 60, 170), stemColor = Color3.fromRGB(60, 160, 90), shape = "Ball", fruitSize = 1.9 },
+	{ id = "mango", name = "Mango Tree", rarity = "Legendary", price = 100000, growTime = 600, sellValue = 26000, regrowTime = 220, stockChance = 0.36, stockMin = 1, stockMax = 2, fruitColor = Color3.fromRGB(255, 170, 40), stemColor = Color3.fromRGB(100, 65, 35), shape = "Tree", fruitSize = 1.1 },
+	{ id = "starfruit", name = "Starfruit", rarity = "Legendary", price = 300000, growTime = 900, sellValue = 500000, stockChance = 0.3, stockMin = 1, stockMax = 2, fruitColor = Color3.fromRGB(255, 240, 90), stemColor = Color3.fromRGB(70, 170, 80), shape = "Flower", fruitSize = 1.8 },
 	{ id = "moonmelon", name = "Moon Melon", rarity = "Mythic", price = 1200000, growTime = 1200, sellValue = 2100000, stockChance = 0.04, stockMin = 1, stockMax = 1, fruitColor = Color3.fromRGB(180, 200, 255), stemColor = Color3.fromRGB(90, 90, 160), shape = "Ball", fruitSize = 2.8 },
 	{ id = "cosmiclotus", name = "Cosmic Lotus", rarity = "Divine", price = 5000000, growTime = 1800, sellValue = 3200000, regrowTime = 600, stockChance = 0.015, stockMin = 1, stockMax = 1, fruitColor = Color3.fromRGB(120, 255, 240), stemColor = Color3.fromRGB(40, 90, 120), shape = "Flower", fruitSize = 2.2 },
 } :: { Seed }
@@ -88,8 +88,8 @@ Config.Upgrades = {
 	{ id = "CropValue", name = "Market Stall", description = "+15% sell value per level", maxLevel = 10, baseCost = 800, costGrowth = 2.7, perLevel = 0.15 },
 	{ id = "Luck", name = "Lucky Charm", description = "+12% mutation chance per level", maxLevel = 10, baseCost = 1500, costGrowth = 2.8, perLevel = 0.12 },
 	{ id = "Backpack", name = "Bigger Basket", description = "+15 basket space per level", maxLevel = 10, baseCost = 300, costGrowth = 2.3, perLevel = 15 },
-	-- Auto-farm unlock (see Config.AutoFarm): $5K, $60K, $720K. Kept through rebirths.
-	{ id = "Farmhand", name = "Farmhand", description = "Auto-farm: Lv1 harvest, Lv2 plant, Lv3 sell", maxLevel = 3, baseCost = 5000, costGrowth = 12, perLevel = 1, keepOnRebirth = true },
+	-- Auto-farm unlock (see Config.AutoFarm): $5K, $45K, $405K. Kept through rebirths.
+	{ id = "Farmhand", name = "Farmhand", description = "Auto-farm: Lv1 harvest, Lv2 plant, Lv3 sell", maxLevel = 3, baseCost = 5000, costGrowth = 9, perLevel = 1, keepOnRebirth = true },
 } :: { Upgrade }
 
 Config.UpgradeById = {} :: { [string]: Upgrade }
@@ -110,7 +110,7 @@ Config.AutoFarm = {
 	sellAtFill = 1, -- auto-sell when the basket is full
 }
 
-Config.RebirthBaseCost = 1000000
+Config.RebirthBaseCost = 750000
 Config.RebirthCostGrowth = 4
 Config.RebirthBonus = 0.5 -- +50% cash per rebirth (additive)
 

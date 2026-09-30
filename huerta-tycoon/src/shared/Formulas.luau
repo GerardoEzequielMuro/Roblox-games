@@ -1,6 +1,7 @@
 --!strict
 -- Pure math shared by server (authoritative) and client (display).
-local Config = require(script.Parent.Config)
+-- plain Luau (tests, sim/pacing_sim.luau) has no `script`: fall back to a relative path
+local Config = if script then require(script.Parent.Config) else (require :: any)("./Config")
 
 local Formulas = {}
 

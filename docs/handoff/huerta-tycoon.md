@@ -232,3 +232,51 @@ Re-renderizado todo (new+mid pc/phone, cada ventana pc/phone, laptop y tablet): 
 **Confirmar en Studio**
 - Que los carteles de tile se vean bien de cerca y de lejos sin `DistanceLowerLimit` (tamaño mínimo 0.35 del base).
 - Tilde de Daily: que el emoji ✅ se vea centrado en la tarjeta en Fredoka real.
+
+## Ronda 5: ritmo de progresión
+
+**Sim** (`huerta-tycoon/sim/pacing_core.luau` motor + `sim/pacing_sim.luau` tabla; `luau sim/pacing_sim.luau`, ~10 s). Usa los módulos reales: `Config`, `Formulas`, `Gifts`, `AutoFarm`, `Odds`, `Trophies`. Jugador gratis y activo: cada ronda cosecha todo, vende, compra la mejor mejora/tile por (ingreso ganado / costo) con repago máx. 25 min, llena tiles con la mejor semilla del stock (reemplaza árboles mucho peores), compra Farmhand, reclama daily, regalo del tutorial y regalos de tiempo (5..60 min) al instante, y rebirth apenas alcanza el costo. Stock de la tienda con restock cada 5 min y fase aleatoria (101 corridas con semilla fija, p10/mediana/p90). Mutaciones y tamaños van como valor esperado.
+
+Para que el sim corra con Luau puro toqué `src/shared/Formulas.luau`: `require(script.Parent.Config)` pasó a `if script then ... else require("./Config")` (en Roblox no cambia nada).
+
+**Test de deriva**: `tests/pacing_test.luau` (34 checks, ~5 s) falla si se salen de ventana: primera cosecha/venta/compra, 3 compras en 3 min, mediana de cada tier hasta el mango, hueco entre tiers, hueco sin novedades, rebirth 1 (30-60 min) y 2, y cola larga (moonmelon, loto, rebirth 3 y 5 en horas).
+
+**Hitos (mediana, p10-p90 entre paréntesis), antes -> después**
+
+| Hito | Antes | Después |
+|---|---|---|
+| Primer premio visible (daily, +$100) | 6 s | 6 s |
+| Primera cosecha / venta | 24 s | 15 s |
+| 3 compras (tile/mejora) | 3.1 min | 2.2 min (p90 2.8) |
+| Maíz | 104 s | 53 s |
+| Arándano | 5.2 min | 4.3 min |
+| Calabaza | 10.0 min | 8.6 min |
+| Sandía | 15.9 min | 14.9 min |
+| Manzano | 22.2 min (p90 39) | 18.5 min (p90 25) |
+| Dragonfruit | 32.1 min | 23.0 min |
+| Mango | 52.5 min (p90 117) | 31.8 min (p90 65) |
+| Starfruit | 106 min | 40.8 min |
+| Farmhand Lv1 / Lv2 / Lv3 | 14.5 / 27.6 / 91.8 min | 14.3 / 25.3 / 67.5 min |
+| Rebirth 1 | 61.3 min (p90 77) | 45.5 min (36-56) |
+| Rebirth 2 / 3 | 2.2 h / 3.8 h | 88 min / 2.4 h |
+| Mayor hueco sin nada nuevo (1ra hora) | 10.4 min | 6.1 min (p90 9.8) |
+| Moonmelon / Cosmic Lotus (48 h de juego) | 4.3 h / 10.6 h | 3.8 h / 7.8 h |
+| Rebirth 6 | 14.8 h | 9.8 h |
+
+**Qué cambié en `Config.luau` y por qué** (precios Robux intactos)
+- Hallazgo principal: el cuello era el stock, no la plata. Con 15 tiles, 5 min de stock de maíz/calabaza no alcanzan, y el mango (12% por restock) tardaba ~40 min en aparecer; había pozos de 20+ min.
+- Zanahoria: `growTime` 20 -> 10, stock 12-25 -> 20-40 (primera cosecha 15 s, y no se queda sin semillas). Tomate: `growTime` 40 -> 30, stock 6-15 -> 10-20.
+- `stockChance`: calabaza 0.55 -> 0.7, sandía 0.45 -> 0.6, manzano 0.3 -> 0.55, dragonfruit 0.22 -> 0.42, mango 0.12 -> 0.36, starfruit 0.08 -> 0.3. Moonmelon y Loto no se tocaron: son la cola larga.
+- `TileBaseCost` 100 -> 80: la 3ra compra entra antes del minuto 3.
+- `Farmhand` `costGrowth` 12 -> 9 ($5K / $45K / $405K en vez de $5K / $60K / $720K): llena el pozo de min 30-50 con el auto-farm y mejora la calidad de vida antes.
+- `RebirthBaseCost` 1M -> 750K (el rebirth 1 caía a ~61 min, fuera de ventana; ahora ~45). Crecimiento x4 igual.
+- Comentario de Farmhand en Config actualizado. Ningún test existente dependía de estos valores.
+
+**Verificación**: todos los `tests/*_test.luau` pasan (incluido el nuevo); `rojo build` de default y test OK; `luau-lsp analyze src` sin salida.
+
+**Límites del sim**
+- Sin clima, eventos en vivo, Index, trofeos, amigos/premium/grupo ni pases (jugador gratis puro); ignora anuncios recompensados (id 0). El clima daría ~9% más de crecimiento promedio, o sea el juego real es un poco más rápido.
+- Jugador activo de corrido: no modela AFK ni offline (el auto-farm casi no pesa acá; en AFK pesa mucho más) ni sesiones cortas con el daily de racha (solo día 1).
+- Modelo de ronda: 7 s con viaje a vender, 3 s solo plantar; 4 s de arranque antes de la primera acción. Un jugador real es más lento o más torpe.
+- "Primer premio < 10 s" se cumple con el daily (6 s), pero ese botón está en el menú con badge, no se abre solo; la primera cosecha real cae a los ~15 s. Bajar más la zanahoria la rompe por el stock; si se quiere, abrir el Daily solo en la sesión 1 (cambio de UI, no hecho).
+- Quedan tails de suerte de stock (p90 del mango ~65 min). Faltan números medidos en Studio: la política de compra es una aproximación.
