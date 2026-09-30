@@ -126,11 +126,14 @@ Cada juego tiene ahora un simulador en Luau puro que usa su `Config` y sus fórm
 
 **Límites:** los simuladores modelan un tipo de jugador con supuestos propios, como cuántos clicks hace o el riesgo de cada salto. Sirven para comparar antes y después y encontrar baches, no para predecir tiempos exactos. Los tiempos reales se miden con analíticas cuando el juego esté publicado.
 
-**Huecos que no se arreglan con números (hace falta contenido):**
-- Tap Pets: entre el primer rebirth y Cosmic Void no aparece nada nuevo.
-- Planet Crackers: después de unos 50 min solo hay rebirths hasta la galaxia 5.
-- Obby: después de la torre 3 las monedas no tienen en qué gastarse.
-- ki-warriors: un jugador casual (25 min por día) no llega a terminar el pase de batalla.
+**Huecos de contenido: resueltos en la ronda 6**
+
+| Juego | Qué se agregó | Resultado |
+|---|---|---|
+| Tap Pets | 8 huevos nuevos con 32 mascotas, que se desbloquean por cantidad de rebirths | Bache máximo en las primeras 2 h: de 31 a unos 11 min |
+| Planet Crackers | 11 herramientas de "Asteroid Field" dentro de las galaxias 4 y 5 | Bache máximo en las primeras 2 h: de unos 48 a unos 9 min |
+| Sky Tower Obby | 15 cosméticos por torre, 4 mascotas de hombro y mejoras "Shine". Todo cosmético, nada ayuda a escalar. | Siempre hay algo por qué juntar monedas hasta la torre 10 |
+| ki-warriors | XP gratis del pase (primera victoria diaria, desafíos semanales, recuperación si vas atrasado) y dos formas nuevas, Corona y Solstice | El jugador casual completa los dos pases (día 45-46 de 56). Hueco de 20 min cerrado. |
 
 ## 4c. Hasta dónde conviene seguir sin Studio
 
