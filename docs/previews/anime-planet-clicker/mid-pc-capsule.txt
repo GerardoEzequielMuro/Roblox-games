@@ -2,12 +2,6 @@
 # image: mid-pc-capsule.png  (coordinates below are in the full 1920x1080 screen space)
 # APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
 
-## Layout findings (2)
-[med] covered: PlanetUI.LeftHolder.Left.Menu.Index.Badge.TextLabel rect=[155, 471, 187, 503]
-    38% hidden under PlanetUI.LeftHolder.Left.Menu.Quests (drawn on top)
-    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:101 < anime-planet-clicker/src/client/UI/Theme.luau:411
-[med] covered: PlanetUI.LeftHolder.Left.Menu.Rewards.Badge.TextLabel rect=[76, 550, 108, 582]
-    38% hidden under PlanetUI.LeftHolder.Left.Menu.Auto (drawn on top)
-    created at: anime-planet-clicker/src/client/UI/Theme.luau:38 < anime-planet-clicker/src/client/UI/Theme.luau:101 < anime-planet-clicker/src/client/UI/Theme.luau:411
+## Layout findings (0)
 
 ## Runtime log (0)

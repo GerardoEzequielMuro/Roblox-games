@@ -162,3 +162,30 @@ Casi todo ya estaba (verificado leyendo el código). Checklist:
 - Gate pylon / cover: orientación y que no bloquee el paso de más (colisiona por caja de cada parte).
 - Con modelos, las props pierden la animación (flotar/girar); si molesta, agregar un ancla animada.
 - Budget de AutoTest (<= 3600 partes del mundo) con varios modelos puestos.
+
+## Ronda 4: UI arreglada con la vista previa
+
+Usé `tools/uipreview` (phone 844x390, pc, laptop, tablet). Antes: 10-15 hallazgos por captura en celular (casi todos `small-touch` y `tiny-text` por la escala 0.55). Ahora: HUD y ventanas en PC, laptop y tablet sin hallazgos; en celular solo quedan `core-overlap` de ventanas modales sobre el joystick (ver "Lo que queda").
+
+**Qué arreglé**
+- **Escala táctil** (`src/client/UI/Root.luau:64` `compute`, `:75` `computeFit`, `:105` `Root.mount`): en táctil el HUD se arma para ~940x390 unidades y escala `clamp(min(X/940, Y/390), 0.6, 1.1)` (da ~0.8 en un iPhone apaisado, antes 0.55). Las ventanas y popups (`mount(obj, parent, true)`) calculan su propia escala para entrar enteras en pantalla. PC no cambia (misma fórmula de antes).
+- **HUD táctil rearmado** (`Hud.luau`, rama `touch`, desde `:102`): contadores + Shop arriba a la izquierda (terminan arriba del joystick); el menú pasa a una tira horizontal de 10 botones de 64x60 arriba; debajo, nombre de galaxia y objetivo; columna derecha (regalo, ofertas, relojes) arranca bajo la tira y termina arriba del botón de salto; chips de auto de 94x56 y SELL de 56 de alto abajo al centro; los buffs activos pasan a una fila sobre los chips (`Buffs`). Todos los botones quedan >= 44 px reales y los textos >= 11 px. `PvpClient.luau:134` baja el HUD de arena en táctil para no pisar el objetivo.
+- **Ventanas táctiles** (`Windows.luau:62-`): alto máximo 372 (header 50, cuerpo 304), escala ~0.8, y `window.bodyW/bodyH` para acomodar el contenido. Todos los botones de ventana miden >= 56 unidades: Pets (barra superior, panel de detalle con scroll), Workshop (pestañas 56, Relics con scroll), Store (tarjetas de 140), Rewards (página con scroll), Quests, Index (pestañas y Claim), Rebirth, Warp, Auto, Settings (3 columnas en ventana de 780), Invite, Capsule (`Kit.luau` `TOUCH_BTN`, `Kit.toggle` de 64), cerrar de popups 56.
+- **Badges "!" tapados** (`Hud.luau:187`): los botones del menú tienen ZIndex decreciente (`2 + #MENU - i`), así el badge no queda bajo el vecino (PC y celular).
+- **DisplayOrder = 1** en `PlanetUI` (`Root.luau:27`) para que una ventana tape al joystick de Roblox y no al revés (confirmar en Studio).
+- **Plurales** (`Locale.luau:70`): si `args.n == 1` y el idioma tiene la clave `<clave>.one`, se usa esa. Agregué `.one` en los 12 idiomas para `upgrade.HitSpeed.desc`, `upgrade.AutoRate.desc`, `upgrade.PetSlots.desc`, `pets.fused_n`, `toast.deleted` (antes "+1 equipped pets", "Deleted 1 pets", "+1 hits per second"). En ru cambié `upgrade.PetSlots.desc` a "Слотов питомцев: +{n}" (sin declinar). `tests/unit.luau` tiene 6 checks nuevos.
+- **Etiquetas largas del menú** (se veían a 7 px en celular): de "Wiedergeburt"/"WIEDERGEBURT" a "Rebirth"; tr "Doğuş"; ru "Реборн", "Альбом", "Апгрейд"; vi Teleport "Warp"; th Pets "เพ็ท". Con esto las 12 lenguas dan 0 hallazgos en `mid-phone`.
+
+**Antes / después (celular, mid)**: botones del menú de 31x31 a ~51x48 px; Shop 169x24 a ~157x45; SELL 53x31 a ~75x45; chips 48x19 a ~75x45; etiquetas de 6-8 px a 11-14 px; en ventanas (Pets) botones de 19 px a 45 px y el X de 31 a 45.
+
+**Lo que queda**
+- `core-overlap` (med/low) en `mid-phone-{pets,store,rewards,quests,index,settings}`: la parte de abajo a la izquierda de la ventana modal queda sobre el círculo del joystick que dibuja la herramienta. Es modal y el jugador no camina con una ventana abierta; no lo moví más porque la ventana no entra en el área libre.
+- `mid-*-capsule.png`: la herramienta cierra el panel enseguida (el auto-cierre por distancia del Capsule Machine, el personaje simulado está lejos). Las PNG de capsule las saqué anulando temporalmente ese chequeo (ya revertido) para ver la ventana. Es un artefacto de la herramienta.
+- Los recuadros "3D" de las mascotas son `ViewportFrame` (la herramienta no dibuja 3D).
+- En celulares muy chicos (usable < ~650x290) la escala cae a 0.6 y los botones bajan de 44 px.
+
+**Para confirmar en Studio**
+- Emulador de celular apaisado: el HUD no pisa el joystick ni el salto; tocar la tira del menú, chips y SELL con el pulgar.
+- Que con `DisplayOrder = 1` la ventana quede sobre el joystick y los toques en la ventana no muevan al personaje.
+- Buffs activos (fila sobre los chips) y ofertas (Starter Pack + Ad boost + regalo juntos) sin tapar la columna derecha; Rewards/Pets con scroll al dedo.
+- Idiomas largos (de, ru, th) en el menú y los chips.

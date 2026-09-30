@@ -103,18 +103,24 @@ end
 
 local function lockedTab(system: any)
 	local zone = Config.Zones[system.zone]
-	Theme.text({ Text = "🔒", Stroke = false, Size = UDim2.fromOffset(90, 90), Position = UDim2.new(0.5, -45, 0, 40), Parent = content })
-	Theme.text({ Text = Lang.t("upgrades.locked", { zone = Lang.t("zone." .. zone.id) }), Size = UDim2.new(1, -60, 0, 40), Position = UDim2.fromOffset(30, 140), MaxTextSize = 30, TextColor3 = Theme.Yellow, Parent = content })
-	Theme.text({ Text = Lang.t("system." .. system.id .. ".desc"), TextWrapped = true, Size = UDim2.new(1, -120, 0, 80), Position = UDim2.fromOffset(60, 190), MaxTextSize = 22, Parent = content })
+	local touch = Kit.touch
+	local lockSize = if touch then 56 else 90
+	local y = if touch then 6 else 40
+	Theme.text({ Text = "🔒", Stroke = false, Size = UDim2.fromOffset(lockSize, lockSize), Position = UDim2.new(0.5, -lockSize // 2, 0, y), Parent = content })
+	y += lockSize + 10
+	Theme.text({ Text = Lang.t("upgrades.locked", { zone = Lang.t("zone." .. zone.id) }), Size = UDim2.new(1, -60, 0, if touch then 36 else 40), Position = UDim2.fromOffset(30, y), MaxTextSize = 30, TextColor3 = Theme.Yellow, Parent = content })
+	y += if touch then 42 else 50
+	Theme.text({ Text = Lang.t("system." .. system.id .. ".desc"), TextWrapped = true, Size = UDim2.new(1, -120, 0, if touch then 70 else 80), Position = UDim2.fromOffset(60, y), MaxTextSize = 22, Parent = content })
 end
 
 local function toolsTab(s: { [string]: any })
 	local list = Kit.scroll(content, UDim2.fromScale(1, 1))
+	local touch = Kit.touch
 	local current = Config.ToolIndex[s.tool] or 1
 	for i, tool in Config.Tools do
 		local color = Palette.rgb(tool.color)
 		local owned = i <= current
-		local row = Kit.row(list, 70, if owned then Theme.darken(color, 0.35) else color, i)
+		local row = Kit.row(list, if touch then 68 else 70, if owned then Theme.darken(color, 0.35) else color, i)
 		row.Name = "Tool_" .. tool.id
 		local tile = Theme.new("Frame", { Size = UDim2.fromOffset(58, 58), Position = UDim2.fromOffset(8, 6), BackgroundColor3 = Theme.PaperDark, Parent = row }, { Theme.corner(10), Theme.stroke(2) })
 		PetIcon.tool(tool.id).Parent = tile
@@ -128,7 +134,7 @@ local function toolsTab(s: { [string]: any })
 			Theme.text({ Text = "🔒 " .. Lang.zone(tool.zone), Size = UDim2.fromOffset(200, 36), Position = UDim2.new(1, -212, 0.5, -18), MaxTextSize = 20, TextColor3 = Theme.Grey, Parent = row })
 		else
 			local can = s.stardust >= tool.cost
-			Theme.button({ Name = "Buy", Text = Kit.cost("stardust", tool.cost), Color = if can then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(190, 52), Position = UDim2.new(1, -204, 0.5, -26), TextSize = 24, Parent = row, OnClick = function()
+			Theme.button({ Name = "Buy", Text = Kit.cost("stardust", tool.cost), Color = if can then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(190, if touch then Kit.TOUCH_BTN else 52), Position = UDim2.new(1, -204, 0.5, if touch then -Kit.TOUCH_BTN // 2 else -26), TextSize = 24, Parent = row, OnClick = function()
 				Kit.request("BuyTool", { id = tool.id }, Lang.t("toast.tool_bought", { tool = Lang.tool(tool.id) }))
 			end })
 		end
@@ -138,7 +144,14 @@ local function toolsTab(s: { [string]: any })
 end
 
 local function relicsTab(s: { [string]: any })
-	local left = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -220, 1, 0), Parent = content }, { Theme.list(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left) })
+	local touch = Kit.touch
+	-- touch: the stat rows scroll and the odds panel is compact (the window is 372 tall)
+	local left: Instance
+	if touch then
+		left = Kit.scroll(content, UDim2.new(1, -220, 1, 0))
+	else
+		left = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -220, 1, 0), Parent = content }, { Theme.list(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left) })
+	end
 	for i, stat in Config.RelicStats do
 		local relic = s.relics[stat] or { grade = 0, dust = 0 }
 		local grade = Config.RelicGrades[relic.grade]
@@ -154,13 +167,14 @@ local function relicsTab(s: { [string]: any })
 		bar:set(relic.dust / Config.RelicDustPerGrade, Lang.t("relics.dust", { n = relic.dust, max = Config.RelicDustPerGrade }))
 	end
 	local right = Theme.panel({ Size = UDim2.new(0, 210, 1, 0), Position = UDim2.new(1, -210, 0, 0), BackgroundColor3 = Theme.PaperDark, Corner = 12, StrokeThickness = 2, Parent = content })
-	Theme.text({ Key = "relics.odds", Size = UDim2.new(1, -12, 0, 24), Position = UDim2.fromOffset(6, 4), MaxTextSize = 20, Parent = right })
+	Theme.text({ Key = "relics.odds", Size = UDim2.new(1, -12, 0, if touch then 20 else 24), Position = UDim2.fromOffset(6, 2), MaxTextSize = 20, Parent = right })
+	local lineH = if touch then 18 else 22
 	for i, g in Config.RelicGrades do
-		Theme.text({ Text = Lang.rarity(g.rarity), TextColor3 = Palette.rarity(g.rarity), Size = UDim2.new(0.6, 0, 0, 20), Position = UDim2.fromOffset(10, 8 + i * 22), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 17, Parent = right })
-		Theme.text({ Text = Format.chance(g.chance), Size = UDim2.new(0.4, -14, 0, 20), Position = UDim2.new(0.6, 0, 0, 8 + i * 22), TextXAlignment = Enum.TextXAlignment.Right, MaxTextSize = 17, Parent = right })
+		Theme.text({ Text = Lang.rarity(g.rarity), TextColor3 = Palette.rarity(g.rarity), Size = UDim2.new(0.6, 0, 0, lineH - 2), Position = UDim2.fromOffset(10, 6 + i * lineH), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 17, Parent = right })
+		Theme.text({ Text = Format.chance(g.chance), Size = UDim2.new(0.4, -14, 0, lineH - 2), Position = UDim2.new(0.6, 0, 0, 6 + i * lineH), TextXAlignment = Enum.TextXAlignment.Right, MaxTextSize = 17, Parent = right })
 	end
 	local can = (s.mats.spores or 0) >= Config.RelicCost
-	Theme.button({ Name = "Roll", Text = Lang.t("relics.roll") .. "\n" .. Kit.cost("spores", Config.RelicCost), Color = if can then Theme.Green else Theme.Grey, Size = UDim2.new(1, -16, 0, 62), Position = UDim2.new(0, 8, 1, -132), TextSize = 22, Parent = right, OnClick = function()
+	Theme.button({ Name = "Roll", Text = Lang.t("relics.roll") .. "\n" .. Kit.cost("spores", Config.RelicCost), Color = if can then Theme.Green else Theme.Grey, Size = UDim2.new(1, -16, 0, if touch then Kit.TOUCH_BTN else 62), Position = UDim2.new(0, 8, 1, if touch then -(Kit.TOUCH_BTN + 8) else -132), TextSize = 22, Parent = right, OnClick = function()
 		local ok, res = Net.request("RollRelic")
 		if not ok then
 			Toasts.show(Lang.msg(res), "error")
@@ -170,7 +184,9 @@ local function relicsTab(s: { [string]: any })
 		Toasts.show(Lang.t(if res.upgraded then "relics.result_up" else "relics.result_dust", { stat = Lang.t("stat." .. res.stat), rarity = Lang.rarity(g.rarity) }), if res.upgraded then "success" else "info")
 		Theme.play("buy", 0.4, if res.upgraded then 1.4 else 1)
 	end })
-	Theme.text({ Key = "relics.help", TextWrapped = true, Size = UDim2.new(1, -16, 0, 60), Position = UDim2.new(0, 8, 1, -66), MaxTextSize = 15, TextColor3 = Color3.fromRGB(200, 210, 235), Parent = right })
+	if not touch then
+		Theme.text({ Key = "relics.help", TextWrapped = true, Size = UDim2.new(1, -16, 0, 60), Position = UDim2.new(0, 8, 1, -66), MaxTextSize = 15, TextColor3 = Color3.fromRGB(200, 210, 235), Parent = right })
+	end
 end
 
 local function render()
@@ -221,12 +237,13 @@ function UpgradesWindow.init()
 	for _, id in TABS do
 		table.insert(entries, { id, Config.SystemById[id].icon, TAB_COLORS[id] })
 	end
-	tabs = Kit.tabs(window.body, UDim2.fromOffset(752, 40), UDim2.fromOffset(0, 0), entries, function()
+	local tabH = if Kit.touch then Kit.TOUCH_BTN else 40
+	tabs = Kit.tabs(window.body, UDim2.fromOffset(752, tabH), UDim2.fromOffset(0, 0), entries, function()
 		render()
 	end)
-	balance = Theme.text({ Name = "Balance", Text = "", Size = UDim2.new(1, -8, 0, 24), Position = UDim2.fromOffset(4, 44), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, TextColor3 = Color3.fromRGB(255, 240, 170), Parent = window.body })
+	balance = Theme.text({ Name = "Balance", Text = "", Size = UDim2.new(1, -8, 0, 24), Position = UDim2.fromOffset(4, tabH + 4), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, TextColor3 = Color3.fromRGB(255, 240, 170), Parent = window.body })
 	balance.AutoLocalize = false
-	content = Theme.new("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -72), Position = UDim2.fromOffset(0, 72), Parent = window.body })
+	content = Theme.new("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -(tabH + 32)), Position = UDim2.fromOffset(0, tabH + 32), Parent = window.body })
 	-- tab tooltips: the system name under the strip when selected is in the header title
 	local function tabNames()
 		for _, id in TABS do

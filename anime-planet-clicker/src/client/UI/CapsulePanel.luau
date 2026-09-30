@@ -82,12 +82,18 @@ local function render()
 	Kit.clear(content)
 	local cap = Formulas.CapsuleById[id]
 	local odds = CapsulePanel.odds(id)
+	-- touch: the window is 372 tall (body 304): odds 126, then buttons >= 56 and the
+	-- auto-delete row, all below it
+	local touch = Kit.touch
+	local oddsH = if touch then 126 else 176
+	local cellH = oddsH - 20
+	local btnH = if touch then Kit.TOUCH_BTN else 54
 	-- header line: name + price
 	Theme.text({ Text = Lang.capsule(id), Size = UDim2.new(0.6, 0, 0, 30), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 28, Parent = content })
 	local price = if cap.exclusive then ("R$ " .. Lang.t("capsule.robux_only")) else Kit.cost("stardust", cap.price)
 	Theme.text({ Text = price, Italic = true, TextColor3 = if cap.exclusive then Color3.fromRGB(220, 150, 255) else Theme.Stardust, Size = UDim2.new(0.4, 0, 0, 30), Position = UDim2.fromScale(0.6, 0), TextXAlignment = Enum.TextXAlignment.Right, MaxTextSize = 26, Parent = content })
 	-- odds grid
-	local grid = Theme.new("Frame", { Name = "Odds", BackgroundColor3 = Theme.PaperDark, Size = UDim2.new(1, 0, 0, 176), Position = UDim2.fromOffset(0, 36), Parent = content }, {
+	local grid = Theme.new("Frame", { Name = "Odds", BackgroundColor3 = Theme.PaperDark, Size = UDim2.new(1, 0, 0, oddsH), Position = UDim2.fromOffset(0, if touch then 32 else 36), Parent = content }, {
 		Theme.corner(12), Theme.padding(8), Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
 	local total = 0
@@ -96,23 +102,24 @@ local function render()
 		total += o.chance
 		local color = Palette.rarity(o.rarity)
 		local known = s.discovered[o.id] == true
-		local cell = Theme.new("Frame", { Name = "Odd_" .. o.id, Size = UDim2.fromOffset(cellW, 156), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = i, Parent = grid }, {
+		local cell = Theme.new("Frame", { Name = "Odd_" .. o.id, Size = UDim2.fromOffset(cellW, cellH), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = i, Parent = grid }, {
 			Theme.corner(10), Theme.stroke(3), Theme.gradient(Theme.lighten(color, 0.25), Theme.darken(color, 0.5)),
 		})
 		local vp = PetIcon.new(o.id, 0, o.rarity == "Secret" and not known)
-		vp.Size = UDim2.new(1, -6, 0, 78)
+		local vpH = if touch then 44 else 78
+		vp.Size = UDim2.new(1, -6, 0, vpH)
 		vp.Position = UDim2.fromOffset(3, 4)
 		vp.Parent = cell
-		Theme.text({ Text = if o.rarity == "Secret" and not known then "???" else Lang.pet(o.id), Size = UDim2.new(1, -6, 0, 26), Position = UDim2.fromOffset(3, 82), MaxTextSize = 15, TextWrapped = true, Parent = cell })
-		Theme.text({ Text = Lang.rarity(o.rarity), TextColor3 = Theme.lighten(color, 0.55), Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, 108), MaxTextSize = 14, Parent = cell })
-		local chance = Theme.text({ Name = "Chance", Text = Format.percent(o.chance), TextColor3 = Theme.Yellow, Size = UDim2.new(1, -6, 0, 24), Position = UDim2.fromOffset(3, 126), MaxTextSize = 20, Parent = cell })
+		Theme.text({ Text = if o.rarity == "Secret" and not known then "???" else Lang.pet(o.id), Size = UDim2.new(1, -6, 0, if touch then 20 else 26), Position = UDim2.fromOffset(3, vpH + (if touch then 5 else 4)), MaxTextSize = 15, TextWrapped = true, Parent = cell })
+		Theme.text({ Text = Lang.rarity(o.rarity), TextColor3 = Theme.lighten(color, 0.55), Size = UDim2.new(1, -6, 0, 16), Position = UDim2.fromOffset(3, vpH + (if touch then 25 else 30)), MaxTextSize = 14, Parent = cell })
+		local chance = Theme.text({ Name = "Chance", Text = Format.percent(o.chance), TextColor3 = Theme.Yellow, Size = UDim2.new(1, -6, 0, 20), Position = UDim2.fromOffset(3, vpH + (if touch then 43 else 48)), MaxTextSize = 20, Parent = cell })
 		chance.AutoLocalize = false
 	end
 	local golden = Formulas.goldenChance(Net.owns("GoldenCapsules"))
-	Theme.text({ Name = "Total", Text = Lang.t("capsule.total", { pct = string.format("%.0f", total), luck = string.format("%.2f", s.luck), golden = Format.percent(golden * 100) }), Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, 216), MaxTextSize = 16, TextColor3 = Color3.fromRGB(200, 210, 235), Parent = content })
+	Theme.text({ Name = "Total", Text = Lang.t("capsule.total", { pct = string.format("%.0f", total), luck = string.format("%.2f", s.luck), golden = Format.percent(golden * 100) }), Size = UDim2.new(1, 0, 0, 20), Position = UDim2.fromOffset(0, (if touch then 32 else 36) + oddsH + (if touch then 2 else 4)), MaxTextSize = 16, TextColor3 = Color3.fromRGB(200, 210, 235), Parent = content })
 	-- buttons
 	local auto = s.autoOpen == id
-	local y = 242
+	local y = if touch then 32 + oddsH + 24 else 242
 	local kb = UserInputService.KeyboardEnabled and not Root.isTouch
 	-- the Robux capsule is a paid random item: no buy buttons where PolicyService restricts them
 	local robuxBlocked = cap.exclusive and not Purchase.allowed(Config.ProductByKey.QuantumCapsule1)
@@ -122,32 +129,32 @@ local function render()
 		w1, w3, x3, wAuto = 124, 124, 132, 164
 	end
 	if not robuxBlocked then
-		Theme.button({ Name = "Open1", Text = Lang.t("capsule.open1") .. (if kb and cap.exclusive then "  [E]" else ""), Color = Theme.Green, Size = UDim2.fromOffset(w1, 54), Position = UDim2.fromOffset(0, y), TextSize = 24, Parent = content, OnClick = function()
+		Theme.button({ Name = "Open1", Text = Lang.t("capsule.open1") .. (if kb and cap.exclusive then "  [E]" else ""), Color = Theme.Green, Size = UDim2.fromOffset(w1, btnH), Position = UDim2.fromOffset(0, y), TextSize = 24, Parent = content, OnClick = function()
 			open(1)
 		end })
 	end
 	if not robuxBlocked and not (cap.exclusive and not Purchase.allowed(Config.ProductByKey.QuantumCapsule3)) then
-		Theme.button({ Name = "Open3", Text = (if Net.owns("TripleOpen") or cap.exclusive then "" else "🔒 ") .. Lang.t("capsule.open3") .. (if kb and cap.exclusive then "  [R]" else ""), Color = Theme.Purple, Size = UDim2.fromOffset(w3, 54), Position = UDim2.fromOffset(x3, y), TextSize = 22, Parent = content, OnClick = function()
+		Theme.button({ Name = "Open3", Text = (if Net.owns("TripleOpen") or cap.exclusive then "" else "🔒 ") .. Lang.t("capsule.open3") .. (if kb and cap.exclusive then "  [R]" else ""), Color = Theme.Purple, Size = UDim2.fromOffset(w3, btnH), Position = UDim2.fromOffset(x3, y), TextSize = 22, Parent = content, OnClick = function()
 			open(3)
 		end })
 	end
 	if not cap.exclusive then
-		Theme.button({ Name = "Open8", Text = (if Net.owns("OpenEight") then "" else "🔒 ") .. Lang.t("capsule.open8"), Color = Theme.Pink, Size = UDim2.fromOffset(124, 54), Position = UDim2.fromOffset(264, y), TextSize = 22, Parent = content, OnClick = function()
+		Theme.button({ Name = "Open8", Text = (if Net.owns("OpenEight") then "" else "🔒 ") .. Lang.t("capsule.open8"), Color = Theme.Pink, Size = UDim2.fromOffset(124, btnH), Position = UDim2.fromOffset(264, y), TextSize = 22, Parent = content, OnClick = function()
 			open(8)
 		end })
 	end
 	if not cap.exclusive then
-		Theme.button({ Name = "Auto", Text = Lang.t(if auto then "capsule.auto_on" else "capsule.auto_off") .. (if kb then "  [T]" else ""), Color = if auto then Theme.Orange else Theme.Blue, Size = UDim2.fromOffset(wAuto, 54), Position = UDim2.fromOffset(396, y), TextSize = 21, Parent = content, OnClick = toggleAuto })
+		Theme.button({ Name = "Auto", Text = Lang.t(if auto then "capsule.auto_on" else "capsule.auto_off") .. (if kb then "  [T]" else ""), Color = if auto then Theme.Orange else Theme.Blue, Size = UDim2.fromOffset(wAuto, btnH), Position = UDim2.fromOffset(396, y), TextSize = 21, Parent = content, OnClick = toggleAuto })
 		-- Auto Delete switches
-		Theme.text({ Key = "capsule.auto_delete", Size = UDim2.fromOffset(150, 28), Position = UDim2.fromOffset(0, y + 62), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 17, TextColor3 = Color3.fromRGB(200, 210, 235), Parent = content })
+		Theme.text({ Key = "capsule.auto_delete", Size = UDim2.fromOffset(150, 28), Position = UDim2.fromOffset(0, y + btnH + 8 + (if touch then (Kit.TOUCH_BTN - 28) // 2 else 0)), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 17, TextColor3 = Color3.fromRGB(200, 210, 235), Parent = content })
 		for i, rarity in Config.AutoDeleteRarities do
 			local on = s.autoDelete[rarity] == true
-			Theme.button({ Name = "Delete_" .. rarity, Text = (if on then "🗑️ " else "") .. Lang.rarity(rarity), Color = if on then Theme.Red else Theme.darken(Palette.rarity(rarity), 0.45), Size = UDim2.fromOffset(128, 30), Position = UDim2.fromOffset(156 + (i - 1) * 134, y + 61), TextSize = 16, Corner = 8, Parent = content, OnClick = function()
+			Theme.button({ Name = "Delete_" .. rarity, Text = (if on then "🗑️ " else "") .. Lang.rarity(rarity), Color = if on then Theme.Red else Theme.darken(Palette.rarity(rarity), 0.45), Size = UDim2.fromOffset(128, if touch then Kit.TOUCH_BTN else 30), Position = UDim2.fromOffset(156 + (i - 1) * 134, y + btnH + 7), TextSize = 16, Corner = 8, Parent = content, OnClick = function()
 				Kit.request("SetAutoDelete", { rarity = rarity, on = not on })
 			end })
 		end
 	elseif Purchase.restricted() then
-		Theme.text({ Key = "msg.restricted", Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, y + 62), MaxTextSize = 17, TextColor3 = Theme.Red, Parent = content })
+		Theme.text({ Key = "msg.restricted", Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, y + btnH + 8), MaxTextSize = 17, TextColor3 = Theme.Red, Parent = content })
 	end
 end
 

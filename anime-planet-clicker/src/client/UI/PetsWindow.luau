@@ -23,7 +23,7 @@ type Cell = { frame: TextButton, key: string, stroke: UIStroke, check: TextLabel
 
 local window: Windows.Window
 local grid: ScrollingFrame
-local detail: Frame
+local detail: GuiObject
 local countLabel: TextLabel
 local cells: { [string]: Cell } = {}
 local selected: string? = nil
@@ -81,14 +81,19 @@ local function renderDetail(s: { [string]: any })
 	end
 	local def = Formulas.PetById[pet.id]
 	local color = Palette.rarity(def.rarity)
-	local stage = Theme.new("Frame", { Size = UDim2.new(1, -16, 0, 120), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.new(1, 1, 1), Parent = detail }, { Theme.corner(12), Theme.stroke(2), Theme.gradient(Theme.lighten(color, 0.3), Theme.darken(color, 0.5)) })
+	local touch = Kit.touch
+	-- touch: a shorter stage and 56-unit buttons; the panel scrolls
+	local stageH = if touch then 84 else 120
+	local textY = stageH + 12
+	local btnH = if touch then Kit.TOUCH_BTN else 36
+	local stage = Theme.new("Frame", { Size = UDim2.new(1, -16, 0, stageH), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Color3.new(1, 1, 1), Parent = detail }, { Theme.corner(12), Theme.stroke(2), Theme.gradient(Theme.lighten(color, 0.3), Theme.darken(color, 0.5)) })
 	local vp = PetIcon.new(pet.id, pet.tier, false, 0)
 	vp.Parent = stage
 	spinModel = vp:FindFirstChildOfClass("Model")
-	Theme.text({ Text = Lang.pet(pet.id, pet.tier), Size = UDim2.new(1, -12, 0, 26), Position = UDim2.fromOffset(6, 132), MaxTextSize = 22, Parent = detail })
-	Theme.text({ Text = Lang.rarity(def.rarity), TextColor3 = color, Size = UDim2.new(1, -12, 0, 20), Position = UDim2.fromOffset(6, 158), MaxTextSize = 18, Parent = detail })
-	Theme.text({ Text = "💪 +" .. Format.abbrev(power(s, pet) * 100) .. "%", TextColor3 = Theme.Power, Size = UDim2.new(1, -12, 0, 22), Position = UDim2.fromOffset(6, 180), MaxTextSize = 20, Parent = detail })
-	local y = 206
+	Theme.text({ Text = Lang.pet(pet.id, pet.tier), Size = UDim2.new(1, -12, 0, 26), Position = UDim2.fromOffset(6, textY), MaxTextSize = 22, Parent = detail })
+	Theme.text({ Text = Lang.rarity(def.rarity), TextColor3 = color, Size = UDim2.new(1, -12, 0, 20), Position = UDim2.fromOffset(6, textY + 26), MaxTextSize = 18, Parent = detail })
+	Theme.text({ Text = "💪 +" .. Format.abbrev(power(s, pet) * 100) .. "%", TextColor3 = Theme.Power, Size = UDim2.new(1, -12, 0, 22), Position = UDim2.fromOffset(6, textY + 48), MaxTextSize = 20, Parent = detail })
+	local y = textY + 74
 	if pet.trait then
 		local t = Config.Traits[Config.TraitIndex[pet.trait]]
 		Theme.text({ Text = "🔥 " .. Lang.t("trait." .. pet.trait) .. " x" .. t.mult, TextColor3 = Palette.rarity(t.rarity), Size = UDim2.new(1, -12, 0, 20), Position = UDim2.fromOffset(6, y), MaxTextSize = 18, Parent = detail })
@@ -96,8 +101,8 @@ local function renderDetail(s: { [string]: any })
 	end
 	local equipped = table.find(s.equipped, uid) ~= nil
 	local function btn(name: string, text: string, c: Color3, onClick: () -> ())
-		Theme.button({ Name = name, Text = text, Color = c, Size = UDim2.new(1, -16, 0, 36), Position = UDim2.fromOffset(8, y), TextSize = 19, Parent = detail, OnClick = onClick })
-		y += 40
+		Theme.button({ Name = name, Text = text, Color = c, Size = UDim2.new(1, -16, 0, btnH), Position = UDim2.fromOffset(8, y), TextSize = 19, Parent = detail, OnClick = onClick })
+		y += btnH + 4
 	end
 	btn("Equip", Lang.t(if equipped then "pets.unequip" else "pets.equip"), if equipped then Theme.Grey else Theme.Green, function()
 		Kit.request(if equipped then "Unequip" else "Equip", { uid = uid })
@@ -131,6 +136,9 @@ local function renderDetail(s: { [string]: any })
 	btn("Lock", Lang.t(if pet.locked then "pets.unlock" else "pets.lock"), Theme.Blue, function()
 		Kit.request("Lock", { uid = uid, locked = not pet.locked })
 	end)
+	if detail:IsA("ScrollingFrame") then
+		detail.CanvasSize = UDim2.fromOffset(0, y + 8)
+	end
 end
 
 function PetsWindow.refresh()
@@ -205,15 +213,19 @@ end
 function PetsWindow.init()
 	window = Windows.create("Pets", "🐾", "win.pets", Theme.Pink, Vector2.new(780, 490))
 	local body = window.body
-	countLabel = Theme.text({ Name = "Count", Text = "", Size = UDim2.fromOffset(250, 30), Position = UDim2.fromOffset(2, 2), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 19, Parent = body })
-	Theme.button({ Name = "EquipBest", Key = "pets.equip_best", Color = Theme.Green, Size = UDim2.fromOffset(130, 34), Position = UDim2.fromOffset(258, 0), TextSize = 18, Parent = body, OnClick = function()
+	local touch = Kit.touch
+	-- top bar height: the grid and detail panel start below it
+	local barH = if touch then Kit.TOUCH_BTN else 34
+	local topH = barH + 8
+	countLabel = Theme.text({ Name = "Count", Text = "", Size = UDim2.fromOffset(if touch then 214 else 250, 30), Position = UDim2.fromOffset(2, (barH - 30) // 2), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 19, Parent = body })
+	Theme.button({ Name = "EquipBest", Key = "pets.equip_best", Color = Theme.Green, Size = UDim2.fromOffset(if touch then 150 else 130, barH), Position = UDim2.fromOffset(if touch then 222 else 258, 0), TextSize = 18, Parent = body, OnClick = function()
 		Kit.request("EquipBest")
 	end })
-	Theme.button({ Name = "FuseAll", Key = "pets.fuse_all", Color = Theme.Yellow, Size = UDim2.fromOffset(110, 34), Position = UDim2.fromOffset(394, 0), TextSize = 18, Parent = body, OnClick = function()
+	Theme.button({ Name = "FuseAll", Key = "pets.fuse_all", Color = Theme.Yellow, Size = UDim2.fromOffset(if touch then 126 else 110, barH), Position = UDim2.fromOffset(if touch then 378 else 394, 0), TextSize = 18, Parent = body, OnClick = function()
 		local ok, res = Net.request("FuseAll")
 		Toasts.show(if ok then Lang.t("pets.fused_n", { n = res }) else Lang.msg(res), if ok then "success" else "error")
 	end })
-	deleteButton = Theme.button({ Name = "DeleteMode", Text = "", Color = Theme.Grey, Size = UDim2.fromOffset(150, 34), Position = UDim2.fromOffset(510, 0), TextSize = 17, Parent = body, OnClick = function()
+	deleteButton = Theme.button({ Name = "DeleteMode", Text = "", Color = Theme.Grey, Size = UDim2.fromOffset(if touch then 162 else 150, barH), Position = UDim2.fromOffset(if touch then 510 else 510, 0), TextSize = 17, Parent = body, OnClick = function()
 		if deleteMode then
 			local uids = {}
 			for uid in marked do
@@ -231,11 +243,25 @@ function PetsWindow.init()
 		PetsWindow.refresh()
 	end })
 	-- "+" next to the equip cap: sells the hole (Pet Slots pass)
-	Theme.button({ Name = "MoreSlots", Text = "+", Color = Theme.Robux, Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(666, 0), TextSize = 26, Parent = body, OnClick = function()
+	Theme.button({ Name = "MoreSlots", Text = "+", Color = Theme.Robux, Size = UDim2.fromOffset(barH, barH), Position = UDim2.fromOffset(if touch then 678 else 666, 0), TextSize = 26, Parent = body, OnClick = function()
 		Purchase.pass("PetSlots")
 	end })
-	grid = Kit.grid(body, UDim2.new(1, -226, 1, -42), UDim2.fromOffset(0, 42), Vector2.new(82, 82), 6)
-	detail = Theme.panel({ Name = "Detail", Size = UDim2.new(0, 218, 1, -42), Position = UDim2.new(1, -218, 0, 42), BackgroundColor3 = Theme.PaperDark, Corner = 12, StrokeThickness = 2, Parent = body })
+	grid = Kit.grid(body, UDim2.new(1, -226, 1, -topH), UDim2.fromOffset(0, topH), Vector2.new(82, 82), 6)
+	if touch then
+		detail = Theme.new("ScrollingFrame", {
+			Name = "Detail",
+			Size = UDim2.new(0, 218, 1, -topH),
+			Position = UDim2.new(1, -218, 0, topH),
+			BackgroundColor3 = Theme.PaperDark,
+			BorderSizePixel = 0,
+			ScrollBarThickness = 6,
+			CanvasSize = UDim2.new(),
+			ScrollingDirection = Enum.ScrollingDirection.Y,
+			Parent = body,
+		}, { Theme.corner(12), Theme.stroke(2) })
+	else
+		detail = Theme.panel({ Name = "Detail", Size = UDim2.new(0, 218, 1, -topH), Position = UDim2.new(1, -218, 0, topH), BackgroundColor3 = Theme.PaperDark, Corner = 12, StrokeThickness = 2, Parent = body })
+	end
 	window.onOpen = function()
 		PetsWindow.refresh()
 	end

@@ -13,9 +13,17 @@ export type Window = {
 	name: string,
 	frame: Frame,
 	body: Frame,
+	bodyW: number, -- design size of `body` (windows lay their content out with these)
+	bodyH: number,
 	onOpen: (() -> ())?,
 	onClose: (() -> ())?,
 }
+
+-- Touch windows are at most this tall (design units): Root scales them to ~0.8 on a
+-- landscape phone, so 372 -> ~300 px of the ~311 px usable height. Their buttons are
+-- >= 56 units tall (>= 44 px real).
+Windows.TOUCH_H = 372
+Windows.touch = Root.isTouch
 
 local windows: { [string]: Window } = {}
 local current: string? = nil
@@ -61,6 +69,11 @@ end
 -- Creates window chrome and returns it; the caller fills `body`. titleKey is a translation key.
 function Windows.create(name: string, icon: string, titleKey: string, color: Color3, size: Vector2?): Window
 	local sz = size or Vector2.new(720, 470)
+	local touch = Root.isTouch
+	if touch then
+		sz = Vector2.new(sz.X, math.min(sz.Y, Windows.TOUCH_H))
+	end
+	local headerH = if touch then 50 else 58
 	local frame = Theme.panel({
 		Name = name .. "Window",
 		Size = UDim2.fromOffset(sz.X, sz.Y),
@@ -73,11 +86,11 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		StrokeThickness = 4,
 	})
 	Theme.new("UIScale", { Parent = frame })
-	Root.mount(frame)
+	Root.mount(frame, nil, true)
 	Theme.shadow(frame, 22)
 	local header = Theme.new("Frame", {
 		Name = "Header",
-		Size = UDim2.new(1, 0, 0, 58),
+		Size = UDim2.new(1, 0, 0, headerH),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 21,
 		Parent = frame,
@@ -104,18 +117,18 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 	-- icon medallion poking out of the top-left corner
 	local medal = Theme.new("Frame", {
 		Name = "Medal",
-		Size = UDim2.fromOffset(70, 70),
-		Position = UDim2.fromOffset(-16, -18),
+		Size = UDim2.fromOffset(if touch then 62 else 70, if touch then 62 else 70),
+		Position = UDim2.fromOffset(-16, if touch then -14 else -18),
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		ZIndex = 23,
 		Parent = frame,
-	}, { Theme.corner(35), Theme.stroke(4), Theme.gradient(Theme.White, Theme.lighten(color, 0.55)) })
+	}, { Theme.corner(if touch then 31 else 35), Theme.stroke(4), Theme.gradient(Theme.White, Theme.lighten(color, 0.55)) })
 	local medalIcon = Theme.glyph({ Emoji = icon, Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = medal })
 	medalIcon.ZIndex = 24
 	local titleLabel = Theme.text({
 		Text = "",
-		Size = UDim2.new(1, -210, 0, 42),
-		Position = UDim2.new(0, 68, 0, 7),
+		Size = UDim2.new(1, -210, 0, if touch then 38 else 42),
+		Position = UDim2.new(0, 68, 0, if touch then 6 else 7),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		MaxTextSize = 36,
 		Stroke = 3,
@@ -148,12 +161,12 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 	local body = Theme.new("Frame", {
 		Name = "Body",
 		BackgroundTransparency = 1,
-		Size = UDim2.new(1, -28, 1, -76),
-		Position = UDim2.new(0, 14, 0, 64),
+		Size = UDim2.new(1, -28, 1, -(headerH + 18)),
+		Position = UDim2.new(0, 14, 0, headerH + 6),
 		ZIndex = 21,
 		Parent = frame,
 	}) :: Frame
-	local w: Window = { name = name, frame = frame, body = body }
+	local w: Window = { name = name, frame = frame, body = body, bodyW = sz.X - 28, bodyH = sz.Y - headerH - 18 }
 	windows[name] = w
 	return w
 end

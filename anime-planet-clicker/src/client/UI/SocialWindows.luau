@@ -12,6 +12,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Referral = require(ReplicatedStorage.Shared.Referral)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
+local Kit = require(script.Parent.Kit)
 local Windows = require(script.Parent.Windows)
 local Toasts = require(script.Parent.Toasts)
 local Hud = require(script.Parent.Hud)
@@ -46,7 +47,7 @@ function SocialWindows.card(icon: string, title: string, body: string, buttons: 
 		StrokeThickness = 4,
 		Parent = Root.gui,
 	})
-	local holder = Root.mount(frame)
+	local holder = Root.mount(frame, nil, true)
 	holder.Name = "PopupHolder"
 	holder.ZIndex = 60
 	Theme.shadow(frame, 22)
@@ -68,7 +69,7 @@ function SocialWindows.card(icon: string, title: string, body: string, buttons: 
 	for i, spec in buttons do
 		Theme.button({ Name = "Button" .. i, Text = spec.text, Color = spec.color, Size = UDim2.fromOffset(if #buttons > 1 then 220 else 300, 58), LayoutOrder = i, TextSize = 25, Parent = row, OnClick = spec.onClick })
 	end
-	Theme.button({ Name = "Close", Text = "X", Color = Theme.Red, Size = UDim2.fromOffset(52, 52), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Corner = 26, Parent = frame, OnClick = close })
+	Theme.button({ Name = "Close", Text = "X", Color = Theme.Red, Size = UDim2.fromOffset(if Root.isTouch then 56 else 52, if Root.isTouch then 56 else 52), Position = UDim2.new(1, 14, 0, -14), AnchorPoint = Vector2.new(1, 0), Corner = 26, Parent = frame, OnClick = close })
 	if extra then
 		extra(frame)
 	end
@@ -167,22 +168,28 @@ end
 local function inviteWindow()
 	local w = Windows.create("Invite", "💌", "win.invite", Theme.Pink, Vector2.new(600, 440))
 	local body = w.body
-	Theme.text({ Key = "invite.desc", Args = { n = Config.ReferralInviteeGift.amount }, TextWrapped = true, Size = UDim2.new(1, -20, 0, 84), Position = UDim2.fromOffset(10, 0), MaxTextSize = 23, Parent = body })
-	local count = Theme.text({ Text = "", Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, 88), TextColor3 = Theme.Yellow, MaxTextSize = 20, Parent = body })
-	local row = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 64), Position = UDim2.fromOffset(0, 124), Parent = body }, {
+	local touch = Kit.touch
+	-- touch: the window is 372 tall, so the blocks are packed tighter and buttons are 56
+	local descH = if touch then 62 else 84
+	local countY = descH + 4
+	local rowY = countY + (if touch then 28 else 36)
+	local rowH = if touch then 60 else 64
+	Theme.text({ Key = "invite.desc", Args = { n = Config.ReferralInviteeGift.amount }, TextWrapped = true, Size = UDim2.new(1, -20, 0, descH), Position = UDim2.fromOffset(10, 0), MaxTextSize = 23, Parent = body })
+	local count = Theme.text({ Text = "", Size = UDim2.new(1, -20, 0, 26), Position = UDim2.fromOffset(10, countY), TextColor3 = Theme.Yellow, MaxTextSize = 20, Parent = body })
+	local row = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, rowH), Position = UDim2.fromOffset(0, rowY), Parent = body }, {
 		Theme.list(Enum.FillDirection.Horizontal, 12, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
-	Theme.button({ Name = "InviteFriends", Key = "invite.button", Color = Theme.Green, Size = UDim2.fromOffset(250, 60), LayoutOrder = 1, TextSize = 24, Parent = row, OnClick = inviteFriends })
-	Theme.button({ Name = "ShareLink", Key = "invite.share", Color = Theme.Blue, Size = UDim2.fromOffset(250, 60), LayoutOrder = 2, TextSize = 24, Parent = row, OnClick = function()
+	Theme.button({ Name = "InviteFriends", Key = "invite.button", Color = Theme.Green, Size = UDim2.fromOffset(250, if touch then Kit.TOUCH_BTN else 60), LayoutOrder = 1, TextSize = 24, Parent = row, OnClick = inviteFriends })
+	Theme.button({ Name = "ShareLink", Key = "invite.share", Color = Theme.Blue, Size = UDim2.fromOffset(250, if touch then Kit.TOUCH_BTN else 60), LayoutOrder = 2, TextSize = 24, Parent = row, OnClick = function()
 		local ok, err = Net.request("ShareLink")
 		if not ok then
 			Toasts.show(Lang.msg(err), "error")
 		end
 	end })
-	local group = Theme.panel({ Name = "Group", Size = UDim2.new(1, -20, 0, 140), Position = UDim2.fromOffset(10, 204), BackgroundColor3 = Theme.PaperLight, Visible = false, Parent = body })
+	local group = Theme.panel({ Name = "Group", Size = UDim2.new(1, -20, 0, 140), Position = UDim2.fromOffset(10, rowY + rowH + (if touch then 8 else 16)), BackgroundColor3 = Theme.PaperLight, Visible = false, Parent = body })
 	Theme.text({ Text = "🛰️", Stroke = false, Size = UDim2.fromOffset(60, 60), Position = UDim2.fromOffset(12, 10), Parent = group })
 	Theme.text({ Key = "group.desc", Args = { pet = { key = "pet." .. Config.GroupGiftPet } }, TextWrapped = true, Size = UDim2.new(1, -96, 0, 60), Position = UDim2.fromOffset(84, 10), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 21, Parent = group })
-	Theme.button({ Name = "JoinGroup", Key = "group.join", Color = Theme.Purple, Size = UDim2.fromOffset(260, 52), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), TextSize = 22, Parent = group, OnClick = function()
+	Theme.button({ Name = "JoinGroup", Key = "group.join", Color = Theme.Purple, Size = UDim2.fromOffset(260, if touch then Kit.TOUCH_BTN else 52), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), TextSize = 22, Parent = group, OnClick = function()
 		pcall(function()
 			(GroupService :: any):PromptJoinAsync(Config.GroupId)
 		end)

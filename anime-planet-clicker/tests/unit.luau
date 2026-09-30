@@ -317,4 +317,15 @@ do
 	check("withinBudget total cap", not ModelFit.withinBudget(100, 300, 1150, 1200))
 end
 
+do
+	-- singular forms: exactly 1 picks the "<key>.one" text, anything else the plural
+	local Locale = require("../src/shared/Locale")
+	check("plural en 2", Locale.t("en", "toast.deleted", { n = 2 }) == "Deleted 2 pets")
+	check("singular en 1", Locale.t("en", "toast.deleted", { n = 1 }) == "Deleted 1 pet")
+	check("singular es 1", Locale.t("es", "pets.fused_n", { n = 1 }) == "¡1 mascota fusionada!")
+	check("singular falls back to the plain text (ja)", Locale.t("ja", "toast.deleted", { n = 1 }) == "ペットを1体削除した")
+	check("fractional stays plural", Locale.t("en", "upgrade.HitSpeed.desc", { n = 0.5 }) == "+0.5 hits per second")
+	check("1 hit per second", Locale.t("en", "upgrade.HitSpeed.desc", { n = 1 }) == "+1 hit per second")
+end
+
 print(string.format("UNIT: %d checks, %d failures", total, fails))

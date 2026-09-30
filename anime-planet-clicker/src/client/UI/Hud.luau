@@ -8,8 +8,12 @@
 --        bottom-centre the Cargo panel with its bar and SELL, the auto chips above it
 --        right         gift timer, offers
 --        bottom-right  Anomaly clock, live event, active buffs with timers
--- Touch: counters + menu go top-left and the right column to the top, so the thumbstick
---        (bottom-left) and the jump button (bottom-right) stay free.
+-- Touch: laid out for ~940x390 design units (Root scales it to ~0.8 on a phone), so the
+--        thumbstick (bottom-left) and the jump button (bottom-right) stay free:
+--          top-left      counters + Shop (ends above the thumbstick)
+--          top           menu strip (every button 64x60), then galaxy name + objective
+--          top-right     gift timer, offers, clocks (ends above the jump button)
+--          bottom-centre auto chips + Cargo; active buffs in a row above them
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
 local TweenService = game:GetService("TweenService")
@@ -104,30 +108,34 @@ function Hud.init()
 	local top = Theme.new("Frame", {
 		Name = "Top",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(if touch then 430 else 540, 96),
-		Position = UDim2.new(0.5, 0, 0, 4),
+		Size = UDim2.fromOffset(if touch then 430 else 540, if touch then 76 else 96),
+		Position = UDim2.new(0.5, 0, 0, if touch then 66 else 4),
 		AnchorPoint = Vector2.new(0.5, 0),
 		Parent = gui,
 	})
 	Root.mount(top)
 	local zoneTitle = Theme.text({ Name = "Zone", Text = "", Size = UDim2.new(1, 0, 0, 30), MaxTextSize = 28, Stroke = 3, Parent = top })
-	local objective = Theme.new("Frame", { Name = "Objective", Size = UDim2.new(1, 0, 0, 44), Position = UDim2.fromOffset(0, 34), BackgroundColor3 = Theme.PaperDark, BackgroundTransparency = 0.15, Parent = top }, { Theme.corner(14), Theme.stroke(3) })
+	local objective = Theme.new("Frame", { Name = "Objective", Size = UDim2.new(1, 0, 0, if touch then 42 else 44), Position = UDim2.fromOffset(0, if touch then 32 else 34), BackgroundColor3 = Theme.PaperDark, BackgroundTransparency = 0.15, Parent = top }, { Theme.corner(14), Theme.stroke(3) })
 	local objectiveFill = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Parent = objective }, { Theme.corner(14), Theme.gradient(Theme.lighten(Theme.Green, 0.2), Theme.darken(Theme.Green, 0.15)) })
 	local objectiveText = Theme.text({ Name = "Text", Text = "", Size = UDim2.new(1, -20, 1, -8), Position = UDim2.fromOffset(10, 4), MaxTextSize = 24, ZIndex = 2, Parent = objective })
 
 	---------------------------------------------------------------------------
 	-- Left: Shop + menu grid
 	---------------------------------------------------------------------------
-	local COLS, CELL, GAP = if touch then 5 else 3, if touch then 56 else 66, 6
-	local gridW = COLS * CELL + (COLS - 1) * GAP
+	-- PC: 3-column grid in the left column. Touch: one strip of 64x60 buttons across the top
+	-- (beside the counters), so the left edge above the thumbstick only holds counters + Shop.
+	local COLS, GAP = if touch then 10 else 3, if touch then 6 else 6
+	local CELL_W, CELL_H = if touch then 64 else 66, if touch then 60 else 66
+	local gridW = COLS * CELL_W + (COLS - 1) * GAP
+	local leftW = if touch then 196 else gridW
 	local left = Theme.new("Frame", {
 		Name = "Left",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(gridW, if touch then 300 else 360),
-		Position = if touch then UDim2.fromOffset(12, 6) else UDim2.new(0, 12, 0.46, 0),
+		Size = UDim2.fromOffset(leftW, if touch then 168 else 360),
+		Position = if touch then UDim2.fromOffset(8, 4) else UDim2.new(0, 12, 0.46, 0),
 		AnchorPoint = if touch then Vector2.zero else Vector2.new(0, 0.5),
 		Parent = gui,
-	}, { Theme.list(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left, if touch then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Center) })
+	}, { Theme.list(Enum.FillDirection.Vertical, if touch then 4 else 6, Enum.HorizontalAlignment.Left, if touch then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Center) })
 	table.insert(sides, Root.mount(left))
 
 	-- counters (touch: on top of the menu; PC: bottom-left)
@@ -148,7 +156,7 @@ function Hud.init()
 	local stardustPill, stardustLabel = counter(counters, "✨", Theme.Stardust, 3, "Stardust")
 	Hud.stardustPill = stardustPill
 
-	local shop = Theme.button({ Name = "Store", Text = "", Color = Theme.Red, Size = UDim2.fromOffset(gridW, if touch then 44 else 50), LayoutOrder = 1, TextSize = 30, Parent = left, OnClick = function()
+	local shop = Theme.button({ Name = "Store", Text = "", Color = Theme.Red, Size = UDim2.fromOffset(leftW, if touch then 56 else 50), LayoutOrder = 1, TextSize = 30, Parent = left, OnClick = function()
 		Windows.toggle("Store")
 	end })
 	local shopLabel = shop:FindFirstChild("Label") :: TextLabel
@@ -165,13 +173,18 @@ function Hud.init()
 	shopText()
 	Lang.Changed:Connect(shopText)
 
-	local menu = Theme.new("Frame", { Name = "Menu", BackgroundTransparency = 1, Size = UDim2.fromOffset(gridW, 4 * (CELL + GAP)), LayoutOrder = 2, Parent = left }, {
-		Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(CELL, CELL), CellPadding = UDim2.fromOffset(GAP, GAP), SortOrder = Enum.SortOrder.LayoutOrder }),
+	local menu = Theme.new("Frame", { Name = "Menu", BackgroundTransparency = 1, Size = UDim2.fromOffset(gridW, if touch then CELL_H else 4 * (CELL_H + GAP)), LayoutOrder = 2, Parent = if touch then gui else left }, {
+		Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(CELL_W, CELL_H), CellPadding = UDim2.fromOffset(GAP, GAP), SortOrder = Enum.SortOrder.LayoutOrder }),
 	})
+	if touch then
+		menu.Position = UDim2.fromOffset(214, 4)
+		table.insert(sides, Root.mount(menu))
+	end
 	local menuButtons: { [string]: TextButton } = {}
 	for i, e in MENU do
 		local name, icon, color = e[1], e[2], e[3]
-		local b = Theme.button({ Name = name, Color = color, LayoutOrder = i, Corner = 14, Parent = menu, OnClick = function()
+		-- earlier buttons draw above later ones so a badge poking into the gap stays visible
+		local b = Theme.button({ Name = name, Color = color, LayoutOrder = i, Corner = 14, ZIndex = 2 + #MENU - i, Parent = menu, OnClick = function()
 			Windows.toggle(name)
 		end })
 		local label = b:FindFirstChild("Label") :: TextLabel
@@ -187,7 +200,7 @@ function Hud.init()
 		else
 			label.Text = icon
 		end
-		Theme.text({ Key = "menu." .. name, Size = UDim2.new(1, -6, 0.28, 0), Position = UDim2.new(0.5, 0, 0.84, 0), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = 15, ZIndex = 2, Parent = b })
+		Theme.text({ Key = "menu." .. name, Size = UDim2.new(1, if touch then -2 else -6, 0.28, 0), Position = UDim2.new(0.5, 0, 0.84, 0), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = if touch then 17 else 15, ZIndex = b.ZIndex + 1, Parent = b })
 		badges[name] = Theme.badge(b)
 		menuButtons[name] = b
 	end
@@ -198,19 +211,19 @@ function Hud.init()
 	local bottom = Theme.new("Frame", {
 		Name = "Bottom",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(460, 132),
-		Position = UDim2.new(if touch then 0.54 else 0.5, 0, 1, -6),
+		Size = UDim2.fromOffset(if touch then 494 else 460, if touch then 146 else 132),
+		Position = UDim2.new(0.5, 0, 1, -6),
 		AnchorPoint = Vector2.new(0.5, 1),
 		Parent = gui,
 	})
 	Root.mount(bottom)
-	local chipRow = Theme.new("Frame", { Name = "Autos", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 36), Parent = bottom }, {
+	local chipRow = Theme.new("Frame", { Name = "Autos", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, if touch then 56 else 36), Parent = bottom }, {
 		Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
 	local chips: { [string]: TextButton } = {}
 	for i, e in AUTO_CHIPS do
 		local key, icon = e[1], e[2]
-		local chip = Theme.button({ Name = "Auto_" .. key, Text = "", Color = Theme.Grey, Size = UDim2.fromOffset(86, 34), LayoutOrder = i, Corner = 10, TextSize = 17, Parent = chipRow, OnClick = function()
+		local chip = Theme.button({ Name = "Auto_" .. key, Text = "", Color = Theme.Grey, Size = UDim2.fromOffset(if touch then 94 else 86, if touch then 56 else 34), LayoutOrder = i, Corner = 10, TextSize = if touch then 18 else 17, Parent = chipRow, OnClick = function()
 			local s = Net.state
 			if not s then
 				return
@@ -231,11 +244,11 @@ function Hud.init()
 	-- Overcharge meter (Storm Reach)
 	local charge = Theme.bar(bottom, UDim2.fromOffset(300, 16), Theme.Yellow)
 	charge.frame.Name = "Overcharge"
-	charge.frame.Position = UDim2.new(0.5, 0, 0, 40)
+	charge.frame.Position = UDim2.new(0.5, 0, 0, if touch then 60 else 40)
 	charge.frame.AnchorPoint = Vector2.new(0.5, 0)
 	charge.frame.Visible = false
 
-	local cargo = Theme.panel({ Name = "Cargo", Size = UDim2.fromOffset(460, 70), Position = UDim2.new(0.5, 0, 1, 0), AnchorPoint = Vector2.new(0.5, 1), BackgroundColor3 = Theme.PaperDark, BackgroundTransparency = 0.1, Corner = 14, Parent = bottom })
+	local cargo = Theme.panel({ Name = "Cargo", Size = UDim2.fromOffset(if touch then 494 else 460, 70), Position = UDim2.new(0.5, 0, 1, 0), AnchorPoint = Vector2.new(0.5, 1), BackgroundColor3 = Theme.PaperDark, BackgroundTransparency = 0.1, Corner = 14, Parent = bottom })
 	cargo:SetAttribute("BlocksMining", true)
 	Hud.cargoPanel = cargo
 	Theme.text({ Key = "hud.cargo", Size = UDim2.fromOffset(110, 22), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 18, TextColor3 = Color3.fromRGB(190, 200, 230), Parent = cargo })
@@ -256,36 +269,49 @@ function Hud.init()
 	local right = Theme.new("Frame", {
 		Name = "Right",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(190, 330),
-		Position = if touch then UDim2.new(1, -12, 0, 6) else UDim2.new(1, -12, 1, -8),
+		Size = UDim2.fromOffset(if touch then 210 else 190, if touch then 232 else 330),
+		Position = if touch then UDim2.new(1, -8, 0, 66) else UDim2.new(1, -12, 1, -8),
 		AnchorPoint = if touch then Vector2.new(1, 0) else Vector2.new(1, 1),
 		Parent = gui,
 	}, { Theme.list(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Right, if touch then Enum.VerticalAlignment.Top else Enum.VerticalAlignment.Bottom) })
 	table.insert(sides, Root.mount(right))
 
-	local starterButton = Theme.button({ Name = "StarterPack", Text = "", Color = Theme.Orange, Size = UDim2.fromOffset(186, 46), LayoutOrder = 1, TextSize = 20, Parent = right, OnClick = function()
+	local starterButton = Theme.button({ Name = "StarterPack", Text = "", Color = Theme.Orange, Size = UDim2.fromOffset(if touch then 206 else 186, if touch then 56 else 46), LayoutOrder = 1, TextSize = 20, Parent = right, OnClick = function()
 		Hud.onStarterClick()
 	end })
 	starterButton.Visible = false
-	local adButton = Theme.button({ Name = "AdBoost", Text = "", Color = Theme.Purple, Size = UDim2.fromOffset(186, 42), LayoutOrder = 2, TextSize = 18, Parent = right, OnClick = function()
+	local adButton = Theme.button({ Name = "AdBoost", Text = "", Color = Theme.Purple, Size = UDim2.fromOffset(if touch then 206 else 186, if touch then 56 else 42), LayoutOrder = 2, TextSize = 18, Parent = right, OnClick = function()
 		Ads.watch("AdBoost")
 	end })
 	adButton.Visible = false
-	local giftButton = Theme.button({ Name = "GiftTimer", Text = "", Color = Theme.Pink, Size = UDim2.fromOffset(186, 42), LayoutOrder = 3, TextSize = 20, Parent = right, OnClick = function()
+	local giftButton = Theme.button({ Name = "GiftTimer", Text = "", Color = Theme.Pink, Size = UDim2.fromOffset(if touch then 206 else 186, if touch then 56 else 42), LayoutOrder = 3, TextSize = 20, Parent = right, OnClick = function()
 		Windows.open("Rewards")
 	end })
+	-- Active buffs: stacked in the right column on PC; on touch a row above the auto chips
+	-- (the right column ends above the jump button and has no room for four more pills).
+	local buffParent: Instance = right
+	if touch then
+		buffParent = Theme.new("Frame", {
+			Name = "Buffs",
+			BackgroundTransparency = 1,
+			Size = UDim2.fromOffset(520, 28),
+			Position = UDim2.new(0.5, 0, 0, -32),
+			AnchorPoint = Vector2.new(0.5, 0),
+			Parent = bottom,
+		}, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
+	end
 	local buffRows: { [string]: TextLabel } = {}
 	for i, id in Config.BuffOrder do
-		local row = Theme.new("Frame", { Name = "Buff_" .. id, Size = UDim2.fromOffset(150, 28), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 10 + i, Visible = false, Parent = right }, {
+		local row = Theme.new("Frame", { Name = "Buff_" .. id, Size = UDim2.fromOffset(if touch then 124 else 150, 28), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 10 + i, Visible = false, Parent = buffParent }, {
 			Theme.corner(14), Theme.stroke(2), Theme.gradient(Theme.lighten((Palette.Buff :: any)[id], 0.1), Theme.darken((Palette.Buff :: any)[id], 0.3)),
 		})
 		buffRows[id] = Theme.text({ Text = "", Size = UDim2.new(1, -12, 1, -4), Position = UDim2.fromOffset(6, 2), MaxTextSize = 18, Parent = row })
 	end
-	local eventPill = Theme.new("Frame", { Name = "EventPill", Size = UDim2.fromOffset(186, 34), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 20, Visible = false, Parent = right }, { Theme.corner(17), Theme.stroke(3) })
+	local eventPill = Theme.new("Frame", { Name = "EventPill", Size = UDim2.fromOffset(if touch then 206 else 186, if touch then 32 else 34), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 20, Visible = false, Parent = right }, { Theme.corner(17), Theme.stroke(3) })
 	local eventGradient = Theme.gradient(Theme.lighten(Theme.Green, 0.2), Theme.darken(Theme.Green, 0.2))
 	eventGradient.Parent = eventPill
 	local eventText = Theme.text({ Text = "", Size = UDim2.new(1, -14, 1, -6), Position = UDim2.fromOffset(7, 3), MaxTextSize = 19, Parent = eventPill })
-	local anomalyPill = Theme.new("Frame", { Name = "AnomalyClock", Size = UDim2.fromOffset(186, 34), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 21, Parent = right }, { Theme.corner(17), Theme.stroke(3) })
+	local anomalyPill = Theme.new("Frame", { Name = "AnomalyClock", Size = UDim2.fromOffset(if touch then 206 else 186, if touch then 32 else 34), BackgroundColor3 = Color3.new(1, 1, 1), LayoutOrder = 21, Parent = right }, { Theme.corner(17), Theme.stroke(3) })
 	local anomalyGradient = Theme.gradient(Color3.fromRGB(60, 200, 190), Color3.fromRGB(30, 110, 130))
 	anomalyGradient.Parent = anomalyPill
 	local anomalyText = Theme.text({ Text = "", Size = UDim2.new(1, -14, 1, -6), Position = UDim2.fromOffset(7, 3), MaxTextSize = 19, Parent = anomalyPill })

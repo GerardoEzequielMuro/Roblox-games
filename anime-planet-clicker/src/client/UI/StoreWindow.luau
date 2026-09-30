@@ -30,7 +30,7 @@ local function card(parent: Instance, order: number, icon: string, color: Color3
 	tile.Position = UDim2.fromOffset(8, 8)
 	Theme.text({ Text = name, Size = UDim2.new(1, -84, 0, 26), Position = UDim2.fromOffset(76, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 22, Parent = f })
 	Theme.text({ Text = desc, TextWrapped = true, Size = UDim2.new(1, -84, 0, 36), Position = UDim2.fromOffset(76, 32), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, MaxTextSize = 16, TextColor3 = Color3.fromRGB(235, 240, 250), Parent = f })
-	Theme.button({ Name = "Buy", Text = if owned then ("✔ " .. Lang.t("store.owned")) elseif live then priceText else Lang.t("store.soon"), Color = if owned then Theme.Green elseif live then Theme.Robux else Theme.Grey, Size = UDim2.new(1, -16, 0, 36), Position = UDim2.new(0, 8, 1, -44), TextSize = 20, Parent = f, OnClick = function()
+	Theme.button({ Name = "Buy", Text = if owned then ("✔ " .. Lang.t("store.owned")) elseif live then priceText else Lang.t("store.soon"), Color = if owned then Theme.Green elseif live then Theme.Robux else Theme.Grey, Size = UDim2.new(1, -16, 0, if Kit.touch then Kit.TOUCH_BTN else 36), Position = UDim2.new(0, 8, 1, if Kit.touch then -(Kit.TOUCH_BTN + 8) else -44), TextSize = 20, Parent = f, OnClick = function()
 		if not owned then
 			onClick()
 		end
@@ -40,7 +40,7 @@ end
 
 function StoreWindow.init()
 	local w = Windows.create("Store", "🛒", "win.store", Theme.Green, Vector2.new(780, 490))
-	local grid = Kit.grid(w.body, UDim2.fromScale(1, 1), nil, Vector2.new(362, 122), 8)
+	local grid = Kit.grid(w.body, UDim2.fromScale(1, 1), nil, Vector2.new(362, if Kit.touch then 140 else 122), 8)
 	local function render()
 		local s = Net.state
 		if not s or not Windows.isOpen("Store") then

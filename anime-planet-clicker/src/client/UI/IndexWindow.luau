@@ -68,19 +68,21 @@ local function petsTab(content: Frame, s: { [string]: any })
 				have += 1
 			end
 		end
-		local section = Theme.new("Frame", { Name = "Section" .. zone, Size = UDim2.new(1, -8, 0, 172), BackgroundColor3 = Theme.Paper, LayoutOrder = zone, Parent = list }, { Theme.corner(12), Theme.stroke(2) })
+		local touch = Kit.touch
+		local headH = if touch then 66 else 40
+		local section = Theme.new("Frame", { Name = "Section" .. zone, Size = UDim2.new(1, -8, 0, headH + 132), BackgroundColor3 = Theme.Paper, LayoutOrder = zone, Parent = list }, { Theme.corner(12), Theme.stroke(2) })
 		local title = if zone <= #Config.Zones then Lang.zone(zone) else Lang.t("index.exclusive")
-		Theme.text({ Text = title .. "   " .. have .. "/" .. #pets, Size = UDim2.new(1, -230, 0, 28), Position = UDim2.fromOffset(10, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 22, Parent = section })
+		Theme.text({ Text = title .. "   " .. have .. "/" .. #pets, Size = UDim2.new(1, -230, 0, 28), Position = UDim2.fromOffset(10, if touch then 19 else 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 22, Parent = section })
 		if zone <= #Config.Zones then
 			local claimed = s.indexClaimed[tostring(zone)] == true
 			local complete = have == #pets
-			Theme.button({ Name = "Claim", Text = if claimed then ("✔ +" .. math.floor(Config.IndexBoostPerZone * 100) .. "% 💥") else ("+" .. Config.IndexRewardCrystals[zone] .. " 💎  +" .. math.floor(Config.IndexBoostPerZone * 100) .. "% 💥"), Color = if claimed then Theme.Grey elseif complete then Theme.Green else Theme.darken(Theme.Blue, 0.4), Size = UDim2.fromOffset(210, 32), Position = UDim2.new(1, -220, 0, 5), TextSize = 17, Parent = section, OnClick = function()
+			Theme.button({ Name = "Claim", Text = if claimed then ("✔ +" .. math.floor(Config.IndexBoostPerZone * 100) .. "% 💥") else ("+" .. Config.IndexRewardCrystals[zone] .. " 💎  +" .. math.floor(Config.IndexBoostPerZone * 100) .. "% 💥"), Color = if claimed then Theme.Grey elseif complete then Theme.Green else Theme.darken(Theme.Blue, 0.4), Size = UDim2.fromOffset(210, if touch then Kit.TOUCH_BTN else 32), Position = UDim2.new(1, -220, 0, if touch then 4 else 5), TextSize = 17, Parent = section, OnClick = function()
 				if not claimed then
 					Kit.request("ClaimIndex", { zone = zone })
 				end
 			end })
 		end
-		local row = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -16, 0, 124), Position = UDim2.fromOffset(8, 40), Parent = section }, {
+		local row = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, -16, 0, 124), Position = UDim2.fromOffset(8, headH), Parent = section }, {
 			Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
 		})
 		for i, pet in pets do
@@ -122,7 +124,8 @@ end
 
 function IndexWindow.init()
 	local w = Windows.create("Index", "📖", "win.index", Theme.Blue, Vector2.new(780, 490))
-	local content = Theme.new("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -46), Position = UDim2.fromOffset(0, 46), Parent = w.body }) :: Frame
+	local tabH = if Kit.touch then Kit.TOUCH_BTN else 40
+	local content = Theme.new("Frame", { Name = "Content", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 1, -(tabH + 6)), Position = UDim2.fromOffset(0, tabH + 6), Parent = w.body }) :: Frame
 	local tabs: Kit.Tabs
 	local function render()
 		local s = Net.state
@@ -136,7 +139,7 @@ function IndexWindow.init()
 			petsTab(content, s)
 		end
 	end
-	tabs = Kit.tabs(w.body, UDim2.fromOffset(420, 40), UDim2.fromOffset(0, 0), { { "pets", "🐾", Theme.Pink }, { "planets", "🪐", Theme.Orange } }, function()
+	tabs = Kit.tabs(w.body, UDim2.fromOffset(420, tabH), UDim2.fromOffset(0, 0), { { "pets", "🐾", Theme.Pink }, { "planets", "🪐", Theme.Orange } }, function()
 		render()
 	end)
 	local function names()

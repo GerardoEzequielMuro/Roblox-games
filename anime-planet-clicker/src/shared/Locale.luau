@@ -65,10 +65,13 @@ local function format(lang: string, template: string, args: { [string]: any }?):
 	end))
 end
 
--- Translated text for key; falls back to English, then to the key itself.
+-- Translated text for key; falls back to English, then to the key itself. A `.one` sibling
+-- key is used when args.n == 1 (singular).
 function Locale.t(lang: string, key: string, args: { [string]: any }?): string
 	local pack = load(lang)
-	local s = pack and pack[key]
+	-- exactly 1 picks the "<key>.one" singular when the language has one (grammar: "1 pet")
+	local k = if args ~= nil and (args :: any).n == 1 and pack ~= nil and pack[key .. ".one"] ~= nil then key .. ".one" else key
+	local s = pack and pack[k]
 	if not s and lang ~= Locale.Default then
 		local en = load(Locale.Default)
 		s = en and en[key]

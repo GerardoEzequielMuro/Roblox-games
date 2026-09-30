@@ -5,11 +5,17 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Format = require(ReplicatedStorage.Shared.Format)
 local Theme = require(script.Parent.Theme)
+local Root = require(script.Parent.Root)
 local Toasts = require(script.Parent.Toasts)
 local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
 
 local Kit = {}
+
+-- Touch windows: every tappable control is at least this tall (design units; the window
+-- scale is ~0.8 on a phone, so >= 44 px real).
+Kit.TOUCH_BTN = 56
+Kit.touch = Root.isTouch
 
 Kit.CURRENCY_ICON = { stardust = "✨", crystals = "💎", spores = "🍄", cryo = "❄️", embers = "🔥", volt = "⚡", essence = "🌌" }
 Kit.CURRENCY_COLOR = {
@@ -133,14 +139,15 @@ end
 
 -- Toggle row: label + ON/OFF button.
 function Kit.toggle(parent: Instance, labelKey: string, order: number, get: () -> boolean, set: (on: boolean) -> ()): (Frame, () -> ())
-	local row = Theme.new("Frame", { Name = "Toggle", Size = UDim2.new(1, -8, 0, 46), BackgroundColor3 = Theme.PaperLight, LayoutOrder = order, Parent = parent }, { Theme.corner(10), Theme.stroke(2) }) :: Frame
+	local rowH = if Root.isTouch then 64 else 46
+	local row = Theme.new("Frame", { Name = "Toggle", Size = UDim2.new(1, -8, 0, rowH), BackgroundColor3 = Theme.PaperLight, LayoutOrder = order, Parent = parent }, { Theme.corner(10), Theme.stroke(2) }) :: Frame
 	Theme.text({ Key = labelKey, Size = UDim2.new(1, -120, 1, -10), Position = UDim2.fromOffset(12, 5), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, Parent = row })
 	local b: TextButton
 	local function paint()
 		local on = get()
 		Theme.setButton(b, Lang.t(if on then "hud.on" else "hud.off"), if on then Theme.Green else Theme.Grey)
 	end
-	b = Theme.button({ Name = "Switch", Text = "", Size = UDim2.fromOffset(92, 36), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = 20, Parent = row, OnClick = function()
+	b = Theme.button({ Name = "Switch", Text = "", Size = UDim2.fromOffset(92, if Root.isTouch then 56 else 36), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = 20, Parent = row, OnClick = function()
 		set(not get())
 	end })
 	paint()

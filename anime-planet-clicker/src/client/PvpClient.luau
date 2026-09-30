@@ -131,7 +131,7 @@ end
 
 function PvpClient.init()
 	-- HUD: arena HP bar + state pill, top centre under the galaxy name
-	local panel = Theme.new("Frame", { Name = "ArenaHud", BackgroundTransparency = 1, Size = UDim2.fromOffset(360, 64), Position = UDim2.new(0.5, 0, 0, 86), AnchorPoint = Vector2.new(0.5, 0), Visible = false, Parent = Root.gui })
+	local panel = Theme.new("Frame", { Name = "ArenaHud", BackgroundTransparency = 1, Size = UDim2.fromOffset(360, 64), Position = UDim2.new(0.5, 0, 0, if Root.isTouch then 142 else 86), AnchorPoint = Vector2.new(0.5, 0), Visible = false, Parent = Root.gui })
 	Root.mount(panel)
 	local pill = Theme.text({ Name = "State", Text = "", Size = UDim2.new(1, 0, 0, 24), MaxTextSize = 20, Parent = panel })
 	local hp = Theme.bar(panel, UDim2.new(1, 0, 0, 30), Theme.Red)

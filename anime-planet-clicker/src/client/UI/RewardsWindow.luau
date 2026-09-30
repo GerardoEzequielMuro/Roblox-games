@@ -38,14 +38,38 @@ local function rewardsWindow()
 		if not s or not Windows.isOpen("Rewards") then
 			return
 		end
+		local touch = Kit.touch
+		-- touch: the window is 372 tall, so the page scrolls (the scroll position survives a rebuild)
+		local keepY = 0
+		local oldScroll = body:FindFirstChild("Scroll") :: ScrollingFrame?
+		if oldScroll then
+			keepY = oldScroll.CanvasPosition.Y
+		end
 		Kit.clear(body)
+		local page: Instance = body
+		if touch then
+			local sf = Theme.new("ScrollingFrame", {
+				Name = "Scroll",
+				Size = UDim2.fromScale(1, 1),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				ScrollBarThickness = 6,
+				ScrollBarImageColor3 = Color3.fromRGB(120, 130, 190),
+				CanvasSize = UDim2.fromOffset(0, 452),
+				ScrollingDirection = Enum.ScrollingDirection.Y,
+				Parent = body,
+			}) :: ScrollingFrame
+			sf.CanvasPosition = Vector2.new(0, keepY)
+			page = sf
+		end
 		table.clear(tickers)
 		signature = sign()
 		local since = os.clock() - Net.receivedAt
 		local now = s.serverTime + since
 		-- daily strip
-		Theme.text({ Text = Lang.t("rewards.daily", { n = s.daily.streak }), Size = UDim2.new(1, 0, 0, 24), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, Parent = body })
-		local strip = Theme.new("Frame", { Name = "Daily", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 104), Position = UDim2.fromOffset(0, 28), Parent = body }, {
+		local stripY = if touch then 62 else 28
+		Theme.text({ Text = Lang.t("rewards.daily", { n = s.daily.streak }), Size = UDim2.new(1, -220, 0, 24), Position = UDim2.fromOffset(0, if touch then 16 else 0), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, Parent = page })
+		local strip = Theme.new("Frame", { Name = "Daily", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 104), Position = UDim2.fromOffset(0, stripY), Parent = page }, {
 			Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center),
 		})
 		local ready = now - s.daily.last >= Config.DailyCooldown
@@ -62,7 +86,7 @@ local function rewardsWindow()
 			Theme.text({ Text = if done then "✔" else REWARD_ICON[r.kind], Stroke = done, Size = UDim2.new(1, 0, 0, 40), Position = UDim2.fromOffset(0, 22), MaxTextSize = 36, Parent = cell })
 			Theme.text({ Text = Lang.rewardLabel(r), TextWrapped = true, Size = UDim2.new(1, -6, 0, 34), Position = UDim2.fromOffset(3, 63), MaxTextSize = 14, Parent = cell })
 		end
-		local dailyButton = Theme.button({ Name = "ClaimDaily", Text = if ready then Lang.t("rewards.claim") else Format.time(Config.DailyCooldown - (now - s.daily.last)), Color = if ready then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(200, 40), Position = UDim2.new(1, -200, 0, -8), TextSize = 20, Parent = body, OnClick = function()
+		local dailyButton = Theme.button({ Name = "ClaimDaily", Text = if ready then Lang.t("rewards.claim") else Format.time(Config.DailyCooldown - (now - s.daily.last)), Color = if ready then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(200, if touch then Kit.TOUCH_BTN else 40), Position = UDim2.new(1, if touch then -208 else -200, 0, if touch then 0 else -8), TextSize = 20, Parent = page, OnClick = function()
 			Kit.request("ClaimDaily")
 		end })
 		if not ready then
@@ -71,9 +95,11 @@ local function rewardsWindow()
 			end)
 		end
 		-- play-time gifts
-		Theme.text({ Key = "rewards.gifts", Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, 140), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, Parent = body })
-		local gifts = Theme.new("Frame", { Name = "Gifts", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 216), Position = UDim2.fromOffset(0, 168), Parent = body }, {
-			Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(176, 102), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
+		local giftsY = stripY + 112
+		local giftH = if touch then 118 else 102
+		Theme.text({ Key = "rewards.gifts", Size = UDim2.new(1, 0, 0, 24), Position = UDim2.fromOffset(0, giftsY), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, Parent = page })
+		local gifts = Theme.new("Frame", { Name = "Gifts", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 2 * giftH + 8), Position = UDim2.fromOffset(0, giftsY + 28), Parent = page }, {
+			Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(176, giftH), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder }),
 		})
 		local claimed = {}
 		for _, i in s.giftsClaimed do
@@ -89,7 +115,7 @@ local function rewardsWindow()
 			})
 			Theme.text({ Text = REWARD_ICON[g.reward.kind], Stroke = false, Size = UDim2.fromOffset(40, 40), Position = UDim2.fromOffset(6, 6), Parent = cell })
 			Theme.text({ Text = Lang.rewardLabel(g.reward), TextWrapped = true, Size = UDim2.new(1, -56, 0, 40), Position = UDim2.fromOffset(50, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 16, Parent = cell })
-			local giftButton = Theme.button({ Name = "Claim", Text = if state == "done" then "✔" elseif state == "ready" then Lang.t("rewards.claim") else Format.time(left), Color = if state == "ready" then Theme.Green else Theme.Grey, Size = UDim2.new(1, -12, 0, 38), Position = UDim2.new(0, 6, 1, -44), TextSize = 19, Parent = cell, OnClick = function()
+			local giftButton = Theme.button({ Name = "Claim", Text = if state == "done" then "✔" elseif state == "ready" then Lang.t("rewards.claim") else Format.time(left), Color = if state == "ready" then Theme.Green else Theme.Grey, Size = UDim2.new(1, -12, 0, if touch then Kit.TOUCH_BTN else 38), Position = UDim2.new(0, 6, 1, if touch then -(Kit.TOUCH_BTN + 6) else -44), TextSize = 19, Parent = cell, OnClick = function()
 				if state == "ready" then
 					Kit.request("ClaimGift", { index = i })
 				end
@@ -143,17 +169,20 @@ local function questsWindow()
 			if not quest.claimed then
 				allClaimed = false
 			end
-			local row = Kit.row(body, 76, if quest.claimed then Theme.Grey elseif done then Theme.Green else Theme.Blue, i)
+			local touch = Kit.touch
+			local rowH = if touch then 64 else 76
+			local row = Kit.row(body, rowH, if quest.claimed then Theme.Grey elseif done then Theme.Green else Theme.Blue, i)
 			row.Name = "Quest" .. i
-			row.Position = UDim2.fromOffset(0, 28 + (i - 1) * 84)
-			row.Size = UDim2.new(1, 0, 0, 76)
-			local icon = Theme.icon(row, QUEST_ICON[quest.kind] or "📜", Theme.Yellow, 54)
-			icon.Position = UDim2.fromOffset(8, 11)
-			Theme.text({ Text = Lang.t("quest." .. quest.kind, { n = Format.commas(quest.target) }), Size = UDim2.new(1, -250, 0, 26), Position = UDim2.fromOffset(72, 8), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 21, Parent = row })
-			local bar = Theme.bar(row, UDim2.new(1, -250, 0, 24), Theme.Green)
-			bar.frame.Position = UDim2.fromOffset(72, 42)
+			row.Position = UDim2.fromOffset(0, (if touch then 26 else 28) + (i - 1) * (rowH + (if touch then 6 else 8)))
+			row.Size = UDim2.new(1, 0, 0, rowH)
+			local iconSize = if touch then 46 else 54
+			local icon = Theme.icon(row, QUEST_ICON[quest.kind] or "📜", Theme.Yellow, iconSize)
+			icon.Position = UDim2.fromOffset(8, (rowH - iconSize) // 2)
+			Theme.text({ Text = Lang.t("quest." .. quest.kind, { n = Format.commas(quest.target) }), Size = UDim2.new(1, -250, 0, 26), Position = UDim2.fromOffset(72, if touch then 5 else 8), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 21, Parent = row })
+			local bar = Theme.bar(row, UDim2.new(1, -250, 0, if touch then 22 else 24), Theme.Green)
+			bar.frame.Position = UDim2.fromOffset(72, if touch then 36 else 42)
 			bar:set(quest.progress / quest.target, Format.commas(quest.progress) .. " / " .. Format.commas(quest.target))
-			Theme.button({ Name = "Claim", Text = if quest.claimed then "✔" else ("+" .. quest.crystals .. " 💎"), Color = if quest.claimed then Theme.Grey elseif done then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(150, 50), Position = UDim2.new(1, -160, 0.5, -25), TextSize = 22, Parent = row, OnClick = function()
+			Theme.button({ Name = "Claim", Text = if quest.claimed then "✔" else ("+" .. quest.crystals .. " 💎"), Color = if quest.claimed then Theme.Grey elseif done then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(150, if touch then Kit.TOUCH_BTN else 50), Position = UDim2.new(1, -160, 0.5, if touch then -Kit.TOUCH_BTN // 2 else -25), TextSize = 22, Parent = row, OnClick = function()
 				if not quest.claimed then
 					Kit.request("ClaimQuest", { i = i })
 				end
@@ -164,7 +193,7 @@ local function questsWindow()
 		bonus.Position = UDim2.new(0, 0, 1, -66)
 		bonus.Size = UDim2.new(1, 0, 0, 64)
 		Theme.text({ Text = "🔮 " .. Lang.t("quests.bonus"), Size = UDim2.new(1, -190, 1, -12), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, TextWrapped = true, Parent = bonus })
-		Theme.button({ Name = "ClaimBonus", Text = if q.bonusClaimed then "✔" else Lang.t("rewards.claim"), Color = if allClaimed and not q.bonusClaimed then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(150, 46), Position = UDim2.new(1, -160, 0.5, -23), TextSize = 22, Parent = bonus, OnClick = function()
+		Theme.button({ Name = "ClaimBonus", Text = if q.bonusClaimed then "✔" else Lang.t("rewards.claim"), Color = if allClaimed and not q.bonusClaimed then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(150, if Kit.touch then Kit.TOUCH_BTN else 46), Position = UDim2.new(1, -160, 0.5, if Kit.touch then -Kit.TOUCH_BTN // 2 else -23), TextSize = 22, Parent = bonus, OnClick = function()
 			if not q.bonusClaimed then
 				Kit.request("ClaimQuestBonus")
 			end
