@@ -40,7 +40,7 @@ Todos los nombres visibles salen de **un solo archivo**: `src/shared/Names.luau`
 
 ## Loop
 
-1. **Entrenar**: cada golpe (click / botón Punch) es una repetición del stat elegido (Strength, Ki, Defense, Agility, Jump). Auto-entrenar gratis (1,5/s) y más rápido con mejora o pass. Las **zonas de entrenamiento** multiplican (x4 … x250K) si tenés el poder que piden. Las **pesas** (Sparks) multiplican todo.
+1. **Entrenar**: cada golpe (click / botón Punch) es una repetición del stat elegido (Strength, Ki, Defense, Agility, Jump). Auto-entrenar gratis (1,5/s) y más rápido con mejora o pass. Las **zonas de entrenamiento** multiplican (x4 … x600M; cada planeta nuevo ofrece una zona mejor que la mejor del anterior) si tenés el poder que piden. Las **pesas** (Sparks) multiplican todo.
 2. **Pelear**: golpes con combo de 4 (el cuarto es remate), ráfaga de ki, rayo cargado, bloqueo, dash con invulnerabilidad, vuelo, carga de ki con aura, técnicas (Z/X/V). El servidor decide todo: cooldowns, ki, hitboxes, daño.
 3. **Transformarse**: formas por nivel de poder, con multiplicador de daño, reducción de daño y drenaje de ki. Cada una cambia aura, cresta, pelo y contorno.
 4. **Avanzar**: enemigos y jefe por planeta → Sparks y Gems → pesas, técnicas, planeta siguiente. Historia lineal (las primeras 5 misiones son el tutorial). Ascensión (rebirth) multiplica el entrenamiento.
@@ -53,8 +53,9 @@ Todos los nombres visibles salen de **un solo archivo**: `src/shared/Names.luau`
 - Vida = 100 + 4·Defense. Golpe = (4 + Strength) × forma. Ráfaga = (3 + 0,8·Ki) × forma. Rayo = (12 + 5·Ki) × (0,3 a 1 según carga) × forma.
 - Ki en fracción de barra: ráfaga 4%, dash 5%, rayo 10–32%, recarga pasiva 3%/s (0 transformado), cargando 34%/s.
 - Planetas: Verdia (0) → Kaldera (25K poder, 5K Sparks) → Frostreach (2M) → Zephyra (200M) → The Rift (25B).
-- Formas: Kindled x2 (1K) · Blazing x5 (50K) · Tempest x15 (3M) · Eclipse x50 (150M) · Nova x200 (15B) · Celestial x1000 (1,5T) · Primordial x5000 (200T + 3 ascensiones).
-- Ascensión: 5M × 8^n de poder; +100% de entrenamiento cada una; +25 Gems.
+- Formas: Kindled x2 (1K) · Blazing x5 (50K) · Tempest x15 (20M) · Eclipse x50 (100M) · Nova x200 (15B) · Celestial x1000 (1,5T) · Primordial x5000 (200T + 3 ascensiones).
+- Ascensión: 40M × 40^n de poder (cada ascensión pide el poder de entrada del planeta siguiente); +100% de entrenamiento cada una; +25 Gems.
+- Ritmo (simulador `sim/pacing_sim.luau`, guardado por `tests/pacing_check.luau`): planeta 2 ~6 min, 3 ~13 min, 4 ~33 min, primera ascensión ~33 min, planeta 5 ~1,3 h, planeta 10 ~35 h de juego (~1 mes activo).
 - Autos (server): auto-entrenar 1,5 rep/s (+0,5 por nivel de mejora, x2 con TurboAuto), auto-ki (carga sola bajo 20%), auto-pelea 1,1 ataques/s (x2 con TurboAuto). Ninguno funciona dentro de la arena.
 
 ## Monetización (IDs en 0 hasta crearlos en el Dashboard; lo que está en 0 queda oculto)

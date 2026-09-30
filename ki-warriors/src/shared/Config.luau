@@ -69,23 +69,23 @@ end
 local ARCS: { any } = {
 	{ id = "verdia", arc = 1, theme = "meadow", power = 0, zoneB = 12, zones = { { "gravity_dome", "dome" }, { "thunder_falls", "falls" } },
 		npcs = { { id = "thornling", arch = "imp", ai = "melee", color = { 96, 190, 80 }, accent = { 255, 120, 160 } }, { id = "raider", arch = "brute", ai = "melee", color = { 176, 124, 84 }, accent = { 220, 60, 50 } }, { id = "bramble_king", arch = "titan", ai = "boss", color = { 70, 130, 60 }, accent = { 255, 190, 60 } } } },
-	{ id = "brask", arc = 3, theme = "desert", power = 25_000, zoneB = 120, zones = { { "sand_pit", "pit" }, { "iron_yard", "forge" } },
+	{ id = "brask", arc = 3, theme = "desert", power = 25_000, zoneB = 40, zones = { { "sand_pit", "pit" }, { "iron_yard", "forge" } },
 		npcs = { { id = "legion_grunt", arch = "knight", ai = "melee", color = { 150, 140, 96 }, accent = { 230, 60, 50 } }, { id = "legion_gunner", arch = "brute", ai = "ranged", color = { 96, 104, 110 }, accent = { 255, 170, 40 } }, { id = "marshal_krome", arch = "titan", ai = "boss", color = { 84, 96, 70 }, accent = { 255, 200, 60 } } } },
-	{ id = "kaldera", arc = 4, theme = "volcano", power = 1_000_000, zoneB = 1_760, zones = { { "magma_forge", "forge" }, { "ash_crucible", "crucible" } },
+	{ id = "kaldera", arc = 4, theme = "volcano", power = 1_000_000, zoneB = 250, zones = { { "magma_forge", "forge" }, { "ash_crucible", "crucible" } },
 		npcs = { { id = "cinder_imp", arch = "imp", ai = "ranged", color = { 230, 90, 40 }, accent = { 255, 210, 80 } }, { id = "magma_brute", arch = "brute", ai = "melee", color = { 70, 50, 50 }, accent = { 255, 110, 30 } }, { id = "forge_tyrant", arch = "titan", ai = "boss", color = { 60, 40, 40 }, accent = { 255, 80, 20 } } } },
-	{ id = "mesa", arc = 5, theme = "wasteland", power = 40_000_000, zoneB = 27_500, zones = { { "crater_field", "pit" }, { "pod_wreck", "eye" } },
+	{ id = "mesa", arc = 5, theme = "wasteland", power = 40_000_000, zoneB = 1_000, zones = { { "crater_field", "pit" }, { "pod_wreck", "eye" } },
 		npcs = { { id = "storm_scout", arch = "wisp", ai = "ranged", color = { 120, 130, 200 }, accent = { 255, 90, 200 } }, { id = "storm_elite", arch = "knight", ai = "melee", color = { 70, 60, 110 }, accent = { 120, 230, 255 } }, { id = "prince_vael", arch = "titan", ai = "boss", color = { 236, 236, 246 }, accent = { 70, 110, 255 } } } },
-	{ id = "frostreach", arc = 6, theme = "ice", power = 1_500_000_000, zoneB = 529_000, zones = { { "glacier_cavern", "cavern" }, { "aurora_spire", "spire" } },
+	{ id = "frostreach", arc = 6, theme = "ice", power = 1_500_000_000, zoneB = 8_000, zones = { { "glacier_cavern", "cavern" }, { "aurora_spire", "spire" } },
 		npcs = { { id = "frost_wisp", arch = "wisp", ai = "ranged", color = { 170, 230, 255 }, accent = { 255, 255, 255 } }, { id = "glacier_guard", arch = "knight", ai = "melee", color = { 120, 170, 220 }, accent = { 220, 250, 255 } }, { id = "rime_empress", arch = "titan", ai = "boss", color = { 200, 230, 255 }, accent = { 120, 200, 255 } } } },
-	{ id = "nullcity", arc = 7, theme = "ruins", power = 60_000_000_000, zoneB = 10_200_000, zones = { { "scrap_lab", "anvil" }, { "core_chamber", "singularity" } },
+	{ id = "nullcity", arc = 7, theme = "ruins", power = 60_000_000_000, zoneB = 45_000, zones = { { "scrap_lab", "anvil" }, { "core_chamber", "singularity" } },
 		npcs = { { id = "drone_unit", arch = "wisp", ai = "ranged", color = { 150, 160, 170 }, accent = { 120, 255, 140 } }, { id = "steel_unit", arch = "knight", ai = "melee", color = { 60, 70, 84 }, accent = { 255, 70, 70 } }, { id = "chimera_prime", arch = "titan", ai = "boss", color = { 60, 130, 70 }, accent = { 210, 255, 90 } } } },
-	{ id = "bubble", arc = 8, theme = "candy", power = 2_500_000_000_000, zoneB = 220_000_000, zones = { { "sugar_springs", "falls" }, { "dream_pool", "dome" } },
+	{ id = "bubble", arc = 8, theme = "candy", power = 2_500_000_000_000, zoneB = 300_000, zones = { { "sugar_springs", "falls" }, { "dream_pool", "dome" } },
 		npcs = { { id = "gum_blob", arch = "imp", ai = "melee", color = { 120, 230, 220 }, accent = { 255, 250, 140 } }, { id = "candy_golem", arch = "brute", ai = "melee", color = { 250, 160, 210 }, accent = { 255, 255, 255 } }, { id = "glutt", arch = "titan", ai = "boss", color = { 90, 210, 200 }, accent = { 255, 120, 190 } } } },
-	{ id = "zephyra", arc = 9, theme = "storm", power = 100_000_000_000_000, zoneB = 4_760_000_000, zones = { { "storm_eye", "eye" }, { "timeless_vault", "vault" } },
+	{ id = "zephyra", arc = 9, theme = "storm", power = 100_000_000_000_000, zoneB = 4_000_000, zones = { { "storm_eye", "eye" }, { "timeless_vault", "vault" } },
 		npcs = { { id = "gale_drone", arch = "wisp", ai = "ranged", color = { 210, 215, 230 }, accent = { 255, 230, 90 } }, { id = "storm_knight", arch = "knight", ai = "melee", color = { 90, 100, 150 }, accent = { 120, 230, 255 } }, { id = "tempest_warden", arch = "titan", ai = "boss", color = { 60, 70, 120 }, accent = { 255, 240, 120 } } } },
-	{ id = "tomorrow", arc = 12, theme = "future", power = 4_000_000_000_000_000, zoneB = 102_000_000_000, zones = { { "time_rift", "vault" }, { "judge_court", "spire" } },
+	{ id = "tomorrow", arc = 12, theme = "future", power = 4_000_000_000_000_000, zoneB = 70_000_000, zones = { { "time_rift", "vault" }, { "judge_court", "spire" } },
 		npcs = { { id = "echo_soldier", arch = "knight", ai = "melee", color = { 90, 80, 100 }, accent = { 255, 80, 90 } }, { id = "null_wraith", arch = "wisp", ai = "ranged", color = { 40, 40, 60 }, accent = { 190, 255, 120 } }, { id = "arbiter_null", arch = "titan", ai = "boss", color = { 120, 130, 110 }, accent = { 120, 255, 170 } } } },
-	{ id = "rift", arc = 13, theme = "void", power = 150_000_000_000_000_000, zoneB = 2_000_000_000_000, zones = { { "void_anvil", "anvil" }, { "singularity", "singularity" } },
+	{ id = "rift", arc = 13, theme = "void", power = 150_000_000_000_000_000, zoneB = 600_000_000, zones = { { "void_anvil", "anvil" }, { "singularity", "singularity" } },
 		npcs = { { id = "void_spawn", arch = "imp", ai = "ranged", color = { 60, 30, 110 }, accent = { 255, 90, 220 } }, { id = "rift_stalker", arch = "knight", ai = "melee", color = { 30, 20, 50 }, accent = { 160, 90, 255 } }, { id = "hollow_star", arch = "titan", ai = "boss", color = { 20, 10, 40 }, accent = { 255, 255, 255 } } } },
 }
 
@@ -123,9 +123,9 @@ for index, a in ARCS do
 		Config.Npcs[n.id] = n
 	end
 	if first then
-		npc(small, 1, 40, 3, 4)
-		npc(mid, 1.05, 350, 10, 25, { respawn = 8 })
-		npc(boss, 2.4, 6_000, 35, 600, { respawn = 45, boss = true, gems = 5, speed = 13 })
+		npc(small, 1, 40, 3, 8)
+		npc(mid, 1.05, 350, 10, 50, { respawn = 8 })
+		npc(boss, 2.4, 6_000, 35, 1_200, { respawn = 45, boss = true, gems = 5, speed = 13 })
 	else
 		npc(small, 1.1 + index * 0.02, P * 1.6, P * 0.06, sparks)
 		npc(mid, 1.2 + index * 0.02, P * 12, P * 0.15, sparks * 6, { respawn = 8 })
@@ -201,8 +201,8 @@ Config.Gear = {
 Config.Forms = {
 	{ id = "kindled", reqPower = 1_000, mult = 2, drain = 0.015, color = { 255, 170, 60 }, color2 = { 255, 236, 150 }, style = "flame" },
 	{ id = "blazing", reqPower = 50_000, mult = 5, drain = 0.02, color = { 255, 70, 50 }, color2 = { 255, 190, 90 }, style = "flame" },
-	{ id = "tempest", reqPower = 3_000_000, mult = 15, drain = 0.025, color = { 70, 220, 255 }, color2 = { 230, 250, 255 }, style = "lightning" },
-	{ id = "eclipse", reqPower = 150_000_000, mult = 50, drain = 0.03, color = { 150, 70, 255 }, color2 = { 30, 10, 60 }, style = "shadow" },
+	{ id = "tempest", reqPower = 20_000_000, mult = 15, drain = 0.025, color = { 70, 220, 255 }, color2 = { 230, 250, 255 }, style = "lightning" },
+	{ id = "eclipse", reqPower = 100_000_000, mult = 50, drain = 0.03, color = { 150, 70, 255 }, color2 = { 30, 10, 60 }, style = "shadow" },
 	{ id = "nova", reqPower = 15_000_000_000, mult = 200, drain = 0.035, color = { 255, 250, 220 }, color2 = { 255, 200, 80 }, style = "lightning" },
 	{ id = "celestial", reqPower = 1_500_000_000_000, mult = 1_000, drain = 0.04, color = { 120, 255, 220 }, color2 = { 255, 140, 240 }, style = "prism" },
 	{ id = "primordial", reqPower = 200_000_000_000_000, reqRebirths = 3, mult = 5_000, drain = 0.045, color = { 255, 255, 255 }, color2 = { 255, 60, 120 }, style = "prism" },
@@ -272,9 +272,9 @@ Config.Combat = {
 
 -- Techniques (slots Z / X / V). Costs are fractions of the ki bar.
 Config.Techniques = {
-	{ id = "pulse_volley", key = "Z", cost = 3_000, reqPower = 2_000, kiCost = 0.16, cooldown = 5, icon = "🌠", shape = "volley", shots = 5, dmgMult = 0.8 },
+	{ id = "pulse_volley", key = "Z", cost = 1_200, reqPower = 2_000, kiCost = 0.16, cooldown = 5, icon = "🌠", shape = "volley", shots = 5, dmgMult = 0.8 },
 	{ id = "meteor_dive", key = "X", cost = 200_000, reqPower = 100_000, kiCost = 0.22, cooldown = 9, icon = "☄️", shape = "dive", radius = 22, dmgMult = 5 },
-	{ id = "sunfall", key = "V", cost = 30_000_000, reqPower = 10_000_000, kiCost = 0.4, cooldown = 16, icon = "🌞", shape = "orb", radius = 30, speed = 70, dmgMult = 14, color = "sun" },
+	{ id = "sunfall", key = "V", cost = 8_000_000, reqPower = 10_000_000, kiCost = 0.4, cooldown = 16, icon = "🌞", shape = "orb", radius = 30, speed = 70, dmgMult = 14, color = "sun" },
 	-- Dark branch ("evil attacks"). Learned with Sparks like the others; `special` = earn it by
 	-- beating that boss N times OR own the DarkArts pass (skips only the boss requirement).
 	-- Disabled inside the PvP arena so they can never be a paid edge there.
@@ -356,7 +356,7 @@ Config.Pvp = {
 ---------------------------------------------------------------------------
 Config.Rebirth = {
 	basePower = 40_000_000,
-	growth = 8,
+	growth = 40,
 	multPerRebirth = 1, -- training multiplier = 1 + rebirths * this
 	gems = 25, -- gems per ascension
 }

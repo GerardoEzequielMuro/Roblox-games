@@ -219,3 +219,49 @@ Todo verificado con `tools/uipreview` (PNG/txt regenerados en `docs/previews/ki-
 - `UIListLayout.Wraps` en los chips de eventos.
 
 Nota de herramienta: el chequeo `core-overlap` marca el área completa del joystick aunque el joystick dinámico real solo aparece donde se toca.
+
+## Ronda 5: ritmo de progresión
+
+Simulador puro en `ki-warriors/sim/pacing_core.luau` (lógica) y `sim/pacing_sim.luau` (imprime la tabla de hitos): `export PATH=/tmp/tools:$PATH; luau sim/pacing_sim.luau` (unos 10 s). Reusa los módulos reales (`Config`, `Formulas`, `Quests`, `Collection`, `BattlePass`) por require relativo. Guardia: `tests/pacing_check.luau` (`luau tests/pacing_check.luau`, ~4 s) falla si un hito sale de su ventana.
+
+### Jugador simulado (gratis, sin passes)
+Prende el auto-entrenar a los 15 s, pega ~3 golpes/s (cada golpe es una rep), entrena Strength/Ki/Defense parejo (los de peso 1), sigue la historia, entrena en la mejor zona que puede pisar y sale a cazar cuando le faltan Sparks para algo (planeta, ítem de historia, pesa que se paga sola en ~10 min). Compra planeta, pesas, técnicas y mejoras de Gems (mayor beneficio/costo); asciende cuando el poder alcanza y el próximo planeta no está a menos de 20 min; reclama diario, regalos por tiempo, códigos, giros de aura (RNG con semilla), deseos de sellos, jefe mundial (tier bajo), misiones diarias (sin las de arena PvP) y pase de batalla. Sesiones: "activo" = 100 min el primer día y 2 x 35 min por día; "casual" = 60 min y 25 min por día. Mediana de 5 semillas.
+
+### Hitos, antes y después (jugador activo, minutos/horas de juego)
+| Hito | Antes | Después |
+|---|---|---|
+| Primera ganancia / primera compra / 3ra compra | 1 s / 23 s / 77 s | 1 s / 23 s / 77 s |
+| Forma Kindled / Blazing | 81 s / 17,3 min | 91 s / 7,1 min |
+| Planeta 2 Brask | 17,5 min | 5,7 min |
+| Planeta 3 Kaldera | 24,4 min | 13,1 min |
+| Forma Tempest / Eclipse | 25,9 / 35,2 min | 26,1 / 46,6 min |
+| Planeta 4 Mesa | 32,4 min | 32,7 min |
+| 1ª ascensión / 2ª ascensión | 32,4 / 38,0 min | 32,7 min / 1,3 h |
+| Planeta 5 / 6 / 7 | 66 / 71 / 77 min | 1,3 h / 2,7 h / 4,7 h |
+| Planeta 8 / 9 / 10 | 82 / 88 / 93 min | 9,5 h / 18,4 h / 34,6 h (día ~29 activo) |
+| Forma Primordial (3 ascensiones + 200T) | 82 min | 13 h (día ~11) |
+| 6ª ascensión | 77 min | 18,5 h |
+| Mayor tramo sin nada nuevo (1ª hora, peor semilla) | 12,9 min (14 min sin forma/planeta/zona/capítulo) | 9,1 min (9,6 sin esas) |
+| Pase s1 / s2 completado (activo) | día 21 / 27 de 56 | día 24 / 27 de 56 |
+
+Antes el juego entero (10 planetas, 6 ascensiones, forma Primordial) se terminaba en ~90 minutos y el planeta 2 llegaba recién a los 17 min (sin Sparks: el paso de historia 13 pedía una técnica de 3.000 y la pesa 4 de 2.500 se comía la plata). Ahora: primer tier nuevo cada ~5-10 min en la primera hora, ascensión a los ~33 min y una cola de días (casual: el planeta 10 ni aparece en 112 días).
+
+### Números que cambié (todo en `src/shared/Config.luau`)
+- **Multiplicador de las zonas de entrenamiento (`zoneB` por arco; la zona A es un tercio)**: Brask 120 -> 40, Kaldera 1.760 -> 250, Mesa 27.500 -> 1.000, Frostreach 529K -> 8K, Nullcity 10,2M -> 45K, Bubble 220M -> 300K, Zephyra 4,76B -> 4M, Tomorrow 102B -> 70M, Rift 2T -> 600M. Verdia (12) igual. Eran 3-4 órdenes de magnitud más generosos que lo que pide el requisito de poder (x40 por planeta); con los nuevos cada tier tarda 1,5-2x el anterior. Cada planeta nuevo sigue dando una zona A mejor que la zona B del anterior (lo verifica el test).
+- **`Rebirth.growth` 8 -> 40**: con x8 se encadenaban 11 ascensiones en un rato (reconstruir cuesta 2 min porque las zonas y pesas recompran al toque). Con x40 cada ascensión pide el poder de entrada del planeta siguiente (40M, 1,6B, 64B, 2,6T...), o sea un hito por planeta. `basePower` (40M) y `multPerRebirth` (+1) iguales.
+- **Sparks de Verdia**: Thornling 4 -> 8, Raider 25 -> 50, Bramble King 600 -> 1.200. El ingreso del planeta 1 (~130/min) no alcanzaba para pesa 4 + técnica + planeta 2.
+- **`pulse_volley` 3.000 -> 1.200 Sparks**: es el paso 13 de la historia y trababa las recompensas de los pasos 14-16 (9,3K Sparks).
+- **Formas**: Tempest 3M -> 20M, Eclipse 150M -> 100M; **`sunfall` 30M -> 8M Sparks**. Rellenan el tramo entre la zona B de Kaldera (6M) y Mesa (40M), que quedaba 12-15 min sin nada.
+- No toqué precios en Robux, pesas (mult/costos), pase de batalla (90 XP x 30 tiers, ya cierra: un activo lo completa en 3,5 semanas de 8 y sin cazar jefes libres en ~4), ni misiones/regalos/códigos.
+- `DESIGN.md` y `KiWarriors.rbxlx` (regenerado con rojo) actualizados a esos números. Ningún test existente cambió.
+
+### Pase de batalla (los dos)
+XP por día de un activo (~70 min): ~1,2 tiers/día -> tier 10 el día ~7, tier 20 el día ~15, tier 30 el día ~25 (s1) y ~27 (s2), dentro de las 8 semanas. Jugador casual (25 min/día): llega al 91% (s1) y 78% (s2), o sea casi. Si se quiere que el casual termine, subir `xp.minutes` o bajar `xpPerTier`; no lo toqué porque la meta era "completable por un activo".
+
+### Límites del simulador
+- Cacería = 8 chicos + 4 medios por min (mismo supuesto que `Formulas.sparksPerMinute`) y un jefe cada 4 min, con 10 s de caminata por viaje; no hay muertes, telegrafías ni combate real (el jefe siempre se gana). Jugadores con mala puntería o en celular irán más lento.
+- Política golosa y determinista (los humanos no compran ni ascienden tan óptimo); la suerte de los giros de aura mueve mucho (planeta 4 entre ~29 y ~37 min según la semilla).
+- Sin amigos/Premium/grupo, eventos (PowerHour, SparkWeekend), raza, VIP ni passes; los códigos públicos se canjean a los 4 min; no cuenta las misiones de arena, ni técnicas oscuras ni skins. Sesión de 100 min el día 1 y horarios fijos.
+- Offline: entrenamiento de 4 h máx al 25%, reclamado al volver.
+- Historia modelada con duraciones aproximadas por tipo de paso (tutorial x2).
+- No corrí el AutoTest de Studio. Conviene confirmar ahí: `forms == 3` tras ascender (con poder 40M: Kindled, Blazing, Tempest siguen siendo 3) y que los textos de zonas/ascensión muestren los números nuevos.
