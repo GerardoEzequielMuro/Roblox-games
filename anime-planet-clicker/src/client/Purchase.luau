@@ -26,6 +26,19 @@ function Purchase.allowed(item: any): boolean
 	return not (item.random == true and Purchase.restricted())
 end
 
+-- Paid random items also ask the server (it holds the PolicyService answer), so a stale or
+-- tampered client state can never open the prompt for a restricted player.
+local function serverAllows(key: string, item: any): boolean
+	if item.random ~= true then
+		return true
+	end
+	local ok = Net.request("CanBuy", { key = key })
+	if not ok then
+		notify(Lang.t("msg.restricted"), "error")
+	end
+	return ok
+end
+
 function Purchase.pass(key: string)
 	local pass = Config.PassByKey[key]
 	if not pass or pass.id == 0 then
@@ -34,6 +47,9 @@ function Purchase.pass(key: string)
 	end
 	if not Purchase.allowed(pass) then
 		notify(Lang.t("msg.restricted"), "error")
+		return
+	end
+	if not serverAllows(key, pass) then
 		return
 	end
 	MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, pass.id)
@@ -47,6 +63,9 @@ function Purchase.product(key: string)
 	end
 	if not Purchase.allowed(product) then
 		notify(Lang.t("msg.restricted"), "error")
+		return
+	end
+	if not serverAllows(key, product) then
 		return
 	end
 	MarketplaceService:PromptProductPurchase(Players.LocalPlayer, product.id)

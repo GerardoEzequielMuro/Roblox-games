@@ -157,18 +157,30 @@ local function applyLighting(theme: Themes.Theme)
 	Lighting.FogColor = theme.skyHorizon
 	Lighting.FogStart = 900
 	Lighting.FogEnd = 4000
-	Lighting.EnvironmentDiffuseScale = 0.3
-	Lighting.EnvironmentSpecularScale = 0.2
+	Lighting.EnvironmentDiffuseScale = 0.45
+	Lighting.EnvironmentSpecularScale = 0.55 -- Foil / Glacier / metal pick up the sky
 	-- extras: only when the device can show them
 	local bloom = Lighting:FindFirstChild("PcBloom") :: BloomEffect?
 	if not bloom then
 		local b = Instance.new("BloomEffect")
 		b.Name = "PcBloom"
-		b.Intensity = 0.35
-		b.Size = 20
-		b.Threshold = 1.6
+		b.Intensity = 0.55
+		b.Size = 26
+		b.Threshold = 1.35 -- neon (planet cores, pads, stars) glows; lit plastic does not
 		b.Parent = Lighting
 		bloom = b
+	end
+	local rays = Lighting:FindFirstChild("PcRays") :: SunRaysEffect?
+	if not rays then
+		local r = Instance.new("SunRaysEffect")
+		r.Name = "PcRays"
+		r.Intensity = 0.06
+		r.Spread = 0.8
+		r.Parent = Lighting
+		rays = r
+	end
+	if rays then
+		rays.Enabled = not Quality.lite
 	end
 	local grade = Lighting:FindFirstChild("PcGrade") :: ColorCorrectionEffect?
 	if not grade then
@@ -180,8 +192,9 @@ local function applyLighting(theme: Themes.Theme)
 	if bloom and grade then
 		bloom.Enabled = not Quality.lite
 		grade.Enabled = not Quality.lite
-		grade.Saturation = 0.12
-		grade.Contrast = 0.06
+		grade.Saturation = 0.18
+		grade.Contrast = 0.1
+		grade.Brightness = 0.02
 		grade.TintColor = theme.sun:Lerp(Color3.new(1, 1, 1), 0.7)
 	end
 end

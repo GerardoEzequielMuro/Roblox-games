@@ -39,6 +39,7 @@ export type View = {
 	dropAt: number, -- os.clock() when the respawn drop-in started
 	spin: number,
 	respawnAt: number?,
+	variant: number, -- colour jitter (kept across rebuilds of the same planet)
 }
 
 PlanetField.zone = nil :: number?
@@ -295,7 +296,7 @@ local function buildModel(view: View, zone: number)
 	if view.model then
 		view.model:Destroy()
 	end
-	local model = PlanetModel.build(view.kind, zone, { lite = Quality.lite, dense = view.dense })
+	local model = PlanetModel.build(view.kind, zone, { lite = Quality.lite, dense = view.dense, variant = view.variant })
 	view.radius = (model:GetAttribute("Radius") :: number?) or 4
 	model:PivotTo(CFrame.new(view.pos))
 	PlanetModel.setLayer(model, if view.alive then view.layer else 4)
@@ -330,6 +331,7 @@ local function applyNode(zone: number, data: any, dropIn: boolean)
 		dropAt = if dropIn then os.clock() else -10,
 		spin = 0.25 + (n % 4) * 0.07,
 		respawnAt = if data.r then os.clock() + data.r else nil,
+		variant = math.random(),
 	}
 	PlanetField.views[n] = view
 	buildModel(view, zone)

@@ -140,6 +140,35 @@ local on, window, edge = F.anomaly(7200 + 10)
 check("anomaly on at the top of the hour", on and window == 7200 and edge == 7200 + Config.AnomalyDuration)
 on, window, edge = F.anomaly(7200 + Config.AnomalyDuration + 5)
 check("anomaly off afterwards, next edge = next hour", not on and edge == 10800)
+check("anomaly is a short window every hour", Config.AnomalyEvery == 3600 and Config.AnomalyDuration > 0 and Config.AnomalyDuration < Config.AnomalyEvery)
+do -- one break per window: the window id a player stores changes every hour and never inside one
+	local _, w1 = F.anomaly(36000 + 1)
+	local _, w2 = F.anomaly(36000 + Config.AnomalyDuration - 1)
+	local _, w3 = F.anomaly(36000 + Config.AnomalyEvery + 1)
+	check("anomaly window id is stable inside a window and new next hour", w1 == w2 and w3 == w1 + Config.AnomalyEvery)
+end
+check("anomaly is a real boss (more HP and loot than a rock)", F.planetHp(1, "anomaly") > F.planetHp(1, "rock") * 5 and (Config.PlanetKindById.anomaly.crystals or 0) > 0)
+
+-- gate wall: every galaxy after the first sits behind a wall that is harder than the last
+for z = 2, #Config.Zones do
+	check("gate wall into galaxy " .. z .. " exists", Config.Zones[z].gateHp > 0)
+	if z > 2 then
+		check("gate wall " .. z .. " harder than " .. (z - 1), Config.Zones[z].gateHp > Config.Zones[z - 1].gateHp)
+	end
+	check("gate wall " .. z .. " is many planets of the galaxy before", Config.Zones[z].gateHp > F.planetHp(z - 1, "rock") * 10)
+end
+check("special nodes do not collide", Config.NodeTitan ~= Config.NodeAnomaly and Config.NodeAnomaly ~= Config.NodeGate and Config.NodeGate > Config.NodesPerZone and Config.NodeAnomaly > Config.NodesPerZone and Config.NodeTitan == 0)
+do -- every galaxy after the first opens its own multiplier system
+	local seen: { [number]: boolean } = {}
+	for _, sys in Config.Systems do
+		seen[sys.zone] = true
+	end
+	local all = true
+	for z = 2, #Config.Zones do
+		all = all and seen[z] == true
+	end
+	check("one system per galaxy 2.." .. #Config.Zones, all)
+end
 
 -- layout
 check("zoneAt", Layout.zoneAt(0, 0) == 1 and Layout.zoneAt(Config.ZoneSpacing * 3, 40) == 4 and Layout.zoneAt(Config.ZoneSpacing * 0.5, 0) == nil and Layout.zoneAt(-5000, 0) == nil)

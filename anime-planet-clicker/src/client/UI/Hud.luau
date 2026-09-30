@@ -73,10 +73,21 @@ Hud.onStarterClick = function() end
 Hud.objective = nil :: { text: string, progress: number? }?
 Hud.refreshObjective = function() end
 
+-- Currency pill: dark glass capsule with a tinted rim, the icon on a coloured disc and the
+-- number in the currency's colour.
 local function counter(parent: Instance, icon: string, color: Color3, order: number, name: string): (Frame, TextLabel)
-	local f = Theme.new("Frame", { Name = name, Size = UDim2.fromOffset(190, 32), BackgroundTransparency = 1, LayoutOrder = order, Parent = parent }) :: Frame
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromOffset(32, 32), Parent = f })
-	local label = Theme.text({ Name = "Value", Text = "0", Italic = true, TextColor3 = color, Size = UDim2.new(1, -38, 1, 0), Position = UDim2.fromOffset(38, 0), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 32, Stroke = 3, Parent = f })
+	local f = Theme.new("Frame", { Name = name, Size = UDim2.fromOffset(190, 32), BackgroundColor3 = Theme.PaperDark, BackgroundTransparency = 0.25, LayoutOrder = order, Parent = parent }, {
+		Theme.corner(16),
+		Theme.stroke(2, Theme.darken(color, 0.35)),
+		Theme.gradient(Color3.new(1, 1, 1), Color3.fromRGB(170, 170, 200)),
+	}) :: Frame
+	local disc = Theme.new("Frame", { Name = "IconDisc", Size = UDim2.fromOffset(34, 34), Position = UDim2.new(0, -2, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), BackgroundColor3 = Color3.new(1, 1, 1), Parent = f }, {
+		Theme.corner(17),
+		Theme.stroke(2),
+		Theme.gradient(Theme.lighten(color, 0.35), Theme.darken(color, 0.35)),
+	})
+	Theme.glyph({ Emoji = icon, Size = UDim2.fromScale(0.78, 0.78), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = disc })
+	local label = Theme.text({ Name = "Value", Text = "0", Italic = true, TextColor3 = color, Size = UDim2.new(1, -44, 1, -2), Position = UDim2.fromOffset(38, 1), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 28, Stroke = 3, Parent = f })
 	label.AutoLocalize = false
 	Theme.new("UIScale", { Parent = f })
 	return f, label
@@ -141,8 +152,15 @@ function Hud.init()
 		Windows.toggle("Store")
 	end })
 	local shopLabel = shop:FindFirstChild("Label") :: TextLabel
+	local shopImage = Theme.iconImage("🛒")
+	if shopImage then
+		-- icon pack uploaded: picture on the left, words on the right
+		Theme.glyph({ Emoji = "🛒", Size = UDim2.new(0, 38, 1, -10), Position = UDim2.new(0, 8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), ZIndex = shopLabel.ZIndex, Parent = shop })
+		shopLabel.Size = UDim2.new(1, -56, 1, -10)
+		shopLabel.Position = UDim2.new(0.5, 22, 0.5, -1)
+	end
 	local function shopText()
-		shopLabel.Text = "🛒 " .. Lang.t("menu.Store")
+		shopLabel.Text = (if shopImage then "" else "🛒 ") .. Lang.t("menu.Store")
 	end
 	shopText()
 	Lang.Changed:Connect(shopText)
@@ -157,12 +175,17 @@ function Hud.init()
 			Windows.toggle(name)
 		end })
 		local label = b:FindFirstChild("Label") :: TextLabel
-		label.Text = icon
 		label.Size = UDim2.new(1, -14, 0.56, 0)
 		label.Position = UDim2.new(0.5, 0, 0.36, 0)
 		local st = label:FindFirstChildOfClass("UIStroke")
 		if st then
 			st.Enabled = false
+		end
+		if Theme.iconImage(icon) then
+			label.Text = ""
+			Theme.glyph({ Name = "Icon", Emoji = icon, Size = label.Size, Position = label.Position, AnchorPoint = label.AnchorPoint, ZIndex = label.ZIndex, Parent = b })
+		else
+			label.Text = icon
 		end
 		Theme.text({ Key = "menu." .. name, Size = UDim2.new(1, -6, 0.28, 0), Position = UDim2.new(0.5, 0, 0.84, 0), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = 15, ZIndex = 2, Parent = b })
 		badges[name] = Theme.badge(b)

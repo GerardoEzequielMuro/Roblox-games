@@ -196,6 +196,14 @@ local function reconcile(p: any): Profile
 end
 Data.reconcile = reconcile
 
+-- True for DataStore errors that no retry can fix (Studio API access off, place not published).
+function Data.isAccessDenied(err: any): boolean
+	local s = tostring(err)
+	return string.find(s, "StudioAccessToApisNotAllowed", 1, true) ~= nil
+		or string.find(s, "HTTP 403", 1, true) ~= nil
+		or string.find(s, "publish", 1, true) ~= nil
+end
+
 local function key(player: Player): string
 	return "u_" .. player.UserId
 end
@@ -229,6 +237,12 @@ function Data.load(player: Player): Profile
 		end
 		if not ok then
 			warn("[Data] load failed for", player.Name, err)
+			-- Studio without "Enable Studio Access to API Services": every retry fails the same
+			-- way, so stop now instead of holding the player on "loading" for ~12 s.
+			if Data.isAccessDenied(err) then
+				result = nil
+				break
+			end
 		end
 		result = nil
 		task.wait(if lockedByOther then 5 else 2)

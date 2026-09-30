@@ -12,7 +12,8 @@ local Themes = require(script.Parent.Themes)
 
 local PlanetModel = {}
 
-export type BuildOpts = { lite: boolean?, dense: boolean?, scale: number? }
+-- variant (0..1): per-planet colour jitter so a field of plain rocks is not a row of clones.
+export type BuildOpts = { lite: boolean?, dense: boolean?, scale: number?, variant: number? }
 
 local V = Vector3.new
 local SMOOTH = Enum.Material.SmoothPlastic
@@ -89,6 +90,34 @@ local function ring(parent: Instance, root: BasePart, radius: number, width: num
 	local inner = make(parent, root, "RingGap", "Cylinder", V(0.3, (radius - width) * 2, (radius - width) * 2), tilt * CFrame.Angles(0, 0, math.rad(90)), darken(color, 0.45), SMOOTH)
 	inner.Transparency = 0.35
 end
+
+-- Crust material of plain rock planets per galaxy (Part materials give the surface a grain
+-- the flat SmoothPlastic never had; colours stay baked in, so graphics quality 1 still reads).
+local ROCK_MATERIAL: { Enum.Material } = {
+	Enum.Material.Sandstone, -- Dawn Belt
+	Enum.Material.Slate, -- Verdant Nebula
+	Enum.Material.Glacier, -- Frost Halo
+	Enum.Material.Basalt, -- Ember Forge
+	Enum.Material.Rock, -- Storm Reach
+	Enum.Material.Slate, -- Void Crown
+}
+-- Special kinds with a signature surface (the rest stay smooth and bright).
+local KIND_MATERIAL: { [string]: Enum.Material } = {
+	fury = Enum.Material.Basalt,
+	aurum = Enum.Material.Foil,
+	titan = Enum.Material.Slate,
+	gate = Enum.Material.DiamondPlate,
+}
+PlanetModel.ROCK_MATERIAL = ROCK_MATERIAL
+PlanetModel.KIND_MATERIAL = KIND_MATERIAL
+
+-- Small hue / saturation / brightness shift, t in 0..1 (0.5 = unchanged).
+local function jitter(c: Color3, t: number): Color3
+	local h, sat, v = c:ToHSV()
+	local d = t - 0.5
+	return Color3.fromHSV((h + d * 0.07) % 1, math.clamp(sat * (1 + d * 0.3), 0, 1), math.clamp(v * (1 + d * 0.22), 0, 1))
+end
+PlanetModel.jitter = jitter
 
 type Relief = (folder: Instance, root: BasePart, r: number, color: Color3, accent: Color3, lite: boolean, seed: number) -> ()
 
@@ -198,13 +227,18 @@ function PlanetModel.build(kindId: string, zone: number, opts: BuildOpts?): Mode
 	else
 		crustColor, mantleColor, coreColor = base, lighten(base, 0.25):Lerp(theme.rockMantle, 0.35), lighten(base, 0.6)
 	end
+	local variant = if opts and opts.variant then math.clamp(opts.variant, 0, 1) else 0.5
+	if not (kind :: any).boss and not (kind :: any).special and kind.id ~= "gate" then
+		crustColor = jitter(crustColor, variant)
+	end
 	if dense then
 		crustColor = darken(crustColor, 0.22)
 	end
+	local crustMaterial = if kind.id == "rock" then (ROCK_MATERIAL[zone] or SMOOTH) else (KIND_MATERIAL[kind.id] or SMOOTH)
 	local accent = if kind.id == "rock" then darken(theme.rock, 0.22):Lerp(theme.accent, 0.25) elseif kind.id == "gate" then theme.accent else darken(base, 0.35)
 
 	local def = KINDS[kind.id] or KINDS.rock
-	local layers = { { "Crust", 1, crustColor, SMOOTH }, { "Mantle", 0.72, mantleColor, SMOOTH }, { "Core", 0.44, coreColor, NEON } } :: { { any } }
+	local layers = { { "Crust", 1, crustColor, crustMaterial }, { "Mantle", 0.72, mantleColor, if kind.id == "rock" and zone == 4 then Enum.Material.CrackedLava else SMOOTH }, { "Core", 0.44, coreColor, NEON } } :: { { any } }
 	for i, l in layers do
 		local lr = r * l[2]
 		local folder = Instance.new("Folder")

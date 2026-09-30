@@ -1,10 +1,12 @@
 --!strict
 -- UI kit: saturated simulator look on dark space panels. White text with a thick dark
--- outline, chunky buttons with a lip, rounded panels. No image assets: everything is
--- frames, gradients, strokes and emoji.
+-- outline, chunky buttons with a lip, rounded panels. Frames, gradients and strokes; icons
+-- come from the shared icon pack (Shared/Icons) once it is uploaded, emoji until then.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local SoundService = game:GetService("SoundService")
 local TweenService = game:GetService("TweenService")
 
+local Icons = require(ReplicatedStorage.Shared.Icons)
 local Lang = require(script.Parent.Parent.Lang)
 
 local Theme = {}
@@ -141,6 +143,88 @@ function Theme.panel(props: { [string]: any }): Frame
 		f.Parent = props.Parent
 	end
 	return f
+end
+
+---------------------------------------------------------------------------
+-- Icons: the shared pack (assets/icons) when uploaded, the emoji otherwise
+---------------------------------------------------------------------------
+-- Emoji used as HUD / button / pill icons -> name in Shared/Icons. Anything not listed (or
+-- listed but not uploaded yet: Icons.get returns nil) keeps drawing the emoji exactly as before.
+Theme.ICON_BY_EMOJI = {
+	["🐾"] = "paw",
+	["⛏️"] = "pickaxe",
+	["🌀"] = "teleport",
+	["🔁"] = "rebirth",
+	["📖"] = "book",
+	["📜"] = "quest",
+	["🎁"] = "gift",
+	["🤖"] = "auto",
+	["💌"] = "invite",
+	["⚙️"] = "settings",
+	["🛒"] = "shop",
+	["💪"] = "fist",
+	["💎"] = "gem",
+	["✨"] = "coin",
+	["🍀"] = "luck",
+	["🚀"] = "rocket",
+	["⚡"] = "bolt",
+	["🔒"] = "lock",
+	["⭐"] = "star",
+	["🌟"] = "star",
+	["🏆"] = "trophy",
+	["🧲"] = "magnet",
+	["🔥"] = "flame",
+	["🛡️"] = "shield",
+	["⚔️"] = "sword",
+	["👑"] = "crown",
+	["🧬"] = "egg",
+	["📅"] = "calendar",
+	["⏰"] = "clock",
+	["🎯"] = "target",
+	["👥"] = "group",
+	["🪐"] = "planet",
+	["🔮"] = "orb",
+	["⬆️"] = "upgrade",
+	["💵"] = "cash",
+	["🎟️"] = "ticket",
+} :: { [string]: string }
+
+-- "rbxassetid://..." for an emoji or an icon name, nil while the pack is not uploaded.
+function Theme.iconImage(emojiOrName: string): string?
+	return Icons.get(Theme.ICON_BY_EMOJI[emojiOrName] or emojiOrName)
+end
+
+-- An icon slot: ImageLabel (ScaleType Fit) when the image exists, otherwise the same emoji
+-- TextLabel the UI always drew. props: Emoji (required), Icon (explicit pack name), Name, Size,
+-- Position, AnchorPoint, ZIndex, MaxTextSize, Parent.
+function Theme.glyph(props: { [string]: any }): GuiObject
+	local emoji = props.Emoji :: string
+	local image = if props.Icon then Icons.get(props.Icon) else Theme.iconImage(emoji)
+	local g: GuiObject
+	if image then
+		g = Theme.new("ImageLabel", {
+			Name = props.Name or "Glyph",
+			BackgroundTransparency = 1,
+			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+			Size = props.Size or UDim2.fromScale(1, 1),
+		})
+	else
+		g = Theme.text({ Name = props.Name or "Glyph", Text = emoji, Stroke = false, Size = props.Size or UDim2.fromScale(1, 1), MaxTextSize = props.MaxTextSize })
+	end
+	if props.Position then
+		g.Position = props.Position
+	end
+	if props.AnchorPoint then
+		g.AnchorPoint = props.AnchorPoint
+	end
+	if props.ZIndex then
+		g.ZIndex = props.ZIndex
+	end
+	if props.Parent then
+		g.Parent = props.Parent
+	end
+	return g
 end
 
 ---------------------------------------------------------------------------
@@ -338,7 +422,7 @@ function Theme.pop(obj: GuiObject, amount: number?)
 	TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 end
 
--- Round icon tile: two-tone disc with an emoji (the "pass icon" template).
+-- Round icon tile: two-tone disc with an icon (the "pass icon" template).
 function Theme.icon(parent: Instance, emoji: string, color: Color3, size: number): Frame
 	local f = Theme.new("Frame", {
 		Name = "Icon",
@@ -346,7 +430,7 @@ function Theme.icon(parent: Instance, emoji: string, color: Color3, size: number
 		BackgroundColor3 = Color3.new(1, 1, 1),
 		Parent = parent,
 	}, { Theme.corner(size), Theme.stroke(3), Theme.gradient(Theme.lighten(color, 0.45), Theme.darken(color, 0.15)) }) :: Frame
-	Theme.text({ Name = "Emoji", Text = emoji, Stroke = false, Size = UDim2.fromScale(0.62, 0.62), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = f })
+	Theme.glyph({ Name = "Emoji", Emoji = emoji, Size = UDim2.fromScale(0.62, 0.62), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = f })
 	return f
 end
 

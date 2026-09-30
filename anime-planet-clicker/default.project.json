@@ -27,10 +27,12 @@
     },
     "Lighting": {
       "$properties": {
-        "Technology": "ShadowMap",
+        "Technology": "Future",
         "Brightness": 2.4,
         "ClockTime": 15,
-        "GlobalShadows": true
+        "GlobalShadows": true,
+        "EnvironmentDiffuseScale": 0.45,
+        "EnvironmentSpecularScale": 0.55
       }
     }
   }

@@ -114,6 +114,16 @@ local function prompt(parent: BasePart, open: string, attrs: { [string]: any }?,
 	return pp
 end
 
+-- A real light on a glowing prop (Future lighting makes the deck around it light up).
+local function addLight(p: BasePart, color: Color3, range: number, brightness: number?)
+	local l = Instance.new("PointLight")
+	l.Color = color
+	l.Range = range
+	l.Brightness = brightness or 1.6
+	l.Shadows = false
+	l.Parent = p
+end
+
 local function anim(inst: Instance, attrs: { [string]: any })
 	for k, v in attrs do
 		inst:SetAttribute(k, v)
@@ -126,18 +136,18 @@ end
 ---------------------------------------------------------------------------
 local function deck(folder: Instance, cx: number, cz: number, radius: number, theme: Themes.Theme)
 	disc(folder, "Deck", cx, 0, cz, radius, 6, theme.ground, theme.groundMaterial, { collide = true })
-	disc(folder, "Rim", cx, -0.8, cz, radius + 2.5, 3, theme.rim, SMOOTH, { collide = true })
+	disc(folder, "Rim", cx, -0.8, cz, radius + 2.5, 3, theme.rim, Enum.Material.DiamondPlate, { collide = true })
 	disc(folder, "RimLight", cx, -3.8, cz, radius + 1.2, 1, theme.accent, NEON)
-	disc(folder, "Hull1", cx, -6, cz, radius * 0.8, 9, theme.under, SMOOTH)
-	disc(folder, "Hull2", cx, -15, cz, radius * 0.55, 11, darken(theme.under, 0.15), SMOOTH)
-	disc(folder, "Hull3", cx, -26, cz, radius * 0.28, 14, darken(theme.under, 0.3), SMOOTH)
+	disc(folder, "Hull1", cx, -6, cz, radius * 0.8, 9, theme.under, Enum.Material.Metal)
+	disc(folder, "Hull2", cx, -15, cz, radius * 0.55, 11, darken(theme.under, 0.15), Enum.Material.Metal)
+	disc(folder, "Hull3", cx, -26, cz, radius * 0.28, 14, darken(theme.under, 0.3), Enum.Material.Metal)
 	disc(folder, "Thruster", cx, -40, cz, radius * 0.14, 3, theme.accent, NEON)
 	-- railing posts with a light on top
 	local posts = 20
 	for i = 1, posts do
 		local a = (i / posts) * math.pi * 2
 		local x, z = cx + math.sin(a) * (radius - 1.5), cz + math.cos(a) * (radius - 1.5)
-		part(folder, "Post", Vector3.new(1.2, 5, 1.2), CFrame.new(x, 2.5, z), theme.rim, SMOOTH, { collide = true })
+		part(folder, "Post", Vector3.new(1.2, 5, 1.2), CFrame.new(x, 2.5, z), theme.rim, Enum.Material.Metal, { collide = true })
 		part(folder, "PostLight", Vector3.new(1.6, 1, 1.6), CFrame.new(x, 5.5, z), if i % 2 == 0 then theme.accent else theme.accent2, NEON)
 	end
 end
@@ -176,8 +186,10 @@ local function capsuleMachine(folder: Instance, capsuleId: string, theme: Themes
 	end
 	disc(model, "Cap", x, 14.6, z, 3, 1.2, darken(body, 0.2), SMOOTH)
 	local star = ball(model, "Beacon", Vector3.new(x, 15.8, z), 1.8, if exclusive then Color3.fromRGB(255, 220, 90) else WHITE, NEON)
+	addLight(dome, body, 16, 1.4)
 	anim(star, { Bob = 0.35, BobSpeed = 2 })
 	model.PrimaryPart = base
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:SetAttribute("CapsuleId", capsuleId)
 	model.Parent = folder
 	sign(dome, capsuleId, { LocCapsule = capsuleId }, 9.5, 17, 5.2, nil, 130)
@@ -203,6 +215,7 @@ local function refinery(folder: Instance, zone: number, theme: Themes.Theme)
 	disc(folder, "Chimney", bx - 2.2, 14, bz - 2.2, 1.1, 5, lighten(theme.rim, 0.2), Enum.Material.Metal)
 	part(folder, "Conveyor", Vector3.new(6, 0.7, 2.6), CFrame.new(bx + 5.5, 1.4, bz - 1) * CFrame.Angles(0, 0, math.rad(12)), INK, SMOOTH)
 	local gem = ball(folder, "OreSample", Vector3.new(bx, 11.2, bz), 2.4, theme.accent2, NEON)
+	addLight(hopper, theme.accent2, 14, 1.2)
 	anim(gem, { Bob = 0.5, BobSpeed = 1.6, SpinAxis = "Y", SpinSpeed = 1.2 })
 	sign(hopper, "REFINERY", { LocKey = "world.refinery" }, 12.5, 20, 5, yellow, 140)
 	glow:SetAttribute("Refinery", zone)
@@ -240,6 +253,7 @@ local function warpPad(folder: Instance, x: number, z: number, theme: Themes.The
 	end
 	part(folder, "WarpBar", Vector3.new(15, 1.6, 1.6), CFrame.new(x, 13.4, z), theme.rim, SMOOTH)
 	local orb = ball(folder, "WarpOrb", Vector3.new(x, 6.5, z), 3, theme.accent2, NEON, { transparency = 0.25 })
+	addLight(orb, theme.accent2, 18, 2)
 	anim(orb, { Bob = 0.6, BobSpeed = 1.4, SpinAxis = "Y", SpinSpeed = 1 })
 	if zone then
 		sign(pad, "", { LocZone = zone }, 17.5, 30, 6.5, theme.accent, 220)
@@ -265,6 +279,7 @@ local function systemStation(folder: Instance, zone: number, theme: Themes.Theme
 	disc(folder, "SystemStep", x, 2.2, z, 3.6, 0.8, lighten(theme.rim, 0.2), SMOOTH, { collide = true })
 	part(folder, "SystemPillar", Vector3.new(2.4, 5, 2.4), CFrame.new(x, 4.7, z), theme.propColor, SMOOTH, { collide = true })
 	local relic = part(folder, "SystemRelic", Vector3.new(3, 3, 3), CFrame.new(x, 10, z) * CFrame.Angles(math.rad(35), math.rad(45), 0), theme.accent, NEON)
+	addLight(base, theme.accent, 16, 1.5)
 	anim(relic, { Bob = 0.6, BobSpeed = 1.3, SpinAxis = "Y", SpinSpeed = 1.5 })
 	for i = 0, 3 do
 		local a = i / 4 * math.pi * 2
@@ -287,6 +302,7 @@ local function gateFrame(folder: Instance, zone: number, theme: Themes.Theme)
 		part(folder, "GatePylonBand", Vector3.new(5.6, 2, 5.6), CFrame.new(x + sx, 30, z - 12), theme.accent, NEON)
 		part(folder, "GatePylonBand", Vector3.new(5.6, 2, 5.6), CFrame.new(x + sx, 12, z - 12), theme.accent, NEON)
 		part(folder, "GatePylonTip", Vector3.new(3, 6, 3), CFrame.new(x + sx, 43, z - 12), theme.accent2, NEON)
+		addLight(pylon, theme.accent, 26, 2)
 		if sx < 0 then
 			sign(pylon, "", { LocGate = zone + 1 }, 30, 44, 9, theme.accent, 260)
 		end

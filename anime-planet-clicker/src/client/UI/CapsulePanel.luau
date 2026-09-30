@@ -113,10 +113,14 @@ local function render()
 	local auto = s.autoOpen == id
 	local y = 242
 	local kb = UserInputService.KeyboardEnabled and not Root.isTouch
-	Theme.button({ Name = "Open1", Text = Lang.t("capsule.open1") .. (if kb then "  [E]" else ""), Color = Theme.Green, Size = UDim2.fromOffset(196, 54), Position = UDim2.fromOffset(0, y), TextSize = 24, Parent = content, OnClick = function()
-		open(1)
-	end })
-	if not (cap.exclusive and not Purchase.allowed(Config.ProductByKey.QuantumCapsule3)) then
+	-- the Robux capsule is a paid random item: no buy buttons where PolicyService restricts them
+	local robuxBlocked = cap.exclusive and not Purchase.allowed(Config.ProductByKey.QuantumCapsule1)
+	if not robuxBlocked then
+		Theme.button({ Name = "Open1", Text = Lang.t("capsule.open1") .. (if kb then "  [E]" else ""), Color = Theme.Green, Size = UDim2.fromOffset(196, 54), Position = UDim2.fromOffset(0, y), TextSize = 24, Parent = content, OnClick = function()
+			open(1)
+		end })
+	end
+	if not robuxBlocked and not (cap.exclusive and not Purchase.allowed(Config.ProductByKey.QuantumCapsule3)) then
 		Theme.button({ Name = "Open3", Text = (if Net.owns("TripleOpen") or cap.exclusive then "" else "🔒 ") .. Lang.t("capsule.open3") .. (if kb then "  [R]" else ""), Color = Theme.Purple, Size = UDim2.fromOffset(176, 54), Position = UDim2.fromOffset(204, y), TextSize = 22, Parent = content, OnClick = function()
 			open(3)
 		end })

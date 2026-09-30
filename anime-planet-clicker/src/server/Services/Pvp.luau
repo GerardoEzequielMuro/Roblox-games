@@ -214,6 +214,8 @@ local function buildBot(index: number): Model
 	part("FinR", Vector3.new(0.5, 2.4, 1.6), CFrame.new(2.6, 0.4, 0.4) * CFrame.Angles(0, 0, math.rad(-20)), Color3.fromRGB(235, 238, 245), Enum.Material.SmoothPlastic)
 	part("Muzzle", Vector3.new(1, 1, 1.8), CFrame.new(0, -0.9, -2.1), Color3.fromRGB(40, 44, 60), Enum.Material.Metal)
 	model.PrimaryPart = body
+	-- StreamingEnabled: the drone streams in whole or not at all (never a floating visor)
+	model.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
 	model:SetAttribute("BotId", -index)
 	model:SetAttribute("Hp", C.botHp)
 	model:SetAttribute("MaxHp", C.botHp)
