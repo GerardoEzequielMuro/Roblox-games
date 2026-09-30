@@ -1,4 +1,4 @@
-# Handoff: sesión en la nube del 30/09 (tarde)
+# Handoff: sesión en la nube del 30/09 (tarde) — COMPLETA
 
 Leé esto antes de retomar con la sesión local. El detalle por juego está en `docs/handoff/<juego>.md`.
 
@@ -56,7 +56,20 @@ python tools/icons/upload_assets.py
 
 ## 4. Qué hicieron los agentes por juego
 
-(se completa al final de la sesión)
+Todo verificado dos veces (por el agente y por mí) sin Studio: `rojo build` OK, `luau-lsp analyze` con 0 errores y todos los tests puros en verde. **Nada se vio corriendo.** Cada `docs/handoff/<juego>.md` tiene la lista "Qué hay que mirar en Studio".
+
+Los 6 juegos tienen los íconos integrados: muestran la imagen cuando el ícono está subido y el emoji mientras tanto.
+
+| Juego | Bugs arreglados | Mejoras | Tests puros |
+|---|---|---|---|
+| **Sky Tower Obby** | El botón "Lobby" del teletransportador **borraba el progreso** (del 850 al 0). Se podían farmear Wins y el bonus de cumbre sin límite. Tocar un portal viejo te mandaba para atrás. Los botones de prueba de Studio ya no aparecen en el juego publicado. Posible causa del personaje desarmado: accesorios soldados antes de que cargue el avatar. | Materiales nuevos en los mundos 7-9 y degradé en el HUD. | layout 144.843, rules 3.569, visual 12.942, locale 9.780, p0 48, icons 82 (nuevo) |
+| **ki-warriors** | Placa del enemigo gigante, cubos oscuros al pegar, esfera violeta que tapaba al personaje (forma Eclipse) y HUD en inglés (Studio tomaba el idioma de su interfaz). | Materiales por planeta, variación de color, 30 detalles de suelo por planeta, cielos menos saturados, fuentes FredokaOne/Bangers. No usé los íconos `orb` ni `cloud`: se parecen demasiado a Dragon Ball. | locale 336/336, glyphs (nuevo) |
+| **Tap Pets** | `TapPetsSimulator.rbxlx` **estaba viejo**: tenía el HUD anterior, así que lo que viste no era el código nuevo. Regenerado. La reescritura del HUD quedó completa. El Huevo Mágico x1/x3 y el Starter Pack no mostraban probabilidades antes de comprar. | HUD progresivo: arranca con 4 botones y el resto aparece con el avance, como los juegos top. | unit_p0 55, policy_hud 111 (nuevo), locale 356, check_config OK |
+| **Crop Kingdom** | Botones de menos de 40 px en celulares chicos. Carteles de crecimiento superpuestos, que ahora se ven solo en las 6 parcelas más cercanas. Números "+$" apilados. | Choclo afinado, hojas con material y verde variable, sombras y degradé en el HUD. | 8 tests en verde, incluido ui_test (nuevo) |
+| **Planet Crackers** | En Studio, el DataStore dejaba 12 s cargando en cada playtest. Las cápsulas pagas no chequeaban la restricción antes de comprar. | Iluminación Future, material y color por galaxia, estación con luces. La retención recomendada (planeta muro, multiplicador por zona, zona rara por hora) ya estaba hecha. | unit 156 (antes 137), locale 504, check_config OK |
+| **Ruleta PvP** | El AFK dejaba al jugador sin forma de volver a jugar. Un error en un partido tiraba abajo todas las mesas. El DataStore tardaba 12 s en Studio. El ranking de temporada no se reiniciaba al cambiar el mes. | Suspenso: desaturación al eliminar, pulsos de color, profundidad de campo, cuenta roja en los últimos 3 segundos, respetando los ajustes de flashes y temblor. | unit_core 659 (antes 579), locale OK |
+
+**Archivos para publicar:** regeneré desde `src` `KiWarriors.rbxlx`, `SkyTowerObby.rbxlx` y `TapPetsSimulator.rbxlx`. En los otros 3 juegos el `.rbxlx` no está en el repo: se genera con `rojo build`.
 
 ## 5. Cómo verificar sin Studio (lo que usé acá)
 
