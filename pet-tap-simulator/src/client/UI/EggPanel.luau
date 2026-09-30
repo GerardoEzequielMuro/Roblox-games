@@ -1,7 +1,7 @@
 --!strict
 -- Egg panel: opens from the egg's ProximityPrompt, shows the odds (after luck) and the
--- Hatch x1 / x3 / Auto buttons (or Robux buttons for the exclusive Magic Egg).
--- Keys while open: E = x1 (re-triggers the prompt), R = x3, T = auto.
+-- Hatch x1 / x3 / x8 / Auto buttons (or Robux buttons for the exclusive Magic Egg).
+-- Keys while open: E = x1 (re-triggers the prompt), R = x3, Q = x8, T = auto.
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -64,11 +64,15 @@ function EggPanel.init()
 		end
 		local def = Formulas.EggById[egg]
 		if def.exclusive then
+			if count == 8 then
+				return -- the Robux egg has no x8
+			end
 			Purchase.product(if count == 3 then "MagicEgg3" else "MagicEgg1")
 			return
 		end
-		if count == 3 and not Net.owns("TripleHatch") then
-			Purchase.pass("TripleHatch")
+		local needPass = Formulas.hatchPass(count)
+		if needPass and count > Formulas.maxHatch((Net.get("passes") :: { [string]: boolean }?) or {}) then
+			Purchase.pass(needPass)
 			return
 		end
 		if HatchCinematic.isPlaying() then
@@ -84,11 +88,15 @@ function EggPanel.init()
 		end
 	end
 
-	local b1 = Theme.button({ Text = "", Color = Theme.Green, Size = UDim2.fromOffset(210, 58), LayoutOrder = 1, TextSize = 24, Parent = buttonRow, OnClick = function()
+	-- four buttons fit the 680 px panel: x1, x3, x8, Auto (the Robux egg uses x1 / x3 only)
+	local b1 = Theme.button({ Text = "", Color = Theme.Green, Size = UDim2.fromOffset(152, 58), LayoutOrder = 1, TextSize = 22, Parent = buttonRow, OnClick = function()
 		hatch(1)
 	end })
-	local b3 = Theme.button({ Text = "", Color = Theme.Orange, Size = UDim2.fromOffset(210, 58), LayoutOrder = 2, TextSize = 24, Parent = buttonRow, OnClick = function()
+	local b3 = Theme.button({ Text = "", Color = Theme.Orange, Size = UDim2.fromOffset(152, 58), LayoutOrder = 2, TextSize = 22, Parent = buttonRow, OnClick = function()
 		hatch(3)
+	end })
+	local b8 = Theme.button({ Text = "", Color = Theme.Red, Size = UDim2.fromOffset(152, 58), LayoutOrder = 3, TextSize = 22, Parent = buttonRow, OnClick = function()
+		hatch(8)
 	end })
 	local function toggleAuto()
 		local egg = currentEgg
@@ -101,10 +109,10 @@ function EggPanel.init()
 			Toasts.show(Lang.msg(err), "error")
 		end
 	end
-	local bAuto = Theme.button({ Text = "", Color = Theme.Purple, Size = UDim2.fromOffset(200, 58), LayoutOrder = 3, TextSize = 24, Parent = buttonRow, OnClick = toggleAuto })
+	local bAuto = Theme.button({ Text = "", Color = Theme.Purple, Size = UDim2.fromOffset(152, 58), LayoutOrder = 4, TextSize = 22, Parent = buttonRow, OnClick = toggleAuto })
 	-- keyboard hints (PC only)
 	if not Root.isTouch then
-		for key, b in { E = b1, R = b3, T = bAuto } :: { [string]: TextButton } do
+		for key, b in { E = b1, R = b3, Q = b8, T = bAuto } :: { [string]: TextButton } do
 			local chip = Theme.new("Frame", { Name = "Key", Size = UDim2.fromOffset(28, 26), Position = UDim2.fromOffset(-8, -10), BackgroundColor3 = Theme.Ink, ZIndex = b.ZIndex + 2, Parent = b }, { Theme.corner(8), Theme.new("UIStroke", { Thickness = 2, Color = Theme.White }) })
 			local t = Theme.text({ Text = key, Stroke = false, Size = UDim2.new(1, -6, 1, -4), Position = UDim2.fromOffset(3, 2), MaxTextSize = 18, Parent = chip })
 			t.ZIndex = b.ZIndex + 3
@@ -130,18 +138,26 @@ function EggPanel.init()
 			Theme.setButton(b1, if Purchase.productAvailable("MagicEgg1") then (Lang.t("egg.buy1") .. "  R$" .. p1.price) else off, if blocked then Theme.Grey else Theme.Green)
 			Theme.setButton(b3, if Purchase.productAvailable("MagicEgg3") then (Lang.t("egg.buy3") .. "  R$" .. p3.price) else off, if blocked then Theme.Grey else Theme.Orange)
 			b3.Visible = not blocked
+			b8.Visible = false
 			bAuto.Visible = false
 			luckLabel.Text = Lang.t("egg.exclusive_note") .. "  ·  ⭐ " .. golden
 			return
 		end
 		b3.Visible = true
+		b8.Visible = true
 		bAuto.Visible = true
 		local taps = if s then s.taps else 0
 		Theme.setButton(b1, Lang.t("egg.hatch1") .. "  " .. Format.abbrev(def.price), if taps >= def.price then Theme.Green else Theme.Grey)
-		if Net.owns("TripleHatch") then
+		local maxHatch = Formulas.maxHatch((Net.get("passes") :: { [string]: boolean }?) or {})
+		if maxHatch >= 3 then
 			Theme.setButton(b3, Lang.t("egg.hatch3") .. "  " .. Format.abbrev(def.price * 3), if taps >= def.price * 3 then Theme.Orange else Theme.Grey)
 		else
 			Theme.setButton(b3, "⭐ " .. Lang.t("egg.x3_locked"), Theme.Blue)
+		end
+		if maxHatch >= 8 then
+			Theme.setButton(b8, Lang.t("egg.hatch8") .. "  " .. Format.abbrev(def.price * 8), if taps >= def.price * 8 then Theme.Red else Theme.Grey)
+		else
+			Theme.setButton(b8, "⭐ " .. Lang.t("egg.x8_locked"), Theme.Blue)
 		end
 		local autoOn = s and s.autoHatch == egg
 		Theme.setButton(bAuto, Lang.t(if autoOn then "egg.auto_on" else "egg.auto_off"), if autoOn then Theme.Green else Theme.Purple)
@@ -282,6 +298,8 @@ function EggPanel.init()
 		end
 		if input.KeyCode == Enum.KeyCode.R then
 			hatch(3)
+		elseif input.KeyCode == Enum.KeyCode.Q then
+			hatch(8)
 		elseif input.KeyCode == Enum.KeyCode.T then
 			toggleAuto()
 		end

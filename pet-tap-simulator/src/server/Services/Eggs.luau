@@ -64,11 +64,11 @@ function Eggs.hatch(player: Player, eggId: string, count: number): (boolean, any
 	if not p or not egg or egg.exclusive then
 		return false, M("msg.unknown_egg")
 	end
-	if count ~= 1 and count ~= 3 then
+	if not Formulas.validHatchCount(count) then
 		return false, M("msg.bad_amount")
 	end
-	if count == 3 and not State.owns(player, "TripleHatch") then
-		return false, M("msg.need_x3")
+	if count > Formulas.maxHatch(State.passes[player] or {}) then
+		return false, M(if count == Config.OctoHatchCount then "msg.need_x8" else "msg.need_x3")
 	end
 	if not State.hasZone(p, egg.zone) then
 		return false, M("msg.unlock_first", { zone = M("zone." .. Config.Zones[egg.zone].id) })
@@ -83,7 +83,7 @@ function Eggs.hatch(player: Player, eggId: string, count: number): (boolean, any
 	if now - (State.lastHatch[player] or 0) < Config.HatchCooldown - 0.2 then
 		return false, "cooldown"
 	end
-	if not Pets.hasRoom(p, count) then
+	if not Pets.hasRoom(player, p, count) then
 		return false, M("msg.inventory_full")
 	end
 	local cost = egg.price * count
@@ -108,7 +108,8 @@ function Eggs.init(positions: { [string]: Vector3 })
 		if type(payload.egg) ~= "string" then
 			return false, M("msg.unknown_egg")
 		end
-		local count = if payload.count == 3 then 3 else 1
+		-- anything that is not a known hatch size is rejected by Eggs.hatch
+		local count = if payload.count == nil then 1 else payload.count
 		return Eggs.hatch(player, payload.egg, count)
 	end)
 
@@ -134,15 +135,16 @@ function Eggs.init(positions: { [string]: Vector3 })
 			for _, player in Players:GetPlayers() do
 				local eggId = State.autoHatch[player]
 				if eggId then
-					-- free: x1 every AutoHatchFreeCooldown; Auto Hatch pass: full speed, x3 with the x3 pass
+					-- free: x1 every AutoHatchFreeCooldown; Auto Hatch pass: full speed, at the biggest
+					-- hatch size the player owns (x8 / x3) that they can pay for and have room for
 					local fast = State.owns(player, "AutoHatch")
 					if os.clock() - (State.lastHatch[player] or 0) >= (if fast then Config.HatchCooldown else Config.AutoHatchFreeCooldown) then
-						local count = if fast and State.owns(player, "TripleHatch") then 3 else 1
 						local p = Data.get(player)
 						local egg = Formulas.EggById[eggId]
-						-- fall back to x1 if x3 isn't affordable
-						if count == 3 and p and egg and p.taps < egg.price * 3 then
-							count = 1
+						local count = 1
+						if fast and p and egg then
+							local room = State.maxInventory(player) - State.petCount(p)
+							count = Formulas.autoHatchCount(Formulas.maxHatch(State.passes[player] or {}), p.taps, egg.price, room)
 						end
 						local ok, res = Eggs.hatch(player, eggId, count)
 						if ok then

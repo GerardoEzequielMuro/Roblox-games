@@ -57,8 +57,11 @@ Config.AutoTapFreeRate = 1
 Config.AutoTapIdleSeconds = 2
 -- Auto Hatch is free at this pace (x1); the Auto Hatch pass hatches at HatchCooldown and x3.
 Config.AutoHatchFreeCooldown = 4.5
--- Auto Rebirth unlocks after this many manual rebirths.
-Config.AutoRebirthMinRebirths = 1
+-- Auto Rebirth is free after this many manual rebirths; the Auto Rebirth pass unlocks it from
+-- the first rebirth (the toggle itself always needs one manual rebirth so the player has seen
+-- what a rebirth does).
+Config.AutoRebirthMinRebirths = 3
+Config.AutoRebirthPassMinRebirths = 1
 
 ---------------------------------------------------------------------------
 -- Rarities
@@ -303,6 +306,8 @@ Config.ExclusivePowerFactor = {
 
 Config.EggRange = 16 -- studs; server rejects hatches from further away
 Config.HatchCooldown = 2.4 -- seconds between hatches (manual or auto)
+Config.TripleHatchCount = 3 -- x3 Hatch pass
+Config.OctoHatchCount = 8 -- x8 Hatch pass (includes x3)
 
 ---------------------------------------------------------------------------
 -- Rebirth
@@ -338,12 +343,17 @@ export type Pass = { key: string, name: string, description: string, id: number,
 Config.Passes = {
 	{ key = "AutoTap", name = "Auto Tap", description = "Taps for you, 5 times a second, forever.", id = 0, price = 149, color = { 90, 200, 255 } },
 	{ key = "TripleHatch", name = "x3 Hatch", description = "Open 3 eggs at once.", id = 0, price = 199, color = { 255, 170, 60 } },
+	{ key = "OctoHatch", name = "x8 Hatch", description = "Open 8 eggs at once (includes x3).", id = 0, price = 699, color = { 255, 130, 40 } },
 	{ key = "AutoHatch", name = "Auto Hatch", description = "Keeps hatching the egg you stand next to.", id = 0, price = 249, color = { 255, 120, 200 } },
-	{ key = "Lucky", name = "Lucky", description = "+50% luck on every egg.", id = 0, price = 199, color = { 110, 220, 110 } },
+	{ key = "AutoRebirth", name = "Auto Rebirth", description = "Rebirths for you as soon as you can afford it.", id = 0, price = 199, color = { 120, 200, 255 } },
+	{ key = "Lucky", name = "Lucky", description = "+50% luck on every egg.", id = 0, price = 249, color = { 110, 220, 110 } },
+	{ key = "SuperLucky", name = "Super Lucky", description = "+150% luck on every egg.", id = 0, price = 699, color = { 60, 200, 90 } },
 	{ key = "VIP", name = "VIP", description = "x1.5 taps, +10% luck and a VIP tag.", id = 0, price = 299, color = { 255, 215, 60 } },
-	{ key = "PetSlots", name = "+3 Pet Slots", description = "Equip 3 more pets.", id = 0, price = 299, color = { 175, 110, 255 } },
-	{ key = "DoubleTaps", name = "Double Taps", description = "Every tap is worth x2.", id = 0, price = 399, color = { 255, 90, 90 } },
-	{ key = "MagicEggs", name = "Magic Eggs", description = "10x more Golden pets from eggs.", id = 0, price = 349, color = { 255, 200, 40 } },
+	{ key = "PetSlots", name = "+3 Pet Slots", description = "Equip 3 more pets.", id = 0, price = 249, color = { 175, 110, 255 } },
+	{ key = "PetSlots2", name = "+6 Pet Slots", description = "Equip 6 more pets (stacks with +3).", id = 0, price = 649, color = { 150, 90, 240 } },
+	{ key = "Storage", name = "+50 Storage", description = "Room for 50 more pets in your inventory.", id = 0, price = 99, color = { 140, 170, 255 } },
+	{ key = "DoubleTaps", name = "Double Taps", description = "Every tap is worth x2.", id = 0, price = 449, color = { 255, 90, 90 } },
+	{ key = "MagicEggs", name = "Magic Eggs", description = "10x more Golden pets from eggs.", id = 0, price = 599, color = { 255, 200, 40 } },
 } :: { Pass }
 Config.PassByKey = {} :: { [string]: Pass }
 for _, p in Config.Passes do
@@ -353,8 +363,11 @@ Config.PassEffects = {
 	VIPTapMult = 1.5,
 	VIPLuck = 0.10,
 	LuckyLuck = 0.5,
+	SuperLuckyLuck = 1.5, -- added to luck, on top of Lucky when both are owned
 	DoubleTapsMult = 2,
-	ExtraSlots = 3,
+	ExtraSlots = 3, -- PetSlots pass
+	ExtraSlots2 = 6, -- PetSlots2 pass (stacks with PetSlots)
+	ExtraStorage = 50, -- Storage pass: added to MaxInventory
 }
 
 -- kind: "taps" (reward = minutes of your current tap income), "gems", "luck" (boost minutes), "egg" (exclusive egg hatches)
@@ -365,6 +378,8 @@ Config.Products = {
 	{ key = "TapsLarge", name = "Vault of Taps", description = "12 hours of taps, instantly.", id = 0, price = 599, kind = "taps", amount = 720, color = { 40, 100, 230 } },
 	{ key = "GemsSmall", name = "100 Gems", description = "Spend on upgrades.", id = 0, price = 49, kind = "gems", amount = 100, color = { 110, 230, 200 } },
 	{ key = "GemsMedium", name = "600 Gems", description = "Best value for upgrades.", id = 0, price = 249, kind = "gems", amount = 600, color = { 60, 200, 170 } },
+	{ key = "GemsLarge", name = "1,400 Gems", description = "A big stack for upgrades.", id = 0, price = 499, kind = "gems", amount = 1400, color = { 40, 180, 150 } },
+	{ key = "GemsHuge", name = "3,200 Gems", description = "Best value for upgrades.", id = 0, price = 999, kind = "gems", amount = 3200, color = { 30, 160, 130 } },
 	{ key = "SuperLuck", name = "Super Luck (15 min)", description = "x2 luck for 15 minutes.", id = 0, price = 99, kind = "luck", amount = 15, color = { 110, 220, 110 } },
 	{ key = "MagicEgg1", name = "Magic Egg", description = "Hatch 1 exclusive Magic Egg.", id = 0, price = 149, kind = "egg", amount = 1, color = { 190, 120, 255 } },
 	{ key = "MagicEgg3", name = "3 Magic Eggs", description = "Hatch 3 exclusive Magic Eggs.", id = 0, price = 399, kind = "egg", amount = 3, color = { 150, 80, 230 } },
@@ -383,7 +398,7 @@ Config.BoostLuckMult = 2 -- Super Luck boost / luck rewards multiply luck by thi
 -- can't buy these: eggs and packs that contain one, luck, and Taps (eggs cost Taps, so for
 -- them Taps must not be purchasable). Odds are always shown in % before spending.
 Config.PaidRandomProductKinds = { egg = true, starter = true, luck = true, taps = true }
-Config.PaidRandomPasses = { Lucky = true, MagicEggs = true, VIP = true }
+Config.PaidRandomPasses = { Lucky = true, SuperLucky = true, MagicEggs = true, VIP = true }
 
 -- Product kinds that never show in the store grid.
 Config.HiddenProductKinds = { starter = true }
@@ -467,9 +482,9 @@ Config.DailyRewards = {
 -- Free in-session gifts (minutes since joining).
 export type Gift = { minutes: number, reward: Reward }
 Config.Gifts = {
-	{ minutes = 5, reward = { kind = "taps", amount = 2, label = "2 min of Taps" } },
-	{ minutes = 10, reward = { kind = "gems", amount = 10, label = "10 Gems" } },
-	{ minutes = 15, reward = { kind = "taps", amount = 5, label = "5 min of Taps" } },
+	{ minutes = 0.75, reward = { kind = "taps", amount = 1, label = "1 min of Taps" } }, -- first minute: pays the first egg
+	{ minutes = 5, reward = { kind = "gems", amount = 10, label = "10 Gems" } },
+	{ minutes = 10, reward = { kind = "taps", amount = 5, label = "5 min of Taps" } },
 	{ minutes = 20, reward = { kind = "luck", amount = 5, label = "5 min Super Luck" } },
 	{ minutes = 30, reward = { kind = "gems", amount = 25, label = "25 Gems" } },
 	{ minutes = 40, reward = { kind = "taps", amount = 10, label = "10 min of Taps" } },
@@ -676,7 +691,70 @@ function Formulas.maxEquip(slotLevel: number, passes: Owned): number
 	if passes.PetSlots then
 		n += Config.PassEffects.ExtraSlots
 	end
+	if passes.PetSlots2 then
+		n += Config.PassEffects.ExtraSlots2
+	end
 	return n
+end
+
+-- Pet inventory cap (the Storage pass adds room).
+function Formulas.maxInventory(passes: Owned): number
+	return Config.MaxInventory + (if passes.Storage then Config.PassEffects.ExtraStorage else 0)
+end
+
+-- Biggest hatch the player may open at once: x8 (x8 Hatch pass, which includes x3), x3, or x1.
+function Formulas.maxHatch(passes: Owned): number
+	if passes.OctoHatch then
+		return Config.OctoHatchCount
+	elseif passes.TripleHatch then
+		return Config.TripleHatchCount
+	end
+	return 1
+end
+
+-- Auto Hatch picks the biggest size (x8, x3, x1) up to maxCount that the player can pay for
+-- and that still fits in the inventory; falls back to x1 (the server then reports why not).
+function Formulas.autoHatchCount(maxCount: number, taps: number, price: number, room: number): number
+	for _, n in { Config.OctoHatchCount, Config.TripleHatchCount } do
+		if n <= maxCount and taps >= price * n and room >= n then
+			return n
+		end
+	end
+	return 1
+end
+
+-- Pass that unlocks a hatch size (nil for x1 / unknown sizes).
+function Formulas.hatchPass(count: number): string?
+	if count == Config.OctoHatchCount then
+		return "OctoHatch"
+	elseif count == Config.TripleHatchCount then
+		return "TripleHatch"
+	end
+	return nil
+end
+
+-- Hatch sizes the server accepts at all.
+function Formulas.validHatchCount(count: any): boolean
+	return count == 1 or count == Config.TripleHatchCount or count == Config.OctoHatchCount
+end
+
+-- Passes that include another pass: owning the big one also marks the small one as owned, so
+-- nobody is ever sold something they already have. Mutates and returns the set.
+Formulas.IncludedPasses = { OctoHatch = "TripleHatch" } :: { [string]: string }
+function Formulas.applyIncluded(owned: Owned): Owned
+	for big, small in Formulas.IncludedPasses do
+		if owned[big] then
+			owned[small] = true
+		end
+	end
+	return owned
+end
+
+-- Can this player turn Auto Rebirth on? Free after Config.AutoRebirthMinRebirths manual
+-- rebirths; the pass opens it after Config.AutoRebirthPassMinRebirths.
+function Formulas.autoRebirthUnlocked(rebirths: number, passes: Owned): boolean
+	local need = if passes.AutoRebirth then Config.AutoRebirthPassMinRebirths else Config.AutoRebirthMinRebirths
+	return rebirths >= need
 end
 
 ---------------------------------------------------------------------------
@@ -736,6 +814,9 @@ function Formulas.luck(luckLevel: number, passes: Owned, boosted: boolean, event
 	local l = 1 + luckLevel * Config.UpgradeById.Luck.perLevel
 	if passes.Lucky then
 		l += Config.PassEffects.LuckyLuck
+	end
+	if passes.SuperLucky then
+		l += Config.PassEffects.SuperLuckyLuck
 	end
 	if passes.VIP then
 		l += Config.PassEffects.VIPLuck
@@ -1626,7 +1707,6 @@ return {
 	["hud.on"] = "AN",
 	["hud.off"] = "AUS",
 	["toast.auto"] = "Auto {name}: {state}",
-	["msg.autorebirth_locked"] = "Einmal wiedergeboren werden schaltet Auto-Wiedergeburt frei",
 	["msg.autohatch_full"] = "Auto-Schlüpfen gestoppt: dein Inventar ist voll",
 	["egg.golden"] = "Golden {pct}%",
 	["egg.restricted"] = "In deiner Region nicht verfügbar",
@@ -1662,6 +1742,26 @@ return {
 	["rebirth.get"] = "Du bekommst",
 	["rebirth.lose_taps"] = "Deine {n} Taps",
 	["store.best"] = "BESTER WERT",
+	["pass.OctoHatch.name"] = "8x Schlüpfen",
+	["pass.OctoHatch.desc"] = "Schlüpfe 8 Eier auf einmal (inklusive 3x).",
+	["pass.AutoRebirth.name"] = "Auto-Wiedergeburt",
+	["pass.AutoRebirth.desc"] = "Wird für dich wiedergeboren, sobald du es dir leisten kannst, ab deiner ersten Wiedergeburt.",
+	["pass.SuperLucky.name"] = "Super-Glücklich",
+	["pass.SuperLucky.desc"] = "+150% Glück auf jedes Ei. Gilt zusätzlich zu Glücklich.",
+	["pass.PetSlots2.name"] = "+6 Haustierplätze",
+	["pass.PetSlots2.desc"] = "Rüste 6 weitere Haustiere aus (zusätzlich zu +3).",
+	["pass.Storage.name"] = "+50 Lagerplatz",
+	["pass.Storage.desc"] = "Platz für 50 weitere Haustiere.",
+	["product.GemsLarge.name"] = "1.400 Gems",
+	["product.GemsLarge.desc"] = "Ein großer Stapel für Upgrades.",
+	["product.GemsHuge.name"] = "3.200 Gems",
+	["product.GemsHuge.desc"] = "Die meisten Gems pro Robux.",
+	["egg.hatch8"] = "8x schlüpfen",
+	["egg.x8_locked"] = "8x schlüpfen",
+	["msg.need_x8"] = "Hol dir den 8x-Schlüpfen-Pass!",
+	["msg.autorebirth_locked"] = "Werde {n} Mal wiedergeboren, um Auto-Wiedergeburt freizuschalten (oder hol dir den Auto-Wiedergeburt-Pass)",
+	["rewards.streak"] = "Serie: {n} Tage",
+	["event.next"] = "{event} in {time}",
 }
 ]]></string>
           </Properties>
@@ -2038,7 +2138,6 @@ return {
 	["hud.on"] = "ON",
 	["hud.off"] = "OFF",
 	["toast.auto"] = "Auto {name}: {state}",
-	["msg.autorebirth_locked"] = "Rebirth once to unlock Auto Rebirth",
 	["msg.autohatch_full"] = "Auto Hatch stopped: your inventory is full",
 	["egg.golden"] = "Golden {pct}%",
 	["egg.restricted"] = "Not available in your region",
@@ -2074,6 +2173,26 @@ return {
 	["rebirth.get"] = "You get",
 	["rebirth.lose_taps"] = "Your {n} Taps",
 	["store.best"] = "BEST VALUE",
+	["pass.OctoHatch.name"] = "x8 Hatch",
+	["pass.OctoHatch.desc"] = "Open 8 eggs at once (includes x3).",
+	["pass.AutoRebirth.name"] = "Auto Rebirth",
+	["pass.AutoRebirth.desc"] = "Rebirths for you as soon as you can afford it, from your first rebirth.",
+	["pass.SuperLucky.name"] = "Super Lucky",
+	["pass.SuperLucky.desc"] = "+150% luck on every egg. Stacks with Lucky.",
+	["pass.PetSlots2.name"] = "+6 Pet Slots",
+	["pass.PetSlots2.desc"] = "Equip 6 more pets (stacks with +3).",
+	["pass.Storage.name"] = "+50 Storage",
+	["pass.Storage.desc"] = "Room for 50 more pets.",
+	["product.GemsLarge.name"] = "1,400 Gems",
+	["product.GemsLarge.desc"] = "A big stack for upgrades.",
+	["product.GemsHuge.name"] = "3,200 Gems",
+	["product.GemsHuge.desc"] = "The most Gems per Robux.",
+	["egg.hatch8"] = "Hatch x8",
+	["egg.x8_locked"] = "x8 Hatch",
+	["msg.need_x8"] = "Get the x8 Hatch pass!",
+	["msg.autorebirth_locked"] = "Rebirth {n} times to unlock Auto Rebirth (or get the Auto Rebirth pass)",
+	["rewards.streak"] = "Streak: {n} days",
+	["event.next"] = "{event} in {time}",
 }
 ]]></string>
           </Properties>
@@ -2450,7 +2569,6 @@ return {
 	["hud.on"] = "SÍ",
 	["hud.off"] = "NO",
 	["toast.auto"] = "Auto {name}: {state}",
-	["msg.autorebirth_locked"] = "Renacé una vez para desbloquear Auto Renacer",
 	["msg.autohatch_full"] = "Auto Eclosión se detuvo: tu inventario está lleno",
 	["egg.golden"] = "Dorado {pct}%",
 	["egg.restricted"] = "No disponible en tu región",
@@ -2486,6 +2604,26 @@ return {
 	["rebirth.get"] = "Ganás",
 	["rebirth.lose_taps"] = "Tus {n} Taps",
 	["store.best"] = "MEJOR PRECIO",
+	["pass.OctoHatch.name"] = "Abrir x8",
+	["pass.OctoHatch.desc"] = "Abre 8 huevos a la vez (incluye x3).",
+	["pass.AutoRebirth.name"] = "Auto Renacer",
+	["pass.AutoRebirth.desc"] = "Renace por ti en cuanto puedas pagarlo, desde tu primer renacimiento.",
+	["pass.SuperLucky.name"] = "Super Suertudo",
+	["pass.SuperLucky.desc"] = "+150% de suerte en cada huevo. Se suma a Suertudo.",
+	["pass.PetSlots2.name"] = "+6 Espacios de Mascotas",
+	["pass.PetSlots2.desc"] = "Equipa 6 mascotas más (se suma a +3).",
+	["pass.Storage.name"] = "+50 de Almacén",
+	["pass.Storage.desc"] = "Espacio para 50 mascotas más.",
+	["product.GemsLarge.name"] = "1.400 Gemas",
+	["product.GemsLarge.desc"] = "Un gran montón para mejoras.",
+	["product.GemsHuge.name"] = "3.200 Gemas",
+	["product.GemsHuge.desc"] = "Las más Gemas por Robux.",
+	["egg.hatch8"] = "Abrir x8",
+	["egg.x8_locked"] = "Abrir x8",
+	["msg.need_x8"] = "¡Consigue el pase Abrir x8!",
+	["msg.autorebirth_locked"] = "Renace {n} veces para desbloquear Auto Renacer (o consigue el pase Auto Renacer)",
+	["rewards.streak"] = "Racha: {n} días",
+	["event.next"] = "{event} en {time}",
 }
 ]]></string>
           </Properties>
@@ -2862,7 +3000,6 @@ return {
 	["hud.on"] = "OUI",
 	["hud.off"] = "NON",
 	["toast.auto"] = "Auto {name} : {state}",
-	["msg.autorebirth_locked"] = "Renais une fois pour débloquer Auto Renaissance",
 	["msg.autohatch_full"] = "Auto Éclosion arrêtée : ton inventaire est plein",
 	["egg.golden"] = "Doré {pct}%",
 	["egg.restricted"] = "Indisponible dans ta région",
@@ -2898,6 +3035,26 @@ return {
 	["rebirth.get"] = "Tu gagnes",
 	["rebirth.lose_taps"] = "Tes {n} Taps",
 	["store.best"] = "MEILLEURE OFFRE",
+	["pass.OctoHatch.name"] = "Éclosion x8",
+	["pass.OctoHatch.desc"] = "Fais éclore 8 œufs d'un coup (inclut x3).",
+	["pass.AutoRebirth.name"] = "Auto Renaissance",
+	["pass.AutoRebirth.desc"] = "Renaît pour toi dès que tu peux te le permettre, dès ta première renaissance.",
+	["pass.SuperLucky.name"] = "Super Chanceux",
+	["pass.SuperLucky.desc"] = "+150% de chance sur chaque œuf. Se cumule avec Chanceux.",
+	["pass.PetSlots2.name"] = "+6 Emplacements de Compagnons",
+	["pass.PetSlots2.desc"] = "Équipe 6 compagnons de plus (cumulable avec +3).",
+	["pass.Storage.name"] = "+50 de Stockage",
+	["pass.Storage.desc"] = "De la place pour 50 compagnons de plus.",
+	["product.GemsLarge.name"] = "1 400 Gemmes",
+	["product.GemsLarge.desc"] = "Un gros paquet pour les améliorations.",
+	["product.GemsHuge.name"] = "3 200 Gemmes",
+	["product.GemsHuge.desc"] = "Le plus de Gemmes par Robux.",
+	["egg.hatch8"] = "Éclore x8",
+	["egg.x8_locked"] = "Éclosion x8",
+	["msg.need_x8"] = "Obtiens le pass Éclosion x8 !",
+	["msg.autorebirth_locked"] = "Renais {n} fois pour débloquer Auto Renaissance (ou obtiens le pass Auto Renaissance)",
+	["rewards.streak"] = "Série : {n} jours",
+	["event.next"] = "{event} dans {time}",
 }
 ]]></string>
           </Properties>
@@ -3274,7 +3431,6 @@ return {
 	["hud.on"] = "ON",
 	["hud.off"] = "OFF",
 	["toast.auto"] = "Auto {name}: {state}",
-	["msg.autorebirth_locked"] = "Rebirth sekali untuk membuka Auto Rebirth",
 	["msg.autohatch_full"] = "Auto Tetas berhenti: inventarismu penuh",
 	["egg.golden"] = "Emas {pct}%",
 	["egg.restricted"] = "Tidak tersedia di wilayahmu",
@@ -3310,6 +3466,26 @@ return {
 	["rebirth.get"] = "Kamu dapat",
 	["rebirth.lose_taps"] = "{n} Taps milikmu",
 	["store.best"] = "PALING UNTUNG",
+	["pass.OctoHatch.name"] = "Tetas x8",
+	["pass.OctoHatch.desc"] = "Tetaskan 8 telur sekaligus (termasuk x3).",
+	["pass.AutoRebirth.name"] = "Auto Rebirth",
+	["pass.AutoRebirth.desc"] = "Rebirth otomatis begitu kamu mampu, mulai dari rebirth pertama.",
+	["pass.SuperLucky.name"] = "Super Beruntung",
+	["pass.SuperLucky.desc"] = "+150% keberuntungan di setiap telur. Bisa digabung dengan Beruntung.",
+	["pass.PetSlots2.name"] = "+6 Slot Hewan",
+	["pass.PetSlots2.desc"] = "Pasang 6 hewan lagi (digabung dengan +3).",
+	["pass.Storage.name"] = "+50 Penyimpanan",
+	["pass.Storage.desc"] = "Ruang untuk 50 hewan lagi.",
+	["product.GemsLarge.name"] = "1.400 Gems",
+	["product.GemsLarge.desc"] = "Tumpukan besar untuk upgrade.",
+	["product.GemsHuge.name"] = "3.200 Gems",
+	["product.GemsHuge.desc"] = "Gems terbanyak per Robux.",
+	["egg.hatch8"] = "Tetas x8",
+	["egg.x8_locked"] = "Tetas x8",
+	["msg.need_x8"] = "Dapatkan pass Tetas x8!",
+	["msg.autorebirth_locked"] = "Rebirth {n} kali untuk membuka Auto Rebirth (atau dapatkan pass Auto Rebirth)",
+	["rewards.streak"] = "Streak: {n} hari",
+	["event.next"] = "{event} dalam {time}",
 }
 ]]></string>
           </Properties>
@@ -3686,7 +3862,6 @@ return {
 	["hud.on"] = "ON",
 	["hud.off"] = "OFF",
 	["toast.auto"] = "オート {name}: {state}",
-	["msg.autorebirth_locked"] = "一度転生するとオート転生が解放されます",
 	["msg.autohatch_full"] = "オートハッチ停止：インベントリがいっぱいです",
 	["egg.golden"] = "ゴールデン {pct}%",
 	["egg.restricted"] = "お住まいの地域ではご利用いただけません",
@@ -3722,6 +3897,26 @@ return {
 	["rebirth.get"] = "得られるもの",
 	["rebirth.lose_taps"] = "{n} Taps",
 	["store.best"] = "お得！",
+	["pass.OctoHatch.name"] = "x8ハッチ",
+	["pass.OctoHatch.desc"] = "タマゴを一度に8個ふ化（x3を含む）。",
+	["pass.AutoRebirth.name"] = "オート転生",
+	["pass.AutoRebirth.desc"] = "最初の転生から、払えるようになったらすぐ自動で転生する。",
+	["pass.SuperLucky.name"] = "スーパーラッキー",
+	["pass.SuperLucky.desc"] = "すべてのタマゴの運+150%。ラッキーと重なる。",
+	["pass.PetSlots2.name"] = "ペット枠+6",
+	["pass.PetSlots2.desc"] = "ペットをあと6体装備できる（+3と重なる）。",
+	["pass.Storage.name"] = "ストレージ+50",
+	["pass.Storage.desc"] = "ペットをあと50体持てる。",
+	["product.GemsLarge.name"] = "ジェム1,400個",
+	["product.GemsLarge.desc"] = "アップグレード用の大きな束。",
+	["product.GemsHuge.name"] = "ジェム3,200個",
+	["product.GemsHuge.desc"] = "Robuxあたりのジェムが最多。",
+	["egg.hatch8"] = "ふ化 x8",
+	["egg.x8_locked"] = "x8ふ化",
+	["msg.need_x8"] = "x8ふ化パスを手に入れよう！",
+	["msg.autorebirth_locked"] = "オート転生を解放するには{n}回転生しよう（またはオート転生パスを入手）",
+	["rewards.streak"] = "連続：{n}日",
+	["event.next"] = "{event}まであと{time}",
 }
 ]]></string>
           </Properties>
@@ -4098,7 +4293,6 @@ return {
 	["hud.on"] = "ON",
 	["hud.off"] = "OFF",
 	["toast.auto"] = "오토 {name}: {state}",
-	["msg.autorebirth_locked"] = "한 번 환생하면 오토 환생이 열려요",
 	["msg.autohatch_full"] = "오토부화 중지: 인벤토리가 가득 찼어요",
 	["egg.golden"] = "황금 {pct}%",
 	["egg.restricted"] = "이 지역에서는 이용할 수 없어요",
@@ -4134,6 +4328,26 @@ return {
 	["rebirth.get"] = "얻는 것",
 	["rebirth.lose_taps"] = "내 {n} Taps",
 	["store.best"] = "최고 가성비",
+	["pass.OctoHatch.name"] = "x8 부화",
+	["pass.OctoHatch.desc"] = "알을 한 번에 8개 부화해요 (x3 포함).",
+	["pass.AutoRebirth.name"] = "오토 환생",
+	["pass.AutoRebirth.desc"] = "첫 환생부터 가능해지면 자동으로 환생해요.",
+	["pass.SuperLucky.name"] = "슈퍼 럭키",
+	["pass.SuperLucky.desc"] = "모든 알의 운 +150%. 럭키와 합쳐져요.",
+	["pass.PetSlots2.name"] = "펫 슬롯 +6",
+	["pass.PetSlots2.desc"] = "펫을 6마리 더 장착해요 (+3과 합산).",
+	["pass.Storage.name"] = "저장공간 +50",
+	["pass.Storage.desc"] = "펫 50마리를 더 보관해요.",
+	["product.GemsLarge.name"] = "젬 1,400개",
+	["product.GemsLarge.desc"] = "업그레이드용 큰 묶음.",
+	["product.GemsHuge.name"] = "젬 3,200개",
+	["product.GemsHuge.desc"] = "로벅스당 젬이 가장 많아요.",
+	["egg.hatch8"] = "부화 x8",
+	["egg.x8_locked"] = "x8 부화",
+	["msg.need_x8"] = "x8 부화 패스를 구매하세요!",
+	["msg.autorebirth_locked"] = "오토 환생을 열려면 {n}번 환생하세요 (또는 오토 환생 패스 구매)",
+	["rewards.streak"] = "연속 {n}일",
+	["event.next"] = "{event}까지 {time}",
 }
 ]]></string>
           </Properties>
@@ -4510,7 +4724,6 @@ return {
 	["hud.on"] = "SIM",
 	["hud.off"] = "NÃO",
 	["toast.auto"] = "Auto {name}: {state}",
-	["msg.autorebirth_locked"] = "Renasça uma vez para liberar o Auto Renascer",
 	["msg.autohatch_full"] = "Auto Choco parou: seu inventário está cheio",
 	["egg.golden"] = "Dourado {pct}%",
 	["egg.restricted"] = "Indisponível na sua região",
@@ -4546,6 +4759,26 @@ return {
 	["rebirth.get"] = "Você ganha",
 	["rebirth.lose_taps"] = "Seus {n} Taps",
 	["store.best"] = "MELHOR VALOR",
+	["pass.OctoHatch.name"] = "Chocar x8",
+	["pass.OctoHatch.desc"] = "Choque 8 ovos de uma vez (inclui x3).",
+	["pass.AutoRebirth.name"] = "Auto Renascer",
+	["pass.AutoRebirth.desc"] = "Renasce por você assim que puder pagar, desde o primeiro renascimento.",
+	["pass.SuperLucky.name"] = "Super Sortudo",
+	["pass.SuperLucky.desc"] = "+150% de sorte em cada ovo. Soma com Sortudo.",
+	["pass.PetSlots2.name"] = "+6 Slots de Pets",
+	["pass.PetSlots2.desc"] = "Equipe mais 6 pets (soma com +3).",
+	["pass.Storage.name"] = "+50 de Armazenamento",
+	["pass.Storage.desc"] = "Espaço para mais 50 pets.",
+	["product.GemsLarge.name"] = "1.400 Gemas",
+	["product.GemsLarge.desc"] = "Um grande pacote para melhorias.",
+	["product.GemsHuge.name"] = "3.200 Gemas",
+	["product.GemsHuge.desc"] = "O maior número de Gemas por Robux.",
+	["egg.hatch8"] = "Chocar x8",
+	["egg.x8_locked"] = "Chocar x8",
+	["msg.need_x8"] = "Consiga o passe Chocar x8!",
+	["msg.autorebirth_locked"] = "Renasça {n} vezes para liberar o Auto Renascer (ou consiga o passe Auto Renascer)",
+	["rewards.streak"] = "Sequência: {n} dias",
+	["event.next"] = "{event} em {time}",
 }
 ]]></string>
           </Properties>
@@ -4922,7 +5155,6 @@ return {
 	["hud.on"] = "ВКЛ",
 	["hud.off"] = "ВЫКЛ",
 	["toast.auto"] = "Авто {name}: {state}",
-	["msg.autorebirth_locked"] = "Переродись один раз, чтобы открыть автоперерождение",
 	["msg.autohatch_full"] = "Автовылуп остановлен: инвентарь полон",
 	["egg.golden"] = "Золотой {pct}%",
 	["egg.restricted"] = "Недоступно в твоём регионе",
@@ -4958,6 +5190,26 @@ return {
 	["rebirth.get"] = "Ты получаешь",
 	["rebirth.lose_taps"] = "Твои {n} Taps",
 	["store.best"] = "ВЫГОДНО",
+	["pass.OctoHatch.name"] = "Вылуп x8",
+	["pass.OctoHatch.desc"] = "Вылупляй 8 яиц сразу (включает x3).",
+	["pass.AutoRebirth.name"] = "Авто-перерождение",
+	["pass.AutoRebirth.desc"] = "Перерождается за тебя, как только хватает, начиная с первого перерождения.",
+	["pass.SuperLucky.name"] = "Супер-везунчик",
+	["pass.SuperLucky.desc"] = "+150% удачи на каждое яйцо. Складывается с Везунчиком.",
+	["pass.PetSlots2.name"] = "+6 слотов питомцев",
+	["pass.PetSlots2.desc"] = "Экипируй ещё 6 питомцев (складывается с +3).",
+	["pass.Storage.name"] = "+50 места",
+	["pass.Storage.desc"] = "Место ещё для 50 питомцев.",
+	["product.GemsLarge.name"] = "1 400 Гемов",
+	["product.GemsLarge.desc"] = "Большая пачка для улучшений.",
+	["product.GemsHuge.name"] = "3 200 Гемов",
+	["product.GemsHuge.desc"] = "Больше всего Гемов за Robux.",
+	["egg.hatch8"] = "Вылупить x8",
+	["egg.x8_locked"] = "Вылуп x8",
+	["msg.need_x8"] = "Купи пропуск «Вылуп x8»!",
+	["msg.autorebirth_locked"] = "Перерожди себя {n} раз, чтобы открыть авто-перерождение (или купи пропуск «Авто-перерождение»)",
+	["rewards.streak"] = "Серия: {n} дн.",
+	["event.next"] = "{event} через {time}",
 }
 ]]></string>
           </Properties>
@@ -5334,7 +5586,6 @@ return {
 	["hud.on"] = "เปิด",
 	["hud.off"] = "ปิด",
 	["toast.auto"] = "ออโต้ {name}: {state}",
-	["msg.autorebirth_locked"] = "เกิดใหม่หนึ่งครั้งเพื่อปลดล็อกเกิดใหม่อัตโนมัติ",
 	["msg.autohatch_full"] = "ฟักอัตโนมัติหยุดแล้ว: กระเป๋าเต็ม",
 	["egg.golden"] = "ทอง {pct}%",
 	["egg.restricted"] = "ไม่พร้อมให้บริการในภูมิภาคของคุณ",
@@ -5370,6 +5621,26 @@ return {
 	["rebirth.get"] = "คุณได้",
 	["rebirth.lose_taps"] = "{n} Taps ของคุณ",
 	["store.best"] = "คุ้มที่สุด",
+	["pass.OctoHatch.name"] = "ฟัก x8",
+	["pass.OctoHatch.desc"] = "ฟักไข่ 8 ฟองพร้อมกัน (รวม x3)",
+	["pass.AutoRebirth.name"] = "เกิดใหม่อัตโนมัติ",
+	["pass.AutoRebirth.desc"] = "เกิดใหม่ให้เองทันทีที่จ่ายไหว ตั้งแต่การเกิดใหม่ครั้งแรก",
+	["pass.SuperLucky.name"] = "นำโชคสุดๆ",
+	["pass.SuperLucky.desc"] = "โชค +150% ในไข่ทุกฟอง ใช้ร่วมกับนำโชคได้",
+	["pass.PetSlots2.name"] = "ช่องสัตว์เลี้ยง +6",
+	["pass.PetSlots2.desc"] = "สวมสัตว์เลี้ยงเพิ่มอีก 6 ตัว (รวมกับ +3 ได้)",
+	["pass.Storage.name"] = "ที่เก็บ +50",
+	["pass.Storage.desc"] = "มีที่สำหรับสัตว์เลี้ยงเพิ่มอีก 50 ตัว",
+	["product.GemsLarge.name"] = "เพชร 1,400 เม็ด",
+	["product.GemsLarge.desc"] = "กองใหญ่สำหรับอัปเกรด",
+	["product.GemsHuge.name"] = "เพชร 3,200 เม็ด",
+	["product.GemsHuge.desc"] = "ได้เพชรมากที่สุดต่อ Robux",
+	["egg.hatch8"] = "ฟัก x8",
+	["egg.x8_locked"] = "ฟัก x8",
+	["msg.need_x8"] = "ซื้อพาส ฟัก x8 ก่อนนะ!",
+	["msg.autorebirth_locked"] = "เกิดใหม่ {n} ครั้งเพื่อปลดล็อกเกิดใหม่อัตโนมัติ (หรือซื้อพาสเกิดใหม่อัตโนมัติ)",
+	["rewards.streak"] = "ต่อเนื่อง {n} วัน",
+	["event.next"] = "{event} ในอีก {time}",
 }
 ]]></string>
           </Properties>
@@ -5746,7 +6017,6 @@ return {
 	["hud.on"] = "AÇIK",
 	["hud.off"] = "KAPALI",
 	["toast.auto"] = "Oto {name}: {state}",
-	["msg.autorebirth_locked"] = "Oto Yeniden Doğuş için bir kez yeniden doğ",
 	["msg.autohatch_full"] = "Oto Çıkarma durdu: envanterin dolu",
 	["egg.golden"] = "Altın {pct}%",
 	["egg.restricted"] = "Bölgende kullanılamıyor",
@@ -5782,6 +6052,26 @@ return {
 	["rebirth.get"] = "Kazanırsın",
 	["rebirth.lose_taps"] = "{n} Taps'in",
 	["store.best"] = "EN İYİ FİYAT",
+	["pass.OctoHatch.name"] = "8x Açma",
+	["pass.OctoHatch.desc"] = "Bir seferde 8 yumurta aç (3x dahil).",
+	["pass.AutoRebirth.name"] = "Oto Yeniden Doğuş",
+	["pass.AutoRebirth.desc"] = "İlk yeniden doğuşundan itibaren, karşılayabildiğin anda senin yerine yeniden doğar.",
+	["pass.SuperLucky.name"] = "Süper Şanslı",
+	["pass.SuperLucky.desc"] = "Her yumurtada +%150 şans. Şanslı ile birlikte çalışır.",
+	["pass.PetSlots2.name"] = "+6 Evcil Hayvan Slotu",
+	["pass.PetSlots2.desc"] = "6 evcil hayvan daha tak (+3 ile birleşir).",
+	["pass.Storage.name"] = "+50 Depo",
+	["pass.Storage.desc"] = "50 evcil hayvan daha için yer.",
+	["product.GemsLarge.name"] = "1.400 Elmas",
+	["product.GemsLarge.desc"] = "Yükseltmeler için büyük bir yığın.",
+	["product.GemsHuge.name"] = "3.200 Elmas",
+	["product.GemsHuge.desc"] = "Robux başına en çok Elmas.",
+	["egg.hatch8"] = "8x Aç",
+	["egg.x8_locked"] = "8x Açma",
+	["msg.need_x8"] = "8x Açma paketini al!",
+	["msg.autorebirth_locked"] = "Oto Yeniden Doğuşu açmak için {n} kez yeniden doğ (ya da Oto Yeniden Doğuş paketini al)",
+	["rewards.streak"] = "Seri: {n} gün",
+	["event.next"] = "{event} {time} sonra",
 }
 ]]></string>
           </Properties>
@@ -6158,7 +6448,6 @@ return {
 	["hud.on"] = "BẬT",
 	["hud.off"] = "TẮT",
 	["toast.auto"] = "Tự động {name}: {state}",
-	["msg.autorebirth_locked"] = "Tái sinh một lần để mở Tự động tái sinh",
 	["msg.autohatch_full"] = "Tự động ấp đã dừng: kho đồ đã đầy",
 	["egg.golden"] = "Vàng {pct}%",
 	["egg.restricted"] = "Không khả dụng ở khu vực của bạn",
@@ -6194,6 +6483,26 @@ return {
 	["rebirth.get"] = "Bạn nhận",
 	["rebirth.lose_taps"] = "{n} Taps của bạn",
 	["store.best"] = "GIÁ TỐT NHẤT",
+	["pass.OctoHatch.name"] = "Ấp x8",
+	["pass.OctoHatch.desc"] = "Ấp 8 trứng cùng lúc (gồm cả x3).",
+	["pass.AutoRebirth.name"] = "Tự Động Tái Sinh",
+	["pass.AutoRebirth.desc"] = "Tự tái sinh giúp bạn ngay khi đủ điều kiện, từ lần tái sinh đầu tiên.",
+	["pass.SuperLucky.name"] = "Siêu May Mắn",
+	["pass.SuperLucky.desc"] = "+150% may mắn cho mọi quả trứng. Cộng dồn với Thần May Mắn.",
+	["pass.PetSlots2.name"] = "+6 Ô Thú Cưng",
+	["pass.PetSlots2.desc"] = "Trang bị thêm 6 thú cưng (cộng dồn với +3).",
+	["pass.Storage.name"] = "+50 Kho Chứa",
+	["pass.Storage.desc"] = "Thêm chỗ cho 50 thú cưng.",
+	["product.GemsLarge.name"] = "1.400 Đá Quý",
+	["product.GemsLarge.desc"] = "Một túi lớn để nâng cấp.",
+	["product.GemsHuge.name"] = "3.200 Đá Quý",
+	["product.GemsHuge.desc"] = "Nhiều Đá Quý nhất cho mỗi Robux.",
+	["egg.hatch8"] = "Ấp x8",
+	["egg.x8_locked"] = "Ấp x8",
+	["msg.need_x8"] = "Hãy mua vé Ấp x8!",
+	["msg.autorebirth_locked"] = "Hãy tái sinh {n} lần để mở Tự Động Tái Sinh (hoặc mua vé Tự Động Tái Sinh)",
+	["rewards.streak"] = "Chuỗi: {n} ngày",
+	["event.next"] = "{event} sau {time}",
 }
 ]]></string>
           </Properties>
@@ -7341,7 +7650,7 @@ end
 --  * Auto Tap    free, 1 tap/s while the player isn't tapping (the same rate as offline
 --                earnings), +1/s per "Auto Tap" gem upgrade level, +5/s always with the pass.
 --  * Auto Equip  re-runs Equip Best whenever the inventory changes.
---  * Auto Rebirth rebirths as soon as it is affordable. Unlocks after the first manual one.
+--  * Auto Rebirth rebirths as soon as it is affordable. Free after 3 manual ones; the pass opens it after the first.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -7359,8 +7668,8 @@ local Auto = {}
 
 local KEYS = { tap = "autoTap", equip = "autoEquip", rebirth = "autoRebirth" }
 
-function Auto.rebirthUnlocked(p: Data.Profile): boolean
-	return p.rebirths >= Config.AutoRebirthMinRebirths
+function Auto.rebirthUnlocked(player: Player, p: Data.Profile): boolean
+	return Formulas.autoRebirthUnlocked(p.rebirths, State.passes[player] or {})
 end
 
 -- Returns ok, message.
@@ -7370,8 +7679,8 @@ function Auto.set(player: Player, key: string, on: boolean): (boolean, Locale.Me
 	if not p or not field then
 		return false, M("msg.bad_request")
 	end
-	if key == "rebirth" and on and not Auto.rebirthUnlocked(p) then
-		return false, M("msg.autorebirth_locked")
+	if key == "rebirth" and on and not Auto.rebirthUnlocked(player, p) then
+		return false, M("msg.autorebirth_locked", { n = Config.AutoRebirthMinRebirths })
 	end
 	local settings = p.settings :: { [string]: boolean }
 	settings[field] = on
@@ -7402,7 +7711,7 @@ function Auto.init()
 
 	-- Auto Rebirth: checked once a second by the Tapping loop
 	Hooks.on("second", function(player: Player, p: Data.Profile)
-		if p.settings.autoRebirth and Auto.rebirthUnlocked(p) and p.taps >= Formulas.rebirthCost(p.rebirths) then
+		if p.settings.autoRebirth and Auto.rebirthUnlocked(player, p) and p.taps >= Formulas.rebirthCost(p.rebirths) then
 			Progression.rebirth(player)
 		end
 	end)
@@ -7413,7 +7722,7 @@ function Auto.init()
 			tap = p.settings.autoTap,
 			equip = p.settings.autoEquip,
 			rebirth = p.settings.autoRebirth,
-			rebirthUnlocked = Auto.rebirthUnlocked(p),
+			rebirthUnlocked = Auto.rebirthUnlocked(player, p),
 			tapRate = idle, -- taps per second while idle
 			hatchFast = State.owns(player, "AutoHatch"),
 		}
@@ -7813,11 +8122,11 @@ function Eggs.hatch(player: Player, eggId: string, count: number): (boolean, any
 	if not p or not egg or egg.exclusive then
 		return false, M("msg.unknown_egg")
 	end
-	if count ~= 1 and count ~= 3 then
+	if not Formulas.validHatchCount(count) then
 		return false, M("msg.bad_amount")
 	end
-	if count == 3 and not State.owns(player, "TripleHatch") then
-		return false, M("msg.need_x3")
+	if count > Formulas.maxHatch(State.passes[player] or {}) then
+		return false, M(if count == Config.OctoHatchCount then "msg.need_x8" else "msg.need_x3")
 	end
 	if not State.hasZone(p, egg.zone) then
 		return false, M("msg.unlock_first", { zone = M("zone." .. Config.Zones[egg.zone].id) })
@@ -7832,7 +8141,7 @@ function Eggs.hatch(player: Player, eggId: string, count: number): (boolean, any
 	if now - (State.lastHatch[player] or 0) < Config.HatchCooldown - 0.2 then
 		return false, "cooldown"
 	end
-	if not Pets.hasRoom(p, count) then
+	if not Pets.hasRoom(player, p, count) then
 		return false, M("msg.inventory_full")
 	end
 	local cost = egg.price * count
@@ -7857,7 +8166,8 @@ function Eggs.init(positions: { [string]: Vector3 })
 		if type(payload.egg) ~= "string" then
 			return false, M("msg.unknown_egg")
 		end
-		local count = if payload.count == 3 then 3 else 1
+		-- anything that is not a known hatch size is rejected by Eggs.hatch
+		local count = if payload.count == nil then 1 else payload.count
 		return Eggs.hatch(player, payload.egg, count)
 	end)
 
@@ -7883,15 +8193,16 @@ function Eggs.init(positions: { [string]: Vector3 })
 			for _, player in Players:GetPlayers() do
 				local eggId = State.autoHatch[player]
 				if eggId then
-					-- free: x1 every AutoHatchFreeCooldown; Auto Hatch pass: full speed, x3 with the x3 pass
+					-- free: x1 every AutoHatchFreeCooldown; Auto Hatch pass: full speed, at the biggest
+					-- hatch size the player owns (x8 / x3) that they can pay for and have room for
 					local fast = State.owns(player, "AutoHatch")
 					if os.clock() - (State.lastHatch[player] or 0) >= (if fast then Config.HatchCooldown else Config.AutoHatchFreeCooldown) then
-						local count = if fast and State.owns(player, "TripleHatch") then 3 else 1
 						local p = Data.get(player)
 						local egg = Formulas.EggById[eggId]
-						-- fall back to x1 if x3 isn't affordable
-						if count == 3 and p and egg and p.taps < egg.price * 3 then
-							count = 1
+						local count = 1
+						if fast and p and egg then
+							local room = State.maxInventory(player) - State.petCount(p)
+							count = Formulas.autoHatchCount(Formulas.maxHatch(State.passes[player] or {}), p.taps, egg.price, room)
 						end
 						local ok, res = Eggs.hatch(player, eggId, count)
 						if ok then
@@ -8389,6 +8700,7 @@ function Monetization.loadPasses(player: Player)
 			end
 		end
 	end
+	Formulas.applyIncluded(owned) -- x8 Hatch includes x3 Hatch
 end
 
 local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
@@ -8499,6 +8811,7 @@ function Monetization.init()
 		if pass then
 			State.passes[player] = State.passes[player] or {}
 			State.passes[player][pass.key] = true
+			Formulas.applyIncluded(State.passes[player])
 			onPassChanged(player)
 			Remotes.notify(player, M("msg.pass_unlocked", { item = M("pass." .. pass.key .. ".name") }), "success")
 		end
@@ -8612,8 +8925,8 @@ local function power(profile: Data.Profile, uid: string): number
 	return Formulas.petPower(pet.id, pet.tier, State.maxZone(profile), pet.trait)
 end
 
-function Pets.hasRoom(profile: Data.Profile, count: number): boolean
-	return State.petCount(profile) + count <= Config.MaxInventory
+function Pets.hasRoom(player: Player, profile: Data.Profile, count: number): boolean
+	return State.petCount(profile) + count <= State.maxInventory(player)
 end
 
 -- Adds a pet (auto-equips it if a slot is free). Returns the uid, or nil if the inventory is full.
@@ -8623,7 +8936,7 @@ function Pets.add(player: Player, petId: string, tier: number, force: boolean?):
 	if not p or not Formulas.PetById[petId] then
 		return nil
 	end
-	if not force and not Pets.hasRoom(p, 1) then
+	if not force and not Pets.hasRoom(player, p, 1) then
 		return nil
 	end
 	local uid = "p" .. p.nextUid
@@ -9852,7 +10165,7 @@ function Social.init()
 		if not ok or not member then
 			return false, M("msg.join_group_first")
 		end
-		if not Pets.hasRoom(p, 1) then
+		if not Pets.hasRoom(player, p, 1) then
 			return false, M("msg.free_a_slot")
 		end
 		p.groupGiftClaimed = true
@@ -9939,7 +10252,6 @@ return Social
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -10021,6 +10333,10 @@ end
 
 function State.maxEquip(player: Player, profile: Data.Profile): number
 	return Formulas.maxEquip(profile.upgrades.PetSlots or 0, State.passes[player] or {})
+end
+
+function State.maxInventory(player: Player): number
+	return Formulas.maxInventory(State.passes[player] or {})
 end
 
 function State.petPowerSum(profile: Data.Profile): number
@@ -10165,7 +10481,7 @@ function State.snapshot(player: Player): { [string]: any }?
 		indexClaimed = p.indexClaimed,
 		passes = State.passes[player] or {},
 		maxEquip = State.maxEquip(player, p),
-		maxInventory = Config.MaxInventory,
+		maxInventory = State.maxInventory(player),
 		tapValue = State.tapValue(player, p),
 		luck = State.luck(player, p),
 		luckBoostLeft = p.luckBoostLeft,
@@ -13126,7 +13442,7 @@ function Purchase.oddsText(key: string): string?
 end
 
 -- What a paid probability modifier does to the odds, with this player's numbers:
--- "Luck x1.10 → x1.60" (Lucky, VIP, Super Luck) or "Golden 1% → 10%" (Magic Eggs).
+-- "Luck x1.10 → x1.60" (Lucky, Super Lucky, VIP, Super Luck boost) or "Golden 1% → 10%" (Magic Eggs).
 -- The exact odds after luck are on every egg panel. nil for items that change no odds.
 function Purchase.effectText(key: string): string?
 	local s = Net.state
@@ -13145,7 +13461,7 @@ function Purchase.effectText(key: string): string?
 		end
 		return Lang.t("egg.golden", { pct = pct(before) }) .. " → " .. pct(after) .. "%"
 	end
-	if key ~= "Lucky" and key ~= "VIP" and key ~= "SuperLuck" then
+	if key ~= "Lucky" and key ~= "SuperLucky" and key ~= "VIP" and key ~= "SuperLuck" then
 		return nil
 	end
 	local level = (s.upgrades and s.upgrades.Luck) or 0
@@ -13729,8 +14045,8 @@ return Tapper
               <string name="Name">EggPanel</string>
               <string name="Source"><![CDATA[--!strict
 -- Egg panel: opens from the egg's ProximityPrompt, shows the odds (after luck) and the
--- Hatch x1 / x3 / Auto buttons (or Robux buttons for the exclusive Magic Egg).
--- Keys while open: E = x1 (re-triggers the prompt), R = x3, T = auto.
+-- Hatch x1 / x3 / x8 / Auto buttons (or Robux buttons for the exclusive Magic Egg).
+-- Keys while open: E = x1 (re-triggers the prompt), R = x3, Q = x8, T = auto.
 local Players = game:GetService("Players")
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -13793,11 +14109,15 @@ function EggPanel.init()
 		end
 		local def = Formulas.EggById[egg]
 		if def.exclusive then
+			if count == 8 then
+				return -- the Robux egg has no x8
+			end
 			Purchase.product(if count == 3 then "MagicEgg3" else "MagicEgg1")
 			return
 		end
-		if count == 3 and not Net.owns("TripleHatch") then
-			Purchase.pass("TripleHatch")
+		local needPass = Formulas.hatchPass(count)
+		if needPass and count > Formulas.maxHatch((Net.get("passes") :: { [string]: boolean }?) or {}) then
+			Purchase.pass(needPass)
 			return
 		end
 		if HatchCinematic.isPlaying() then
@@ -13813,11 +14133,15 @@ function EggPanel.init()
 		end
 	end
 
-	local b1 = Theme.button({ Text = "", Color = Theme.Green, Size = UDim2.fromOffset(210, 58), LayoutOrder = 1, TextSize = 24, Parent = buttonRow, OnClick = function()
+	-- four buttons fit the 680 px panel: x1, x3, x8, Auto (the Robux egg uses x1 / x3 only)
+	local b1 = Theme.button({ Text = "", Color = Theme.Green, Size = UDim2.fromOffset(152, 58), LayoutOrder = 1, TextSize = 22, Parent = buttonRow, OnClick = function()
 		hatch(1)
 	end })
-	local b3 = Theme.button({ Text = "", Color = Theme.Orange, Size = UDim2.fromOffset(210, 58), LayoutOrder = 2, TextSize = 24, Parent = buttonRow, OnClick = function()
+	local b3 = Theme.button({ Text = "", Color = Theme.Orange, Size = UDim2.fromOffset(152, 58), LayoutOrder = 2, TextSize = 22, Parent = buttonRow, OnClick = function()
 		hatch(3)
+	end })
+	local b8 = Theme.button({ Text = "", Color = Theme.Red, Size = UDim2.fromOffset(152, 58), LayoutOrder = 3, TextSize = 22, Parent = buttonRow, OnClick = function()
+		hatch(8)
 	end })
 	local function toggleAuto()
 		local egg = currentEgg
@@ -13830,10 +14154,10 @@ function EggPanel.init()
 			Toasts.show(Lang.msg(err), "error")
 		end
 	end
-	local bAuto = Theme.button({ Text = "", Color = Theme.Purple, Size = UDim2.fromOffset(200, 58), LayoutOrder = 3, TextSize = 24, Parent = buttonRow, OnClick = toggleAuto })
+	local bAuto = Theme.button({ Text = "", Color = Theme.Purple, Size = UDim2.fromOffset(152, 58), LayoutOrder = 4, TextSize = 22, Parent = buttonRow, OnClick = toggleAuto })
 	-- keyboard hints (PC only)
 	if not Root.isTouch then
-		for key, b in { E = b1, R = b3, T = bAuto } :: { [string]: TextButton } do
+		for key, b in { E = b1, R = b3, Q = b8, T = bAuto } :: { [string]: TextButton } do
 			local chip = Theme.new("Frame", { Name = "Key", Size = UDim2.fromOffset(28, 26), Position = UDim2.fromOffset(-8, -10), BackgroundColor3 = Theme.Ink, ZIndex = b.ZIndex + 2, Parent = b }, { Theme.corner(8), Theme.new("UIStroke", { Thickness = 2, Color = Theme.White }) })
 			local t = Theme.text({ Text = key, Stroke = false, Size = UDim2.new(1, -6, 1, -4), Position = UDim2.fromOffset(3, 2), MaxTextSize = 18, Parent = chip })
 			t.ZIndex = b.ZIndex + 3
@@ -13859,18 +14183,26 @@ function EggPanel.init()
 			Theme.setButton(b1, if Purchase.productAvailable("MagicEgg1") then (Lang.t("egg.buy1") .. "  R$" .. p1.price) else off, if blocked then Theme.Grey else Theme.Green)
 			Theme.setButton(b3, if Purchase.productAvailable("MagicEgg3") then (Lang.t("egg.buy3") .. "  R$" .. p3.price) else off, if blocked then Theme.Grey else Theme.Orange)
 			b3.Visible = not blocked
+			b8.Visible = false
 			bAuto.Visible = false
 			luckLabel.Text = Lang.t("egg.exclusive_note") .. "  ·  ⭐ " .. golden
 			return
 		end
 		b3.Visible = true
+		b8.Visible = true
 		bAuto.Visible = true
 		local taps = if s then s.taps else 0
 		Theme.setButton(b1, Lang.t("egg.hatch1") .. "  " .. Format.abbrev(def.price), if taps >= def.price then Theme.Green else Theme.Grey)
-		if Net.owns("TripleHatch") then
+		local maxHatch = Formulas.maxHatch((Net.get("passes") :: { [string]: boolean }?) or {})
+		if maxHatch >= 3 then
 			Theme.setButton(b3, Lang.t("egg.hatch3") .. "  " .. Format.abbrev(def.price * 3), if taps >= def.price * 3 then Theme.Orange else Theme.Grey)
 		else
 			Theme.setButton(b3, "⭐ " .. Lang.t("egg.x3_locked"), Theme.Blue)
+		end
+		if maxHatch >= 8 then
+			Theme.setButton(b8, Lang.t("egg.hatch8") .. "  " .. Format.abbrev(def.price * 8), if taps >= def.price * 8 then Theme.Red else Theme.Grey)
+		else
+			Theme.setButton(b8, "⭐ " .. Lang.t("egg.x8_locked"), Theme.Blue)
 		end
 		local autoOn = s and s.autoHatch == egg
 		Theme.setButton(bAuto, Lang.t(if autoOn then "egg.auto_on" else "egg.auto_off"), if autoOn then Theme.Green else Theme.Purple)
@@ -14011,6 +14343,8 @@ function EggPanel.init()
 		end
 		if input.KeyCode == Enum.KeyCode.R then
 			hatch(3)
+		elseif input.KeyCode == Enum.KeyCode.Q then
+			hatch(8)
 		elseif input.KeyCode == Enum.KeyCode.T then
 			toggleAuto()
 		end
@@ -14320,7 +14654,9 @@ local function playJob(job: Job)
 		ZIndex = 2,
 		Parent = overlay,
 	}, { Theme.list(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) }) :: Frame
-	Theme.new("UIScale", { Scale = Root.scale * (if auto then 0.7 else 1), Parent = row })
+	-- a big hatch (x8) is shrunk until the whole row fits the screen width
+	local fit = math.min(1, (Root.gui.AbsoluteSize.X * 0.96) / math.max(1, n * 310 * Root.scale * (if auto then 0.7 else 1)))
+	Theme.new("UIScale", { Scale = Root.scale * (if auto then 0.7 else 1) * fit, Parent = row })
 
 	local best = 1
 	local bestColor = Color3.new(1, 1, 1)
@@ -15321,11 +15657,18 @@ function Hud.init()
 		-- live event
 		local active = LiveEventClient.active()
 		local ev = active[1]
-		eventPill.Visible = ev ~= nil
+		-- no event running: count down to the next scheduled one (the real UTC schedule)
+		local evData = LiveEventClient.data
+		local nextId: string? = if evData then evData.nextId else nil
+		local nextLeft: number? = if evData and evData.nextAt then evData.nextAt - LiveEventClient.now() else nil
+		eventPill.Visible = ev ~= nil or (nextId ~= nil and nextLeft ~= nil and nextLeft > 0)
 		if ev then
 			local c = EVENT_COLORS[ev.id] or Theme.Green
 			eventGradient.Color = ColorSequence.new(Theme.lighten(c, 0.3), c)
 			eventText.Text = Theme.lead(eventText, EVENT_ICONS[ev.id] or "✨") .. Lang.t("event." .. ev.id) .. " " .. Format.time(ev.endsAt - LiveEventClient.now())
+		elseif nextId and nextLeft and nextLeft > 0 then
+			eventGradient.Color = ColorSequence.new(Theme.lighten(Theme.Grey, 0.3), Theme.Grey)
+			eventText.Text = Theme.lead(eventText, EVENT_ICONS[nextId] or "✨") .. Lang.t("event.next", { event = Lang.t("event." .. nextId), time = Format.time(nextLeft) })
 		end
 
 		-- starter pack
@@ -16879,6 +17222,9 @@ function RewardsWindow.init()
 
 	-- Daily
 	Theme.text({ Key = "rewards.daily", Size = UDim2.new(0.5, 0, 0, 30), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 28, Parent = body })
+	-- current streak (days in a row), right of the title; the real server-side count
+	local streakLabel = Theme.text({ Text = "", Size = UDim2.new(0.5, 0, 0, 30), Position = UDim2.fromScale(0.5, 0), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Orange, Stroke = false, MaxTextSize = 26, Parent = body })
+	streakLabel.AutoLocalize = false
 	local dailyRow = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 120), Position = UDim2.fromOffset(0, 34), Parent = body }, {
 		Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center),
 	})
@@ -16939,6 +17285,7 @@ function RewardsWindow.init()
 		if sinceLast > Config.DailyStreakWindow then
 			streak = 0
 		end
+		streakLabel.Text = if streak > 0 then "🔥 " .. Lang.t("rewards.streak", { n = streak }) else ""
 		local todayIndex = (streak % #Config.DailyRewards) + 1
 		local ready = sinceLast >= Config.DailyCooldown
 		local claimedThisCycle = streak % #Config.DailyRewards
@@ -17127,12 +17474,12 @@ local Purchase = require(script.Parent.Parent.Purchase)
 
 local StoreWindow = {}
 
-local PASS_ICONS = { AutoTap = "🤖", TripleHatch = "🥚", AutoHatch = "🔄", Lucky = "🍀", VIP = "👑", PetSlots = "🐾", DoubleTaps = "✌️", MagicEggs = "✨" }
+local PASS_ICONS = { AutoTap = "🤖", TripleHatch = "🥚", OctoHatch = "🥚", AutoHatch = "🔄", AutoRebirth = "🔁", Lucky = "🍀", SuperLucky = "🍀", VIP = "👑", PetSlots = "🐾", PetSlots2 = "🐾", Storage = "🎒", DoubleTaps = "✌️", MagicEggs = "✨" }
 local PRODUCT_ICONS = { taps = "👆", gems = "💎", luck = "🍀", egg = "🔮" }
 -- icon pack names where the emoji's default mapping is not the right picture
 local PRODUCT_ICON_NAMES = { taps = "coin", egg = "egg" }
 -- ribbon on the biggest pack of each kind
-local BEST = { TapsLarge = true, GemsMedium = true, MagicEgg3 = true }
+local BEST = { TapsLarge = true, GemsHuge = true, MagicEgg3 = true }
 
 -- Cards on screen: passes, products (playtest).
 StoreWindow.counts = function(): (number, number)

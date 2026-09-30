@@ -9,7 +9,7 @@
 --  * Auto Tap    free, 1 tap/s while the player isn't tapping (the same rate as offline
 --                earnings), +1/s per "Auto Tap" gem upgrade level, +5/s always with the pass.
 --  * Auto Equip  re-runs Equip Best whenever the inventory changes.
---  * Auto Rebirth rebirths as soon as it is affordable. Unlocks after the first manual one.
+--  * Auto Rebirth rebirths as soon as it is affordable. Free after 3 manual ones; the pass opens it after the first.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -27,8 +27,8 @@ local Auto = {}
 
 local KEYS = { tap = "autoTap", equip = "autoEquip", rebirth = "autoRebirth" }
 
-function Auto.rebirthUnlocked(p: Data.Profile): boolean
-	return p.rebirths >= Config.AutoRebirthMinRebirths
+function Auto.rebirthUnlocked(player: Player, p: Data.Profile): boolean
+	return Formulas.autoRebirthUnlocked(p.rebirths, State.passes[player] or {})
 end
 
 -- Returns ok, message.
@@ -38,8 +38,8 @@ function Auto.set(player: Player, key: string, on: boolean): (boolean, Locale.Me
 	if not p or not field then
 		return false, M("msg.bad_request")
 	end
-	if key == "rebirth" and on and not Auto.rebirthUnlocked(p) then
-		return false, M("msg.autorebirth_locked")
+	if key == "rebirth" and on and not Auto.rebirthUnlocked(player, p) then
+		return false, M("msg.autorebirth_locked", { n = Config.AutoRebirthMinRebirths })
 	end
 	local settings = p.settings :: { [string]: boolean }
 	settings[field] = on
@@ -70,7 +70,7 @@ function Auto.init()
 
 	-- Auto Rebirth: checked once a second by the Tapping loop
 	Hooks.on("second", function(player: Player, p: Data.Profile)
-		if p.settings.autoRebirth and Auto.rebirthUnlocked(p) and p.taps >= Formulas.rebirthCost(p.rebirths) then
+		if p.settings.autoRebirth and Auto.rebirthUnlocked(player, p) and p.taps >= Formulas.rebirthCost(p.rebirths) then
 			Progression.rebirth(player)
 		end
 	end)
@@ -81,7 +81,7 @@ function Auto.init()
 			tap = p.settings.autoTap,
 			equip = p.settings.autoEquip,
 			rebirth = p.settings.autoRebirth,
-			rebirthUnlocked = Auto.rebirthUnlocked(p),
+			rebirthUnlocked = Auto.rebirthUnlocked(player, p),
 			tapRate = idle, -- taps per second while idle
 			hatchFast = State.owns(player, "AutoHatch"),
 		}

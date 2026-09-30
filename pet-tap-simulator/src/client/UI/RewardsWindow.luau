@@ -22,6 +22,9 @@ function RewardsWindow.init()
 
 	-- Daily
 	Theme.text({ Key = "rewards.daily", Size = UDim2.new(0.5, 0, 0, 30), TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Ink, Stroke = false, MaxTextSize = 28, Parent = body })
+	-- current streak (days in a row), right of the title; the real server-side count
+	local streakLabel = Theme.text({ Text = "", Size = UDim2.new(0.5, 0, 0, 30), Position = UDim2.fromScale(0.5, 0), TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Orange, Stroke = false, MaxTextSize = 26, Parent = body })
+	streakLabel.AutoLocalize = false
 	local dailyRow = Theme.new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 120), Position = UDim2.fromOffset(0, 34), Parent = body }, {
 		Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center),
 	})
@@ -82,6 +85,7 @@ function RewardsWindow.init()
 		if sinceLast > Config.DailyStreakWindow then
 			streak = 0
 		end
+		streakLabel.Text = if streak > 0 then "🔥 " .. Lang.t("rewards.streak", { n = streak }) else ""
 		local todayIndex = (streak % #Config.DailyRewards) + 1
 		local ready = sinceLast >= Config.DailyCooldown
 		local claimedThisCycle = streak % #Config.DailyRewards

@@ -257,7 +257,9 @@ local function playJob(job: Job)
 		ZIndex = 2,
 		Parent = overlay,
 	}, { Theme.list(Enum.FillDirection.Horizontal, 10, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) }) :: Frame
-	Theme.new("UIScale", { Scale = Root.scale * (if auto then 0.7 else 1), Parent = row })
+	-- a big hatch (x8) is shrunk until the whole row fits the screen width
+	local fit = math.min(1, (Root.gui.AbsoluteSize.X * 0.96) / math.max(1, n * 310 * Root.scale * (if auto then 0.7 else 1)))
+	Theme.new("UIScale", { Scale = Root.scale * (if auto then 0.7 else 1) * fit, Parent = row })
 
 	local best = 1
 	local bestColor = Color3.new(1, 1, 1)

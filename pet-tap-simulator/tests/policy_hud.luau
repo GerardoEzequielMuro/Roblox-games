@@ -26,13 +26,39 @@ for _, p in Config.Products do
 	check("product odds source: " .. p.key, (Formulas.productEgg(p.key) ~= nil) == hatches)
 end
 check("starter pack really contains an egg", Config.StarterPack.eggs > 0 and Formulas.isPaidRandomProduct("StarterPack"))
-check("gems are not a random item", not Formulas.isPaidRandomProduct("GemsSmall") and not Formulas.isPaidRandomProduct("GemsMedium"))
+for _, p in Config.Products do
+	if p.kind == "gems" then
+		check("gems are not a random item: " .. p.key, not Formulas.isPaidRandomProduct(p.key))
+	end
+end
 check("unknown product is not flagged / has no egg", not Formulas.isPaidRandomProduct("Nope") and Formulas.productEgg("Nope") == nil)
 
 -- Luck and golden passes are paid probability modifiers; utility passes are not.
 for _, pass in Config.Passes do
-	local modifier = pass.key == "Lucky" or pass.key == "VIP" or pass.key == "MagicEggs"
+	local modifier = pass.key == "Lucky" or pass.key == "SuperLucky" or pass.key == "VIP" or pass.key == "MagicEggs"
 	check("pass flagged: " .. pass.key, Formulas.isPaidRandomPass(pass.key) == modifier)
+end
+
+-- Super Lucky is a paid probability modifier: its effect is numeric, it changes the odds every
+-- egg panel shows (still summing to 100%), and it is flagged so restricted players cannot buy it.
+check("Super Lucky flagged as paid random", Formulas.isPaidRandomPass("SuperLucky") and Config.PaidRandomPasses.SuperLucky == true)
+do
+	local base = Formulas.luck(0, {}, false, 1)
+	local lucky = Formulas.luck(0, { Lucky = true }, false, 1)
+	local super = Formulas.luck(0, { SuperLucky = true }, false, 1)
+	local both = Formulas.luck(0, { Lucky = true, SuperLucky = true }, false, 1)
+	check("Super Lucky adds its documented luck", math.abs(super - (base + Config.PassEffects.SuperLuckyLuck)) < 1e-9, super)
+	check("Super Lucky is stronger than Lucky and they stack", super > lucky and math.abs(both - (base + Config.PassEffects.LuckyLuck + Config.PassEffects.SuperLuckyLuck)) < 1e-9, both)
+	for _, egg in Config.Eggs do
+		local units = 0
+		for _, o in Formulas.displayOdds(egg.id, both) do
+			units += o.units
+		end
+		check("odds with Lucky + Super Lucky still sum to 100% (" .. egg.id .. ")", units == 1000000, units)
+	end
+	-- the rare-and-above odds go up, never below what the player saw without the pass
+	local b, a = Formulas.odds("basic", base), Formulas.odds("basic", super)
+	check("Super Lucky raises Rare+ odds of the Basic egg", a[3].chance > b[3].chance and a[1].chance < b[1].chance)
 end
 
 -- Every egg (Taps eggs are paid too) shows numeric odds that add up to exactly 100%.

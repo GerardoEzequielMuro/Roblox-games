@@ -116,3 +116,114 @@ este contenedor no hay Roblox Studio, así que no hubo playtest ni capturas.
 - Del lado del server no se puede frenar la compra de un restringido que prompteé con un exploit.
   Si llega el recibo, se entrega igual, porque ya pagó. La barrera real es del lado del cliente,
   como indica Roblox.
+
+## Ronda 2
+
+Igual que la ronda 1: todo con herramientas estáticas y tests puros. **No vi nada andando** (sin Studio en el contenedor).
+Había ediciones parciales de un intento anterior: solo estaban los precios y pases nuevos en `Config.luau`, sin lógica,
+sin textos ni UI. Los conservé (estaban bien) y les construí todo lo que faltaba.
+
+### Precios
+
+Sección 4.3 de `docs/research/top-juegos-y-precios.md`. Los IDs siguen en 0 (los crea Gerar).
+
+| Ítem | Antes | Ahora | Por qué |
+|---|---|---|---|
+| Double Taps | 399 | 449 | 2x Clicks cuesta 499-599 en el género |
+| Lucky | 199 | 249 | PS99 cobra 275 |
+| Magic Eggs | 349 | 599 | estaba regalado (PS99 1.200) |
+| +3 Pet Slots | 299 | 249 | primer escalón de la escalera 249 / 649 |
+| x8 Hatch (nuevo) | — | 699 | Tap Sim 849, PS99 +15 eggs 625. Incluye x3 |
+| Auto Rebirth (nuevo) | — | 199 | Tap Sim 199, Clicker 299 |
+| Super Lucky (nuevo) | — | 699 | PS99 Ultra 800, Tap Sim 749 |
+| +6 Pet Slots (nuevo) | — | 649 | segundo escalón, se suma al +3 |
+| +50 Storage (nuevo) | — | 99 | Tapping Sim 199, AD 99 |
+| Gems 1.400 (nuevo) | — | 499 | escalera de gemas con bonus creciente (+37% vs el pack de 49) |
+| Gems 3.200 (nuevo) | — | 999 | +57%; lleva el cartel "mejor valor" (antes lo tenía el de 600) |
+| Auto Tap, x3 Hatch, Auto Hatch, VIP, Gems 100/600, Magic Egg x1/x3, Starter Pack, packs de Taps | sin cambios | sin cambios | la guía dice "ok" |
+
+- El Starter Pack sigue en 99 con 399 tachado. Como ahora hay más productos, agregué un test que comprueba que 399 sea
+  **honesto**: comprar las partes por separado (1 Magic Egg + 2 Super Luck de 15 min + 2 packs de 100 gemas) cuesta 445, o sea
+  que el precio de lista no supera lo real.
+- No agregué el pase "Secret/Huge Hunter" (1.299). Un pase que sube la chance del pet Secret es un modificador pago de
+  probabilidades (hay que mostrar el efecto y bloquear restringidos) y se acerca a pay-to-win; preferí no hacerlo sin que Gerar lo decida.
+  Lo dejo en Pendiente.
+- Cómo quedó cada pase nuevo (todo en el server, en `src/server/Services/` y `src/shared/Formulas.luau`):
+  - **x8 Hatch** (`OctoHatch`): `Eggs.hatch` acepta 1/3/8 (`Formulas.validHatchCount`, rechaza cualquier otro número, NaN, texto...).
+    Comprar x8 marca también x3 como comprado (`Formulas.applyIncluded`), así que nadie paga algo que ya tiene. El Auto Hatch (con el pase Auto Hatch)
+    elige el tamaño más grande que pueda pagar y que entre en el inventario (`Formulas.autoHatchCount`).
+  - **Super Lucky**: +150% de suerte, se suma al Lucky (`Formulas.luck`). Es modificador pago: está en `Config.PaidRandomPasses`,
+    así que se oculta/bloquea para restringidos y la tienda muestra "Suerte x1.10 → x2.60" con los números del jugador (`Purchase.effectText`).
+  - **+6 Pet Slots** (`Formulas.maxEquip`), **+50 Storage** (`Formulas.maxInventory`, `State.maxInventory`, `Pets.hasRoom` ahora recibe el jugador).
+  - **Auto Rebirth**: lo gratis pasó de "después del 1er rebirth" a "después del 3er" (`Config.AutoRebirthMinRebirths = 3`); el pase lo abre
+    después del 1ro (`Formulas.autoRebirthUnlocked`). Siempre hace falta un rebirth manual para haber visto qué hace.
+  - Recibos: no cambié `processReceipt` (idempotente por `PurchaseId`, se guarda antes de devolver `PurchaseGranted`); los packs nuevos de gemas pasan
+    por `Rewards.grant` igual que los viejos. Los pases se dan en `PromptGamePassPurchaseFinished` y al entrar.
+  - Textos en los 12 idiomas (20 claves nuevas, `locale_check` 375/375 por idioma).
+- Política: Super Lucky está dentro de los tests de `tests/policy_hud.luau` (flag, efecto numérico exacto, stack con Lucky, odds de todos los huevos
+  suman 100% con Lucky + Super Lucky). Las gemas nuevas no son ítem aleatorio (test).
+
+### Retención
+
+| # | Ítem | Estado | Dónde |
+|---|---|---|---|
+| 1 | Loop de segundos con feedback inmediato | ya estaba | `client/Tapper.luau` (números flotantes, partículas, sonido), `HatchCinematic.luau` |
+| 2 | Próximo objetivo visible y cercano | ya estaba | `client/Guide.luau` (barra + "te faltan X" + rayo al lugar), botón de Rebirth con costo |
+| 3 | Metas de sesión y largas | ya estaba | gates, rebirth, huevos; Índice con %, leaderboards, Secret 1/100.000 (`Rewards.luau`, `Leaderboard.luau`) |
+| 4a | Login diario con racha | ya estaba; **agregado** el contador de racha | `Rewards.luau`; `client/UI/RewardsWindow.luau` ("🔥 Racha: N días") |
+| 4b | Regalos por tiempo en sesión | ya estaba; **ajustado** | `Config.Gifts`: el 1er regalo (1 min de Taps) ahora llega a los 45 s y paga el primer huevo dentro del primer minuto |
+| 4c | Offline | ya estaba | `Offline.luau`, cofre del Pet Park |
+| 4d | Eventos con reloj | ya estaba; **agregado** el reloj al próximo | `LiveEventService.luau`; el pill del HUD (`Hud.luau`) ahora muestra "Hora de Suerte en 1h 12m" cuando no hay evento (usa `nextAt` del server, que ya viajaba). Cuenta solo el evento recurrente; el Golden Weekend queda solo como evento activo |
+| 4e | Stock/restock por hora | no agregado | ver Pendiente |
+| 4f | Códigos / grupo | ya estaba | `Config.Codes`, `Social.luau` (`Config.GroupId = 0` hasta que exista el grupo) |
+| 5a | Anuncio server-wide de hallazgos raros | ya estaba | `Eggs.broadcast` (Legendary+), Toast global |
+| 5b | Invitar / referidos | ya estaba | `Social.luau`, `InviteWindow.luau` |
+| 5c | Regalar mascotas | no aplica | sin trading no hay regalos; con mascotas de pago o al azar sería un riesgo de política (trading de ítems aleatorios) y de abuso |
+| 5d | Leaderboards en el mundo | ya estaba | tableros en el spawn (`Leaderboard.luau`) |
+| 6 | Primer minuto | ya estaba de la ronda 1; **reforzado** con el regalo a los 45 s | `HudUnlock.luau`, `TapHint`, `Config.Gifts` |
+
+### Otros cambios
+
+- `client/UI/EggPanel.luau`: botón x8 (tecla **Q**), 4 botones de 152 px en el panel de 680. Si no tenés el pase, el botón abre la compra
+  (igual que el x3). El Magic Egg de Robux ignora el x8.
+- `client/UI/HatchCinematic.luau`: con x8 la fila de 8 mascotas se achica para entrar en el ancho de pantalla (antes solo estaba pensada para 3).
+- `client/UI/StoreWindow.luau`: íconos de los pases nuevos.
+- `Auto Rebirth`: el mensaje de bloqueo ahora dice cuántos rebirths faltan y que existe el pase (`msg.autorebirth_locked`).
+- Ronda 1 "Pendiente" (solo lo que es código y seguro): no había nada más que fuera código seguro. Los íconos necesitan subirse a Roblox, y
+  las mascotas/fuente nuevas necesitan ver el resultado. Regeneré `TapPetsSimulator.rbxlx` desde `src`.
+- `tests/AutoTestClient.client.luau`: checks nuevos (x8 sin pase rechazado, tamaño inventado rechazado, x8 con pase da 8 mascotas).
+- Docs: `DESIGN.md` (precios, Auto Rebirth, luck, racha, reloj) y `README.md` (Q = x8, test nuevo).
+
+### Cómo lo verifiqué
+
+- `rojo build default.project.json` → OK (también regenerado `TapPetsSimulator.rbxlx`).
+- `luau-lsp analyze` sobre `src` → sin salida (0 errores). Sobre `tests`: las mismas 5 líneas que ya había.
+- Tests puros, todos pasan:
+  - `tests/passes_pricing.luau` (nuevo): 117 checks, 0 fallas (precios vs la guía, escalera de gemas, Starter Pack honesto, x8/slots/storage/Auto Rebirth/Auto Hatch).
+  - `tests/policy_hud.luau`: 136 checks, 0 fallas (antes 111; sumé Super Lucky y gemas nuevas).
+  - `tests/locale_check.luau`: LOCALE CHECKS PASSED, 375/375 claves en los 12 idiomas.
+  - `tests/unit_p0.luau`: 55/55.
+  - `sim/check_config.luau`: ALL CHECKS PASSED (40 pets, 9 eggs, 5 zones, 13 passes, 11 products).
+  - `sim/economy_sim.luau`: zona 2 ~5m, zona 3 ~35m, zona 4 ~1h 44m, zona 5 ~3h 20m, 1er rebirth ~1h 00m. El sim modela a un jugador free que no compra,
+    así que los precios no lo mueven; el cambio de 0,75 min en el primer regalo casi no se nota.
+  - `sim/format_check.luau`, `sim/odds_table.luau`: OK.
+- El playtest de Studio (`tests/AutoTestClient`) **no lo pude correr**.
+
+### Qué mirar en Studio
+
+- Correr el playtest (`test.project.json`) primero. Los checks nuevos de x8 están después de los de x3. `grantPasses` ahora da también OctoHatch: el Auto Hatch va a abrir de a 8.
+- Panel de huevos: que los 4 botones entren en 680 px, sobre todo en de/ru/vi y en celular (texto "Abrir x8  1.6K").
+- x8 en el cinematic: que las 8 mascotas entren en pantalla y no se vea todo diminuto en celular. Si queda chico, partirlo en 2 filas de 4.
+- Tienda con IDs de prueba: que entren las 13 tarjetas de pases y las 11 de productos en la grilla, y el cartel "mejor valor" en el pack de 3.200 gemas.
+- Pill de eventos del HUD con el reloj al próximo evento (gris): que el texto entre en 200 px en idiomas largos.
+- Ventana de Recompensas: la línea de racha arriba a la derecha.
+- Auto Rebirth con 1 y 2 rebirths: el chip aparece pero avisa que faltan rebirths; con el pase en Studio (`StudioGrantAllPasses`) debe andar desde el 1ro.
+
+### Pendiente
+
+- Crear en el Creator Dashboard los 5 pases y 2 productos nuevos y pegar los IDs en `Config.luau`, más los que ya estaban pendientes.
+- Decidir si va el pase "Secret/Huge Hunter" (1.299): ver arriba el porqué de no haberlo hecho.
+- Stock/restock rotativo por hora (estilo Grow a Garden): hace falta decidir qué rota (un huevo "caliente" con más suerte gratis por hora).
+  Toca las odds mostradas en vivo y la economía, así que prefiero hacerlo con Gerar viendo el resultado en Studio.
+- Íconos subidos a Roblox (sin IDs inventados), mascotas con mejor silueta y fuente nueva, siguen como en la ronda 1.
+- Con un exploit, un restringido que fuerce el prompt de compra igual recibe el ítem si paga (limitación de la ronda 1, sin cambios).

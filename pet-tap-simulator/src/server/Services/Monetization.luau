@@ -103,6 +103,7 @@ function Monetization.loadPasses(player: Player)
 			end
 		end
 	end
+	Formulas.applyIncluded(owned) -- x8 Hatch includes x3 Hatch
 end
 
 local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
@@ -213,6 +214,7 @@ function Monetization.init()
 		if pass then
 			State.passes[player] = State.passes[player] or {}
 			State.passes[player][pass.key] = true
+			Formulas.applyIncluded(State.passes[player])
 			onPassChanged(player)
 			Remotes.notify(player, M("msg.pass_unlocked", { item = M("pass." .. pass.key .. ".name") }), "success")
 		end

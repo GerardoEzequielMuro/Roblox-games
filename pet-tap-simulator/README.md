@@ -109,6 +109,7 @@ sim/
 ../huerta-tycoon/tools/luau.exe tests/unit_p0.luau        # live events, offline, referral, quests
 ../huerta-tycoon/tools/luau.exe tests/locale_check.luau   # every key + placeholder in every language
 ../huerta-tycoon/tools/luau.exe tests/policy_hud.luau     # paid random items flags/odds, progressive HUD
+../huerta-tycoon/tools/luau.exe tests/passes_pricing.luau # Robux prices vs the guide, pass logic (x8, slots, storage, auto rebirth)
 ```
 
 Studio playtests (they open Studio on the second monitor through the shared runner):
@@ -136,5 +137,5 @@ minimum graphics drops switched off; `showcase2` / `showcase_touch` cover every 
 
 * Tap or click anywhere: earn Taps.
 * Walk up to an egg and press **E** (or tap the prompt) to open it. **E** again = hatch x1,
-  **R** = x3, **T** = toggle auto hatch.
+  **R** = x3, **Q** = x8, **T** = toggle auto hatch.
 * Walk up to a gate and use its prompt to unlock the next zone. After that, use the Teleport menu.

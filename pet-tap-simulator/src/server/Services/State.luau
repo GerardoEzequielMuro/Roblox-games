@@ -5,7 +5,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
-local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -87,6 +86,10 @@ end
 
 function State.maxEquip(player: Player, profile: Data.Profile): number
 	return Formulas.maxEquip(profile.upgrades.PetSlots or 0, State.passes[player] or {})
+end
+
+function State.maxInventory(player: Player): number
+	return Formulas.maxInventory(State.passes[player] or {})
 end
 
 function State.petPowerSum(profile: Data.Profile): number
@@ -231,7 +234,7 @@ function State.snapshot(player: Player): { [string]: any }?
 		indexClaimed = p.indexClaimed,
 		passes = State.passes[player] or {},
 		maxEquip = State.maxEquip(player, p),
-		maxInventory = Config.MaxInventory,
+		maxInventory = State.maxInventory(player),
 		tapValue = State.tapValue(player, p),
 		luck = State.luck(player, p),
 		luckBoostLeft = p.luckBoostLeft,

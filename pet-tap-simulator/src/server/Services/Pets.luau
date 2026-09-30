@@ -23,8 +23,8 @@ local function power(profile: Data.Profile, uid: string): number
 	return Formulas.petPower(pet.id, pet.tier, State.maxZone(profile), pet.trait)
 end
 
-function Pets.hasRoom(profile: Data.Profile, count: number): boolean
-	return State.petCount(profile) + count <= Config.MaxInventory
+function Pets.hasRoom(player: Player, profile: Data.Profile, count: number): boolean
+	return State.petCount(profile) + count <= State.maxInventory(player)
 end
 
 -- Adds a pet (auto-equips it if a slot is free). Returns the uid, or nil if the inventory is full.
@@ -34,7 +34,7 @@ function Pets.add(player: Player, petId: string, tier: number, force: boolean?):
 	if not p or not Formulas.PetById[petId] then
 		return nil
 	end
-	if not force and not Pets.hasRoom(p, 1) then
+	if not force and not Pets.hasRoom(player, p, 1) then
 		return nil
 	end
 	local uid = "p" .. p.nextUid

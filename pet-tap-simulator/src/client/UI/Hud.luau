@@ -702,11 +702,18 @@ function Hud.init()
 		-- live event
 		local active = LiveEventClient.active()
 		local ev = active[1]
-		eventPill.Visible = ev ~= nil
+		-- no event running: count down to the next scheduled one (the real UTC schedule)
+		local evData = LiveEventClient.data
+		local nextId: string? = if evData then evData.nextId else nil
+		local nextLeft: number? = if evData and evData.nextAt then evData.nextAt - LiveEventClient.now() else nil
+		eventPill.Visible = ev ~= nil or (nextId ~= nil and nextLeft ~= nil and nextLeft > 0)
 		if ev then
 			local c = EVENT_COLORS[ev.id] or Theme.Green
 			eventGradient.Color = ColorSequence.new(Theme.lighten(c, 0.3), c)
 			eventText.Text = Theme.lead(eventText, EVENT_ICONS[ev.id] or "✨") .. Lang.t("event." .. ev.id) .. " " .. Format.time(ev.endsAt - LiveEventClient.now())
+		elseif nextId and nextLeft and nextLeft > 0 then
+			eventGradient.Color = ColorSequence.new(Theme.lighten(Theme.Grey, 0.3), Theme.Grey)
+			eventText.Text = Theme.lead(eventText, EVENT_ICONS[nextId] or "✨") .. Lang.t("event.next", { event = Lang.t("event." .. nextId), time = Format.time(nextLeft) })
 		end
 
 		-- starter pack

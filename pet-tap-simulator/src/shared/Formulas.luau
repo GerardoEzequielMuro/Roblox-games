@@ -93,7 +93,70 @@ function Formulas.maxEquip(slotLevel: number, passes: Owned): number
 	if passes.PetSlots then
 		n += Config.PassEffects.ExtraSlots
 	end
+	if passes.PetSlots2 then
+		n += Config.PassEffects.ExtraSlots2
+	end
 	return n
+end
+
+-- Pet inventory cap (the Storage pass adds room).
+function Formulas.maxInventory(passes: Owned): number
+	return Config.MaxInventory + (if passes.Storage then Config.PassEffects.ExtraStorage else 0)
+end
+
+-- Biggest hatch the player may open at once: x8 (x8 Hatch pass, which includes x3), x3, or x1.
+function Formulas.maxHatch(passes: Owned): number
+	if passes.OctoHatch then
+		return Config.OctoHatchCount
+	elseif passes.TripleHatch then
+		return Config.TripleHatchCount
+	end
+	return 1
+end
+
+-- Auto Hatch picks the biggest size (x8, x3, x1) up to maxCount that the player can pay for
+-- and that still fits in the inventory; falls back to x1 (the server then reports why not).
+function Formulas.autoHatchCount(maxCount: number, taps: number, price: number, room: number): number
+	for _, n in { Config.OctoHatchCount, Config.TripleHatchCount } do
+		if n <= maxCount and taps >= price * n and room >= n then
+			return n
+		end
+	end
+	return 1
+end
+
+-- Pass that unlocks a hatch size (nil for x1 / unknown sizes).
+function Formulas.hatchPass(count: number): string?
+	if count == Config.OctoHatchCount then
+		return "OctoHatch"
+	elseif count == Config.TripleHatchCount then
+		return "TripleHatch"
+	end
+	return nil
+end
+
+-- Hatch sizes the server accepts at all.
+function Formulas.validHatchCount(count: any): boolean
+	return count == 1 or count == Config.TripleHatchCount or count == Config.OctoHatchCount
+end
+
+-- Passes that include another pass: owning the big one also marks the small one as owned, so
+-- nobody is ever sold something they already have. Mutates and returns the set.
+Formulas.IncludedPasses = { OctoHatch = "TripleHatch" } :: { [string]: string }
+function Formulas.applyIncluded(owned: Owned): Owned
+	for big, small in Formulas.IncludedPasses do
+		if owned[big] then
+			owned[small] = true
+		end
+	end
+	return owned
+end
+
+-- Can this player turn Auto Rebirth on? Free after Config.AutoRebirthMinRebirths manual
+-- rebirths; the pass opens it after Config.AutoRebirthPassMinRebirths.
+function Formulas.autoRebirthUnlocked(rebirths: number, passes: Owned): boolean
+	local need = if passes.AutoRebirth then Config.AutoRebirthPassMinRebirths else Config.AutoRebirthMinRebirths
+	return rebirths >= need
 end
 
 ---------------------------------------------------------------------------
@@ -153,6 +216,9 @@ function Formulas.luck(luckLevel: number, passes: Owned, boosted: boolean, event
 	local l = 1 + luckLevel * Config.UpgradeById.Luck.perLevel
 	if passes.Lucky then
 		l += Config.PassEffects.LuckyLuck
+	end
+	if passes.SuperLucky then
+		l += Config.PassEffects.SuperLuckyLuck
 	end
 	if passes.VIP then
 		l += Config.PassEffects.VIPLuck

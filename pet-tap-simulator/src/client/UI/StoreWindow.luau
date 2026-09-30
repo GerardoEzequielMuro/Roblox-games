@@ -15,12 +15,12 @@ local Purchase = require(script.Parent.Parent.Purchase)
 
 local StoreWindow = {}
 
-local PASS_ICONS = { AutoTap = "🤖", TripleHatch = "🥚", AutoHatch = "🔄", Lucky = "🍀", VIP = "👑", PetSlots = "🐾", DoubleTaps = "✌️", MagicEggs = "✨" }
+local PASS_ICONS = { AutoTap = "🤖", TripleHatch = "🥚", OctoHatch = "🥚", AutoHatch = "🔄", AutoRebirth = "🔁", Lucky = "🍀", SuperLucky = "🍀", VIP = "👑", PetSlots = "🐾", PetSlots2 = "🐾", Storage = "🎒", DoubleTaps = "✌️", MagicEggs = "✨" }
 local PRODUCT_ICONS = { taps = "👆", gems = "💎", luck = "🍀", egg = "🔮" }
 -- icon pack names where the emoji's default mapping is not the right picture
 local PRODUCT_ICON_NAMES = { taps = "coin", egg = "egg" }
 -- ribbon on the biggest pack of each kind
-local BEST = { TapsLarge = true, GemsMedium = true, MagicEgg3 = true }
+local BEST = { TapsLarge = true, GemsHuge = true, MagicEgg3 = true }
 
 -- Cards on screen: passes, products (playtest).
 StoreWindow.counts = function(): (number, number)

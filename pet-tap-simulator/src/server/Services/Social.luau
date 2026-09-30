@@ -217,7 +217,7 @@ function Social.init()
 		if not ok or not member then
 			return false, M("msg.join_group_first")
 		end
-		if not Pets.hasRoom(p, 1) then
+		if not Pets.hasRoom(player, p, 1) then
 			return false, M("msg.free_a_slot")
 		end
 		p.groupGiftClaimed = true

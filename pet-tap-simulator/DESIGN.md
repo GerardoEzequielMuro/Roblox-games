@@ -58,7 +58,7 @@ the server's pace, so they keep running while the player is AFK and no remote is
 | Auto Tap | 1 tap/s **while idle** (no manual tap for 2 s) | "Auto Tap" gem upgrade: +1/s per level (max 3, idle only). Auto Tap pass: +5/s, always | The idle rate equals the offline rate, and the best free idle rate (4/s) stays below an active player (6/s), so the economy curve of an active player is unchanged |
 | Auto Hatch | x1 every 4.5 s at the egg you stand next to | Auto Hatch pass: every 2.4 s, x3 with the x3 pass | Started from the egg panel. Stops (with a message) when the inventory is full. Session only: it is tied to a place |
 | Auto Equip | Re-runs Equip Best after every hatch and craft | — | Saved |
-| Auto Rebirth | Rebirths as soon as it is affordable | — | Unlocks after the first manual rebirth. Saved |
+| Auto Rebirth | Rebirths as soon as it is affordable | Auto Rebirth pass: opens it after the first rebirth instead of the third | Free after 3 manual rebirths (`Config.AutoRebirthMinRebirths`). Saved |
 
 ## HUD and first minute
 
@@ -127,13 +127,13 @@ Eggs cost Taps and Taps can be bought with Robux, so every egg counts as a paid 
   Pack card) print the same numeric odds, plus the Golden chance, **on the card, before the
   purchase prompt** (`Formulas.productEgg`, `Purchase.oddsText`). The Magic Egg's entries are all
   Rare+, so luck cannot change its odds (checked in `tests/policy_hud.luau`). Luck items (Lucky,
-  VIP, Super Luck) and the Magic Eggs pass show what they change with the player's own numbers
+  VIP, Super Lucky, Super Luck) and the Magic Eggs pass show what they change with the player's own numbers
   ("Luck x1.10 → x1.60", "Golden 1% → 10%"); the full odds after luck are on every egg panel.
 * No outcome is "nothing": every hatch gives a pet, and a full inventory is refused before paying.
 * `PolicyService:GetPolicyInfoForPlayerAsync` → `ArePaidRandomItemsRestricted`. For those players
   (and until the lookup answers) the game does not sell: Magic Eggs, the Starter Pack (it contains
   an egg), Super Luck, Taps packs (so Taps are not purchasable and the world eggs stop being
-  "paid"), and the Lucky / Magic Eggs / VIP passes (paid luck modifiers). Gems and the utility
+  "paid"), and the Lucky / Super Lucky / Magic Eggs / VIP passes (paid luck modifiers). Gems and the utility
   passes stay. `Config.PaidRandomProductKinds` / `Config.PaidRandomPasses`.
   The Robux-only Magic Egg in spawn is hidden from them too: its prompt and sign are switched
   off on their client (`EggPanel`), so it can't even be opened.
@@ -161,8 +161,8 @@ Measured and enforced by the playtest (`[TEST] PERF` line + `budget:` checks).
 
 ## Luck
 
-`luck = 1 + 0.10 × Luck level (+0.5 Lucky pass) (+0.1 VIP)`, ×2 while Super Luck is
-active. Luck multiplies the weight of every **Rare and above** entry in an egg, and then
+`luck = 1 + 0.10 × Luck level (+0.5 Lucky pass) (+1.5 Super Lucky pass) (+0.1 VIP)`, ×2
+while the Super Luck boost is active. Luck multiplies the weight of every **Rare and above** entry in an egg, and then
 the odds are renormalised. The egg panel always shows the odds after luck.
 
 ## Economy curve (tuned by simulation)
@@ -297,15 +297,15 @@ Legendary, Mythic or Secret hatch is announced to the whole server.
 
 | Feature | Details |
 |---|---|
-| Daily streak | 7-day cycle, claim every 20 h, the streak breaks after 48 h. Day 7 = a Magic Egg |
-| Timed gifts | 8 gifts at 5/10/15/20/30/40/50/60 min into the session (taps, gems, luck, a Magic Egg at 60 min) |
+| Daily streak | 7-day cycle, claim every 20 h, the streak breaks after 48 h. Day 7 = a Magic Egg. The Rewards window shows the running streak ("Streak: N days") |
+| Timed gifts | 8 gifts at 45 s / 5 / 10 / 20 / 30 / 40 / 50 / 60 min into the session (taps, gems, luck, a Magic Egg at 60 min). The 45 s one (1 min of Taps) pays the first egg inside the first minute |
 | Codes | `RELEASE` (50 gems), `TAPTAP` (10 min of taps), `LUCKY` (15 min Super Luck), `PETS` (25 gems) |
 | Index | % discovered overall and per zone; each completed zone gives 50/100/200/400/800 gems and +10% taps forever |
 | Leaderboards | Global Total Taps and Rebirths boards in spawn (OrderedDataStore, refreshed every 60 s) |
 | Friend boost | +10% taps for each friend in the server, max +50% |
 | Offline earnings | Pets collect `tap value × 1/s` while you're away, up to 8 h (12 h with VIP), from 5 min away. A popup on join claims it (x2 with a rewarded video when ads are live). Unclaimed Taps are kept |
 | Daily quests | 3 per UTC day from a pool of 6 (hatch N eggs, tap N times, craft a Golden, spend N gems, play N minutes, hatch an Epic+). Targets scale with your best zone; 20–60 gems each, a Magic Egg for all 3 |
-| Live events | **Lucky Hour**: 15 min every 3 h (UTC), x2 luck. **Golden Weekend**: Saturday + Sunday UTC, x2 Golden chance. Both stack with Super Luck; the egg panel odds include them. Admins (`Config.AdminUserIds`) can start one on every server with `/event <LuckyHour\|GoldenWeekend> <1-60 minutes>` |
+| Live events | **Lucky Hour**: 15 min every 3 h (UTC), x2 luck. **Golden Weekend**: Saturday + Sunday UTC, x2 Golden chance. Both stack with Super Luck; the egg panel odds include them. When no event is running the HUD pill counts down to the next Lucky Hour (real UTC schedule). Admins (`Config.AdminUserIds`) can start one on every server with `/event <LuckyHour\|GoldenWeekend> <1-60 minutes>` |
 | Rare hatches | Legendary+ hatches are announced to the server; Mythic, Secret and Rainbow hatches to every server (MessagingService, max 1 publish / 2 s per server, shown one every 4 s) |
 | Invite friends | Game invites and share links carry `ref:<userId>`. The friend gets 50 gems on their first join; after they play 10 minutes the inviter gets a Magic Egg (max 25 in a lifetime) |
 | Group gift | Joining the group (`Config.GroupId`) gives the exclusive **Group Pup** (x1.2 of the best pet of your top zone), once |
@@ -334,12 +334,17 @@ with ID `0` stays hidden in the store, and its buttons say "coming soon".
 |---|---|---|---|
 | AutoTap | Auto Tap | 149 | +5 auto taps/s, also while you tap (the free Auto Tap is 1/s, idle only) |
 | TripleHatch | x3 Hatch | 199 | Hatch 3 eggs at once |
-| AutoHatch | Auto Hatch | 249 | Fast Auto Hatch: every 2.4 s instead of 4.5 s, and x3 with the x3 pass |
-| Lucky | Lucky | 199 | +50% luck |
+| OctoHatch | x8 Hatch | 699 | Hatch 8 eggs at once; includes x3 (owning it marks x3 as owned) |
+| AutoHatch | Auto Hatch | 249 | Fast Auto Hatch: every 2.4 s instead of 4.5 s, at the biggest size owned (x8 / x3) that you can pay for |
+| AutoRebirth | Auto Rebirth | 199 | Auto Rebirth from the first rebirth (free players get it after 3) |
+| Lucky | Lucky | 249 | +50% luck (paid random modifier: hidden for restricted players) |
+| SuperLucky | Super Lucky | 699 | +150% luck, stacks with Lucky (paid random modifier) |
 | VIP | VIP | 299 | ×1.5 taps, +10% luck, VIP tag |
-| PetSlots | +3 Pet Slots | 299 | Equip 3 more pets |
-| DoubleTaps | Double Taps | 399 | ×2 taps |
-| MagicEggs | Magic Eggs | 349 | Golden hatch chance goes from 1% to 10% |
+| PetSlots | +3 Pet Slots | 249 | Equip 3 more pets |
+| PetSlots2 | +6 Pet Slots | 649 | Equip 6 more pets, stacks with +3 |
+| Storage | +50 Storage | 99 | Inventory 150 → 200 |
+| DoubleTaps | Double Taps | 449 | ×2 taps |
+| MagicEggs | Magic Eggs | 599 | Golden hatch chance goes from 1% to 10% |
 
 ### Developer products
 
@@ -361,7 +366,9 @@ in `Config.GroupId`.
 | TapsMedium | Bag of Taps | 199 | 3 h of tap income |
 | TapsLarge | Vault of Taps | 599 | 12 h of tap income |
 | GemsSmall | 100 Gems | 49 | 100 gems |
-| GemsMedium | 600 Gems | 249 | 600 gems |
+| GemsMedium | 600 Gems | 249 | 600 gems (+18% per Robux vs the 49 pack) |
+| GemsLarge | 1,400 Gems | 499 | 1,400 gems (+37%) |
+| GemsHuge | 3,200 Gems | 999 | 3,200 gems (+57%) |
 | SuperLuck | Super Luck (15 min) | 99 | ×2 luck for 15 min (stacks) |
 | MagicEgg1 | Magic Egg | 149 | 1 exclusive Magic Egg hatch |
 | MagicEgg3 | 3 Magic Eggs | 399 | 3 exclusive Magic Egg hatches |

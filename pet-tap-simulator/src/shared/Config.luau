@@ -30,8 +30,11 @@ Config.AutoTapFreeRate = 1
 Config.AutoTapIdleSeconds = 2
 -- Auto Hatch is free at this pace (x1); the Auto Hatch pass hatches at HatchCooldown and x3.
 Config.AutoHatchFreeCooldown = 4.5
--- Auto Rebirth unlocks after this many manual rebirths.
-Config.AutoRebirthMinRebirths = 1
+-- Auto Rebirth is free after this many manual rebirths; the Auto Rebirth pass unlocks it from
+-- the first rebirth (the toggle itself always needs one manual rebirth so the player has seen
+-- what a rebirth does).
+Config.AutoRebirthMinRebirths = 3
+Config.AutoRebirthPassMinRebirths = 1
 
 ---------------------------------------------------------------------------
 -- Rarities
@@ -276,6 +279,8 @@ Config.ExclusivePowerFactor = {
 
 Config.EggRange = 16 -- studs; server rejects hatches from further away
 Config.HatchCooldown = 2.4 -- seconds between hatches (manual or auto)
+Config.TripleHatchCount = 3 -- x3 Hatch pass
+Config.OctoHatchCount = 8 -- x8 Hatch pass (includes x3)
 
 ---------------------------------------------------------------------------
 -- Rebirth
@@ -311,12 +316,17 @@ export type Pass = { key: string, name: string, description: string, id: number,
 Config.Passes = {
 	{ key = "AutoTap", name = "Auto Tap", description = "Taps for you, 5 times a second, forever.", id = 0, price = 149, color = { 90, 200, 255 } },
 	{ key = "TripleHatch", name = "x3 Hatch", description = "Open 3 eggs at once.", id = 0, price = 199, color = { 255, 170, 60 } },
+	{ key = "OctoHatch", name = "x8 Hatch", description = "Open 8 eggs at once (includes x3).", id = 0, price = 699, color = { 255, 130, 40 } },
 	{ key = "AutoHatch", name = "Auto Hatch", description = "Keeps hatching the egg you stand next to.", id = 0, price = 249, color = { 255, 120, 200 } },
-	{ key = "Lucky", name = "Lucky", description = "+50% luck on every egg.", id = 0, price = 199, color = { 110, 220, 110 } },
+	{ key = "AutoRebirth", name = "Auto Rebirth", description = "Rebirths for you as soon as you can afford it.", id = 0, price = 199, color = { 120, 200, 255 } },
+	{ key = "Lucky", name = "Lucky", description = "+50% luck on every egg.", id = 0, price = 249, color = { 110, 220, 110 } },
+	{ key = "SuperLucky", name = "Super Lucky", description = "+150% luck on every egg.", id = 0, price = 699, color = { 60, 200, 90 } },
 	{ key = "VIP", name = "VIP", description = "x1.5 taps, +10% luck and a VIP tag.", id = 0, price = 299, color = { 255, 215, 60 } },
-	{ key = "PetSlots", name = "+3 Pet Slots", description = "Equip 3 more pets.", id = 0, price = 299, color = { 175, 110, 255 } },
-	{ key = "DoubleTaps", name = "Double Taps", description = "Every tap is worth x2.", id = 0, price = 399, color = { 255, 90, 90 } },
-	{ key = "MagicEggs", name = "Magic Eggs", description = "10x more Golden pets from eggs.", id = 0, price = 349, color = { 255, 200, 40 } },
+	{ key = "PetSlots", name = "+3 Pet Slots", description = "Equip 3 more pets.", id = 0, price = 249, color = { 175, 110, 255 } },
+	{ key = "PetSlots2", name = "+6 Pet Slots", description = "Equip 6 more pets (stacks with +3).", id = 0, price = 649, color = { 150, 90, 240 } },
+	{ key = "Storage", name = "+50 Storage", description = "Room for 50 more pets in your inventory.", id = 0, price = 99, color = { 140, 170, 255 } },
+	{ key = "DoubleTaps", name = "Double Taps", description = "Every tap is worth x2.", id = 0, price = 449, color = { 255, 90, 90 } },
+	{ key = "MagicEggs", name = "Magic Eggs", description = "10x more Golden pets from eggs.", id = 0, price = 599, color = { 255, 200, 40 } },
 } :: { Pass }
 Config.PassByKey = {} :: { [string]: Pass }
 for _, p in Config.Passes do
@@ -326,8 +336,11 @@ Config.PassEffects = {
 	VIPTapMult = 1.5,
 	VIPLuck = 0.10,
 	LuckyLuck = 0.5,
+	SuperLuckyLuck = 1.5, -- added to luck, on top of Lucky when both are owned
 	DoubleTapsMult = 2,
-	ExtraSlots = 3,
+	ExtraSlots = 3, -- PetSlots pass
+	ExtraSlots2 = 6, -- PetSlots2 pass (stacks with PetSlots)
+	ExtraStorage = 50, -- Storage pass: added to MaxInventory
 }
 
 -- kind: "taps" (reward = minutes of your current tap income), "gems", "luck" (boost minutes), "egg" (exclusive egg hatches)
@@ -338,6 +351,8 @@ Config.Products = {
 	{ key = "TapsLarge", name = "Vault of Taps", description = "12 hours of taps, instantly.", id = 0, price = 599, kind = "taps", amount = 720, color = { 40, 100, 230 } },
 	{ key = "GemsSmall", name = "100 Gems", description = "Spend on upgrades.", id = 0, price = 49, kind = "gems", amount = 100, color = { 110, 230, 200 } },
 	{ key = "GemsMedium", name = "600 Gems", description = "Best value for upgrades.", id = 0, price = 249, kind = "gems", amount = 600, color = { 60, 200, 170 } },
+	{ key = "GemsLarge", name = "1,400 Gems", description = "A big stack for upgrades.", id = 0, price = 499, kind = "gems", amount = 1400, color = { 40, 180, 150 } },
+	{ key = "GemsHuge", name = "3,200 Gems", description = "Best value for upgrades.", id = 0, price = 999, kind = "gems", amount = 3200, color = { 30, 160, 130 } },
 	{ key = "SuperLuck", name = "Super Luck (15 min)", description = "x2 luck for 15 minutes.", id = 0, price = 99, kind = "luck", amount = 15, color = { 110, 220, 110 } },
 	{ key = "MagicEgg1", name = "Magic Egg", description = "Hatch 1 exclusive Magic Egg.", id = 0, price = 149, kind = "egg", amount = 1, color = { 190, 120, 255 } },
 	{ key = "MagicEgg3", name = "3 Magic Eggs", description = "Hatch 3 exclusive Magic Eggs.", id = 0, price = 399, kind = "egg", amount = 3, color = { 150, 80, 230 } },
@@ -356,7 +371,7 @@ Config.BoostLuckMult = 2 -- Super Luck boost / luck rewards multiply luck by thi
 -- can't buy these: eggs and packs that contain one, luck, and Taps (eggs cost Taps, so for
 -- them Taps must not be purchasable). Odds are always shown in % before spending.
 Config.PaidRandomProductKinds = { egg = true, starter = true, luck = true, taps = true }
-Config.PaidRandomPasses = { Lucky = true, MagicEggs = true, VIP = true }
+Config.PaidRandomPasses = { Lucky = true, SuperLucky = true, MagicEggs = true, VIP = true }
 
 -- Product kinds that never show in the store grid.
 Config.HiddenProductKinds = { starter = true }
@@ -440,9 +455,9 @@ Config.DailyRewards = {
 -- Free in-session gifts (minutes since joining).
 export type Gift = { minutes: number, reward: Reward }
 Config.Gifts = {
-	{ minutes = 5, reward = { kind = "taps", amount = 2, label = "2 min of Taps" } },
-	{ minutes = 10, reward = { kind = "gems", amount = 10, label = "10 Gems" } },
-	{ minutes = 15, reward = { kind = "taps", amount = 5, label = "5 min of Taps" } },
+	{ minutes = 0.75, reward = { kind = "taps", amount = 1, label = "1 min of Taps" } }, -- first minute: pays the first egg
+	{ minutes = 5, reward = { kind = "gems", amount = 10, label = "10 Gems" } },
+	{ minutes = 10, reward = { kind = "taps", amount = 5, label = "5 min of Taps" } },
 	{ minutes = 20, reward = { kind = "luck", amount = 5, label = "5 min Super Luck" } },
 	{ minutes = 30, reward = { kind = "gems", amount = 25, label = "25 Gems" } },
 	{ minutes = 40, reward = { kind = "taps", amount = 10, label = "10 min of Taps" } },

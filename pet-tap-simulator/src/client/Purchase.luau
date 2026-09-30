@@ -81,7 +81,7 @@ function Purchase.oddsText(key: string): string?
 end
 
 -- What a paid probability modifier does to the odds, with this player's numbers:
--- "Luck x1.10 → x1.60" (Lucky, VIP, Super Luck) or "Golden 1% → 10%" (Magic Eggs).
+-- "Luck x1.10 → x1.60" (Lucky, Super Lucky, VIP, Super Luck boost) or "Golden 1% → 10%" (Magic Eggs).
 -- The exact odds after luck are on every egg panel. nil for items that change no odds.
 function Purchase.effectText(key: string): string?
 	local s = Net.state
@@ -100,7 +100,7 @@ function Purchase.effectText(key: string): string?
 		end
 		return Lang.t("egg.golden", { pct = pct(before) }) .. " → " .. pct(after) .. "%"
 	end
-	if key ~= "Lucky" and key ~= "VIP" and key ~= "SuperLuck" then
+	if key ~= "Lucky" and key ~= "SuperLucky" and key ~= "VIP" and key ~= "SuperLuck" then
 		return nil
 	end
 	local level = (s.upgrades and s.upgrades.Luck) or 0
