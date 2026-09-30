@@ -72,6 +72,24 @@ Net.event("Numbers").OnClientEvent:Connect(function(c)
 	end
 end)
 
+-- Ask the server for a fresh snapshot (e.g. when the shop restock clock hits zero).
+local pulling = false
+function Net.pull()
+	if pulling then
+		return
+	end
+	pulling = true
+	task.spawn(function()
+		local ok, snap = Net.request("GetState")
+		pulling = false
+		if ok and snap then
+			Net.state = snap
+			Net.receivedAt = os.clock()
+			changed:Fire("full")
+		end
+	end)
+end
+
 -- Initial pull (the push may have happened before this script connected).
 task.spawn(function()
 	for _ = 1, 40 do

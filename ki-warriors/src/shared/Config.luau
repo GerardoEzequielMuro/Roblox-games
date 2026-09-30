@@ -206,6 +206,10 @@ Config.Forms = {
 	{ id = "nova", reqPower = 15_000_000_000, mult = 200, drain = 0.035, color = { 255, 250, 220 }, color2 = { 255, 200, 80 }, style = "lightning" },
 	{ id = "celestial", reqPower = 1_500_000_000_000, mult = 1_000, drain = 0.04, color = { 120, 255, 220 }, color2 = { 255, 140, 240 }, style = "prism" },
 	{ id = "primordial", reqPower = 200_000_000_000_000, reqRebirths = 3, mult = 5_000, drain = 0.045, color = { 255, 255, 255 }, color2 = { 255, 60, 120 }, style = "prism" },
+	-- Special form (film arc P1). Same power and ascension requirement as Primordial; on top of
+	-- that you either beat Korrath in the world-boss rotation 3 times (earn) or own the
+	-- UnboundForm pass (skips only that kill requirement). Useless in PvP (PvP ignores forms).
+	{ id = "unbound", reqPower = 200_000_000_000_000, reqRebirths = 3, mult = 8_000, drain = 0.05, color = { 120, 255, 130 }, color2 = { 255, 255, 255 }, style = "lightning", special = { boss = "korrath", count = 3, pass = "UnboundForm" } },
 } :: { any }
 for i, f in Config.Forms do
 	f.index = i
@@ -268,9 +272,14 @@ Config.Combat = {
 
 -- Techniques (slots Z / X / V). Costs are fractions of the ki bar.
 Config.Techniques = {
-	{ id = "pulse_volley", key = "Z", cost = 3_000, reqPower = 2_000, kiCost = 0.16, cooldown = 5, icon = "🌠", shots = 5, dmgMult = 0.8 },
-	{ id = "meteor_dive", key = "X", cost = 200_000, reqPower = 100_000, kiCost = 0.22, cooldown = 9, icon = "☄️", radius = 22, dmgMult = 5 },
-	{ id = "sunfall", key = "V", cost = 30_000_000, reqPower = 10_000_000, kiCost = 0.4, cooldown = 16, icon = "🌞", radius = 30, speed = 70, dmgMult = 14 },
+	{ id = "pulse_volley", key = "Z", cost = 3_000, reqPower = 2_000, kiCost = 0.16, cooldown = 5, icon = "🌠", shape = "volley", shots = 5, dmgMult = 0.8 },
+	{ id = "meteor_dive", key = "X", cost = 200_000, reqPower = 100_000, kiCost = 0.22, cooldown = 9, icon = "☄️", shape = "dive", radius = 22, dmgMult = 5 },
+	{ id = "sunfall", key = "V", cost = 30_000_000, reqPower = 10_000_000, kiCost = 0.4, cooldown = 16, icon = "🌞", shape = "orb", radius = 30, speed = 70, dmgMult = 14, color = "sun" },
+	-- Dark branch ("evil attacks"). Learned with Sparks like the others; `special` = earn it by
+	-- beating that boss N times OR own the DarkArts pass (skips only the boss requirement).
+	-- Disabled inside the PvP arena so they can never be a paid edge there.
+	{ id = "umbral_volley", key = "N", cost = 15_000_000, reqPower = 5_000_000, kiCost = 0.2, cooldown = 6, icon = "🌑", shape = "volley", shots = 7, dmgMult = 1.1, dark = true, color = { 120, 50, 210 }, special = { boss = "forge_tyrant", count = 3, pass = "DarkArts" } },
+	{ id = "null_nova", key = "M", cost = 4_500_000_000, reqPower = 1_500_000_000, kiCost = 0.45, cooldown = 18, icon = "🕳️", shape = "orb", radius = 34, speed = 64, dmgMult = 22, dark = true, color = { 150, 60, 230 }, special = { boss = "rime_empress", count = 3, pass = "DarkArts" } },
 } :: { any }
 Config.TechniqueById = {} :: { [string]: any }
 for _, t in Config.Techniques do
@@ -410,6 +419,11 @@ Config.Auras = {
 	{ id = "starter_flame", rarity = "Epic", weight = 0, mult = 2, color = { 255, 120, 200 }, exclusive = true },
 	{ id = "vip_gold", rarity = "Legendary", weight = 0, mult = 2.5, color = { 255, 215, 60 }, exclusive = true },
 	{ id = "group_wave", rarity = "Rare", weight = 0, mult = 1.5, color = { 90, 230, 200 }, exclusive = true },
+	-- Epic / Legendary auras that are not in the spin. Each one can be bought (AuraPack pass,
+	-- DarkArts for Umbral) or earned: `earn` uses the same rules as Collection.earned.
+	{ id = "nebula", rarity = "Epic", weight = 0, mult = 2, color = { 170, 90, 255 }, exclusive = true, pass = "AuraPack", earn = { rebirths = 1 } },
+	{ id = "gilded", rarity = "Legendary", weight = 0, mult = 3, color = { 255, 200, 70 }, exclusive = true, pass = "AuraPack", earn = { rebirths = 3 } },
+	{ id = "umbral", rarity = "Epic", weight = 0, mult = 2, color = { 110, 40, 190 }, exclusive = true, pass = "DarkArts", earn = { boss = "forge_tyrant", count = 5 } },
 } :: { any }
 Config.AuraById = {} :: { [string]: any }
 for _, a in Config.Auras do
@@ -553,16 +567,32 @@ Config.LiveEventMaxMinutes = 120
 
 ---------------------------------------------------------------------------
 -- Monetization (ids = 0 until the owner creates them in the Creator Dashboard)
+-- Prices follow docs/research/top-juegos-y-precios.md section 4.5. RULES: nothing here is
+-- random; every paid power item (`earn` / `special`) can also be earned by playing; the PvP
+-- arena ignores every paid effect (see Combat.arenaNormalized). Crossed-out prices shown in
+-- the shop are always the real sum of the parts (tests/pricing_check.luau verifies it).
 ---------------------------------------------------------------------------
 Config.Passes = {
-	{ key = "VIP", id = 0, price = 399, icon = "👑" },
-	{ key = "DoubleTraining", id = 0, price = 349, icon = "💪" },
-	{ key = "DoubleSparks", id = 0, price = 199, icon = "⚡" },
+	{ key = "VIP", id = 0, price = 299, icon = "👑" },
+	{ key = "DoubleTraining", id = 0, price = 249, icon = "💪" },
+	{ key = "DoubleSparks", id = 0, price = 249, icon = "⚡" },
+	-- Bundle of the two 2x passes: owning it counts as owning both (see Collection.expandPasses).
+	{ key = "DoubleBundle", id = 0, price = 449, icon = "💪", implies = { "DoubleTraining", "DoubleSparks" } },
 	{ key = "TurboAuto", id = 0, price = 249, icon = "🤖" },
 	{ key = "KiMastery", id = 0, price = 199, icon = "🔋" },
 	{ key = "LuckyAura", id = 0, price = 249, icon = "🍀" },
-	{ key = "RelicRadar", id = 0, price = 149, icon = "🧭" },
-	{ key = "FastFlight", id = 0, price = 99, icon = "🚀" },
+	{ key = "RelicRadar", id = 0, price = 299, icon = "🧭" },
+	{ key = "FastFlight", id = 0, price = 79, icon = "🚀" },
+	-- Time Chamber: offline training runs at chamberRate and stores up to chamberCapSeconds.
+	-- Earn it for free with `earn` (2 ascensions).
+	{ key = "TimeChamber", id = 0, price = 499, icon = "⏳", earn = { rebirths = 2 }, earnable = true },
+	-- Special form / dark attacks: skip only the boss-kill requirement (see Forms / Techniques).
+	{ key = "UnboundForm", id = 0, price = 599, icon = "🌟", earnable = true },
+	{ key = "DarkArts", id = 0, price = 399, icon = "🌑", earnable = true },
+	-- Cosmetic packs (skins, mount, epic/legendary auras). Every item in them is also earnable.
+	{ key = "SkinPack", id = 0, price = 299, icon = "🎽", earnable = true },
+	{ key = "MountPack", id = 0, price = 149, icon = "🌤️", earnable = true },
+	{ key = "AuraPack", id = 0, price = 199, icon = "🌀", earnable = true },
 } :: { any }
 Config.PassByKey = {} :: { [string]: any }
 for _, p in Config.Passes do
@@ -573,6 +603,7 @@ Config.VipDailyGems = 10
 Config.KiMasteryDrain = 0.5
 Config.KiMasteryRegen = 1.5
 Config.FastFlightMult = 1.5
+Config.TimeChamber = { rate = 0.5, capSeconds = 12 * 3600 } -- offline rate (free: Config.Offline.rate) and cap
 
 Config.Products = {
 	{ key = "StarterPack", id = 0, price = 99, kind = "starter", amount = 1, icon = "🎁" },
@@ -581,17 +612,146 @@ Config.Products = {
 	{ key = "Sparks3", id = 0, price = 199, kind = "sparks", amount = 120, icon = "⚡" },
 	{ key = "Sparks4", id = 0, price = 399, kind = "sparks", amount = 300, icon = "⚡" },
 	{ key = "Gems1", id = 0, price = 49, kind = "gems", amount = 60, icon = "💎" },
-	{ key = "Gems2", id = 0, price = 129, kind = "gems", amount = 180, icon = "💎" },
+	{ key = "Gems2", id = 0, price = 129, kind = "gems", amount = 190, icon = "💎" },
 	{ key = "Gems3", id = 0, price = 299, kind = "gems", amount = 480, icon = "💎" },
 	{ key = "Gems4", id = 0, price = 699, kind = "gems", amount = 1_300, icon = "💎" },
 	{ key = "Boost30", id = 0, price = 49, kind = "boost", amount = 30, icon = "🔥" },
 	{ key = "WishNow", id = 0, price = 199, kind = "wish", amount = 1, icon = "🌠" },
+	-- Seeds (consumables, also bought with Sparks in the shop): 1 of each / 5 of each.
+	{ key = "SeedSampler", id = 0, price = 25, kind = "seeds", amount = 1, icon = "🌱" },
+	{ key = "SeedCase", id = 0, price = 99, kind = "seeds", amount = 5, icon = "🌱" },
+	-- Battle pass: premium track of a season (one product per season) and a tier skip.
+	{ key = "BattlePassS1", id = 0, price = 399, kind = "bp", season = "s1", amount = 1, icon = "🎟️" },
+	{ key = "BattlePassS2", id = 0, price = 399, kind = "bp", season = "s2", amount = 1, icon = "🎟️" },
+	{ key = "TierSkip", id = 0, price = 49, kind = "bpskip", amount = 1, icon = "⬆️" },
 } :: { any }
 Config.ProductByKey = {} :: { [string]: any }
 for _, p in Config.Products do
 	Config.ProductByKey[p.key] = p
 end
-Config.StarterPack = { windowSeconds = 86400, fullPrice = 399, gems = 150, boostMinutes = 30, aura = "starter_flame" }
+
+-- Cheapest Robux price of one Gem / one Spark-minute in the shop (conservative: the "value"
+-- of the Starter Pack is computed with the best rate a player could get elsewhere).
+local function cheapest(kind: string): number
+	local best = math.huge
+	for _, p in Config.Products do
+		if p.kind == kind then
+			best = math.min(best, p.price / p.amount)
+		end
+	end
+	return best
+end
+-- Starter Pack (first 24 h of a player, once). `fullPrice` is what the same contents cost if
+-- bought one by one in the shop; the aura is free on top.
+Config.StarterPack = { windowSeconds = 86400, gems = 200, boostMinutes = 30, sparkMinutes = 50, aura = "starter_flame", fullPrice = 0 }
+Config.StarterPack.fullPrice = math.floor(Config.StarterPack.gems * cheapest("gems") + 0.5) + math.floor(Config.StarterPack.boostMinutes / Config.ProductByKey.Boost30.amount * Config.ProductByKey.Boost30.price + 0.5) + math.floor(Config.StarterPack.sparkMinutes * cheapest("sparks") + 0.5)
+---------------------------------------------------------------------------
+-- Seeds: consumables. Bought with Sparks (price = minutes of income on the player's best
+-- planet, limited per hour by `stockPerHour`, restocking on the hour) or from the Robux packs
+-- above (which ignore the hourly limit). Never usable inside the PvP arena.
+--   vigor_seed: heals to full HP and gives ki back        titan_seed: +damage vs enemies
+--   spark_seed: fills ki and boosts ki regen for a while
+---------------------------------------------------------------------------
+Config.Seeds = {
+	{ id = "vigor_seed", icon = "🌿", color = { 110, 225, 120 }, minutes = 3, stockPerHour = 6, cooldown = 15, kiGive = 0.5 },
+	{ id = "titan_seed", icon = "🌱", color = { 255, 96, 72 }, minutes = 8, stockPerHour = 3, seconds = 600, damageMult = 1.5 },
+	{ id = "spark_seed", icon = "🌾", color = { 72, 190, 255 }, minutes = 6, stockPerHour = 4, seconds = 600, regenMult = 2.5 },
+} :: { any }
+Config.SeedById = {} :: { [string]: any }
+for _, sd in Config.Seeds do
+	Config.SeedById[sd.id] = sd
+end
+Config.SeedCap = 30 -- most of one seed a player can carry
+
+---------------------------------------------------------------------------
+-- Cosmetics. Skins (one per saga / arc) are procedural pieces on the avatar: kit = which
+-- pieces, main / accent = colours. Mounts are a puff under the feet while flying. Every
+-- item is earned (`earn`, same rules as Collection.earned) or unlocked by a pass; purely
+-- visual, no stats.
+---------------------------------------------------------------------------
+Config.Skins = {
+	{ id = "wanderer", arc = 1, kit = { "band", "belt" }, main = { 60, 140, 255 }, accent = { 255, 210, 80 }, earn = { boss = "bramble_king", count = 1 } },
+	{ id = "contender", arc = 2, kit = { "belt", "pads" }, main = { 255, 150, 40 }, accent = { 255, 255, 255 }, earn = { pvpKills = 5 } },
+	{ id = "legion_breaker", arc = 3, kit = { "pads", "belt", "band" }, main = { 90, 110, 80 }, accent = { 230, 60, 50 }, earn = { boss = "marshal_krome", count = 1 } },
+	{ id = "emberguard", arc = 4, kit = { "cape", "pads" }, main = { 60, 40, 40 }, accent = { 255, 110, 30 }, earn = { boss = "forge_tyrant", count = 1 } },
+	{ id = "storm_armor", arc = 5, kit = { "pads", "band" }, main = { 70, 110, 255 }, accent = { 236, 236, 246 }, earn = { boss = "prince_vael", count = 1 } },
+	{ id = "lumen_elder", arc = 6, kit = { "cape", "band" }, main = { 200, 230, 255 }, accent = { 120, 200, 255 }, earn = { boss = "rime_empress", count = 1 } },
+	{ id = "unit_zero", arc = 7, kit = { "pads", "belt" }, main = { 60, 130, 70 }, accent = { 210, 255, 90 }, earn = { boss = "chimera_prime", count = 1 } },
+	{ id = "glutt_hood", arc = 8, kit = { "cape", "band" }, main = { 250, 160, 210 }, accent = { 90, 210, 200 }, earn = { boss = "glutt", count = 5 } },
+	{ id = "sky_warden", arc = 9, kit = { "cape", "pads", "band" }, main = { 60, 70, 120 }, accent = { 255, 240, 120 }, earn = { boss = "tempest_warden", count = 1 } },
+	{ id = "timewalker", arc = 12, kit = { "cape", "belt" }, main = { 120, 130, 110 }, accent = { 120, 255, 170 }, earn = { boss = "arbiter_null", count = 1 } },
+	{ id = "silent_titan", arc = 13, kit = { "cape", "pads", "belt", "band" }, main = { 20, 10, 40 }, accent = { 255, 255, 255 }, earn = { boss = "hollow_star", count = 1 } },
+} :: { any }
+for _, sk in Config.Skins do
+	sk.pass = "SkinPack"
+end
+Config.SkinById = {} :: { [string]: any }
+for _, sk in Config.Skins do
+	Config.SkinById[sk.id] = sk
+end
+Config.Mounts = {
+	{ id = "zephyr_puff", color = { 255, 255, 255 }, earn = { boss = "bramble_king", count = 1 }, pass = "MountPack" },
+	{ id = "thunderhead", color = { 70, 60, 110 }, earn = { boss = "tempest_warden", count = 1 }, pass = "MountPack" },
+} :: { any }
+Config.MountById = {} :: { [string]: any }
+for _, m in Config.Mounts do
+	Config.MountById[m.id] = m
+end
+
+---------------------------------------------------------------------------
+-- Battle pass (seasons). A free track and a premium track (one Robux product per season,
+-- no random boxes, nothing missable in the free track). XP comes from playing; the season
+-- has a real start / end shown as a clock. `startsAt` is UTC epoch seconds.
+-- s1 = 2026-10-01 00:00 UTC, 8 weeks each; add later seasons here.
+---------------------------------------------------------------------------
+Config.BattlePass = {
+	tiers = 30,
+	xpPerTier = 90,
+	skipRefundGems = 60, -- a tier skip bought while no season runs (rare race) pays back Gems
+	xp = { questClaim = 10, questBonus = 10, minutes = 1, bossKill = 6, worldBoss = 12, arenaWin = 8, relic = 2 }, -- minutes: per 5 min played
+	seasons = {
+		{ id = "s1", arc = 8, product = "BattlePassS1", startsAt = 1790812800, days = 56, color = { 250, 130, 200 }, freeMid = { kind = "mount", id = "zephyr_puff", amount = 1 }, freeFinal = { kind = "aura", id = "nebula", amount = 1 }, premiumFinal = { kind = "skin", id = "glutt_hood", amount = 1 } },
+		{ id = "s2", arc = 9, product = "BattlePassS2", startsAt = 1790812800 + 56 * 86400, days = 56, color = { 90, 130, 255 }, freeMid = { kind = "aura", id = "umbral", amount = 1 }, freeFinal = { kind = "mount", id = "thunderhead", amount = 1 }, premiumFinal = { kind = "skin", id = "sky_warden", amount = 1 } },
+	} :: { any },
+}
+Config.BattlePass.SeasonById = {} :: { [string]: any }
+Config.BattlePass.rewards = {} :: { [string]: { free: { [number]: any }, premium: { [number]: any } } }
+for _, season in Config.BattlePass.seasons do
+	Config.BattlePass.SeasonById[season.id] = season
+	season.endsAt = season.startsAt + season.days * 86400
+	local free, premium = {}, {}
+	for t = 1, Config.BattlePass.tiers do
+		local m = t % 3
+		if t == 10 then
+			free[t] = { kind = "spins", amount = 3 }
+		elseif t == 20 then
+			free[t] = season.freeMid
+		elseif t == Config.BattlePass.tiers then
+			free[t] = season.freeFinal
+		elseif m == 1 then
+			free[t] = { kind = "sparks", amount = 4 + t // 3 }
+		elseif m == 2 then
+			free[t] = { kind = "gems", amount = 5 }
+		else
+			free[t] = { kind = "seed", item = "vigor_seed", amount = 1 }
+		end
+		if t == Config.BattlePass.tiers then
+			premium[t] = season.premiumFinal
+		elseif t == 10 then
+			premium[t] = { kind = "spins", amount = 5 }
+		elseif t == 20 then
+			premium[t] = { kind = "sparks", amount = 30 }
+		elseif t % 2 == 1 then
+			premium[t] = { kind = "gems", amount = 10 }
+		elseif t % 4 == 2 then
+			premium[t] = { kind = "boost", amount = 20 }
+		else
+			premium[t] = { kind = "seed", item = if t % 8 == 0 then "spark_seed" else "titan_seed", amount = 2 }
+		end
+	end
+	Config.BattlePass.rewards[season.id] = { free = free, premium = premium }
+end
+
 -- Rewarded video placements -> developer product ids
 Config.AdProducts = { AdBoost = 0, AdSpin = 0 }
 Config.AdDailyCap = 4

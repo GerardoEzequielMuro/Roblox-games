@@ -130,6 +130,7 @@ function QuestService.init()
 		p.quests.claimed[i] = true
 		dirty[player] = true
 		State.dirty(player)
+		Hooks.fire("questClaimed", player, "quest")
 		return true, Rewards.grant(player, { kind = "gems", amount = q.gems })
 	end)
 
@@ -149,6 +150,7 @@ function QuestService.init()
 		p.quests.bonusClaimed = true
 		dirty[player] = true
 		State.dirty(player)
+		Hooks.fire("questClaimed", player, "bonus")
 		return true, Rewards.grant(player, { kind = "gems", amount = Config.QuestBonusGems })
 	end)
 

@@ -1026,9 +1026,9 @@ task.wait(1.5)
 -- Offline training
 local off = srv("service", "Offline", "fake", 3600)
 local stat = srv("profile").settings.stat
-check("offline training = auto rate x 25% x time", off ~= nil and off.pending ~= nil and near(off.pending[stat], off.perRep * off.rate * Config.Offline.rate * 3600, 0.01), off and off.seconds)
+check("offline training = auto rate x 25% x time", off ~= nil and off.pending ~= nil and near(off.pending[stat], off.perRep * off.rate * off.offlineRate * 3600, 0.01), off and off.seconds)
 off = srv("service", "Offline", "fake", 100 * 3600)
-check("offline time is capped", off.seconds == Config.Offline.capSeconds)
+check("offline time is capped", off.seconds == off.cap and off.cap >= Config.Offline.capSeconds)
 local sBefore = srv("profile").stats[stat]
 ok = req("ClaimOffline")
 check("offline gain claimed into the stat", ok and near(srv("profile").stats[stat], sBefore + off.pending[stat], 0.001))
@@ -1344,6 +1344,91 @@ f = srv("fighter")
 check("respawned at the planet plaza with full ki", f.alive and f.ki > 0.9 and hrp.Position.Magnitude < 150, hrp.Position)
 check("respawn shield active", f.invulnerable == true)
 check("stats survive death", srv("profile").stats.strength == 150 + Config.StartStat or srv("profile").stats.strength == 150)
+
+---------------------------------------------------------------------------
+-- Round 2: seeds (hourly stock), battle pass, cosmetics, special forms / dark attacks
+---------------------------------------------------------------------------
+srv("set", "sparks", 1e13)
+ok = req("BuySeed", { id = "vigor_seed" })
+check("seed bought with Sparks", ok and srv("profile").items.vigor_seed == 1 and srv("profile").sparks < 1e13)
+for _ = 1, Config.SeedById.vigor_seed.stockPerHour - 1 do
+	req("BuySeed", { id = "vigor_seed" })
+end
+ok, err = req("BuySeed", { id = "vigor_seed" })
+check("seed stock runs out for the hour", not ok and type(err) == "table" and err.key == "msg.seed_stock", err)
+srv("setHp", 5)
+ok = req("UseSeed", { id = "vigor_seed" })
+check("Vigor Seed heals to full", ok and srv("fighter").hp >= srv("fighter").maxHp - 1, srv("fighter").hp)
+ok, err = req("UseSeed", { id = "vigor_seed" })
+check("Vigor Seed has a cooldown", not ok and type(err) == "table" and err.key == "msg.seed_cooldown", err)
+ok = req("BuySeed", { id = "titan_seed" })
+ok = req("UseSeed", { id = "titan_seed" }) and ok
+check("Titan Seed buff is on", ok and srv("profile").buffs.titan > os.time())
+ok, err = req("UseSeed", { id = "spark_seed" })
+check("cannot use a seed you do not have", not ok and type(err) == "table" and err.key == "msg.no_seed", err)
+local pk = srv("receipt", "SeedSampler", "test-seed-1")
+check("Seed Sampler receipt gives one of each (no cap, no stock)", pk == "PurchaseGranted" and srv("profile").items.spark_seed == 1 and srv("profile").items.titan_seed == 1, pk)
+
+srv("service", "Season", "forceActive")
+srv("service", "Season", "addXp", Config.BattlePass.xpPerTier * 3)
+check("battle pass reaches tier 3", waitFor(function()
+	return Net.state and Net.state.season and Net.state.season.tier == 3
+end, 4) == true)
+ok = req("ClaimPass", { track = "free", tier = 3 })
+check("free tier claimed", ok and srv("profile").bp.s1.free["3"] == true)
+ok = req("ClaimPass", { track = "free", tier = 3 })
+check("a tier cannot be claimed twice", not ok)
+ok, err = req("ClaimPass", { track = "premium", tier = 1 })
+check("premium track needs the premium product", not ok and type(err) == "table" and err.key == "msg.bp_need_premium", err)
+ok = req("ClaimPass", { track = "free", tier = 4 })
+check("locked tier refused", not ok)
+pk = srv("receipt", "BattlePassS1", "test-bp-1")
+check("premium receipt processed", pk == "PurchaseGranted" and srv("profile").bp.s1.premium == true, pk)
+ok = req("ClaimPass", { track = "premium", tier = 1 })
+check("premium tier claimed after buying", ok)
+pk = srv("receipt", "TierSkip", "test-skip-1")
+check("tier skip gives one tier", pk == "PurchaseGranted" and waitFor(function()
+	return Net.state ~= nil and Net.state.season ~= nil and Net.state.season.tier == 4
+end, 4) == true, pk)
+
+srv("set", "bossKills", { bramble_king = 1 })
+srv("service", "Cosmetics", "sync")
+check("first boss earns the Wanderer skin and Zephyr Puff", srv("profile").skins.wanderer == true and srv("profile").mounts.zephyr_puff == true)
+ok = req("EquipSkin", { id = "wanderer" })
+check("skin equipped and replicated", ok and waitFor(function()
+	return char:GetAttribute("Skin") == "wanderer"
+end, 3) == true)
+check("skin pieces are built on the avatar", waitFor(function()
+	return char:FindFirstChild("KiwSkin") ~= nil
+end, 4) == true)
+ok = req("EquipSkin", { id = "timewalker" })
+check("cannot equip a skin you do not own", not ok)
+ok = req("EquipMount", { id = "zephyr_puff" })
+check("mount equipped", ok and srv("profile").mount == "zephyr_puff")
+srv("pass", "SkinPack", true)
+srv("service", "Cosmetics", "sync")
+check("SkinPack unlocks every skin", srv("profile").skins.silent_titan == true)
+srv("pass", "SkinPack", false)
+
+local tech0 = srv("profile").techniques
+srv("setStats", { strength = 3_000_000, ki = 3_000_000 })
+ok, err = req("BuyTechnique", { id = "umbral_volley" })
+check("dark attack needs the boss kills or the pass", not ok and type(err) == "table" and err.key == "msg.need_special", err)
+srv("pass", "DarkArts", true)
+ok = req("BuyTechnique", { id = "umbral_volley" })
+check("DarkArts lets you learn it (Sparks and power still apply)", ok and srv("profile").techniques.umbral_volley == true)
+srv("pass", "DarkArts", false)
+tech0.umbral_volley = nil
+srv("set", "techniques", tech0)
+
+srv("set", "bossKills", {})
+srv("set", "rebirths", 3)
+srv("setStats", { strength = 1e14, ki = 1e14 })
+local unboundIndex = Config.FormById.unbound.index
+check("Unbound stays locked without Korrath kills or the pass", srv("service", "Combat", "refreshForms") == unboundIndex - 1)
+srv("pass", "UnboundForm", true)
+check("Unbound form unlocks with the pass (power and ascensions still required)", srv("service", "Combat", "refreshForms") == unboundIndex)
+srv("pass", "UnboundForm", false)
 
 ---------------------------------------------------------------------------
 -- Budgets / errors

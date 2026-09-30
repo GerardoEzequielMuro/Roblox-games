@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local Collection = require(ReplicatedStorage.Shared.Collection)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 
@@ -50,6 +51,33 @@ end
 function State.owns(player: Player, passKey: string): boolean
 	local owned = State.passes[player]
 	return owned ~= nil and owned[passKey] == true
+end
+
+-- Facts the earn-or-buy rules look at (Shared/Collection).
+function State.collectionCtx(player: Player, p: Data.Profile): Collection.Ctx
+	return {
+		passes = State.passes[player] or {},
+		bossKills = p.bossKills,
+		rebirths = p.rebirths,
+		pvpKills = p.pvp.kills,
+		planet = State.bestPlanet(p),
+		power = math.max(p.bestPower, Formulas.power(p.stats)),
+	}
+end
+
+-- Adds what bundles imply and what progression has earned (DoubleBundle, TimeChamber...) to
+-- the player's pass set, in place. Call after anything that changes passes or progress.
+function State.refreshPasses(player: Player)
+	local p = Data.get(player)
+	local owned = State.passes[player]
+	if not p or not owned then
+		return
+	end
+	for key, value in Collection.expandPasses(owned, State.collectionCtx(player, p)) do
+		if value then
+			owned[key] = true
+		end
+	end
 end
 
 function State.power(p: Data.Profile): number
@@ -169,6 +197,7 @@ end
 
 function State.snapshot(player: Player): { [string]: any }
 	local p = Data.get(player) :: Data.Profile
+	State.refreshPasses(player)
 	local perRep = {}
 	for _, s in Config.Stats do
 		perRep[s] = State.gainPerRep(player, p, s)

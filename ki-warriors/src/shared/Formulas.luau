@@ -1,6 +1,7 @@
 --!strict
 -- Economy and combat math. Pure Luau (shared by server, client, unit tests and the sim).
 local Config: any = if script then require(script.Parent.Config) :: any else (require :: any)("./Config")
+local Collection: any = if script then require(script.Parent.Collection) :: any else (require :: any)("./Collection")
 
 local Formulas = {}
 
@@ -138,12 +139,15 @@ function Formulas.pvpDamage(kind: string, attackerPower: number, victimPower: nu
 	return victimMaxHp * base * ratio * (scale or 1)
 end
 
--- Highest form the player may use.
-function Formulas.bestForm(power: number, rebirths: number): number
+-- Highest form the player may use. `ctx` (Collection.Ctx) is needed for special forms
+-- (boss kills or the pass); without it special forms never unlock.
+function Formulas.bestForm(power: number, rebirths: number, ctx: any?): number
 	local best = 0
 	for i, f in Config.Forms do
 		if power >= f.reqPower and rebirths >= (f.reqRebirths or 0) then
-			best = i
+			if f.special == nil or (ctx ~= nil and Collection.specialOk(f.special, ctx)) then
+				best = i
+			end
 		end
 	end
 	return best

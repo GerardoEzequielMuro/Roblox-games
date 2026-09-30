@@ -224,6 +224,7 @@ function Arena.init(world: { [string]: any })
 									Remotes.notify(player, M("msg.arena_protected", { power = Format.abbrev(P.protectPower) }), "info")
 								else
 									Remotes.notify(player, M("msg.arena_enter"), "error")
+									Remotes.notify(player, M("msg.arena_fair"), "info")
 								end
 							else
 								Remotes.notify(player, M("msg.arena_leave"), "success")

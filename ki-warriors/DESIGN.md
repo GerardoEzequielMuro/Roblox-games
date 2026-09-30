@@ -31,9 +31,9 @@ Todos los nombres visibles salen de **un solo archivo**: `src/shared/Names.luau`
 | Ropa con peso | Weights (13 niveles) | — |
 | Maestro anciano | Master Oru | `npc.master` |
 | Torneo de artes marciales | Sky Coliseum (arena PvP) | `world.arena` |
-| Nube voladora | Zephyr Puff (montura; variante oscura Thunderhead) — planificado | `mount.*` |
-| Semilla que cura todo | Vigor Seed — planificado | `item.vigor_seed` |
-| Semilla de fuerza / de energía | Titan Seed / Spark Seed — planificado | `item.*` |
+| Nube voladora | Zephyr Puff (montura; variante oscura Thunderhead) | `mount.*` |
+| Semilla que cura todo | Vigor Seed | `item.vigor_seed` |
+| Semilla de fuerza / de energía | Titan Seed / Spark Seed | `item.*` |
 | Visor que lee el poder | Power Lens — planificado | `item.power_lens` |
 | Radar de orbes | Seal Compass (pass RelicRadar) | `pass.RelicRadar` |
 | Cápsulas | Pocket Pods — planificado | `item.*` |
@@ -61,22 +61,41 @@ Todos los nombres visibles salen de **un solo archivo**: `src/shared/Names.luau`
 
 | Pass | R$ | Efecto |
 |---|---|---|
-| VIP | 399 | +20% entrenamiento, tag dorado, 10 Gems diarias, aura VIP Gold |
-| Double Training | 349 | x2 stats |
-| Double Sparks | 199 | x2 Sparks |
+| VIP | 299 | +20% entrenamiento, tag dorado, 10 Gems diarias, aura VIP Gold |
+| Double Training | 249 | x2 stats |
+| Double Sparks | 249 | x2 Sparks |
+| x2 Bundle | 449 | los dos de arriba (por separado 498) |
 | Turbo Auto | 249 | autos x2 más rápido |
-| Ki Mastery | 199 | formas drenan 50% menos, +50% recarga |
+| Ki Mastery | 199 | formas drenan 50% menos, +50% recarga (apagado en la arena) |
 | Lucky Aura | 249 | x2 suerte en auras Rare+ (las probabilidades en pantalla se actualizan) |
-| Seal Compass | 149 | haces de luz hacia los sellos |
-| Fast Flight | 99 | +50% velocidad de vuelo |
+| Seal Compass | 299 | haces de luz hacia los sellos |
+| Fast Flight | 79 | +50% velocidad de vuelo (normalizado en la arena) |
+| Time Chamber | 499 | offline al 50% y hasta 12 h guardadas. También se gana con 2 ascensiones |
+| Unbound Form | 599 | forma especial Unbound sin las 3 victorias contra Korrath (sigue pidiendo poder y ascensiones). Se gana matando a Korrath 3 veces |
+| Dark Arts | 399 | aprender los ataques oscuros (Umbral Barrage, Null Nova) y el aura Umbral sin matar a los jefes. Se ganan con 3 victorias contra Mordrak / Rime Empress |
+| Saga Skins | 299 | las 11 skins de saga (cosmético). Cada una se gana con el jefe de su arco |
+| Sky Mounts | 149 | Zephyr Puff y Thunderhead (cosmético). Se ganan con Bramble King / Tempest Warden |
+| Epic Auras | 199 | aura Nebula (Epic) y Gilded (Legendary). Se ganan con 1 y 3 ascensiones |
 
 | Producto | R$ | Da |
 |---|---|---|
-| Starter Pack (24 h, una vez) | 99 (antes 399) | 150 Gems + 30 min x2 + aura Starter Flame (fija, sin azar) |
-| Sparks S/M/L/XL | 49 / 99 / 199 / 399 | 20 / 50 / 120 / 300 min de ingreso |
-| Gems S/M/L/XL | 49 / 129 / 299 / 699 | 60 / 180 / 480 / 1.300 |
+| Starter Pack (24 h, una vez) | 99 (valor real por separado: 224) | 200 Gems + 50 min de Sparks + 30 min x2 + aura Starter Flame (fija, sin azar) |
+| Sparks S/M/L/XL | 49 / 99 / 199 / 399 | 20 / 50 / 120 / 300 min de ingreso (+0 / +24 / +48 / +84%) |
+| Gems S/M/L/XL | 49 / 129 / 299 / 699 | 60 / 190 / 480 / 1.300 (+0 / +20 / +31 / +52%) |
 | Boost x2 30 min | 49 | x2 entrenamiento |
 | Wish Now | 199 | completa el set de sellos (el deseo se elige, no es azar) |
+| Seed Sampler / Seed Case | 25 / 99 | 1 / 5 de cada semilla (Vigor, Titan, Spark) |
+| Battle pass S1 / S2 | 399 c/u | pista premium de la temporada |
+| Tier Skip | 49 | sube 1 nivel del pase de la temporada activa |
+
+## Sistemas de la ronda 2 (todo por datos en Config)
+
+- **Semillas** (`Config.Seeds`, `Services/Items`): Vigor (cura todo + 50% ki, 15 s de espera), Titan (+50% de daño a enemigos 10 min), Spark (ki lleno y regen x2,5 10 min). Se compran con Sparks (precio = minutos de ingreso del mejor planeta) con stock por hora que se repone en punto (reloj en la tienda), o con los packs de Robux (sin límite). Teclas J / K / L. No funcionan en la arena.
+- **Skins de saga / monturas / auras exclusivas** (`Config.Skins`, `Mounts`, `Auras`, `Services/Cosmetics`): cada una se consigue jugando (`earn`: jefe del arco, ascensiones, victorias en arena) o con el pass. Solo cosméticos (el aura suma al entrenamiento como todas). Ventana "Style".
+- **Formas y ataques especiales**: forma Unbound (x8.000) y ataques oscuros (N / M). `special = { boss, count, pass }`: se ganan matando al jefe N veces o se compran con el pass, que solo salta el requisito del jefe (poder y ascensiones siguen). `Collection.specialOk`.
+- **Pases de batalla** (`Config.BattlePass`, `Services/Season`): 30 niveles de 90 XP, pista gratis y premium, temporadas de 8 semanas con reloj visible: S1 "Dream Eater" (demonio rosa, desde 2026-10-01 UTC) y S2 "Sleeping God" (dioses). XP por misión diaria, jefes, jefe mundial, victoria en arena y tiempo jugado. Sin cajas al azar.
+- **Arena sin pay-to-win**: dentro del Coliseo se apagan Ki Mastery, Fast Flight, las semillas y los ataques oscuros / especiales; el daño PvP ya dependía solo de la relación de poder (no de formas ni de pases). Al entrar, aviso en pantalla.
+- **Meta siguiente** (`Shared/Goals`): terminada la historia, el tracker muestra la forma / planeta / ascensión más cercana con barra.
 
 **Ítems aleatorios pagos**: el único azar es el giro de auras (25 Gems o giros gratis). Las probabilidades se muestran en % y suman 100: Breeze 22 · Ember 20 · Moss 18 · Tide 13 · Dusk 12 · Volt 6 · Frostfire 4 · Crimson 2,5 · Abyss 1,5 · Solar 0,9 · Starlight 0,1. Todo giro da un aura (no hay "perder"). Donde `PolicyService.ArePaidRandomItemsRestricted` es verdadero, el giro con Gems y el pass Lucky Aura se ocultan y quedan los giros gratis.
 

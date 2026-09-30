@@ -15,9 +15,10 @@ local M = Locale.m
 
 local Rewards = {}
 
-export type Reward = { kind: string, amount: number }
+export type Reward = { kind: string, amount: number, item: string?, id: string? }
 
 -- kinds: sparks (minutes of income) | gems | boost (minutes of x2 training) | spins (aura spins)
+--        | seed (item = seed id) | skin / mount / aura (id = cosmetic id, amount ignored)
 function Rewards.grant(player: Player, reward: Reward): Locale.Message
 	local p = Data.get(player)
 	if not p then
@@ -42,6 +43,21 @@ function Rewards.grant(player: Player, reward: Reward): Locale.Message
 		State.dirty(player)
 		Remotes.fire("Reward", player, { kind = "spins", amount = reward.amount })
 		return M("reward.spins", { n = reward.amount })
+	elseif reward.kind == "seed" and reward.item and Config.SeedById[reward.item] then
+		-- rewards ignore the carry cap (only Sparks purchases are capped)
+		p.items[reward.item] = (p.items[reward.item] or 0) + reward.amount
+		State.dirty(player)
+		Remotes.fire("Reward", player, { kind = "seed", amount = reward.amount })
+		return M("reward.seed", { n = reward.amount, item = M("item." .. reward.item) })
+	elseif (reward.kind == "skin" and reward.id and Config.SkinById[reward.id]) or (reward.kind == "mount" and reward.id and Config.MountById[reward.id]) then
+		local owned = if reward.kind == "skin" then p.skins else p.mounts
+		owned[reward.id] = true
+		State.dirty(player)
+		return M("reward." .. reward.kind, { name = M(reward.kind .. "." .. reward.id) })
+	elseif reward.kind == "aura" and reward.id and Config.AuraById[reward.id] then
+		p.auras[reward.id] = (p.auras[reward.id] or 0) + 1
+		State.dirty(player)
+		return M("reward.aura", { name = M("aura." .. reward.id) })
 	end
 	return M("msg.error")
 end

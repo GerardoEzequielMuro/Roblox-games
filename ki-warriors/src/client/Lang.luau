@@ -76,8 +76,10 @@ function Lang.upper(s: string): string
 end
 
 -- "5 min of Sparks", "25 Gems"... for Config reward entries.
-function Lang.rewardLabel(reward: { kind: string, amount: number }): string
-	return Lang.t("rewardlabel." .. reward.kind, { n = reward.amount })
+-- Cosmetic / seed rewards carry an id: the label names the item ("Vigor Seed x2", "Skin: Wanderer").
+function Lang.rewardLabel(reward: { kind: string, amount: number, item: string?, id: string? }): string
+	local name = if reward.kind == "seed" then "item." .. (reward.item or "") elseif reward.id then reward.kind .. "." .. reward.id else nil
+	return Lang.t("rewardlabel." .. reward.kind, { n = reward.amount, name = if name then { key = name } else nil })
 end
 
 function Lang.set(code: string)

@@ -74,6 +74,7 @@ return {
 	["form.nova"] = "Nova",
 	["form.celestial"] = "Celestial",
 	["form.primordial"] = "Primordial",
+	["form.unbound"] = "Unbound",
 
 	-- techniques
 	["tech.ki_blast"] = "Ki Blast",
@@ -81,6 +82,8 @@ return {
 	["tech.pulse_volley"] = "Pulse Volley",
 	["tech.meteor_dive"] = "Meteor Dive",
 	["tech.sunfall"] = "Sunfall",
+	["tech.umbral_volley"] = "Umbral Barrage",
+	["tech.null_nova"] = "Null Nova",
 
 	-- enemies and bosses
 	["npc.thornling"] = "Thornling",
@@ -133,6 +136,30 @@ return {
 	["aura.starter_flame"] = "Starter Flame",
 	["aura.vip_gold"] = "VIP Gold",
 	["aura.group_wave"] = "Wave",
+	["aura.nebula"] = "Nebula",
+	["aura.gilded"] = "Gilded",
+	["aura.umbral"] = "Umbral",
+
+	-- saga skins (one per arc)
+	["skin.wanderer"] = "Wanderer",
+	["skin.contender"] = "Contender",
+	["skin.legion_breaker"] = "Legion Breaker",
+	["skin.emberguard"] = "Emberguard",
+	["skin.storm_armor"] = "Storm Armor",
+	["skin.lumen_elder"] = "Lumen Elder",
+	["skin.unit_zero"] = "Unit Zero",
+	["skin.glutt_hood"] = "Glutt Hood",
+	["skin.sky_warden"] = "Sky Warden",
+	["skin.timewalker"] = "Timewalker",
+	["skin.silent_titan"] = "Silent Titan",
+
+	-- flying mounts
+	["mount.zephyr_puff"] = "Zephyr Puff",
+	["mount.thunderhead"] = "Thunderhead",
+
+	-- battle pass seasons
+	["season.s1"] = "Dream Eater Season",
+	["season.s2"] = "Sleeping God Season",
 
 	-- races
 	["race.terran"] = "Terran",
@@ -143,5 +170,8 @@ return {
 	-- items
 	["item.seal"] = "Astral Seal",
 	["item.seals"] = "Astral Seals",
+	["item.vigor_seed"] = "Vigor Seed",
+	["item.titan_seed"] = "Titan Seed",
+	["item.spark_seed"] = "Spark Seed",
 	["npc.wishkeeper"] = "Astra, the Wish Comet",
 } :: { [string]: string }

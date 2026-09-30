@@ -27,7 +27,7 @@ Npcs.init()
 Auto.init()
 Progression.init()
 -- Optional services (added round by round); each one exposes init(world).
-for _, name in { "Arena", "Rewards", "Story", "QuestService", "Relics", "Auras", "WorldBoss", "LiveEventService", "Monetization", "Leaderboard", "Offline", "Social", "Guard" } do
+for _, name in { "Arena", "Rewards", "Story", "QuestService", "Relics", "Auras", "WorldBoss", "LiveEventService", "Items", "Cosmetics", "Season", "Monetization", "Leaderboard", "Offline", "Social", "Guard" } do
 	local module = Services:FindFirstChild(name)
 	if module then
 		local service = (require :: any)(module)
@@ -69,6 +69,8 @@ local function onCharacter(player: Player, char: Model)
 		char:SetAttribute("Aura", p.auraEquipped)
 		char:SetAttribute("Rebirths", p.rebirths)
 		char:SetAttribute("VIP", State.owns(player, "VIP"))
+		char:SetAttribute("Skin", p.skin)
+		char:SetAttribute("Mount", p.mount)
 		Training.applyMovement(player)
 		Progression.placeOnSpawn(player)
 	end
@@ -96,7 +98,7 @@ local function onPlayerAdded(player: Player)
 		end
 	end
 	State.ready[player] = true
-	for _, name in { "Social", "LiveEventService", "Leaderboard", "Arena", "WorldBoss", "Auras" } do
+	for _, name in { "Social", "LiveEventService", "Leaderboard", "Arena", "WorldBoss", "Auras", "Cosmetics" } do
 		local s = optional(name)
 		if s and s.onReady then
 			s.onReady(player)

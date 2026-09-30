@@ -61,7 +61,10 @@ local function renderForms(body: Frame)
 			if f.reqRebirths then
 				need ..= " · " .. Lang.t("forms.need_asc", { n = f.reqRebirths })
 			end
-			Kit.text(row, { Text = need, Size = UDim2.new(0.34, 0, 0, 36), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxTextSize = 16, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Red })
+			if f.special and not s.passes[f.special.pass] then
+				need ..= "\n" .. Lang.t("special.need", { boss = Lang.t("npc." .. f.special.boss), have = math.min(f.special.count, (s.bossKills and s.bossKills[f.special.boss]) or 0), n = f.special.count, pass = Lang.t("pass." .. f.special.pass .. ".name") })
+			end
+			Kit.text(row, { Text = need, TextWrapped = true, Size = UDim2.new(0.34, 0, 0, 52), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxTextSize = 16, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Red })
 		end
 	end
 end
@@ -86,6 +89,8 @@ local function renderMoves(body: Frame)
 			Kit.text(row, { Text = "✔ " .. Lang.t("ui.owned"), Size = UDim2.fromOffset(150, 30), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxTextSize = 18, TextColor3 = Theme.Green })
 		elseif power(s) < t.reqPower then
 			Kit.text(row, { Text = "🔒 " .. Lang.t("forms.need", { power = Format.abbrev(t.reqPower) }), Size = UDim2.fromOffset(170, 36), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxTextSize = 16, TextColor3 = Theme.Red })
+		elseif t.special and not s.passes[t.special.pass] and ((s.bossKills and s.bossKills[t.special.boss]) or 0) < t.special.count then
+			Kit.text(row, { Text = "🔒 " .. Lang.t("special.need", { boss = Lang.t("npc." .. t.special.boss), have = (s.bossKills and s.bossKills[t.special.boss]) or 0, n = t.special.count, pass = Lang.t("pass." .. t.special.pass .. ".name") }), TextWrapped = true, Size = UDim2.fromOffset(210, 54), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxTextSize = 14, TextColor3 = Theme.Red })
 		else
 			Kit.button(row, "⚡ " .. Format.abbrev(t.cost), if s.sparks >= t.cost then Theme.Green else Theme.Orange, 150, function()
 				Kit.request("BuyTechnique", { id = t.id }, Lang.t("moves.learned", { move = Lang.t("tech." .. t.id) }))

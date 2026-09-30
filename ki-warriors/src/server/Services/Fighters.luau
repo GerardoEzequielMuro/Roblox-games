@@ -60,6 +60,11 @@ Fighters.list = list
 Fighters.pvpRule = function(_attacker: Fighter, _victim: Fighter): boolean
 	return false
 end
+-- Extra damage multiplier against enemies (Titan Seed), installed by the Items service.
+-- Never applied to players: PvP damage does not use `raw` at all.
+Fighters.damageBoost = function(_attacker: Fighter?, _victim: Fighter): number
+	return 1
+end
 Fighters.onNpcDeath = function(_f: Fighter, _killer: Fighter?) end
 Fighters.onPlayerKill = function(_killer: Fighter, _victim: Fighter) end
 
@@ -307,6 +312,7 @@ function Fighters.damage(attacker: Fighter?, victim: Fighter, kind: string, raw:
 	local dmg = raw
 	local blocked = false
 	if victim.kind == "npc" then
+		dmg *= Fighters.damageBoost(attacker, victim)
 		if o.crit then
 			dmg *= Config.Combat.critMult
 		end

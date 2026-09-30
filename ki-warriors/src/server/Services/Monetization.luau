@@ -1,7 +1,8 @@
 --!strict
 -- Game passes (ownership cache + purchase-finished grant) and developer products
 -- (ProcessReceipt, idempotent by PurchaseId stored in the profile and saved before
--- returning PurchaseGranted). Nothing sold here is random: the Starter Pack gives a fixed aura.
+-- returning PurchaseGranted). Nothing sold here is random: the Starter Pack gives a fixed aura,
+-- seed packs and battle pass products are fixed lists.
 local AdService = game:GetService("AdService")
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
@@ -17,6 +18,10 @@ local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
 local Relics = require(script.Parent.Relics)
 local Training = require(script.Parent.Training)
+local Items = require(script.Parent.Items)
+local Combat = require(script.Parent.Combat)
+local Season = require(script.Parent.Season)
+local Cosmetics = require(script.Parent.Cosmetics)
 
 local Monetization = {}
 
@@ -77,6 +82,7 @@ function Monetization.grantProduct(player: Player, key: string): boolean
 	if product.kind == "starter" then
 		p.starterBought = true
 		State.addGems(player, Config.StarterPack.gems)
+		Rewards.grant(player, { kind = "sparks", amount = Config.StarterPack.sparkMinutes })
 		p.boostLeft += Config.StarterPack.boostMinutes * 60
 		local aura = Config.StarterPack.aura
 		p.auras[aura] = (p.auras[aura] or 0) + 1
@@ -89,6 +95,16 @@ function Monetization.grantProduct(player: Player, key: string): boolean
 		end
 	elseif product.kind == "wish" then
 		Relics.completeSet(player)
+	elseif product.kind == "seeds" then
+		Items.grantPack(player, product.amount)
+	elseif product.kind == "bp" then
+		if not Season.grantPremium(player, product.season) then
+			return false
+		end
+	elseif product.kind == "bpskip" then
+		if not Season.skipTier(player) then
+			return false
+		end
 	else
 		Rewards.grant(player, { kind = product.kind, amount = product.amount })
 	end
@@ -116,6 +132,9 @@ local function onPassChanged(player: Player)
 	if p and State.owns(player, "VIP") and not p.auras.vip_gold then
 		p.auras.vip_gold = 1
 	end
+	State.refreshPasses(player)
+	Cosmetics.sync(player)
+	Combat.refreshForms(player)
 	State.dirty(player)
 end
 Monetization.onPassChanged = onPassChanged
@@ -141,6 +160,7 @@ function Monetization.loadPasses(player: Player)
 	if p and owned.VIP and not p.auras.vip_gold then
 		p.auras.vip_gold = 1
 	end
+	State.refreshPasses(player)
 end
 
 local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
@@ -162,14 +182,15 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		warn("[Monetization] unknown product", receipt.ProductId)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
+	local granted = true
 	local ok, err = pcall(function()
 		if adPlacement then
 			grantAd(player, p, adPlacement)
 		elseif product then
-			Monetization.grantProduct(player, product.key)
+			granted = Monetization.grantProduct(player, product.key)
 		end
 	end)
-	if not ok then
+	if not ok or not granted then
 		warn("[Monetization] grant failed", err)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end

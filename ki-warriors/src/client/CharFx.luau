@@ -226,6 +226,93 @@ local function applyRace(rig: Rig, race: string?)
 end
 
 ---------------------------------------------------------------------------
+-- Saga skins (procedural pieces on the avatar) and the flying mount
+---------------------------------------------------------------------------
+local function rgb(t: { number }): Color3
+	return Color3.fromRGB(t[1], t[2], t[3])
+end
+
+local function clearList(list: { BasePart })
+	for _, p in list do
+		p:Destroy()
+	end
+	table.clear(list)
+end
+
+local function applySkin(rig: Rig, id: string)
+	clearList(rig.skinParts)
+	rig.skin = id
+	local def = Config.SkinById[id]
+	local char = rig.char
+	local upper = char:FindFirstChild("UpperTorso") or char:FindFirstChild("Torso")
+	local lower = char:FindFirstChild("LowerTorso") or upper
+	local head = rig.head
+	if not def or not upper or not lower or not head then
+		return
+	end
+	local main, accent = rgb(def.main), rgb(def.accent)
+	local function add(shape: string, size: Vector3, color: Color3, to: BasePart, offset: CFrame, material: Enum.Material?)
+		local p = newPart(shape, size, color, false)
+		p.Name = "KiwSkin"
+		if material then
+			p.Material = material
+		end
+		weld(p, to, offset)
+		p.Parent = char
+		table.insert(rig.skinParts, p)
+	end
+	local tw, td = upper.Size.X, upper.Size.Z
+	for _, piece in def.kit do
+		if piece == "cape" then
+			add("block", Vector3.new(tw * 1.05, upper.Size.Y * 1.9, 0.14), main, upper, CFrame.new(0, -upper.Size.Y * 0.45, td / 2 + 0.12) * CFrame.Angles(math.rad(7), 0, 0), Enum.Material.Fabric)
+		elseif piece == "belt" then
+			add("block", Vector3.new(tw + 0.12, 0.34, td + 0.12), accent, lower, CFrame.new(0, 0.12, 0))
+		elseif piece == "band" then
+			add("block", Vector3.new(head.Size.X + 0.12, 0.22, head.Size.Z + 0.12), accent, head, CFrame.new(0, head.Size.Y * 0.18, 0))
+		elseif piece == "pads" then
+			for _, side in { -1, 1 } do
+				add("ball", Vector3.new(0.95, 0.65, 0.95), main, upper, CFrame.new(side * (tw / 2 + 0.22), upper.Size.Y / 2 - 0.15, 0))
+			end
+		end
+	end
+end
+
+-- A puff of white (or storm-dark) balls under the feet while flying.
+local function updateMount(rig: Rig, id: string)
+	if id == rig.mount then
+		return
+	end
+	rig.mount = id
+	clearList(rig.mountParts)
+	local def = Config.MountById[id]
+	local root = rig.root
+	if not def or not root then
+		return
+	end
+	local color = rgb(def.color)
+	local function ball(size: Vector3, offset: Vector3, tint: number)
+		local p = newPart("ball", size, color:Lerp(Color3.new(1, 1, 1), tint), false)
+		p.Name = "KiwMount"
+		p.Transparency = 0.08
+		weld(p, root, CFrame.new(offset))
+		p.Parent = rig.char
+		table.insert(rig.mountParts, p)
+	end
+	ball(Vector3.new(4.6, 1.9, 4.6), Vector3.new(0, -3.5, 0), 0)
+	ball(Vector3.new(3, 1.6, 3), Vector3.new(1.7, -3.3, 0.6), 0.15)
+	ball(Vector3.new(3, 1.6, 3), Vector3.new(-1.6, -3.3, -0.4), 0.15)
+	ball(Vector3.new(2.4, 1.3, 2.4), Vector3.new(0.2, -3.2, 1.8), 0.25)
+	if id == "thunderhead" then
+		-- a yellow flash line under the dark puff
+		local p = newPart("block", Vector3.new(0.25, 0.25, 2.6), Color3.fromRGB(255, 240, 120), true)
+		p.Name = "KiwMount"
+		weld(p, root, CFrame.new(0, -4.2, 0) * CFrame.Angles(0, math.rad(35), 0))
+		p.Parent = rig.char
+		table.insert(rig.mountParts, p)
+	end
+end
+
+---------------------------------------------------------------------------
 -- Aura
 ---------------------------------------------------------------------------
 local function releaseAura(rig: Rig)
@@ -675,6 +762,10 @@ local function addRig(char: Model)
 		punchBig = false,
 		flinchAt = -10,
 		marks = {},
+		skin = "",
+		skinParts = {},
+		mount = "",
+		mountParts = {},
 	}
 	local function scan()
 		for _, d in char:GetDescendants() do
@@ -921,6 +1012,11 @@ function CharFx.init()
 				if race ~= rig.race then
 					applyRace(rig, race)
 				end
+				local skin = char:GetAttribute("Skin") or ""
+				if skin ~= rig.skin then
+					applySkin(rig, skin)
+				end
+				updateMount(rig, if char:GetAttribute("Flying") == true then (char:GetAttribute("Mount") or "") else "")
 				updateTag(rig)
 			end
 		end

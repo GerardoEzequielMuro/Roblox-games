@@ -38,7 +38,8 @@ Rebuild the place file after changes:
 | Charge ki (aura) | hold C | hold Charge |
 | Transform / revert | G | Form |
 | Fly | Space in the air, or H. Space = up, Ctrl = down, Shift = boost. Double Space = land | Fly, then the jump button = up, extra buttons = down / boost |
-| Techniques | Z / X / V | extra buttons |
+| Techniques | Z / X / V (dark branch: N / M) | extra buttons |
+| Seeds (Vigor / Titan / Spark) | J / K / L | seed buttons (shown while you carry any) |
 | Training focus | 1–5 or click a stat | tap a stat |
 | Auto Train | T or the HUD toggle | HUD toggle |
 | Warp gate / altar | B | prompt |
@@ -52,6 +53,8 @@ src/shared/
   Formulas.luau      economy and combat math (pure; used by tests)
   Locale.luau, Locales/   translations; Locale.t(lang, key, args)
   Format.luau, Referral.luau
+  Collection.luau    earn-or-buy rules (skins, mounts, auras, special forms / dark attacks, pass bundles)
+  BattlePass.luau, Seeds.luau, Goals.luau   season / seed-stock / next-goal maths (pure)
 src/server/
   Main.server.luau   bootstrap + player lifecycle
   World/WorldBuilder.luau   planets, zones, camps, boss arenas, coliseum, altar, boards
@@ -64,11 +67,14 @@ src/server/
   Services/Npcs      enemies: one 10 Hz AI loop, bosses with telegraphed patterns
   Services/Auto      server-driven auto-charge and auto-fight
   Services/Progression   planets, techniques, upgrades, races, rebirth
+  Services/Items     seeds (Vigor / Titan / Spark): hourly stock, use, arena-proof
+  Services/Cosmetics skins, mounts, exclusive auras (earned or by pass)
+  Services/Season    battle pass (free + premium track, XP hooks, claims)
 src/client/
   Fx (pool, shake, hit-stop, quality), CombatFx (projectiles, beams, hits, numbers),
   CharFx (auras, form looks, procedural poses, tags), NpcRender (enemy models),
   Flight, Controls, WorldFx (sky per planet, animated props, localized signs),
-  UI/ (Theme, Root, Hud, TouchControls, Toasts, Windows)
+  UI/ (Theme, Root, Hud, TouchControls, Toasts, Windows, Panels1-3: progress / shop / wardrobe + season)
 tests/
   AutoTest.server.luau + AutoTestClient.client.luau   gameplay playtest (test.project.json)
   Showcase*.luau                                       posed scenes for screenshots

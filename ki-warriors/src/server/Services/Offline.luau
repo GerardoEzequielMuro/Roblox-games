@@ -2,6 +2,7 @@
 -- Offline training: while away, the selected stat keeps training at a fraction of the
 -- auto-train rate (capped at 4 h, 8 h with VIP). On join the gain waits as offlinePending
 -- and is claimed with ClaimOffline. An unclaimed amount is only replaced by a larger one.
+-- The Time Chamber (pass, or earned with 2 ascensions) raises the rate and the cap.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -15,8 +16,17 @@ local M = Locale.m
 
 local Offline = {}
 
+-- Time Chamber (pass, or 2 ascensions): faster offline training and a longer store.
+function Offline.rate(player: Player): number
+	return if State.owns(player, "TimeChamber") then Config.TimeChamber.rate else Config.Offline.rate
+end
+
 function Offline.capSeconds(player: Player): number
-	return if State.owns(player, "VIP") then Config.Offline.vipCapSeconds else Config.Offline.capSeconds
+	local cap = if State.owns(player, "VIP") then Config.Offline.vipCapSeconds else Config.Offline.capSeconds
+	if State.owns(player, "TimeChamber") then
+		cap = math.max(cap, Config.TimeChamber.capSeconds)
+	end
+	return cap
 end
 
 -- Call after passes are loaded (uses the live per-rep gain, without a training zone).
@@ -31,7 +41,7 @@ function Offline.compute(player: Player, now: number?)
 		return
 	end
 	local stat = p.settings.stat
-	local gain = State.gainPerRep(player, p, stat) * State.autoRate(player, p) * Config.Offline.rate * seconds
+	local gain = State.gainPerRep(player, p, stat) * State.autoRate(player, p) * Offline.rate(player) * seconds
 	local pending = p.offlinePending
 	local current = if pending then pending[stat] or 0 else 0
 	if gain > current then
@@ -54,7 +64,7 @@ function Offline.fake(player: Player, seconds: number): any
 	p.savedAt = os.time() - seconds
 	p.offlinePending = nil
 	Offline.compute(player)
-	return { pending = p.offlinePending, seconds = p.offlineSeconds, cap = Offline.capSeconds(player), perRep = State.gainPerRep(player, p, p.settings.stat), rate = State.autoRate(player, p) }
+	return { pending = p.offlinePending, seconds = p.offlineSeconds, cap = Offline.capSeconds(player), perRep = State.gainPerRep(player, p, p.settings.stat), rate = State.autoRate(player, p), offlineRate = Offline.rate(player) }
 end
 
 function Offline.init()

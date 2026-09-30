@@ -403,6 +403,34 @@ local function overGui(pos: Vector3): boolean
 	return false
 end
 
+-- Key -> technique id (Config.Techniques[].key) and key -> seed id (J / K / L).
+local techniqueKeys: { [Enum.KeyCode]: string } = {}
+for _, t in Config.Techniques do
+	techniqueKeys[(Enum.KeyCode :: any)[t.key]] = t.id
+end
+local seedKeys: { [Enum.KeyCode]: string } = {
+	[Enum.KeyCode.J] = "vigor_seed",
+	[Enum.KeyCode.K] = "titan_seed",
+	[Enum.KeyCode.L] = "spark_seed",
+}
+Controls.seedKeyName = { vigor_seed = "J", titan_seed = "K", spark_seed = "L" } :: { [string]: string }
+Controls.toast = nil :: ((any, string) -> ())? -- set by the menu: shows a server message
+
+-- Eat a seed from the bag (server checks everything; the answer is shown as a toast).
+function Controls.useSeed(id: string)
+	local owned = Net.get("seeds")
+	if not Controls.enabled or not owned or (owned.items[id] or 0) <= 0 then
+		return
+	end
+	task.spawn(function()
+		local ok, res = Net.request("UseSeed", { id = id })
+		if Controls.toast then
+			Controls.toast(res, if ok then "success" else "error")
+		end
+		used:Fire("seed")
+	end)
+end
+
 function Controls.init()
 	UserInputService.InputBegan:Connect(function(input, processed)
 		if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -444,12 +472,10 @@ function Controls.init()
 				end
 			end
 			lastSpace = now
-		elseif key == Enum.KeyCode.Z or key == Enum.KeyCode.X or key == Enum.KeyCode.V then
-			for _, t in Config.Techniques do
-				if Enum.KeyCode[t.key] == key then
-					Controls.technique(t.id)
-				end
-			end
+		elseif techniqueKeys[key] then
+			Controls.technique(techniqueKeys[key])
+		elseif seedKeys[key] then
+			Controls.useSeed(seedKeys[key])
 		else
 			local n = key.Value - Enum.KeyCode.One.Value + 1
 			if n >= 1 and n <= #Config.Stats then

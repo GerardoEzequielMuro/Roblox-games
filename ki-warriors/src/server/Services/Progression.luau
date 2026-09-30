@@ -5,6 +5,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local Collection = require(ReplicatedStorage.Shared.Collection)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -136,6 +137,10 @@ function Progression.init()
 		end
 		if math.max(State.power(p), p.bestPower) < t.reqPower then
 			return false, M("msg.need_power")
+		end
+		-- dark / special techniques: beat the boss N times OR own the pass (earn or pay)
+		if t.special and not Collection.specialOk(t.special, State.collectionCtx(player, p)) then
+			return false, M("msg.need_special", { boss = M("npc." .. t.special.boss), n = t.special.count })
 		end
 		if not State.spendSparks(player, t.cost) then
 			return false, M("msg.need_sparks")

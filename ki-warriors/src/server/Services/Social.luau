@@ -152,6 +152,12 @@ function Social.init()
 	Hooks.on("rebirth", function(player: Player)
 		maybeAskNotifications(player)
 	end)
+	-- server-wide announcement of a rare milestone: one of the three strongest forms
+	Hooks.on("formUnlocked", function(player: Player, index: number)
+		if index >= 6 then
+			Remotes.fireAll("Toast", { key = "toast.form_rare", args = { player = player.DisplayName, form = { key = "form." .. Config.Forms[index].id } }, color = Config.Forms[index].color })
+		end
+	end)
 
 	Remotes.handle("ShareLink", function(player)
 		local ok, err = pcall(function()

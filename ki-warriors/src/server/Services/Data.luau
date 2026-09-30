@@ -54,6 +54,14 @@ export type Profile = {
 	kills: number,
 	bossKills: { [string]: number },
 	totalReps: number,
+	items: { [string]: number }, -- seeds in the bag
+	market: { hour: number, bought: { [string]: number } }, -- seeds bought with Sparks this hour
+	buffs: { titan: number, spark: number, vigorReadyAt: number }, -- os.time() deadlines
+	skins: { [string]: boolean },
+	skin: string, -- equipped skin ("" = none)
+	mounts: { [string]: boolean },
+	mount: string,
+	bp: { [string]: { xp: number, premium: boolean, free: { [string]: boolean }, paid: { [string]: boolean } } },
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
@@ -135,6 +143,14 @@ local function defaultProfile(): Profile
 		kills = 0,
 		bossKills = {},
 		totalReps = 0,
+		items = {},
+		market = { hour = 0, bought = {} },
+		buffs = { titan = 0, spark = 0, vigorReadyAt = 0 },
+		skins = {},
+		skin = "",
+		mounts = {},
+		mount = "",
+		bp = {},
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
@@ -211,6 +227,55 @@ local function reconcile(p: any): Profile
 	end
 	if type(p.relics) ~= "table" or type(p.relics.found) ~= "table" then
 		p.relics = def.relics
+	end
+	-- seeds, cosmetics and battle pass
+	if type(p.items) ~= "table" then
+		p.items = {}
+	end
+	for id in p.items do
+		if not Config.SeedById[id] then
+			p.items[id] = nil
+		else
+			p.items[id] = math.max(0, math.floor(num(p.items[id], 0)))
+		end
+	end
+	if type(p.market) ~= "table" or type(p.market.bought) ~= "table" then
+		p.market = def.market
+	end
+	p.market.hour = num(p.market.hour, 0)
+	if type(p.buffs) ~= "table" then
+		p.buffs = def.buffs
+	end
+	for _, k in { "titan", "spark", "vigorReadyAt" } do
+		p.buffs[k] = num(p.buffs[k], 0)
+	end
+	local function cleanCosmetics(owned: string, equipped: string, known: { [string]: any })
+		if type(p[owned]) ~= "table" then
+			p[owned] = {}
+		end
+		for id in p[owned] do
+			if not known[id] then
+				p[owned][id] = nil
+			end
+		end
+		if type(p[equipped]) ~= "string" or (p[equipped] ~= "" and not p[owned][p[equipped]]) then
+			p[equipped] = ""
+		end
+	end
+	cleanCosmetics("skins", "skin", Config.SkinById)
+	cleanCosmetics("mounts", "mount", Config.MountById)
+	if type(p.bp) ~= "table" then
+		p.bp = {}
+	end
+	for id, rec in p.bp do
+		if not Config.BattlePass.SeasonById[id] or type(rec) ~= "table" then
+			p.bp[id] = nil
+		else
+			rec.xp = math.clamp(math.floor(num(rec.xp, 0)), 0, Config.BattlePass.xpPerTier * Config.BattlePass.tiers)
+			rec.premium = rec.premium == true
+			rec.free = if type(rec.free) == "table" then rec.free else {}
+			rec.paid = if type(rec.paid) == "table" then rec.paid else {}
+		end
 	end
 	return p :: Profile
 end

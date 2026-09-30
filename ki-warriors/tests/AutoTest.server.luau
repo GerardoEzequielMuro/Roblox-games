@@ -178,6 +178,13 @@ rf.OnServerInvoke = function(plr, cmd, a, b, c)
 			wishes = prof.wishes,
 			wishPower = prof.wishPower,
 			boostLeft = prof.boostLeft,
+			items = table.clone(prof.items),
+			buffs = table.clone(prof.buffs),
+			skins = table.clone(prof.skins),
+			mounts = table.clone(prof.mounts),
+			skin = prof.skin,
+			mount = prof.mount,
+			bp = prof.bp,
 		}
 	elseif cmd == "fighter" then
 		local h = f.humanoid

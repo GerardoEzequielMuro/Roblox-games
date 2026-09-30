@@ -118,7 +118,8 @@ local function renderRewards(body: Frame)
 	local list = listOf("rewards", body)
 	local daily = s.dailyState
 	if daily then
-		Kit.header(list, "rewards.daily", 0)
+		Kit.header(list, "rewards.daily", -2)
+		Kit.header(list, "rewards.streak", -1, { n = daily.streak })
 		local strip = new("Frame", { BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, 92), LayoutOrder = 1, ZIndex = 22, Parent = list }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) })
 		local today = (daily.streak % #Config.DailyRewards) + 1
 		for i, r in Config.DailyRewards do
@@ -226,9 +227,10 @@ local function renderShop(body: Frame)
 		local row = Kit.row(list, 84, 0, Theme.Pink)
 		Kit.chip(row, "🎁", Theme.Pink, 56, UDim2.fromOffset(20, 14))
 		Kit.text(row, { Text = Lang.t("product.StarterPack.name"), Size = UDim2.new(0.5, 0, 0, 26), Position = UDim2.fromOffset(88, 6), MaxTextSize = 24, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Yellow })
-		Kit.text(row, { Text = Lang.t("product.StarterPack.desc", { n = Config.StarterPack.gems, minutes = Config.StarterPack.boostMinutes, aura = Lang.t("aura." .. Config.StarterPack.aura) }), Size = UDim2.new(0.62, 0, 0, 30), Position = UDim2.fromOffset(88, 32), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, TextColor3 = Theme.Text, Font = Theme.FontBold })
+		Kit.text(row, { Text = Lang.t("product.StarterPack.desc", { n = Config.StarterPack.gems, minutes = Config.StarterPack.boostMinutes, spark = Config.StarterPack.sparkMinutes, aura = Lang.t("aura." .. Config.StarterPack.aura) }), Size = UDim2.new(0.62, 0, 0, 30), Position = UDim2.fromOffset(88, 32), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextWrapped = true, TextColor3 = Theme.Text, Font = Theme.FontBold })
 		Kit.text(row, { Text = Lang.t("shop.ends_in", { time = Format.time(math.max(0, starter.endsAt - now())) }), Size = UDim2.new(0.5, 0, 0, 14), Position = UDim2.fromOffset(88, 64), MaxTextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Red })
-		Kit.text(row, { Text = "<s>" .. starter.fullPrice .. "</s>", RichText = true, Size = UDim2.fromOffset(120, 16), Position = UDim2.new(1, -12, 0, 6), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 14, TextColor3 = Theme.Dim })
+		-- the crossed-out number is what the same contents cost if bought one by one in this shop
+		Kit.text(row, { Text = Lang.t("shop.value", { price = "<s>" .. starter.fullPrice .. "</s>" }), RichText = true, Size = UDim2.fromOffset(190, 16), Position = UDim2.new(1, -12, 0, 6), AnchorPoint = Vector2.new(1, 0), MaxTextSize = 13, TextColor3 = Theme.Dim })
 		Kit.button(row, utf8.char(0xE002) .. " " .. starter.price, ROBUX, 120, function()
 			Purchase.product("StarterPack")
 		end)
@@ -247,7 +249,15 @@ local function renderShop(body: Frame)
 		for i, p in passes do
 			shown += 1
 			local owned = s.passes[p.key] == true
-			card(g, i, p.icon, Theme.Yellow, Lang.t("pass." .. p.key .. ".name"), Lang.t("pass." .. p.key .. ".desc"), if owned then "✔" else utf8.char(0xE002) .. " " .. p.price, if owned then Theme.Grey else ROBUX, function()
+			local apart = 0
+			for _, k in p.implies or {} do
+				apart += Config.PassByKey[k].price
+			end
+			local desc = Lang.t("pass." .. p.key .. ".desc", { price = apart })
+			if p.earnable then
+				desc ..= " " .. Lang.t("shop.earnable")
+			end
+			card(g, i, p.icon, Theme.Yellow, Lang.t("pass." .. p.key .. ".name"), desc, if owned then "✔" else utf8.char(0xE002) .. " " .. p.price, if owned then Theme.Grey else ROBUX, function()
 				if not owned then
 					Purchase.pass(p.key)
 				end
@@ -257,7 +267,7 @@ local function renderShop(body: Frame)
 	-- products
 	local products = {}
 	for _, p in Config.Products do
-		if p.kind ~= "starter" and (Purchase.productAvailable(p.key) or inStudio) then
+		if p.kind ~= "starter" and p.kind ~= "bp" and p.kind ~= "bpskip" and (Purchase.productAvailable(p.key) or inStudio) then
 			table.insert(products, p)
 		end
 	end
@@ -271,6 +281,32 @@ local function renderShop(body: Frame)
 			card(g, i, p.icon, color, Lang.t("product." .. p.key .. ".name"), Lang.t("product." .. p.key .. ".desc", { n = Format.abbrev(p.amount) }), utf8.char(0xE002) .. " " .. p.price, ROBUX, function()
 				Purchase.product(p.key)
 			end, tag)
+		end
+	end
+	-- seeds: bought with Sparks (limited stock that restocks on the hour), used from here or J / K / L
+	local seeds = s.seeds
+	if seeds then
+		shown += 1
+		local left = seeds.nextRestock - now()
+		if left <= 0 then
+			Net.pull()
+		end
+		Kit.header(list, "shop.seeds", 23, { time = Format.time(math.max(0, left)) })
+		for i, def in Config.Seeds do
+			local info = seeds.shop[def.id]
+			local have = seeds.items[def.id] or 0
+			local row = Kit.row(list, 64, 23 + i, Theme.rgb(def.color))
+			Kit.chip(row, def.icon, Theme.rgb(def.color), 44, UDim2.fromOffset(20, 10))
+			Kit.text(row, { Text = Lang.t("item." .. def.id) .. "  x" .. have, Size = UDim2.new(0.42, 0, 0, 22), Position = UDim2.fromOffset(76, 6), MaxTextSize = 19, TextXAlignment = Enum.TextXAlignment.Left })
+			Kit.text(row, { Text = Lang.t("seed." .. def.id .. ".desc", { n = def.seconds and def.seconds // 60 or 0, pct = def.damageMult and math.floor((def.damageMult - 1) * 100 + 0.5) or 0, x = def.regenMult or 0, ki = def.kiGive and math.floor(def.kiGive * 100) or 0 }), Size = UDim2.new(0.5, 0, 0, 30), Position = UDim2.fromOffset(76, 28), MaxTextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, TextWrapped = true, TextColor3 = Theme.Dim, Font = Theme.FontBold })
+			local buy = Kit.button(row, "⚡ " .. Format.abbrev(info.price) .. "  " .. info.stock .. "/" .. def.stockPerHour, if info.stock > 0 and s.sparks >= info.price then Theme.Green else Theme.Grey, 150, function()
+				Kit.request("BuySeed", { id = def.id })
+			end, 38)
+			buy.Position = UDim2.new(1, -96, 0.5, 0)
+			local use = Kit.button(row, Lang.t("seed.use"), if have > 0 then Theme.Orange else Theme.Grey, 80, function()
+				Kit.request("UseSeed", { id = def.id })
+			end, 38)
+			use.Position = UDim2.new(1, -10, 0.5, 0)
 		end
 	end
 	-- rewarded video

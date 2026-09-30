@@ -14,6 +14,7 @@ local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
 local Fighters = require(script.Parent.Fighters)
+local Seeds = require(ReplicatedStorage.Shared.Seeds)
 
 type Fighter = Fighters.Fighter
 local C = Config.Combat
@@ -446,7 +447,7 @@ function Combat.refreshForms(player: Player): number
 	if not p then
 		return 0
 	end
-	local best = Formulas.bestForm(math.max(p.bestPower, State.power(p)), p.rebirths)
+	local best = Formulas.bestForm(math.max(p.bestPower, State.power(p)), p.rebirths, State.collectionCtx(player, p))
 	if best > p.forms then
 		local first = p.forms + 1
 		p.forms = best
@@ -500,6 +501,10 @@ function Combat.technique(f: Fighter, id: string, dir: Vector3): boolean
 		if not p or not p.techniques[id] then
 			return false
 		end
+		-- dark / special techniques (earned or paid) never work in the PvP arena
+		if t.special and f.inArena then
+			return false
+		end
 	end
 	if f.ki < t.kiCost or (f.cd["t_" .. id] or 0) > os.clock() then
 		return false
@@ -509,7 +514,7 @@ function Combat.technique(f: Fighter, id: string, dir: Vector3): boolean
 	stopCharging(f)
 	local kiStat = Fighters.stat(f, "ki")
 	Remotes.fireAll("Fx", "tech", { u = if f.player then f.player.UserId else 0, i = f.id, t = id, p = Fighters.position(f), d = dir })
-	if id == "pulse_volley" then
+	if t.shape == "volley" then
 		task.spawn(function()
 			for n = 1, t.shots do
 				if not canAct(f) then
@@ -524,13 +529,14 @@ function Combat.technique(f: Fighter, id: string, dir: Vector3): boolean
 					kind = "tech",
 					damage = Formulas.blastDamage(kiStat, f.form) * t.dmgMult,
 					knock = 14,
+					color = t.color,
 				})
 				if n < t.shots then
 					task.wait(0.09)
 				end
 			end
 		end)
-	elseif id == "meteor_dive" then
+	elseif t.shape == "dive" then
 		task.delay(0.4, function()
 			if not canAct(f) then
 				return
@@ -547,7 +553,7 @@ function Combat.technique(f: Fighter, id: string, dir: Vector3): boolean
 			end
 			Remotes.fireAll("Fx", "shock", { p = at, r = t.radius, f = f.form })
 		end)
-	elseif id == "sunfall" then
+	elseif t.shape == "orb" then
 		local origin = (Fighters.position(f) :: Vector3) + Vector3.new(0, 9, 0) + dir * 3
 		spawnProjectile(f, origin, dir, {
 			speed = t.speed,
@@ -557,7 +563,7 @@ function Combat.technique(f: Fighter, id: string, dir: Vector3): boolean
 			damage = Formulas.blastDamage(kiStat, f.form) * t.dmgMult,
 			aoe = t.radius,
 			knock = 80,
-			color = "sun",
+			color = t.color,
 		})
 	end
 	if f.player then
@@ -583,9 +589,15 @@ local function tick(dt: number)
 			if p then
 				regen *= 1 + Formulas.upgradeValue("kiRegen", p.upgrades.kiRegen or 0)
 			end
-			if State.owns(player, "KiMastery") then
-				regen *= Config.KiMasteryRegen
-				drainMult = Config.KiMasteryDrain
+			-- paid perks and consumables are switched off inside the PvP arena
+			if not f.inArena then
+				if State.owns(player, "KiMastery") then
+					regen *= Config.KiMasteryRegen
+					drainMult = Config.KiMasteryDrain
+				end
+				if p and Seeds.active(p.buffs.spark, os.time()) then
+					regen *= Config.SeedById.spark_seed.regenMult
+				end
 			end
 		end
 		local delta = 0

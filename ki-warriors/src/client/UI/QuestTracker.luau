@@ -9,6 +9,7 @@ local TweenService = game:GetService("TweenService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local Goals = require(ReplicatedStorage.Shared.Goals)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Toasts = require(script.Parent.Toasts)
@@ -120,7 +121,14 @@ local function refresh()
 	end
 	local step = Config.Story[s.story.step]
 	if not step then
-		panel.Visible = false
+		-- story done: the closest power goal (next form / planet / ascension) stays on screen
+		local goal = Goals.next(math.max(s.power or 0, s.bestPower or 0), s.forms or 0, s.planets or { 1 }, s.rebirths or 0)
+		panel.Visible = true
+		local name = if goal.kind == "rebirth" then "" else Lang.t(goal.kind .. "." .. goal.id)
+		title.Text = Lang.t("goal." .. goal.kind, { name = name, power = Format.abbrev(goal.need), n = goal.id })
+		setBar(goal.frac, Format.abbrev(goal.have) .. " / " .. Format.abbrev(goal.need))
+		reward.Text = ""
+		hint.Visible = false
 		clearGuide()
 		return
 	end

@@ -102,7 +102,7 @@ function Training.applyMovement(player: Player)
 	end
 	local char = f.char
 	if char then
-		local fly = Formulas.flySpeed(p.stats.agility, State.owns(player, "FastFlight"))
+		local fly = Formulas.flySpeed(p.stats.agility, State.owns(player, "FastFlight") and not f.inArena) -- normalized in the PvP arena
 		if char:GetAttribute("FlySpeed") ~= fly then
 			char:SetAttribute("FlySpeed", fly)
 		end

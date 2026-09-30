@@ -34,6 +34,11 @@ local LAYOUT = {
 	t_pulse_volley = { 0.845, 0.40, 56 },
 	t_meteor_dive = { 0.745, 0.455, 56 },
 	t_sunfall = { 0.645, 0.53, 56 },
+	t_umbral_volley = { 0.645, 0.37, 52 },
+	t_null_nova = { 0.545, 0.45, 52 },
+	seed_vigor_seed = { 0.46, 0.70, 44 },
+	seed_titan_seed = { 0.46, 0.80, 44 },
+	seed_spark_seed = { 0.46, 0.90, 44 },
 }
 TouchControls.LAYOUT = LAYOUT
 
@@ -130,6 +135,15 @@ function TouchControls.init()
 		end)
 	end
 
+	for _, sd in Config.Seeds do
+		local b = button("seed_" .. sd.id, sd.icon, Theme.rgb(sd.color))
+		b.frame.Activated:Connect(function()
+			Controls.useSeed(sd.id)
+		end)
+		local count = Theme.text({ Name = "Count", Text = "0", Size = UDim2.fromOffset(24, 16), Position = UDim2.new(1, 2, 1, 2), AnchorPoint = Vector2.new(1, 1), MaxTextSize = 15, Stroke = 2.5, Parent = b.frame })
+		count.ZIndex = 5
+	end
+
 	local function refresh()
 		local flying = Flight.active
 		local downHolder: any, boostHolder: any = down.frame.Parent, boost.frame.Parent
@@ -139,6 +153,17 @@ function TouchControls.init()
 		for _, t in Config.Techniques do
 			local holder: any = buttons["t_" .. t.id].frame.Parent
 			holder.Visible = owned[t.id] == true
+		end
+		local seeds = Net.get("seeds")
+		for _, sd in Config.Seeds do
+			local b = buttons["seed_" .. sd.id]
+			local n = if seeds then seeds.items[sd.id] or 0 else 0
+			local holder: any = b.frame.Parent
+			holder.Visible = n > 0
+			local label = b.frame:FindFirstChild("Count") :: TextLabel?
+			if label then
+				label.Text = tostring(n)
+			end
 		end
 	end
 	Flight.Changed:Connect(refresh)

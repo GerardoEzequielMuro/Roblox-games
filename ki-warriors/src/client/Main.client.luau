@@ -13,6 +13,7 @@ local CharFx = require(script.Parent.CharFx)
 local NpcRender = require(script.Parent.NpcRender)
 local Flight = require(script.Parent.Flight)
 local Controls = require(script.Parent.Controls)
+local Lang = require(script.Parent.Lang)
 local WorldFx = require(script.Parent.WorldFx)
 local UI = script.Parent.UI
 local Toasts = require(UI.Toasts)
@@ -20,6 +21,9 @@ local Hud = require(UI.Hud)
 local TouchControls = require(UI.TouchControls)
 
 Purchase.setNotifier(Toasts.show)
+Controls.toast = function(msg, kind)
+	Toasts.show(Lang.msg(msg), kind)
+end
 Hud.notify = Toasts.show
 Hud.banner = Toasts.banner
 

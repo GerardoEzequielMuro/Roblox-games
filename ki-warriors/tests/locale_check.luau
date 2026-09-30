@@ -65,6 +65,24 @@ for _, p in Config.Products do
 	table.insert(texts, "product." .. p.key .. ".name")
 	table.insert(texts, "product." .. p.key .. ".desc")
 end
+for _, sk in Config.Skins do
+	table.insert(names, "skin." .. sk.id)
+	table.insert(names, "arc." .. sk.arc)
+end
+for _, m in Config.Mounts do
+	table.insert(names, "mount." .. m.id)
+end
+for _, sd in Config.Seeds do
+	table.insert(names, "item." .. sd.id)
+	table.insert(texts, "seed." .. sd.id .. ".desc")
+end
+for _, season in Config.BattlePass.seasons do
+	table.insert(names, "season." .. season.id)
+end
+for _, kind in { "seed", "skin", "mount", "aura" } do
+	table.insert(texts, "rewardlabel." .. kind)
+	table.insert(texts, "reward." .. kind)
+end
 for id in Config.LiveEventDefs do
 	table.insert(texts, "event." .. id)
 end

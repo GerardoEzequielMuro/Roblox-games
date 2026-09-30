@@ -238,10 +238,13 @@ local function moveSlot(parent: Instance, order: number, icon: string, key: stri
 end
 
 local function buildMoves()
+	-- 6 slots per row: the dock grows upward when more techniques (or the dark branch) exist
+	local rows = math.ceil((8 + #Config.Techniques) / 6)
+	local gridH = rows * 50 - 6
 	local dock = new("Frame", {
 		Name = "Moves",
 		BackgroundTransparency = 1,
-		Size = UDim2.fromOffset(292, 116),
+		Size = UDim2.fromOffset(292, gridH + 20),
 		Position = UDim2.new(1, -10, 1, -10),
 		AnchorPoint = Vector2.new(1, 1),
 		Parent = Root.gui,
@@ -249,7 +252,7 @@ local function buildMoves()
 	Root.mount(dock)
 	refs.moves = dock
 	refs.moveName = Theme.text({ Key = "hud.moves", Size = UDim2.fromOffset(288, 16), Position = UDim2.fromOffset(0, 0), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Right, Font = Theme.FontBold, Parent = dock })
-	local grid = new("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UDim2.fromOffset(292, 96), Position = UDim2.fromOffset(0, 20), Parent = dock }, {
+	local grid = new("Frame", { Name = "Grid", BackgroundTransparency = 1, Size = UDim2.fromOffset(292, gridH), Position = UDim2.fromOffset(0, 20), Parent = dock }, {
 		new("UIGridLayout", { CellSize = UDim2.fromOffset(44, 44), CellPadding = UDim2.fromOffset(5, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Right, VerticalAlignment = Enum.VerticalAlignment.Bottom, StartCorner = Enum.StartCorner.TopLeft }),
 	})
 	moveSlot(grid, 1, "👊", "LMB", "act.punch", "melee", Theme.Red, nil)
@@ -267,6 +270,26 @@ local function buildMoves()
 			Controls.technique(t.id)
 		end)
 		refs["tech_" .. t.id] = s.frame
+	end
+	-- seeds (J / K / L): small slots above the dock, visible while you carry any
+	local seedRow = new("Frame", { Name = "Seeds", BackgroundTransparency = 1, Size = UDim2.fromOffset(292, 40), Position = UDim2.new(1, -10, 1, -(gridH + 36)), AnchorPoint = Vector2.new(1, 1), Visible = false, Parent = Root.gui }, {
+		Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center),
+	})
+	Root.mount(seedRow)
+	refs.seedRow = seedRow
+	for i, sd in Config.Seeds do
+		local b = new("TextButton", { Name = "Seed_" .. sd.id, Size = UDim2.fromOffset(40, 40), BackgroundColor3 = Theme.PanelDark, BackgroundTransparency = 0.3, AutoButtonColor = false, Text = "", LayoutOrder = i, Parent = seedRow }, {
+			Theme.corner(8),
+			Theme.stroke(2.5, Theme.lighten(Theme.rgb(sd.color), 0.25)),
+		})
+		Theme.icon(sd.icon, { Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b }).ZIndex = 2
+		Theme.text({ Name = "Key", Text = Controls.seedKeyName[sd.id], Font = Theme.Display, Size = UDim2.fromOffset(20, 14), Position = UDim2.new(1, 1, 1, 1), AnchorPoint = Vector2.new(1, 1), MaxTextSize = 14, Stroke = 2.5, TextColor3 = Theme.Yellow, Parent = b }).ZIndex = 4
+		Theme.text({ Name = "Count", Text = "0", Size = UDim2.fromOffset(24, 14), Position = UDim2.fromOffset(-2, -2), MaxTextSize = 14, Stroke = 2.5, TextXAlignment = Enum.TextXAlignment.Left, Parent = b }).ZIndex = 4
+		Theme.pressable(b, 1.08)
+		b.Activated:Connect(function()
+			Controls.useSeed(sd.id)
+		end)
+		refs["seed_" .. sd.id] = b
 	end
 	-- hovering a move shows its name over the grid
 	for _, s in slots do
@@ -467,6 +490,18 @@ local function refreshFull()
 		if f then
 			f.Visible = s.techniques[t.id] == true
 		end
+	end
+	-- seeds in the bag
+	if refs.seedRow then
+		local any = false
+		for _, sd in Config.Seeds do
+			local b = refs["seed_" .. sd.id]
+			local n = if s.seeds then s.seeds.items[sd.id] or 0 else 0
+			b.Visible = n > 0
+			b.Count.Text = tostring(n)
+			any = any or n > 0
+		end
+		refs.seedRow.Visible = any
 	end
 	-- boost line
 	local parts = {}

@@ -13,6 +13,7 @@ local Kit = require(script.Parent.Kit)
 local Toasts = require(script.Parent.Toasts)
 local Panels1 = require(script.Parent.Panels1)
 local Panels2 = require(script.Parent.Panels2)
+local Panels3 = require(script.Parent.Panels3)
 local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
 local Controls = require(script.Parent.Parent.Controls)
@@ -30,13 +31,14 @@ local subFor: string? = nil
 
 -- name, icon, colour, story step from which it shows (0 = always), window or submenu entries
 local ENTRIES = {
-	{ name = "Warrior", icon = "👤", color = Theme.Red, from = 0, sub = { "Warrior", "Forms", "Moves", "Auras", "Upgrades", "Ascend" } },
+	{ name = "Warrior", icon = "👤", color = Theme.Red, from = 0, sub = { "Warrior", "Forms", "Moves", "Auras", "Wardrobe", "Upgrades", "Ascend" } },
 	{ name = "Quests", icon = "📜", color = Theme.Orange, from = 0, window = "Quests" },
 	{ name = "Rewards", icon = "🎁", color = Theme.Green, from = 0, window = "Rewards" },
 	{ name = "Shop", icon = "🛒", color = Theme.Yellow, from = Config.TutorialSteps + 1, window = "Shop" },
+	{ name = "Season", icon = "🎟️", color = Theme.Purple, from = Config.TutorialSteps + 1, window = "Season" },
 	{ name = "More", icon = "🧭", color = Theme.Blue, from = 0, sub = { "Travel", "Ranking", "Invite", "Settings" } },
 }
-local SUB_ICONS = { Warrior = "👤", Forms = "🔥", Moves = "☄️", Auras = "🌀", Upgrades = "💎", Ascend = "🌟", Travel = "🪐", Ranking = "🏆", Invite = "💌", Settings = "⚙️" }
+local SUB_ICONS = { Warrior = "👤", Forms = "🔥", Moves = "☄️", Auras = "🌀", Wardrobe = "🎽", Upgrades = "💎", Ascend = "🌟", Travel = "🪐", Ranking = "🏆", Invite = "💌", Settings = "⚙️" }
 
 local function closeSub()
 	if sub then
@@ -158,6 +160,7 @@ local function refresh()
 		end
 	end
 	buttons.Quests.badge.Visible = quests
+	buttons.Season.badge.Visible = s.season ~= nil and (s.season.claimable or 0) > 0
 	local warrior = (s.auraSpin and (s.auraSpin.freeToday or (s.spins or 0) > 0)) or false
 	buttons.Warrior.badge.Visible = warrior
 end
@@ -166,6 +169,7 @@ function Menu.init()
 	Kit.notify = Toasts.show
 	Panels1.init()
 	Panels2.init()
+	Panels3.init()
 	build()
 	Net.Changed:Connect(function(kind)
 		if kind == "full" then
