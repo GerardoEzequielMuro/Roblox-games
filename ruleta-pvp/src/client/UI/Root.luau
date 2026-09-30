@@ -54,18 +54,47 @@ local scales: { UIScale } = {}
 local changed = Instance.new("BindableEvent")
 Root.Changed = changed.Event
 
--- Design size 1100x560 of usable (safe-area) space: ~0.8 on a 920x505 phone, capped at 1.15
--- on big monitors so the PC layout stays compact.
-local function compute(): number
+-- Usable (safe-area) size of the HUD layer, with a viewport fallback before it is laid out.
+local function areaSize(): Vector2
 	local size = Root.gui.AbsoluteSize
 	if size.X < 10 or size.Y < 10 then
 		local cam = Workspace.CurrentCamera
 		if not cam then
-			return 1
+			return Vector2.new(1100, 560)
 		end
 		size = cam.ViewportSize
 	end
+	return size
+end
+
+-- PC: design size 1100x560 of usable space, capped at 1.15 on big monitors so the layout
+-- stays compact. Touch: the HUD is laid out for ~960x420 (Hud.luau has a compact touch
+-- layout) so a landscape phone (~750x330 usable) gets ~0.75 instead of 0.55 and every
+-- button is sized in design px to land at >= 44 px real.
+local function compute(): number
+	local size = areaSize()
+	if Root.isTouch then
+		return math.clamp(math.min(size.X / 960, size.Y / 420), 0.62, 1.1)
+	end
 	return math.clamp(math.min(size.X / 1100, size.Y / 560), 0.5, 1.15)
+end
+
+-- Design px that land at `realPx` on screen with the current HUD scale.
+function Root.real(realPx: number): number
+	return math.ceil(realPx / Root.scale)
+end
+
+-- Windows on touch get their own fit: scale 1 when the window fits, otherwise shrunk only as
+-- much as needed, and the design height is trimmed so the window never leaves the screen
+-- (window bodies scroll).
+type WindowFit = { holder: Frame, scale: UIScale, w: number, h: number }
+local windowFits: { WindowFit } = {}
+local function fitWindow(f: WindowFit)
+	local a = areaSize()
+	local ws = math.clamp((a.X - 24) / (f.w + 28), 0.7, 1)
+	local hh = math.min(f.h, (a.Y - 30) / ws)
+	f.scale.Scale = ws
+	f.holder.Size = UDim2.fromOffset(f.w, hh)
 end
 
 local playerListShown: boolean? = nil
@@ -74,6 +103,9 @@ local function apply()
 	Root.scale = compute()
 	for _, s in scales do
 		s.Scale = Root.scale
+	end
+	for _, f in windowFits do
+		fitWindow(f)
 	end
 	-- The default player list covers the right-side HUD on small screens.
 	local cam = Workspace.CurrentCamera
@@ -108,6 +140,21 @@ function Root.mount(obj: GuiObject, parent: Instance?): Frame
 	obj.Position = UDim2.fromScale(0.5, 0.5)
 	obj.Size = UDim2.fromScale(1, 1)
 	obj.Parent = holder
+	return holder
+end
+
+-- Like mount, for the modal windows: on touch they scale by the screen fit instead of the HUD
+-- scale (PC behaves exactly like mount).
+function Root.mountWindow(obj: GuiObject, parent: Instance?): Frame
+	local sz = obj.Size
+	local holder = Root.mount(obj, parent)
+	if Root.isTouch then
+		local s = holder:FindFirstChildOfClass("UIScale") :: UIScale
+		table.remove(scales, table.find(scales, s) :: number)
+		local f: WindowFit = { holder = holder, scale = s, w = sz.X.Offset, h = sz.Y.Offset }
+		table.insert(windowFits, f)
+		fitWindow(f)
+	end
 	return holder
 end
 

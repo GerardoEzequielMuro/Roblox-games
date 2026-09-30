@@ -314,7 +314,7 @@ return {
 	["rank.next"] = "Berikutnya: {league} di {n}",
 	["rank.top"] = "Liga tertinggi",
 	["rank.season_ends"] = "Musim berakhir dalam {time}",
-	["rank.record"] = "{wins} kemenangan dari {matches} pertandingan. Rekor beruntun {streak}",
+	["rank.record"] = "Menang: {wins} / Pertandingan: {matches} / Rekor beruntun: {streak}",
 
 	-- rewards and quests
 	["rewards.daily"] = "Hadiah harian",

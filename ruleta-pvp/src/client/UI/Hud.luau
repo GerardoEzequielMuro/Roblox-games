@@ -20,6 +20,20 @@ local TableViews = require(script.Parent.Parent.Arena.TableViews)
 
 local Hud = {}
 
+-- Touch layout: the HUD scale on a phone is ~0.75, so every tappable piece is sized for
+-- >= 44 px real (58+ design px) and the pieces are rearranged to stay clear of the thumbstick
+-- (bottom left) and the jump button (bottom right): the menu moves to the top centre, the
+-- goals under the profile, the Power Core below the currencies. Holder positions are real
+-- px (only sizes are scaled), so the y offsets below are real px.
+local T = Root.isTouch
+local function pick(pc: any, touch: any): any
+	if T then
+		return touch
+	end
+	return pc
+end
+local TAP = 62 -- design px that land at ~44 px real at the lowest usual phone scale
+
 local player = Players.LocalPlayer
 local root = Theme.new("Frame", { Name = "LobbyHud", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Parent = Root.gui }) :: Frame
 Hud.root = root
@@ -44,42 +58,42 @@ Hud.setting = setting
 local profile = Theme.panel({ Name = "Profile", Size = UDim2.fromOffset(250, 62), Position = UDim2.new(0, 8, 0, 6), Corner = 16, Parent = root })
 Root.mount(profile, root)
 local avatar = Theme.new("ImageLabel", { Name = "Avatar", Size = UDim2.fromOffset(48, 48), Position = UDim2.fromOffset(7, 7), BackgroundColor3 = Theme.Panel2, Image = string.format("rbxthumb://type=AvatarHeadShot&id=%d&w=150&h=150", math.max(1, player.UserId)), Parent = profile }, { Theme.corner(24), Theme.stroke(2, Theme.Cyan) })
-local levelBadge = Theme.new("Frame", { Name = "Level", Size = UDim2.fromOffset(26, 20), Position = UDim2.fromOffset(34, 40), BackgroundColor3 = Theme.Yellow, ZIndex = 3, Parent = profile }, { Theme.corner(8), Theme.stroke(2) })
-local levelText = Theme.text({ Text = "1", Size = UDim2.fromScale(1, 1), MaxTextSize = 15, ZIndex = 4, Parent = levelBadge })
-local nameText = Theme.text({ Name = "Name", Text = player.DisplayName, Size = UDim2.fromOffset(176, 20), Position = UDim2.fromOffset(64, 5), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 18, Parent = profile })
-local leagueText = Theme.text({ Name = "League", Text = "", Size = UDim2.fromOffset(176, 16), Position = UDim2.fromOffset(64, 25), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 14, TextColor3 = Theme.Dim, Parent = profile })
-local xpBack = Theme.new("Frame", { Name = "Xp", Size = UDim2.fromOffset(176, 10), Position = UDim2.fromOffset(64, 45), BackgroundColor3 = Theme.Ink, Parent = profile }, { Theme.corner(5) })
+local levelBadge = Theme.new("Frame", { Name = "Level", Size = pick(UDim2.fromOffset(26, 20), UDim2.fromOffset(30, 22)), Position = pick(UDim2.fromOffset(34, 40), UDim2.fromOffset(32, 40)), BackgroundColor3 = Theme.Yellow, ZIndex = 3, Parent = profile }, { Theme.corner(8), Theme.stroke(2) })
+local levelText = Theme.text({ Text = "1", Size = UDim2.fromScale(1, 1), MaxTextSize = pick(15, 16), MinTextSize = pick(9, 13), ZIndex = 4, Parent = levelBadge })
+local nameText = Theme.text({ Name = "Name", Text = player.DisplayName, Size = pick(UDim2.fromOffset(176, 20), UDim2.fromOffset(176, 22)), Position = pick(UDim2.fromOffset(64, 5), UDim2.fromOffset(64, 2)), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = pick(18, 19), Parent = profile })
+local leagueText = Theme.text({ Name = "League", Text = "", Size = pick(UDim2.fromOffset(176, 16), UDim2.fromOffset(180, 20)), Position = pick(UDim2.fromOffset(64, 25), UDim2.fromOffset(64, 24)), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = pick(14, 16), MinTextSize = pick(9, 13), TextColor3 = Theme.Dim, Parent = profile })
+local xpBack = Theme.new("Frame", { Name = "Xp", Size = UDim2.fromOffset(176, 10), Position = pick(UDim2.fromOffset(64, 45), UDim2.fromOffset(64, 48)), BackgroundColor3 = Theme.Ink, Parent = profile }, { Theme.corner(5) })
 local xpFill = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Theme.Cyan, Parent = xpBack }, { Theme.corner(5) }) :: Frame
 local _unused = { avatar, nameText }
 
 ---------------------------------------------------------------------------
 -- Currencies + event chip (top right)
 ---------------------------------------------------------------------------
-local top = Theme.new("Frame", { Name = "Top", Size = UDim2.fromOffset(330, 40), Position = UDim2.new(1, -8, 0, 6), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, Parent = root }, { Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) }) :: Frame
+local top = Theme.new("Frame", { Name = "Top", Size = pick(UDim2.fromOffset(330, 40), UDim2.fromOffset(340, 66)), Position = UDim2.new(1, -8, 0, 6), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, Parent = root }, { Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Right, Enum.VerticalAlignment.Center) }) :: Frame
 Root.mount(top, root)
-local _, trophyValue = Theme.pill({ Name = "Trophies", Icon = "🏆", Color = Theme.Pink, Size = UDim2.fromOffset(124, 38), LayoutOrder = 1, Parent = top })
-local coinPill, coinValue = Theme.pill({ Name = "Coins", Icon = "🪙", Color = Theme.Yellow, Size = UDim2.fromOffset(160, 38), LayoutOrder = 2, Parent = top })
+local _, trophyValue = Theme.pill({ Name = "Trophies", Icon = "🏆", Color = Theme.Pink, Size = pick(UDim2.fromOffset(124, 38), UDim2.fromOffset(112, 66)), LayoutOrder = 1, Parent = top })
+local coinPill, coinValue = Theme.pill({ Name = "Coins", Icon = "🪙", Color = Theme.Yellow, Size = pick(UDim2.fromOffset(160, 38), UDim2.fromOffset(220, 66)), LayoutOrder = 2, RightPad = pick(0, 74), Parent = top })
 Hud.coinPill = coinPill
-Theme.button({ Name = "Plus", Text = "+", Color = Theme.Green, Size = UDim2.fromOffset(30, 30), Position = UDim2.new(1, -4, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Corner = 15, TextSize = 22, Parent = coinPill, OnClick = function()
+Theme.button({ Name = "Plus", Text = "+", Color = Theme.Green, Size = pick(UDim2.fromOffset(30, 30), UDim2.fromOffset(TAP, TAP)), Position = UDim2.new(1, -4, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), Corner = pick(15, 31), TextSize = pick(22, 36), KeepSize = true, Parent = coinPill, OnClick = function()
 	Windows.open("Shop")
 end })
 
-local eventChip = Theme.panel({ Name = "Event", Size = UDim2.fromOffset(250, 32), Position = UDim2.new(1, -8, 0, 50), AnchorPoint = Vector2.new(1, 0), Corner = 16, Visible = false, Parent = root })
-Root.mount(eventChip, root)
-local eventText = Theme.text({ Name = "Text", Text = "", Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4), MaxTextSize = 16, Parent = eventChip })
+local eventChip = Theme.panel({ Name = "Event", Size = pick(UDim2.fromOffset(250, 32), UDim2.fromOffset(270, 34)), Position = pick(UDim2.new(1, -8, 0, 50), UDim2.new(1, -8, 0, 60)), AnchorPoint = Vector2.new(1, 0), Corner = 16, Visible = false, Parent = root })
+local eventHolder = Root.mount(eventChip, root)
+local eventText = Theme.text({ Name = "Text", Text = "", Size = UDim2.new(1, -16, 1, -8), Position = UDim2.fromOffset(8, 4), MaxTextSize = pick(16, 17), MinTextSize = pick(9, 13), Parent = eventChip })
 
 -- next goals: trophies to the next league and points to the next season tier
-local goalChip = Theme.panel({ Name = "Goals", Size = UDim2.fromOffset(250, 46), Position = UDim2.new(1, -8, 0, 86), AnchorPoint = Vector2.new(1, 0), Corner = 14, Visible = false, Parent = root })
-Root.mount(goalChip, root)
-local goalLeague = Theme.text({ Name = "League", Text = "", Size = UDim2.new(1, -16, 0, 19), Position = UDim2.fromOffset(8, 3), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 14, TextColor3 = Theme.Dim, Parent = goalChip })
-local goalSeason = Theme.text({ Name = "Season", Text = "", Size = UDim2.new(1, -16, 0, 19), Position = UDim2.fromOffset(8, 24), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 14, TextColor3 = Theme.Dim, Parent = goalChip })
+local goalChip = Theme.panel({ Name = "Goals", Size = pick(UDim2.fromOffset(250, 46), UDim2.fromOffset(270, 54)), Position = pick(UDim2.new(1, -8, 0, 86), UDim2.new(0, 8, 0, 60)), AnchorPoint = pick(Vector2.new(1, 0), Vector2.zero), Corner = 14, Visible = false, Parent = root })
+local goalHolder = Root.mount(goalChip, root)
+local goalLeague = Theme.text({ Name = "League", Text = "", Size = UDim2.new(1, -16, 0, pick(19, 23)), Position = UDim2.fromOffset(8, pick(3, 2)), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = pick(14, 16), MinTextSize = pick(9, 13), TextColor3 = Theme.Dim, Parent = goalChip })
+local goalSeason = Theme.text({ Name = "Season", Text = "", Size = UDim2.new(1, -16, 0, pick(19, 23)), Position = UDim2.fromOffset(8, pick(24, 28)), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = pick(14, 16), MinTextSize = pick(9, 13), TextColor3 = Theme.Dim, Parent = goalChip })
 
 ---------------------------------------------------------------------------
 -- Menu (left)
 ---------------------------------------------------------------------------
-local menu = Theme.new("Frame", { Name = "Menu", Size = UDim2.fromOffset(140, 276), Position = UDim2.new(0, 8, 0, 76), BackgroundTransparency = 1, Parent = root }) :: Frame
+local menu = Theme.new("Frame", { Name = "Menu", Size = pick(UDim2.fromOffset(140, 276), UDim2.fromOffset(306, 138)), Position = pick(UDim2.new(0, 8, 0, 76), UDim2.new(0.29, 0, 0, 6)), AnchorPoint = Vector2.zero, BackgroundTransparency = 1, Parent = root }) :: Frame
 Root.mount(menu, root)
-Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(64, 62), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
+Theme.new("UIGridLayout", { CellSize = pick(UDim2.fromOffset(64, 62), UDim2.fromOffset(72, 66)), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
 local MENU: { { any } } = {
 	{ "Shop", "🛒", Theme.Green },
 	{ "Season", "🏅", Theme.Blue },
@@ -98,8 +112,8 @@ for i, m in MENU do
 		Theme.new("UIGradient", { Color = Theme.buttonFace(color), Rotation = 90 }),
 	}) :: TextButton
 	Theme.gloss(b, 14)
-	Theme.icon({ Icon = icon, Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 3), Parent = b })
-	Theme.text({ Key = "menu." .. name, Size = UDim2.new(1, -4, 0, 17), Position = UDim2.new(0, 2, 1, -24), MaxTextSize = 13, Parent = b })
+	Theme.icon({ Icon = icon, Size = UDim2.new(1, 0, 0, pick(34, 32)), Position = UDim2.fromOffset(0, 3), Parent = b })
+	Theme.text({ Key = "menu." .. name, Size = UDim2.new(1, -4, 0, pick(17, 20)), Position = UDim2.new(0, 2, 1, pick(-24, -26)), MaxTextSize = pick(13, 16), MinTextSize = pick(9, 12), Parent = b })
 	b.Activated:Connect(function()
 		Theme.play("click", 0.35)
 		Windows.toggle(name)
@@ -111,15 +125,15 @@ end
 ---------------------------------------------------------------------------
 -- PLAY + auto-queue (bottom centre)
 ---------------------------------------------------------------------------
-local playBar = Theme.new("Frame", { Name = "PlayBar", Size = UDim2.fromOffset(520, 92), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), BackgroundTransparency = 1, Parent = root }) :: Frame
+local playBar = Theme.new("Frame", { Name = "PlayBar", Size = pick(UDim2.fromOffset(520, 92), UDim2.fromOffset(540, 92)), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), BackgroundTransparency = 1, Parent = root }) :: Frame
 Root.mount(playBar, root)
 local playButton = Theme.button({ Name = "Play", Key = "hud.play", Prefix = "▶ ", Title = true, Color = Theme.Green, Size = UDim2.fromOffset(300, 84), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), TextSize = 50, Corner = 24, Parent = playBar, OnClick = function()
 	Windows.toggle("Play")
 end })
 Hud.buttons.Play = playButton
 local playTip = Theme.panel({ Name = "PlayTip", Size = UDim2.fromOffset(300, 34), Position = UDim2.new(0.5, 0, 0, -32), AnchorPoint = Vector2.new(0.5, 0), Corner = 14, StrokeColor = Theme.Yellow, Visible = false, Parent = playBar })
-Theme.text({ Key = "tut.first_match", Prefix = "👇 ", Size = UDim2.new(1, -12, 1, -8), Position = UDim2.fromOffset(6, 4), MaxTextSize = 18, TextColor3 = Theme.Yellow, Parent = playTip })
-local autoQueue = Theme.button({ Name = "AutoQueue", Text = "", Color = Theme.Grey, Size = UDim2.fromOffset(100, 56), Position = UDim2.new(1, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = 15, Parent = playBar })
+Theme.text({ Key = "tut.first_match", Prefix = "👇 ", Size = UDim2.new(1, -12, 1, -8), Position = UDim2.fromOffset(6, 4), MaxTextSize = pick(18, 19), TextColor3 = Theme.Yellow, Parent = playTip })
+local autoQueue = Theme.button({ Name = "AutoQueue", Text = "", Color = Theme.Grey, Size = pick(UDim2.fromOffset(100, 56), UDim2.fromOffset(112, 66)), Position = UDim2.new(1, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = pick(15, 17), KeepSize = true, Parent = playBar })
 Hud.buttons.AutoQueue = autoQueue
 autoQueue.Activated:Connect(function()
 	Theme.play("click", 0.35)
@@ -127,7 +141,7 @@ autoQueue.Activated:Connect(function()
 end)
 
 -- starter pack offer
-local starter = Theme.button({ Name = "Starter", Text = "", Color = Theme.Pink, Size = UDim2.fromOffset(100, 56), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), TextSize = 14, Parent = playBar, OnClick = function()
+local starter = Theme.button({ Name = "Starter", Text = "", Color = Theme.Pink, Size = pick(UDim2.fromOffset(100, 56), UDim2.fromOffset(112, 66)), Position = UDim2.new(0, 0, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), TextSize = pick(14, 16), KeepSize = true, Parent = playBar, OnClick = function()
 	Windows.open("Shop")
 end })
 starter.Visible = false
@@ -135,14 +149,14 @@ starter.Visible = false
 ---------------------------------------------------------------------------
 -- Waiting at a table
 ---------------------------------------------------------------------------
-local seated = Theme.panel({ Name = "Seated", Size = UDim2.fromOffset(560, 116), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Corner = 20, StrokeThickness = 4, Visible = false, Parent = root })
+local seated = Theme.panel({ Name = "Seated", Size = pick(UDim2.fromOffset(560, 116), UDim2.fromOffset(600, 140)), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Corner = 20, StrokeThickness = 4, Visible = false, Parent = root })
 Root.mount(seated, root)
 local seatedTitle = Theme.text({ Name = "Title", Text = "", Title = true, Size = UDim2.new(1, -170, 0, 32), Position = UDim2.fromOffset(14, 8), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 28, Parent = seated })
 local seatedLine = Theme.text({ Name = "Line", Text = "", Size = UDim2.new(1, -170, 0, 22), Position = UDim2.fromOffset(14, 42), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 18, TextColor3 = Theme.Dim, Parent = seated })
-Theme.button({ Name = "LeaveTable", Key = "match.leave", Prefix = "🚪 ", Color = Theme.Red, Size = UDim2.fromOffset(140, 44), Position = UDim2.new(1, -12, 0, 10), AnchorPoint = Vector2.new(1, 0), TextSize = 19, Parent = seated, OnClick = function()
+Theme.button({ Name = "LeaveTable", Key = "match.leave", Prefix = "🚪 ", Color = Theme.Red, Size = pick(UDim2.fromOffset(140, 44), UDim2.fromOffset(150, TAP)), Position = UDim2.new(1, -12, 0, 10), AnchorPoint = Vector2.new(1, 0), TextSize = 19, KeepSize = true, Parent = seated, OnClick = function()
 	task.spawn(Net.request, "LeaveTable")
 end })
-Theme.button({ Name = "InviteTable", Key = "invite.friends", Prefix = "👥 ", Icon = "group", Color = Theme.Blue, Size = UDim2.fromOffset(140, 40), Position = UDim2.new(1, -12, 0, 60), AnchorPoint = Vector2.new(1, 0), TextSize = 15, Parent = seated, OnClick = function()
+Theme.button({ Name = "InviteTable", Key = "invite.friends", Prefix = "👥 ", Icon = "group", Color = Theme.Blue, Size = pick(UDim2.fromOffset(140, 40), UDim2.fromOffset(150, TAP)), Position = pick(UDim2.new(1, -12, 0, 60), UDim2.new(1, -12, 0, 72)), AnchorPoint = Vector2.new(1, 0), TextSize = pick(15, 17), KeepSize = true, Parent = seated, OnClick = function()
 	task.spawn(function()
 		pcall(function()
 			local options = Instance.new("ExperienceInviteOptions")
@@ -151,11 +165,11 @@ Theme.button({ Name = "InviteTable", Key = "invite.friends", Prefix = "👥 ", I
 		end)
 	end)
 end })
-local hostRow = Theme.new("Frame", { Name = "Host", Size = UDim2.new(1, -170, 0, 40), Position = UDim2.fromOffset(12, 68), BackgroundTransparency = 1, Parent = seated }, { Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) }) :: Frame
-local codeText = Theme.text({ Name = "Code", Text = "", Title = true, Size = UDim2.fromOffset(104, 36), MaxTextSize = 24, TextColor3 = Theme.Yellow, LayoutOrder = 1, Parent = hostRow })
-local modeButton = Theme.button({ Name = "Mode", Text = "", Color = Theme.Blue, Size = UDim2.fromOffset(112, 38), TextSize = 17, LayoutOrder = 2, Parent = hostRow })
-local fillButton = Theme.button({ Name = "Fill", Text = "", Color = Theme.Grey, Size = UDim2.fromOffset(76, 38), TextSize = 16, LayoutOrder = 3, Parent = hostRow })
-local startButton = Theme.button({ Name = "Start", Key = "table.start", Prefix = "▶ ", Color = Theme.Green, Size = UDim2.fromOffset(84, 38), TextSize = 16, LayoutOrder = 4, Parent = hostRow, OnClick = function()
+local hostRow = Theme.new("Frame", { Name = "Host", Size = pick(UDim2.new(1, -170, 0, 40), UDim2.new(1, -170, 0, TAP)), Position = pick(UDim2.fromOffset(12, 68), UDim2.fromOffset(12, 74)), BackgroundTransparency = 1, Parent = seated }, { Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Left, Enum.VerticalAlignment.Center) }) :: Frame
+local codeText = Theme.text({ Name = "Code", Text = "", Title = true, Size = pick(UDim2.fromOffset(104, 36), UDim2.fromOffset(100, 40)), MaxTextSize = 24, TextColor3 = Theme.Yellow, LayoutOrder = 1, Parent = hostRow })
+local modeButton = Theme.button({ Name = "Mode", Text = "", Color = Theme.Blue, Size = pick(UDim2.fromOffset(112, 38), UDim2.fromOffset(124, TAP)), TextSize = pick(17, 18), KeepSize = true, LayoutOrder = 2, Parent = hostRow })
+local fillButton = Theme.button({ Name = "Fill", Text = "", Color = Theme.Grey, Size = pick(UDim2.fromOffset(76, 38), UDim2.fromOffset(80, TAP)), TextSize = pick(16, 17), KeepSize = true, LayoutOrder = 3, Parent = hostRow })
+local startButton = Theme.button({ Name = "Start", Key = "table.start", Prefix = "▶ ", Color = Theme.Green, Size = pick(UDim2.fromOffset(84, 38), UDim2.fromOffset(92, TAP)), TextSize = pick(16, 17), KeepSize = true, LayoutOrder = 4, Parent = hostRow, OnClick = function()
 	task.spawn(function()
 		local ok, err = Net.request("StartPrivate")
 		if not ok and err then
@@ -192,20 +206,20 @@ end)
 ---------------------------------------------------------------------------
 -- Power Core widget (right, only near the core)
 ---------------------------------------------------------------------------
-local core = Theme.panel({ Name = "Core", Size = UDim2.fromOffset(200, 168), Position = UDim2.new(1, -8, 0.5, -10), AnchorPoint = Vector2.new(1, 0.5), Corner = 18, StrokeColor = Theme.Cyan, Visible = false, Parent = root })
-Root.mount(core, root)
+local core = Theme.panel({ Name = "Core", Size = pick(UDim2.fromOffset(200, 168), UDim2.fromOffset(224, 200)), Position = pick(UDim2.new(1, -8, 0.5, -10), UDim2.new(1, -8, 0, 92)), AnchorPoint = pick(Vector2.new(1, 0.5), Vector2.new(1, 0)), Corner = 18, StrokeColor = Theme.Cyan, Visible = false, Parent = root })
+local coreHolder = Root.mount(core, root)
 Theme.text({ Key = "core.title", Prefix = "🔋 ", Title = true, Size = UDim2.new(1, -16, 0, 24), Position = UDim2.fromOffset(8, 6), MaxTextSize = 20, TextColor3 = Theme.Cyan, Parent = core })
-local coreBack = Theme.new("Frame", { Name = "Bar", Size = UDim2.new(1, -24, 0, 16), Position = UDim2.fromOffset(12, 34), BackgroundColor3 = Theme.Ink, Parent = core }, { Theme.corner(8) })
+local coreBack = Theme.new("Frame", { Name = "Bar", Size = UDim2.new(1, -24, 0, pick(16, 20)), Position = UDim2.fromOffset(12, 34), BackgroundColor3 = Theme.Ink, Parent = core }, { Theme.corner(8) })
 local coreFill = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Theme.Cyan, Parent = coreBack }, { Theme.corner(8) }) :: Frame
-local coreText = Theme.text({ Name = "Count", Text = "0/25", Size = UDim2.fromScale(1, 1), MaxTextSize = 13, ZIndex = 3, Parent = coreBack })
-local tapButton = Theme.button({ Name = "Tap", Key = "core.tap", Prefix = "⚡ ", Icon = "bolt", Title = true, Color = Theme.Cyan, Size = UDim2.new(1, -24, 0, 56), Position = UDim2.fromOffset(12, 56), TextSize = 30, Corner = 16, Parent = core })
+local coreText = Theme.text({ Name = "Count", Text = "0/25", Size = UDim2.fromScale(1, 1), MaxTextSize = pick(13, 16), MinTextSize = pick(9, 13), ZIndex = 3, Parent = coreBack })
+local tapButton = Theme.button({ Name = "Tap", Key = "core.tap", Prefix = "⚡ ", Icon = "bolt", Title = true, Color = Theme.Cyan, Size = UDim2.new(1, -24, 0, pick(56, TAP)), Position = pick(UDim2.fromOffset(12, 56), UDim2.fromOffset(12, 60)), TextSize = 30, Corner = 16, KeepSize = true, Parent = core })
 tapButton.Activated:Connect(function()
 	if Hud.onCoreTap then
 		Hud.onCoreTap()
 	end
 end)
 Hud.buttons.CoreTap = tapButton
-local autoCharge = Theme.button({ Name = "AutoCharge", Text = "", Color = Theme.Grey, Size = UDim2.new(1, -24, 0, 38), Position = UDim2.fromOffset(12, 120), TextSize = 16, Parent = core })
+local autoCharge = Theme.button({ Name = "AutoCharge", Text = "", Color = Theme.Grey, Size = UDim2.new(1, -24, 0, pick(38, TAP)), Position = pick(UDim2.fromOffset(12, 120), UDim2.fromOffset(12, 124)), TextSize = pick(16, 17), KeepSize = true, Parent = core })
 Hud.buttons.AutoCharge = autoCharge
 autoCharge.Activated:Connect(function()
 	Theme.play("click", 0.35)
@@ -224,6 +238,20 @@ end
 function Hud.coreProgress(taps: number, need: number)
 	coreFill.Size = UDim2.fromScale(math.clamp(taps / need, 0, 1), 1)
 	coreText.Text = taps .. "/" .. need
+end
+
+-- Touch: the stacked pieces follow the HUD scale (holder positions are real px), so on a big
+-- tablet the goals chip still starts below the profile chip and the core below the chips.
+if T then
+	local function stack()
+		local s = Root.scale
+		local below = 6 + math.ceil(66 * s) + 4
+		goalHolder.Position = UDim2.new(0, 8, 0, below)
+		eventHolder.Position = UDim2.new(1, -8, 0, below)
+		coreHolder.Position = UDim2.new(1, -8, 0, below + math.ceil(34 * s) + 4)
+	end
+	Root.Changed:Connect(stack)
+	stack()
 end
 
 ---------------------------------------------------------------------------

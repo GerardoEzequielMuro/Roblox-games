@@ -229,6 +229,7 @@ return {
 	["rarity.legendary"] = "Legendary",
 	["unlock.level"] = "Level {n}",
 	["unlock.wins"] = "{n} wins",
+	["unlock.wins.one"] = "{n} win",
 	["unlock.streak"] = "{n} wins in a row",
 	["unlock.code"] = "Code",
 	["unlock.starter"] = "Starter Pack",
@@ -315,7 +316,7 @@ return {
 	["rank.next"] = "Next: {league} at {n}",
 	["rank.top"] = "Top league",
 	["rank.season_ends"] = "Season ends in {time}",
-	["rank.record"] = "{wins} wins in {matches} matches. Best streak {streak}",
+	["rank.record"] = "Wins: {wins} / Matches: {matches} / Best streak: {streak}",
 
 	-- rewards and quests
 	["rewards.daily"] = "Daily reward",
@@ -331,6 +332,7 @@ return {
 	["quests.bonus"] = "Finish all three",
 	["quest.play"] = "Play {n} matches",
 	["quest.win"] = "Win {n} matches",
+	["quest.win.one"] = "Win {n} match",
 	["quest.zaps"] = "Land {n} hits",
 	["quest.cards"] = "Play {n} cards",
 	["quest.top3"] = "Finish top 3 in {n} matches",
@@ -338,7 +340,9 @@ return {
 	["quest.spins"] = "Spin the wheel {n} times",
 	["quest.charge"] = "Charge the Power Core {n} times",
 	["quest.chaos"] = "Play {n} Chaos matches",
+	["quest.chaos.one"] = "Play {n} Chaos match",
 	["quest.teams"] = "Play {n} Teams matches",
+	["quest.teams.one"] = "Play {n} Teams match",
 
 	-- events
 	["event.DoubleXP"] = "Double XP",
@@ -445,6 +449,7 @@ return {
 	["season.ends"] = "Season ends in {time}",
 	["season.maxed"] = "All tiers reached. Claim what is left!",
 	["season.next"] = "{n} points to tier {tier}",
+	["season.next.one"] = "{n} point to tier {tier}",
 	["season.how"] = "Each match: +{win} points for a win, +{play} for playing",
 	["season.fair"] = "Points come only from playing. Buying never changes a match.",
 	["season.claim_all"] = "Claim all ({n})",
@@ -454,6 +459,7 @@ return {
 	["season.tier_up"] = "Season tier {n} reached!",
 	["season.cannot_claim"] = "Nothing to claim there",
 	["season.claimed_n"] = "Claimed {n} rewards",
+	["season.claimed_n.one"] = "Claimed {n} reward",
 	["result.season"] = "Season points",
 	["shop.bonus"] = "+{n}% extra",
 	["unlock.season"] = "Season pass",
@@ -473,6 +479,8 @@ return {
 	["cos.ti_passholder"] = "Pass holder",
 	["cos.ti_seasoned"] = "Seasoned",
 	["goal.league"] = "{n} trophies to {league}",
+	["goal.league.one"] = "{n} trophy to {league}",
 	["goal.top_league"] = "Top league reached",
 	["goal.season"] = "{n} points to season tier {tier}",
+	["goal.season.one"] = "{n} point to season tier {tier}",
 }

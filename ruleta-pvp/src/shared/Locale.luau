@@ -65,9 +65,28 @@ local function format(lang: string, template: string, args: { [string]: any }?):
 	end))
 end
 
+-- Singular forms: when args.n is "one" in the language (1 in en/de/es/fr/pt; 1, 21, 31... but
+-- not 11 in ru) the key "<key>.one" is used if the language has it, otherwise the plain key.
+-- ja/ko/th/vi/id/tr have no plural and never need a ".one" key.
+local function isOne(lang: string, n: number): boolean
+	if lang == "ru" then
+		return n % 10 == 1 and n % 100 ~= 11
+	end
+	return n == 1
+end
+
 -- Translated text for key; falls back to English, then to the key itself.
 function Locale.t(lang: string, key: string, args: { [string]: any }?): string
 	local pack = load(lang)
+	if args and pack then
+		local n = (args :: any).n
+		if type(n) == "number" and isOne(lang, n) then
+			local one = pack[key .. ".one"]
+			if one then
+				return format(lang, one, args)
+			end
+		end
+	end
 	local s = pack and pack[key]
 	if not s and lang ~= Locale.Default then
 		local en = load(Locale.Default)

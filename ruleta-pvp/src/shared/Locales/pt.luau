@@ -228,6 +228,7 @@ return {
 	["rarity.legendary"] = "Lendário",
 	["unlock.level"] = "Nível {n}",
 	["unlock.wins"] = "{n} vitórias",
+	["unlock.wins.one"] = "{n} vitória",
 	["unlock.streak"] = "{n} vitórias seguidas",
 	["unlock.code"] = "Código",
 	["unlock.starter"] = "Pacote inicial",
@@ -314,7 +315,7 @@ return {
 	["rank.next"] = "Próxima: {league} com {n}",
 	["rank.top"] = "Liga máxima",
 	["rank.season_ends"] = "A temporada termina em {time}",
-	["rank.record"] = "{wins} vitórias em {matches} partidas. Melhor sequência: {streak}",
+	["rank.record"] = "Vitórias: {wins} / Partidas: {matches} / Melhor sequência: {streak}",
 
 	-- rewards and quests
 	["rewards.daily"] = "Prêmio diário",
@@ -330,6 +331,7 @@ return {
 	["quests.bonus"] = "Complete as três",
 	["quest.play"] = "Jogue {n} partidas",
 	["quest.win"] = "Vença {n} partidas",
+	["quest.win.one"] = "Vença {n} partida",
 	["quest.zaps"] = "Acerte {n} golpes",
 	["quest.cards"] = "Use {n} cartas",
 	["quest.top3"] = "Fique no top 3 em {n} partidas",
@@ -337,7 +339,9 @@ return {
 	["quest.spins"] = "Gire a roda {n} vezes",
 	["quest.charge"] = "Carregue o Núcleo de energia {n} vezes",
 	["quest.chaos"] = "Jogue {n} partidas de Caos",
+	["quest.chaos.one"] = "Jogue {n} partida de Caos",
 	["quest.teams"] = "Jogue {n} partidas de Times",
+	["quest.teams.one"] = "Jogue {n} partida de Times",
 
 	-- events
 	["event.DoubleXP"] = "XP em dobro",
@@ -444,6 +448,7 @@ return {
 	["season.ends"] = "A temporada termina em {time}",
 	["season.maxed"] = "Todos os níveis alcançados. Resgate o que falta!",
 	["season.next"] = "{n} pontos para o nível {tier}",
+	["season.next.one"] = "{n} ponto para o nível {tier}",
 	["season.how"] = "Cada partida: +{win} pontos por vitória, +{play} por jogar",
 	["season.fair"] = "Os pontos vêm só de jogar. Comprar nunca muda uma partida.",
 	["season.claim_all"] = "Resgatar tudo ({n})",
@@ -453,6 +458,7 @@ return {
 	["season.tier_up"] = "Nível {n} da temporada alcançado!",
 	["season.cannot_claim"] = "Nada para resgatar ali",
 	["season.claimed_n"] = "Você resgatou {n} prêmios",
+	["season.claimed_n.one"] = "Você resgatou {n} prêmio",
 	["result.season"] = "Pontos de temporada",
 	["shop.bonus"] = "+{n}% extra",
 	["unlock.season"] = "Passe de temporada",
@@ -472,6 +478,8 @@ return {
 	["cos.ti_passholder"] = "Com passe",
 	["cos.ti_seasoned"] = "Veterano",
 	["goal.league"] = "{n} troféus para {league}",
+	["goal.league.one"] = "{n} troféu para {league}",
 	["goal.top_league"] = "Liga máxima alcançada",
 	["goal.season"] = "{n} pontos para o nível {tier} da temporada",
+	["goal.season.one"] = "{n} ponto para o nível {tier} da temporada",
 }

@@ -119,7 +119,10 @@ for _, lang in Locale.Languages do
 	local n = 0
 	for key, text in en do
 		local tr = pack[key]
-		if tr == nil then
+		if tr == nil and string.sub(key, -4) == ".one" then
+			-- singular forms are optional: a language without one uses the plain key
+			continue
+		elseif tr == nil then
 			fail(lang.code .. ": missing " .. key)
 		elseif type(tr) ~= "string" or tr == "" then
 			fail(lang.code .. ": empty " .. key)
@@ -163,6 +166,12 @@ eq("t with args", Locale.t("en", "match.round", { n = 3 }), "Round 3")
 eq("fallback to key", Locale.t("en", "no.such.key"), "no.such.key")
 eq("fallback to en", Locale.t("xx", "menu.Shop"), "Shop")
 eq("nested message arg", Locale.t("en", "msg.league_up", { league = { key = "league.gold" } }), "New league: Gold")
+eq("plural en one", Locale.t("en", "quest.win", { n = 1 }), "Win 1 match")
+eq("plural en many", Locale.t("en", "quest.win", { n = 3 }), "Win 3 matches")
+eq("plural es one", Locale.t("es", "goal.league", { n = 1, league = "Oro" }), "1 trofeo para Oro")
+eq("plural ru 21", Locale.t("ru", "goal.league", { n = 21, league = "X" }), "21 трофей до лиги X")
+eq("plural ru 11", Locale.t("ru", "goal.league", { n = 11, league = "X" }), "11 трофеев до лиги X")
+eq("plural ja has none", Locale.t("ja", "goal.league", { n = 1, league = "X" }), "Xまであと1トロフィー")
 eq("msg of string", Locale.msg("en", "plain"), "plain")
 eq("msg of table", Locale.msg("en", Locale.m("msg.slow_down")), "Slow down")
 eq("resolve es-mx", Locale.resolve("es-mx"), "es")

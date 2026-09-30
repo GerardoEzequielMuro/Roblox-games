@@ -154,3 +154,36 @@ Prueba del swap: un `pylon.rbxmx` temporal (Model con Part y Script) apareció e
 - Con un modelo: que quede parado sobre el piso, escalado y mirando bien (estatua/banco/maceta miran al centro), que no tape los caminos ni los spawns, y que el Output avise si se borran scripts.
 - El `server part budget` del playtest (`test.project.json`) si se cargan muchos modelos.
 - Nota: el farol conserva la bola de luz primitiva arriba del modelo (a 12.6 studs).
+
+## Ronda 4: UI arreglada con la vista previa
+
+Todo verificado con `tools/uipreview` (capturas en `docs/previews/ruleta-pvp/`). Resultado: PC, laptop y tablet con 0 hallazgos; celular con 0 hallazgos en el HUD del lobby y del partido y, en las ventanas, solo quedan avisos `core-overlap` (ver "Qué queda").
+
+### Qué arreglé
+- **Escala del HUD en celular** (`src/client/UI/Root.luau`, `compute` y `Root.mountWindow`): en táctil ahora es `clamp(min(X/960, Y/420), 0.62, 1.1)` (antes salía ~0.55, ahora ~0.74 en un iPhone apaisado). No subí solo el número: rearmé el layout táctil en `Hud.luau`/`MatchHud.luau` para que entre. En PC la fórmula y el layout no cambian.
+- **Ventanas en celular** (`Root.luau:mountWindow`, usado por `Windows.luau:75`): escala propia (1.0 si entra, como mínimo 0.7) y se recorta el alto de diseño para que nunca salgan de la pantalla (los cuerpos scrollean). Antes quedaban a 0.55 con botones de 19 px.
+- **Botones táctiles** (`Theme.luau`, `Theme.button` + `Theme.TouchMin = 52`): en táctil ningún botón queda más bajo/angosto que 52 px de diseño (>= 44 px reales en ventanas). `KeepSize = true` lo saltea cuando el llamador ya lo dimensionó. Texto mínimo 12 px de diseño (`Theme.MinText`). `Theme.toggle` pasa de 44 a 62 de alto en táctil.
+- **Lobby táctil** (`Hud.luau`): menú en 2 filas de 4 arriba al centro (antes sobre el joystick), metas bajo el perfil (antes se pisaban con el Power Core), Power Core bajo las monedas y con botones de 62; "+" de monedas de 17 a ~46 px reales; Auto-queue/Starter 112x66; panel de mesa más ancho con botones de 62. Las posiciones apiladas siguen la escala (`Hud.luau`, bloque `stack`) para que en tablet no se pisen.
+- **Partido táctil** (`MatchHud.luau`): Leave/Auto-play 160x62, Emote 64, grilla de emotes 62, barra de espectador con botones de 62, botones de resultados 66, cartas de la mano 100x112 con texto de 14.
+- **Season Pass** (`MenuWindows.luau`, `buildSeason`): los botones "Skip tier"/"Premium"/"Claim all" ya no tapan los textos (textos a 300 px de ancho, botones más angostos); en táctil la grilla de recompensas scrollea también en vertical (la fila premium quedaba cortada).
+- **Play** (`MenuWindows.luau`, `buildPlay`): en táctil la columna de modos scrollea (Teams se salía de la pantalla) y el medallón ya no sale vacío: el ícono pasó de "▶" (glifo blanco sobre blanco) a "🎡" (mapeado al ícono `wheel` del pack).
+- Alturas táctiles en Locker, Rewards, Quests, Ranking, Invite, Settings, Shop y Play (helper `tp(pc, touch)` en `MenuWindows.luau`) para que los botones de 52 no se pisen con lo de al lado.
+- **Plurales** (`Locale.luau`, `Locales/*.luau`): `Locale.t` usa la clave `<clave>.one` cuando `args.n` es singular (1 en en/de/es/fr/pt; 1, 21, 31 pero no 11 en ru) y si el idioma no la tiene cae a la clave normal. Agregué `.one` en en/de/es/fr/pt (y ru donde hacía falta) para `goal.league`, `goal.season`, `season.next`, `season.claimed_n`, `unlock.wins`, `quest.win`, `quest.chaos`, `quest.teams` (antes "Win 1 matches", "1 points to tier 2"). `rank.record` lo reescribí sin plural ("Wins: 1 / Matches: 1 / Best streak: 1") en en/de/es/fr/id/pt/ru. `tests/locale_check.luau` acepta claves `.one` opcionales y tiene 6 chequeos nuevos de plurales.
+
+### Antes / después (en palabras)
+- `mid-phone`: antes todo a 0.55, menú sobre el joystick, metas tapadas por el Power Core, 16 hallazgos; ahora el HUD se lee, el menú está arriba, nada bajo el joystick ni el salto, 0 hallazgos.
+- `mid-pc-season`: los botones ya no tapan "Each match: +45 points...".
+- Ventanas en celular: de ~396x242 px reales con botones de 20-30 px a ventanas de ~700x280 con botones de 44+ px.
+
+### Qué queda
+- Ventanas en celular: sigue saliendo `core-overlap` (med/low) porque el contenido de la ventana pasa por la zona del joystick. La ventana es modal, tapa todo y sus botones reciben el toque antes que el joystick, así que lo dejé. Si en Studio se siente mal, se puede correr la ventana unos px a la derecha.
+- El panel de resultados del partido y los carteles grandes no salen en las capturas del fixture (solo el partido en curso): no los pude mirar en celular. Les subí los botones a 66 pero hay que verlos.
+- El evento en vivo (chip bajo las monedas) no aparece en el fixture; su posición sigue la escala pero conviene verlo.
+- `rank.record` y las claves `.one` de ja/ko/th/vi/id/tr no existen a propósito (no tienen plural). El ruso solo cubre la forma "1, 21, 31" (2-4 sigue sin forma propia: "2 трофеев").
+- Hallazgo de la herramienta: `mid-*-icons` no muestra diferencia con `mid-*` salvo los íconos; sin problemas.
+
+### Qué confirmar en Studio (celular real)
+- Que el menú arriba al centro no se choque con los botones de Roblox (R/chat/...) en pantallas con notch.
+- Que las ventanas (Play, Shop, Season, Locker) se vean completas y scrolleen bien con el dedo, y que los textos de 12-14 px se lean.
+- El medallón de Play con la rueda (con los íconos subidos se verá la imagen `wheel`).
+- Que el tamaño del HUD en un teléfono chico (escala mínima 0.62) siga usable.

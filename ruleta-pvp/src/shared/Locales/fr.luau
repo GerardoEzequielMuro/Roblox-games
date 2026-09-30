@@ -228,6 +228,7 @@ return {
 	["rarity.legendary"] = "Légendaire",
 	["unlock.level"] = "Niveau {n}",
 	["unlock.wins"] = "{n} victoires",
+	["unlock.wins.one"] = "{n} victoire",
 	["unlock.streak"] = "{n} victoires d'affilée",
 	["unlock.code"] = "Code",
 	["unlock.starter"] = "Pack de départ",
@@ -314,7 +315,7 @@ return {
 	["rank.next"] = "Suivante : {league} à {n}",
 	["rank.top"] = "Ligue maximale",
 	["rank.season_ends"] = "La saison se termine dans {time}",
-	["rank.record"] = "{wins} victoires en {matches} parties. Meilleure série : {streak}",
+	["rank.record"] = "Victoires : {wins} / Parties : {matches} / Meilleure série : {streak}",
 
 	-- rewards and quests
 	["rewards.daily"] = "Récompense du jour",
@@ -330,6 +331,7 @@ return {
 	["quests.bonus"] = "Termine les trois",
 	["quest.play"] = "Joue {n} parties",
 	["quest.win"] = "Gagne {n} parties",
+	["quest.win.one"] = "Gagne {n} partie",
 	["quest.zaps"] = "Touche {n} fois",
 	["quest.cards"] = "Joue {n} cartes",
 	["quest.top3"] = "Finis dans le top 3 sur {n} parties",
@@ -337,7 +339,9 @@ return {
 	["quest.spins"] = "Lance la roue {n} fois",
 	["quest.charge"] = "Charge le Noyau d'énergie {n} fois",
 	["quest.chaos"] = "Joue {n} parties Chaos",
+	["quest.chaos.one"] = "Joue {n} partie Chaos",
 	["quest.teams"] = "Joue {n} parties Équipes",
+	["quest.teams.one"] = "Joue {n} partie Équipes",
 
 	-- events
 	["event.DoubleXP"] = "XP double",
@@ -444,6 +448,7 @@ return {
 	["season.ends"] = "La saison se termine dans {time}",
 	["season.maxed"] = "Tous les paliers atteints. Récupère le reste !",
 	["season.next"] = "{n} points pour le palier {tier}",
+	["season.next.one"] = "{n} point pour le palier {tier}",
 	["season.how"] = "Chaque partie : +{win} points pour une victoire, +{play} pour avoir joué",
 	["season.fair"] = "Les points viennent uniquement du jeu. Acheter ne change jamais une partie.",
 	["season.claim_all"] = "Tout récupérer ({n})",
@@ -453,6 +458,7 @@ return {
 	["season.tier_up"] = "Palier {n} de la saison atteint !",
 	["season.cannot_claim"] = "Rien à récupérer ici",
 	["season.claimed_n"] = "{n} récompenses récupérées",
+	["season.claimed_n.one"] = "{n} récompense récupérée",
 	["result.season"] = "Points de saison",
 	["shop.bonus"] = "+{n} % en plus",
 	["unlock.season"] = "Pass de saison",
@@ -472,6 +478,8 @@ return {
 	["cos.ti_passholder"] = "Détenteur du pass",
 	["cos.ti_seasoned"] = "Aguerri",
 	["goal.league"] = "{n} trophées pour {league}",
+	["goal.league.one"] = "{n} trophée pour {league}",
 	["goal.top_league"] = "Ligue maximale atteinte",
 	["goal.season"] = "{n} points pour le palier {tier} de la saison",
+	["goal.season.one"] = "{n} point pour le palier {tier} de la saison",
 }

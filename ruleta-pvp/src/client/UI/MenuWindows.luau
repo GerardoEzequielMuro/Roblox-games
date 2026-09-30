@@ -25,6 +25,10 @@ MenuWindows.onSpectate = nil :: ((string) -> ())?
 
 local player = Players.LocalPlayer
 local Z = 22
+-- Touch: rows that hold tappable controls are taller (Theme.TouchMin) so nothing overlaps.
+local function tp(pc: number, touch: number): number
+	return if Theme.isTouch then touch else pc
+end
 
 local function rgb(c: { number }): Color3
 	return Color3.fromRGB(c[1], c[2], c[3])
@@ -98,8 +102,16 @@ end
 -- Play
 ---------------------------------------------------------------------------
 local function buildPlay()
-	local w = Windows.create("Play", "▶", "win.Play", Theme.Green, Vector2.new(820, 450))
-	local left = Theme.new("Frame", { Name = "Modes", Size = UDim2.new(0.52, -6, 1, 0), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }, { Theme.list(Enum.FillDirection.Vertical, 8) }) :: Frame
+	local w = Windows.create("Play", "🎡", "win.Play", Theme.Green, Vector2.new(820, 450))
+	-- PC: the three mode cards fit the window. Touch: the window is shorter, so the column scrolls.
+	local left: Frame
+	if Theme.isTouch then
+		left = Windows.scroller(w.body, UDim2.new(0.52, -6, 1, 0)) :: any
+		Theme.list(Enum.FillDirection.Vertical, 8).Parent = left
+		Theme.new("UIPadding", { PaddingRight = UDim.new(0, 12), Parent = left })
+	else
+		left = Theme.new("Frame", { Name = "Modes", Size = UDim2.new(0.52, -6, 1, 0), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }, { Theme.list(Enum.FillDirection.Vertical, 8) }) :: Frame
+	end
 	local right = Windows.scroller(w.body, UDim2.new(0.48, -6, 1, 0), UDim2.new(0.52, 6, 0, 0))
 	Theme.list(Enum.FillDirection.Vertical, 8).Parent = right
 	Theme.new("UIPadding", { PaddingRight = UDim.new(0, 12), Parent = right })
@@ -144,7 +156,7 @@ local function buildPlay()
 		for _, other in Players:GetPlayers() do
 			if other ~= player then
 				others += 1
-				local c = card(right, UDim2.new(1, 0, 0, 46), 1 + others)
+				local c = card(right, UDim2.new(1, 0, 0, tp(46, 62)), 1 + others)
 				label(c, { Text = other.DisplayName, Size = UDim2.new(1, -150, 1, -12), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 18 })
 				button(c, { Key = "play.challenge", Prefix = "⚔️ ", Icon = "sword", Color = Theme.Orange, Size = UDim2.fromOffset(128, 34), Position = UDim2.new(1, -6, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = 16, OnClick = function()
 					task.spawn(function()
@@ -161,7 +173,7 @@ local function buildPlay()
 
 		-- private tables
 		section(right, "play.private", 20)
-		local pc = card(right, UDim2.new(1, 0, 0, 96), 21)
+		local pc = card(right, UDim2.new(1, 0, 0, tp(96, 132)), 21)
 		button(pc, { Name = "CreatePrivate", Key = "play.create", Prefix = "🔒 ", Icon = "lock", Color = Theme.Purple, Size = UDim2.new(1, -16, 0, 38), Position = UDim2.fromOffset(8, 8), TextSize = 18, OnClick = function()
 			task.spawn(function()
 				local ok, code = Net.request("CreatePrivate", { mode = "classic", fill = true })
@@ -173,10 +185,10 @@ local function buildPlay()
 				end
 			end)
 		end })
-		local box = Theme.new("TextBox", { Name = "Code", Size = UDim2.new(1, -140, 0, 36), Position = UDim2.fromOffset(8, 52), BackgroundColor3 = Theme.Ink, TextColor3 = Theme.White, PlaceholderColor3 = Theme.Grey, Font = Theme.Font, TextSize = 20, Text = "", ClearTextOnFocus = false, ZIndex = Z + 1, Parent = pc }, { Theme.corner(10) }) :: TextBox
+		local box = Theme.new("TextBox", { Name = "Code", Size = UDim2.new(1, -140, 0, tp(36, 52)), Position = UDim2.fromOffset(8, tp(52, 70)), BackgroundColor3 = Theme.Ink, TextColor3 = Theme.White, PlaceholderColor3 = Theme.Grey, Font = Theme.Font, TextSize = 20, Text = "", ClearTextOnFocus = false, ZIndex = Z + 1, Parent = pc }, { Theme.corner(10) }) :: TextBox
 		Lang.bind(box, "play.code_hint", nil, "PlaceholderText")
 		codeBox = box
-		button(pc, { Name = "JoinPrivate", Key = "play.join", Color = Theme.Blue, Size = UDim2.fromOffset(118, 36), Position = UDim2.new(1, -8, 0, 52), AnchorPoint = Vector2.new(1, 0), TextSize = 17, OnClick = function()
+		button(pc, { Name = "JoinPrivate", Key = "play.join", Color = Theme.Blue, Size = UDim2.fromOffset(118, tp(36, 52)), Position = UDim2.new(1, -8, 0, tp(52, 70)), AnchorPoint = Vector2.new(1, 0), TextSize = 17, OnClick = function()
 			task.spawn(function()
 				if codeBox and call("JoinPrivate", { code = codeBox.Text }) then
 					Windows.close()
@@ -190,7 +202,7 @@ local function buildPlay()
 		for i, view in TableViews.list do
 			if view.playing then
 				live += 1
-				local c = card(right, UDim2.new(1, 0, 0, 46), 40 + i)
+				local c = card(right, UDim2.new(1, 0, 0, tp(46, 62)), 40 + i)
 				local mode = Config.ModeById[view.mode]
 				local alive = 0
 				for _, p in view.players do
@@ -280,7 +292,7 @@ local function buildShop()
 		end
 		section(scroll, "shop.coins", 20)
 		local row = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 21, ZIndex = Z, Parent = scroll }) :: Frame
-		Theme.new("UIGridLayout", { CellSize = UDim2.new(1 / 6, -9, 0, 118), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
+		Theme.new("UIGridLayout", { CellSize = UDim2.new(1 / 6, -9, 0, tp(118, 152)), CellPadding = UDim2.fromOffset(10, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = row })
 		local n = 0
 		for _, product in Config.Products do
 			if product.kind == "coins" or product.kind == "party" then
@@ -300,7 +312,7 @@ local function buildShop()
 					local tag = Theme.new("Frame", { Size = UDim2.new(1, -16, 0, 18), Position = UDim2.new(0, 8, 0, -9), BackgroundColor3 = if tagKey == "shop.best" then Theme.Red else Theme.Orange, ZIndex = Z + 3, Parent = c }, { Theme.corner(9), Theme.stroke(2) })
 					label(tag, { Key = tagKey, Size = UDim2.new(1, -6, 1, -2), Position = UDim2.fromOffset(3, 1), MaxTextSize = 12, ZIndex = Z + 4 })
 				end
-				button(c, { Name = "Buy_" .. product.key, Text = "R$ " .. product.price, Color = Theme.Purple, Size = UDim2.new(1, -12, 0, 30), Position = UDim2.new(0, 6, 1, -36), TextSize = 16, OnClick = function()
+				button(c, { Name = "Buy_" .. product.key, Text = "R$ " .. product.price, Color = Theme.Purple, Size = UDim2.new(1, -12, 0, tp(30, 52)), Position = UDim2.new(0, 6, 1, tp(-36, -58)), TextSize = 16, OnClick = function()
 					buyProduct(product.key)
 				end })
 			end
@@ -315,18 +327,18 @@ end
 ---------------------------------------------------------------------------
 local function buildSeason()
 	local w = Windows.create("Season", "🏅", "win.Season", Theme.Green, Vector2.new(820, 470))
-	local top = Theme.new("Frame", { Name = "Top", Size = UDim2.new(1, 0, 0, 132), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }) :: Frame
+	local top = Theme.new("Frame", { Name = "Top", Size = UDim2.new(1, 0, 0, tp(132, 140)), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }) :: Frame
 	local track = Theme.new("ScrollingFrame", {
 		Name = "Track",
-		Size = UDim2.new(1, 0, 1, -140),
-		Position = UDim2.fromOffset(0, 140),
+		Size = UDim2.new(1, 0, 1, -tp(140, 148)),
+		Position = UDim2.fromOffset(0, tp(140, 148)),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		ScrollBarThickness = 8,
 		ScrollBarImageColor3 = Theme.Line,
 		CanvasSize = UDim2.new(),
-		AutomaticCanvasSize = Enum.AutomaticSize.X,
-		ScrollingDirection = Enum.ScrollingDirection.X,
+		AutomaticCanvasSize = if Theme.isTouch then Enum.AutomaticSize.XY else Enum.AutomaticSize.X,
+		ScrollingDirection = if Theme.isTouch then Enum.ScrollingDirection.XY else Enum.ScrollingDirection.X,
 		ZIndex = Z,
 		Parent = w.body,
 	}, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: ScrollingFrame
@@ -350,23 +362,23 @@ local function buildSeason()
 		else
 			label(top, { Key = "season.next", Args = { n = info.need - info.into, tier = info.tier + 1 }, Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 58), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 15, TextColor3 = Theme.Dim })
 		end
-		label(top, { Key = "season.how", Args = { win = SeasonPass.matchPoints(1, 5, 2), play = SeasonPass.matchPoints(5, 5, 2) }, Size = UDim2.new(0.5, 0, 0, 18), Position = UDim2.fromOffset(4, 82), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 13, TextColor3 = Theme.Dim })
-		label(top, { Key = "season.fair", Size = UDim2.new(0.5, 0, 0, 34), Position = UDim2.fromOffset(4, 98), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, MaxTextSize = 12, TextColor3 = Theme.Green, TextWrapped = true })
+		label(top, { Key = "season.how", Args = { win = SeasonPass.matchPoints(1, 5, 2), play = SeasonPass.matchPoints(5, 5, 2) }, Size = UDim2.new(0, 300, 0, 18), Position = UDim2.fromOffset(4, 82), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 13, TextColor3 = Theme.Dim })
+		label(top, { Key = "season.fair", Size = UDim2.new(0, 300, 0, 34), Position = UDim2.fromOffset(4, 100), TextXAlignment = Enum.TextXAlignment.Left, TextYAlignment = Enum.TextYAlignment.Top, MaxTextSize = 12, TextColor3 = Theme.Green, TextWrapped = true })
 		local claimable = info.claimable or 0
-		button(top, { Name = "ClaimAll", Key = "season.claim_all", Args = { n = claimable }, Color = if claimable > 0 then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(170, 38), Position = UDim2.new(1, -4, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 16, OnClick = function()
+		button(top, { Name = "ClaimAll", Key = "season.claim_all", Args = { n = claimable }, Color = if claimable > 0 then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(140, 38), Position = UDim2.new(1, -4, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 16, OnClick = function()
 			if claimable > 0 then
 				task.spawn(call, "ClaimSeasonAll", nil, "heal")
 			end
 		end })
 		local premium = Config.ProductByKey.SeasonPass
-		button(top, { Name = "Buy_SeasonPass", Text = if info.premium then "✔ " .. Lang.t("season.premium") else Lang.t("season.buy_premium", { price = premium.price }), Color = if info.premium then Theme.Grey else Theme.Purple, Size = UDim2.fromOffset(220, 38), Position = UDim2.new(1, -182, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 16, OnClick = function()
+		button(top, { Name = "Buy_SeasonPass", Text = if info.premium then "✔ " .. Lang.t("season.premium") else Lang.t("season.buy_premium", { price = premium.price }), Color = if info.premium then Theme.Grey else Theme.Purple, Size = UDim2.fromOffset(190, 38), Position = UDim2.new(1, -152, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 16, OnClick = function()
 			if not info.premium then
 				buyProduct("SeasonPass")
 			end
 		end })
 		local skip = Config.ProductByKey.SeasonTier
 		if info.tier < cfg.tiers then
-			button(top, { Name = "Buy_SeasonTier", Text = Lang.t("season.skip", { price = skip.price }), Color = Theme.Orange, Size = UDim2.fromOffset(150, 38), Position = UDim2.new(1, -406, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 14, OnClick = function()
+			button(top, { Name = "Buy_SeasonTier", Text = Lang.t("season.skip", { price = skip.price }), Color = Theme.Orange, Size = UDim2.fromOffset(130, 38), Position = UDim2.new(1, -350, 0, 82), AnchorPoint = Vector2.new(1, 0), TextSize = 14, OnClick = function()
 				buyProduct("SeasonTier")
 			end })
 		end
@@ -377,12 +389,12 @@ local function buildSeason()
 			local reached = tier <= info.tier
 			local claimed = info.claimed[key] == true
 			local can = reached and not claimed and not locked
-			local c = Theme.new("Frame", { Name = key, Size = UDim2.new(1, 0, 0, 92), Position = UDim2.fromOffset(0, y), BackgroundColor3 = if can then Theme.Green:Lerp(Theme.Panel, 0.5) else Theme.Panel2, ZIndex = Z, Parent = parent }, { Theme.corner(10), Theme.stroke(2, if can then Theme.Yellow else Theme.Ink) })
+			local c = Theme.new("Frame", { Name = key, Size = UDim2.new(1, 0, 0, tp(92, 112)), Position = UDim2.fromOffset(0, y), BackgroundColor3 = if can then Theme.Green:Lerp(Theme.Panel, 0.5) else Theme.Panel2, ZIndex = Z, Parent = parent }, { Theme.corner(10), Theme.stroke(2, if can then Theme.Yellow else Theme.Ink) })
 			if reward then
-				label(c, { Text = if claimed then "✅" else MenuWindows.rewardText(reward), Size = UDim2.new(1, -6, 0, 44), Position = UDim2.fromOffset(3, 4), MaxTextSize = 16, TextWrapped = true })
+				label(c, { Text = if claimed then "✅" else MenuWindows.rewardText(reward), Size = UDim2.new(1, -6, 0, tp(44, 40)), Position = UDim2.fromOffset(3, 4), MaxTextSize = 16, TextWrapped = true })
 			end
 			if can then
-				button(c, { Name = "Claim_" .. key, Key = "rewards.claim", Color = Theme.Green, Size = UDim2.new(1, -8, 0, 26), Position = UDim2.new(0, 4, 1, -30), TextSize = 13, OnClick = function()
+				button(c, { Name = "Claim_" .. key, Key = "rewards.claim", Color = Theme.Green, Size = UDim2.new(1, -8, 0, tp(26, 52)), Position = UDim2.new(0, 4, 1, tp(-30, -56)), TextSize = 13, OnClick = function()
 					task.spawn(call, "ClaimSeason", { track = trackName, tier = tier }, "heal")
 				end })
 			elseif locked then
@@ -392,11 +404,11 @@ local function buildSeason()
 			end
 		end
 		for tier = 1, cfg.tiers do
-			local col = Theme.new("Frame", { Name = "Tier" .. tier, Size = UDim2.new(0, 92, 1, -8), BackgroundTransparency = 1, LayoutOrder = tier, ZIndex = Z, Parent = track }) :: Frame
+			local col = Theme.new("Frame", { Name = "Tier" .. tier, Size = if Theme.isTouch then UDim2.fromOffset(92, 258) else UDim2.new(0, 92, 1, -8), BackgroundTransparency = 1, LayoutOrder = tier, ZIndex = Z, Parent = track }) :: Frame
 			label(col, { Text = tostring(tier), Title = true, Size = UDim2.new(1, 0, 0, 20), MaxTextSize = 18, TextColor3 = if tier <= info.tier then Theme.Yellow else Theme.Dim })
 			local holder = Theme.new("Frame", { Size = UDim2.new(1, 0, 1, -24), Position = UDim2.fromOffset(0, 24), BackgroundTransparency = 1, ZIndex = Z, Parent = col }) :: Frame
 			cell(holder, "free", tier, 0, false)
-			cell(holder, "premium", tier, 98, not info.premium)
+			cell(holder, "premium", tier, tp(98, 120), not info.premium)
 		end
 		if not centered then
 			centered = true
@@ -429,15 +441,15 @@ end
 
 local function buildLocker()
 	local w = Windows.create("Locker", "🎨", "win.Locker", Theme.Purple, Vector2.new(800, 450))
-	local tabs = Theme.new("Frame", { Name = "Tabs", Size = UDim2.new(1, 0, 0, 40), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
-	local scroll = Windows.scroller(w.body, UDim2.new(1, 0, 1, -48), UDim2.fromOffset(0, 48))
-	Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(142, 132), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = scroll })
+	local tabs = Theme.new("Frame", { Name = "Tabs", Size = UDim2.new(1, 0, 0, tp(40, 54)), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
+	local scroll = Windows.scroller(w.body, UDim2.new(1, 0, 1, -tp(48, 62)), UDim2.fromOffset(0, tp(48, 62)))
+	Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(142, tp(132, 156)), CellPadding = UDim2.fromOffset(8, 8), SortOrder = Enum.SortOrder.LayoutOrder, Parent = scroll })
 	local ICONS = { wheel = "🎡", table = "🪑", finisher = "💥", emote = "😀", title = "🏷️", aura = "✨" }
 	hook("Locker", w, function()
 		clear(tabs)
 		clear(scroll)
 		for i, kind in Config.CosmeticKinds do
-			button(tabs, { Name = "Tab_" .. kind, Text = ICONS[kind] .. " " .. Lang.t("locker." .. kind), Color = if kind == lockerTab then Theme.Purple else Theme.Panel2, Size = UDim2.fromOffset(122, 38), TextSize = 15, LayoutOrder = i, OnClick = function()
+			button(tabs, { Name = "Tab_" .. kind, Text = ICONS[kind] .. " " .. Lang.t("locker." .. kind), Color = if kind == lockerTab then Theme.Purple else Theme.Panel2, Size = UDim2.fromOffset(122, tp(38, 52)), TextSize = 15, LayoutOrder = i, OnClick = function()
 				lockerTab = kind
 				refreshers.Locker()
 			end })
@@ -458,7 +470,7 @@ local function buildLocker()
 				label(c, { Text = Lang.t("cos." .. item.id), Size = UDim2.new(1, -8, 0, 20), Position = UDim2.fromOffset(4, 62), MaxTextSize = 15 })
 				label(c, { Text = Lang.t("rarity." .. item.rarity), Size = UDim2.new(1, -8, 0, 14), Position = UDim2.fromOffset(4, 82), MaxTextSize = 11, TextColor3 = rarity:Lerp(Theme.White, 0.3) })
 				if has then
-					button(c, { Name = "Use", Text = if active then "✔ " .. Lang.t("locker.equipped") else Lang.t("locker.equip"), Color = if active then Theme.Grey else Theme.Blue, Size = UDim2.new(1, -12, 0, 28), Position = UDim2.new(0, 6, 1, -34), TextSize = 14, OnClick = function()
+					button(c, { Name = "Use", Text = if active then "✔ " .. Lang.t("locker.equipped") else Lang.t("locker.equip"), Color = if active then Theme.Grey else Theme.Blue, Size = UDim2.new(1, -12, 0, tp(28, 52)), Position = UDim2.new(0, 6, 1, tp(-34, -58)), TextSize = 14, OnClick = function()
 						task.spawn(function()
 							if item.kind == "emote" then
 								local list = table.clone(Net.get("emotes") or {})
@@ -479,7 +491,7 @@ local function buildLocker()
 						end)
 					end })
 				elseif item.unlock.type == "coins" then
-					button(c, { Name = "Buy", Text = unlockText(item), Color = Theme.Green, Size = UDim2.new(1, -12, 0, 28), Position = UDim2.new(0, 6, 1, -34), TextSize = 15, OnClick = function()
+					button(c, { Name = "Buy", Text = unlockText(item), Color = Theme.Green, Size = UDim2.new(1, -12, 0, tp(28, 52)), Position = UDim2.new(0, 6, 1, tp(-34, -58)), TextSize = 15, OnClick = function()
 						task.spawn(call, "Buy", { id = item.id }, "heal")
 					end })
 				else
@@ -519,32 +531,32 @@ local function buildRewards()
 		end
 		section(scroll, "rewards.daily", 1)
 		local daily = s.dailyState or { canClaim = false, day = 1, streak = 0 }
-		local row = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 104), BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = Z, Parent = scroll }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
+		local row = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, tp(104, 132)), BackgroundTransparency = 1, LayoutOrder = 2, ZIndex = Z, Parent = scroll }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
 		for i, r in Config.DailyRewards do
 			local done = if daily.canClaim then i < daily.day else i <= daily.day
 			local today = daily.canClaim and i == daily.day
-			local c = Theme.new("Frame", { Name = "Day" .. i, Size = UDim2.fromOffset(95, 104), BackgroundColor3 = if today then Theme.Pink:Lerp(Theme.Panel, 0.3) else Theme.Panel2, LayoutOrder = i, ZIndex = Z, Parent = row }, { Theme.corner(12), Theme.stroke(3, if today then Theme.Yellow else Theme.Ink) })
+			local c = Theme.new("Frame", { Name = "Day" .. i, Size = UDim2.fromOffset(95, tp(104, 132)), BackgroundColor3 = if today then Theme.Pink:Lerp(Theme.Panel, 0.3) else Theme.Panel2, LayoutOrder = i, ZIndex = Z, Parent = row }, { Theme.corner(12), Theme.stroke(3, if today then Theme.Yellow else Theme.Ink) })
 			label(c, { Text = Lang.t("rewards.day", { n = i }), Size = UDim2.new(1, -6, 0, 18), Position = UDim2.fromOffset(3, 4), MaxTextSize = 14, TextColor3 = Theme.Dim })
 			label(c, { Text = if done then "✅" else rewardText(r), Size = UDim2.new(1, -8, 0, 46), Position = UDim2.fromOffset(4, 26), MaxTextSize = 20, TextWrapped = true })
 			if today then
-				button(c, { Name = "ClaimDaily", Key = "rewards.claim", Color = Theme.Green, Size = UDim2.new(1, -8, 0, 26), Position = UDim2.new(0, 4, 1, -30), TextSize = 14, OnClick = function()
+				button(c, { Name = "ClaimDaily", Key = "rewards.claim", Color = Theme.Green, Size = UDim2.new(1, -8, 0, tp(26, 52)), Position = UDim2.new(0, 4, 1, tp(-30, -56)), TextSize = 14, OnClick = function()
 					task.spawn(call, "ClaimDaily", nil, "heal")
 				end })
 			end
 		end
 		section(scroll, "rewards.gifts", 3)
-		local grow = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 96), BackgroundTransparency = 1, LayoutOrder = 4, ZIndex = Z, Parent = scroll }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
+		local grow = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, tp(96, 116)), BackgroundTransparency = 1, LayoutOrder = 4, ZIndex = Z, Parent = scroll }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
 		local elapsed = s.sessionElapsed + (os.clock() - Net.receivedAt)
 		for i, g in Config.Gifts do
 			local claimed = table.find(s.giftsClaimed, i) ~= nil
 			local ready = elapsed >= g.minutes * 60
-			local c = Theme.new("Frame", { Name = "Gift" .. i, Size = UDim2.fromOffset(112, 96), BackgroundColor3 = if ready and not claimed then Theme.Green:Lerp(Theme.Panel, 0.45) else Theme.Panel2, LayoutOrder = i, ZIndex = Z, Parent = grow }, { Theme.corner(12), Theme.stroke(3) })
+			local c = Theme.new("Frame", { Name = "Gift" .. i, Size = UDim2.fromOffset(112, tp(96, 116)), BackgroundColor3 = if ready and not claimed then Theme.Green:Lerp(Theme.Panel, 0.45) else Theme.Panel2, LayoutOrder = i, ZIndex = Z, Parent = grow }, { Theme.corner(12), Theme.stroke(3) })
 			label(c, { Text = if claimed then "✅" else "🎁", Stroke = false, Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 4) })
 			label(c, { Text = rewardText(g.reward), Size = UDim2.new(1, -6, 0, 20), Position = UDim2.fromOffset(3, 36), MaxTextSize = 15, TextColor3 = Theme.Yellow })
 			if claimed then
 				label(c, { Key = "rewards.claimed", Size = UDim2.new(1, -6, 0, 22), Position = UDim2.new(0, 3, 1, -26), MaxTextSize = 13, TextColor3 = Theme.Dim })
 			elseif ready then
-				button(c, { Name = "ClaimGift" .. i, Key = "rewards.claim", Color = Theme.Green, Size = UDim2.new(1, -8, 0, 26), Position = UDim2.new(0, 4, 1, -30), TextSize = 14, OnClick = function()
+				button(c, { Name = "ClaimGift" .. i, Key = "rewards.claim", Color = Theme.Green, Size = UDim2.new(1, -8, 0, tp(26, 52)), Position = UDim2.new(0, 4, 1, tp(-30, -56)), TextSize = 14, OnClick = function()
 					task.spawn(call, "ClaimGift", { index = i }, "heal")
 				end })
 			else
@@ -572,19 +584,19 @@ local function buildQuests()
 			local done = progress >= quest.target
 			local claimed = q.claimed[i] == true
 			allClaimed = allClaimed and claimed
-			local c = card(scroll, UDim2.new(1, 0, 0, 72), i)
+			local c = card(scroll, UDim2.new(1, 0, 0, tp(72, 84)), i)
 			label(c, { Text = Lang.t("quest." .. quest.kind, { n = quest.target }), Size = UDim2.new(1, -170, 0, 24), Position = UDim2.fromOffset(12, 8), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 19 })
 			local back = Theme.new("Frame", { Size = UDim2.new(1, -170, 0, 16), Position = UDim2.fromOffset(12, 38), BackgroundColor3 = Theme.Ink, ZIndex = Z + 1, Parent = c }, { Theme.corner(8) })
 			Theme.new("Frame", { Size = UDim2.fromScale(math.clamp(progress / quest.target, 0, 1), 1), BackgroundColor3 = if done then Theme.Green else Theme.Orange, ZIndex = Z + 2, Parent = back }, { Theme.corner(8) })
 			label(back, { Text = math.min(progress, quest.target) .. "/" .. quest.target, MaxTextSize = 12, ZIndex = Z + 3 })
 			label(c, { Text = "🪙 " .. quest.coins .. "   ⭐ " .. quest.xp, Size = UDim2.fromOffset(150, 18), Position = UDim2.new(1, -158, 0, 6), MaxTextSize = 14, TextColor3 = Theme.Yellow })
-			button(c, { Name = "ClaimQuest" .. i, Text = if claimed then "✔" else Lang.t("rewards.claim"), Color = if claimed or not done then Theme.Grey else Theme.Green, Size = UDim2.fromOffset(140, 34), Position = UDim2.new(1, -12, 1, -42), AnchorPoint = Vector2.new(1, 0), TextSize = 16, OnClick = function()
+			button(c, { Name = "ClaimQuest" .. i, Text = if claimed then "✔" else Lang.t("rewards.claim"), Color = if claimed or not done then Theme.Grey else Theme.Green, Size = UDim2.fromOffset(140, tp(34, 52)), Position = UDim2.new(1, -12, 1, tp(-42, -6)), AnchorPoint = if Theme.isTouch then Vector2.new(1, 1) else Vector2.new(1, 0), TextSize = 16, OnClick = function()
 				if done and not claimed then
 					task.spawn(call, "ClaimQuest", { index = i }, "heal")
 				end
 			end })
 		end
-		local b = card(scroll, UDim2.new(1, 0, 0, 56), 10, Theme.Orange:Lerp(Theme.Panel, 0.6))
+		local b = card(scroll, UDim2.new(1, 0, 0, tp(56, 66)), 10, Theme.Orange:Lerp(Theme.Panel, 0.6))
 		label(b, { Text = "🎯 " .. Lang.t("quests.bonus") .. "   🪙 " .. q.bonus.coins .. "  ⭐ " .. q.bonus.xp, Size = UDim2.new(1, -170, 1, -12), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 17 })
 		button(b, { Name = "ClaimBonus", Text = if q.bonusClaimed then "✔" else Lang.t("rewards.claim"), Color = if allClaimed and not q.bonusClaimed then Theme.Green else Theme.Grey, Size = UDim2.fromOffset(140, 36), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = 16, OnClick = function()
 			if allClaimed and not q.bonusClaimed then
@@ -602,8 +614,8 @@ MenuWindows.boards = nil :: { [string]: any }?
 local function buildRanking()
 	local w = Windows.create("Ranking", "🏆", "win.Ranking", Theme.Yellow, Vector2.new(700, 440))
 	local head = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 78), BackgroundColor3 = Theme.Panel2, ZIndex = Z, Parent = w.body }, { Theme.corner(14) }) :: Frame
-	local tabs = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 38), Position = UDim2.fromOffset(0, 86), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
-	local scroll = Windows.scroller(w.body, UDim2.new(1, 0, 1, -132), UDim2.fromOffset(0, 132))
+	local tabs = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, tp(38, 52)), Position = UDim2.fromOffset(0, 86), BackgroundTransparency = 1, ZIndex = Z, Parent = w.body }, { Theme.list(Enum.FillDirection.Horizontal, 6, Enum.HorizontalAlignment.Left) }) :: Frame
+	local scroll = Windows.scroller(w.body, UDim2.new(1, 0, 1, -tp(132, 146)), UDim2.fromOffset(0, tp(132, 146)))
 	Theme.list(Enum.FillDirection.Vertical, 4).Parent = scroll
 	local function render()
 		clear(head)
@@ -638,7 +650,7 @@ local function buildRanking()
 		label(head, { Text = "⏳ " .. Lang.t("rank.season_ends", { time = Format.time(math.max(0, s.seasonEndsAt - Net.serverTime())) }), Size = UDim2.fromOffset(176, 18), Position = UDim2.new(1, -184, 0, 10), MaxTextSize = 13, TextColor3 = Theme.Yellow })
 		label(head, { Text = "🏅 " .. Lang.t("rank.record", { wins = s.wins, matches = s.matches, streak = s.bestStreak }), Size = UDim2.fromOffset(176, 36), Position = UDim2.new(1, -184, 0, 32), MaxTextSize = 13, TextColor3 = Theme.Dim, TextWrapped = true })
 		for i, kind in { "season", "wins", "weekly" } do
-			button(tabs, { Name = "Board_" .. kind, Key = "rank." .. kind, Color = if kind == boardTab then Theme.Yellow else Theme.Panel2, Size = UDim2.fromOffset(180, 36), TextSize = 16, LayoutOrder = i, OnClick = function()
+			button(tabs, { Name = "Board_" .. kind, Key = "rank." .. kind, Color = if kind == boardTab then Theme.Yellow else Theme.Panel2, Size = UDim2.fromOffset(180, tp(36, 52)), TextSize = 16, LayoutOrder = i, OnClick = function()
 				boardTab = kind
 				render()
 			end })
@@ -681,10 +693,10 @@ local function buildInvite()
 	hook("Invite", w, function()
 		clear(scroll)
 		local social = Net.get("social") or {}
-		local c = card(scroll, UDim2.new(1, 0, 0, 104), 1)
+		local c = card(scroll, UDim2.new(1, 0, 0, tp(104, 128)), 1)
 		label(c, { Key = "invite.title", Title = true, Size = UDim2.new(1, -20, 0, 24), Position = UDim2.fromOffset(10, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20 })
 		label(c, { Key = "invite.desc", Args = { you = Config.Referral.inviterCoins, friend = Config.Referral.invitedCoins }, Size = UDim2.new(1, -20, 0, 32), Position = UDim2.fromOffset(10, 30), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 14, TextColor3 = Theme.Dim, TextWrapped = true })
-		button(c, { Name = "InviteFriends", Key = "invite.friends", Prefix = "👥 ", Icon = "group", Color = Theme.Green, Size = UDim2.new(0.5, -14, 0, 34), Position = UDim2.new(0, 10, 1, -40), TextSize = 16, OnClick = function()
+		button(c, { Name = "InviteFriends", Key = "invite.friends", Prefix = "👥 ", Icon = "group", Color = Theme.Green, Size = UDim2.new(0.5, -14, 0, tp(34, 52)), Position = UDim2.new(0, 10, 1, tp(-40, -60)), TextSize = 16, OnClick = function()
 			task.spawn(function()
 				local ok = pcall(function()
 					local options = Instance.new("ExperienceInviteOptions")
@@ -697,23 +709,23 @@ local function buildInvite()
 				end
 			end)
 		end })
-		button(c, { Name = "ShareLink", Key = "invite.share", Prefix = "🔗 ", Color = Theme.Blue, Size = UDim2.new(0.5, -14, 0, 34), Position = UDim2.new(0.5, 4, 1, -40), TextSize = 16, OnClick = function()
+		button(c, { Name = "ShareLink", Key = "invite.share", Prefix = "🔗 ", Color = Theme.Blue, Size = UDim2.new(0.5, -14, 0, tp(34, 52)), Position = UDim2.new(0.5, 4, 1, tp(-40, -60)), TextSize = 16, OnClick = function()
 			task.spawn(call, "ShareLink")
 		end })
 		label(scroll, { Text = "🎉 " .. Lang.t("invite.count", { n = social.referralRewards or 0, max = Config.Referral.maxRewards }), Size = UDim2.new(1, 0, 0, 20), MaxTextSize = 15, TextColor3 = Theme.Dim, LayoutOrder = 2 })
 		if social.group then
-			local g = card(scroll, UDim2.new(1, 0, 0, 52), 3)
+			local g = card(scroll, UDim2.new(1, 0, 0, tp(52, 64)), 3)
 			label(g, { Key = "invite.group", Args = { n = Config.GroupGift.coins }, Size = UDim2.new(1, -170, 1, -12), Position = UDim2.fromOffset(10, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 16, TextWrapped = true })
 			button(g, { Name = "GroupGift", Text = if social.groupGiftClaimed then "✔" else Lang.t("rewards.claim"), Color = if social.groupGiftClaimed then Theme.Grey else Theme.Green, Size = UDim2.fromOffset(140, 36), Position = UDim2.new(1, -8, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = 16, OnClick = function()
 				task.spawn(call, "ClaimGroupGift", nil, "heal")
 			end })
 		end
 		section(scroll, "invite.codes", 4)
-		local k = card(scroll, UDim2.new(1, 0, 0, 52), 5)
-		local box = Theme.new("TextBox", { Name = "CodeBox", Size = UDim2.new(1, -170, 0, 36), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Theme.Ink, TextColor3 = Theme.White, PlaceholderColor3 = Theme.Grey, Font = Theme.Font, TextSize = 20, Text = "", ClearTextOnFocus = false, ZIndex = Z + 1, Parent = k }, { Theme.corner(10) }) :: TextBox
+		local k = card(scroll, UDim2.new(1, 0, 0, tp(52, 68)), 5)
+		local box = Theme.new("TextBox", { Name = "CodeBox", Size = UDim2.new(1, -170, 0, tp(36, 52)), Position = UDim2.fromOffset(8, 8), BackgroundColor3 = Theme.Ink, TextColor3 = Theme.White, PlaceholderColor3 = Theme.Grey, Font = Theme.Font, TextSize = 20, Text = "", ClearTextOnFocus = false, ZIndex = Z + 1, Parent = k }, { Theme.corner(10) }) :: TextBox
 		Lang.bind(box, "invite.code_hint", nil, "PlaceholderText")
 		codeBox = box
-		button(k, { Name = "Redeem", Key = "invite.redeem", Color = Theme.Green, Size = UDim2.fromOffset(146, 36), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0), TextSize = 17, OnClick = function()
+		button(k, { Name = "Redeem", Key = "invite.redeem", Color = Theme.Green, Size = UDim2.fromOffset(146, tp(36, 52)), Position = UDim2.new(1, -8, 0, 8), AnchorPoint = Vector2.new(1, 0), TextSize = 17, OnClick = function()
 			task.spawn(function()
 				if codeBox and call("RedeemCode", { code = codeBox.Text }, "heal") then
 					codeBox.Text = ""
@@ -737,14 +749,14 @@ local function buildSettings()
 		local order = 0
 		for _, key in { "music", "sfx" } do
 			order += 1
-			local c = card(scroll, UDim2.new(1, 0, 0, 44), order)
-			label(c, { Key = "set." .. key, Size = UDim2.new(1, -230, 1, -12), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20 })
+			local c = card(scroll, UDim2.new(1, 0, 0, tp(44, 62)), order)
+			label(c, { Key = "set." .. key, Size = UDim2.new(1, tp(-230, -290), 1, -12), Position = UDim2.fromOffset(12, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20 })
 			local v = math.floor((s[key] or 0.5) * 10 + 0.5)
-			label(c, { Text = string.rep("▮", v) .. string.rep("▯", 10 - v), Size = UDim2.fromOffset(120, 24), Position = UDim2.new(1, -176, 0.5, -12), MaxTextSize = 16, TextColor3 = Theme.Cyan })
-			button(c, { Name = key .. "Down", Text = "−", Color = Theme.Blue, Size = UDim2.fromOffset(36, 34), Position = UDim2.new(1, -218, 0.5, -17), TextSize = 22, OnClick = function()
+			label(c, { Text = string.rep("▮", v) .. string.rep("▯", 10 - v), Size = UDim2.fromOffset(120, 24), Position = UDim2.new(1, tp(-176, -188), 0.5, -12), MaxTextSize = 16, TextColor3 = Theme.Cyan })
+			button(c, { Name = key .. "Down", Text = "−", Color = Theme.Blue, Size = UDim2.fromOffset(tp(36, 52), tp(34, 52)), Position = UDim2.new(1, tp(-218, -248), 0.5, tp(-17, -26)), TextSize = 22, OnClick = function()
 				set(key, math.max(0, (v - 1) / 10))
 			end })
-			button(c, { Name = key .. "Up", Text = "+", Color = Theme.Blue, Size = UDim2.fromOffset(36, 34), Position = UDim2.new(1, -44, 0.5, -17), TextSize = 22, OnClick = function()
+			button(c, { Name = key .. "Up", Text = "+", Color = Theme.Blue, Size = UDim2.fromOffset(tp(36, 52), tp(34, 52)), Position = UDim2.new(1, tp(-44, -60), 0.5, tp(-17, -26)), TextSize = 22, OnClick = function()
 				set(key, math.min(1, (v + 1) / 10))
 			end })
 		end
@@ -772,7 +784,7 @@ local function buildSettings()
 		end
 		section(scroll, "set.language", 20)
 		local grid = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 0), AutomaticSize = Enum.AutomaticSize.Y, BackgroundTransparency = 1, LayoutOrder = 21, ZIndex = Z, Parent = scroll }) :: Frame
-		Theme.new("UIGridLayout", { CellSize = UDim2.new(0.25, -6, 0, 38), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
+		Theme.new("UIGridLayout", { CellSize = UDim2.new(0.25, -6, 0, tp(38, 52)), CellPadding = UDim2.fromOffset(8, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = grid })
 		for i, l in Locale.Languages do
 			button(grid, { Name = "Lang_" .. l.code, Text = l.name, Color = if Lang.code == l.code then Theme.Green else Theme.Panel2, TextSize = 15, LayoutOrder = i, OnClick = function()
 				task.spawn(function()

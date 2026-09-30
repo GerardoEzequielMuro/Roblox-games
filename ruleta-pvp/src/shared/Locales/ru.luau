@@ -314,7 +314,7 @@ return {
 	["rank.next"] = "Дальше: {league} за {n}",
 	["rank.top"] = "Высшая лига",
 	["rank.season_ends"] = "Сезон закончится через {time}",
-	["rank.record"] = "Побед: {wins} в {matches} матчах. Лучшая серия: {streak}",
+	["rank.record"] = "Побед: {wins} / Матчей: {matches} / Лучшая серия: {streak}",
 
 	-- rewards and quests
 	["rewards.daily"] = "Ежедневная награда",
@@ -444,6 +444,7 @@ return {
 	["season.ends"] = "Сезон закончится через {time}",
 	["season.maxed"] = "Все уровни пройдены. Забери остаток!",
 	["season.next"] = "{n} очков до уровня {tier}",
+	["season.next.one"] = "{n} очко до уровня {tier}",
 	["season.how"] = "Каждый матч: +{win} очков за победу, +{play} за участие",
 	["season.fair"] = "Очки даются только за игру. Покупки никогда не влияют на матч.",
 	["season.claim_all"] = "Забрать всё ({n})",
@@ -472,6 +473,8 @@ return {
 	["cos.ti_passholder"] = "Владелец пропуска",
 	["cos.ti_seasoned"] = "Бывалый",
 	["goal.league"] = "{n} трофеев до лиги {league}",
+	["goal.league.one"] = "{n} трофей до лиги {league}",
 	["goal.top_league"] = "Высшая лига достигнута",
 	["goal.season"] = "{n} очков до сезонного уровня {tier}",
+	["goal.season.one"] = "{n} очко до сезонного уровня {tier}",
 }

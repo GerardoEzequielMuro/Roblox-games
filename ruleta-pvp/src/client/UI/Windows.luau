@@ -72,7 +72,7 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		StrokeThickness = 4,
 	})
 	Theme.new("UIScale", { Parent = frame })
-	Root.mount(frame)
+	Root.mountWindow(frame)
 	Theme.shadow(frame, 22)
 	local header = Theme.new("Frame", {
 		Name = "Header",

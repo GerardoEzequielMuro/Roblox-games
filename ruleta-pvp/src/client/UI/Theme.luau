@@ -7,6 +7,7 @@ local TweenService = game:GetService("TweenService")
 local Icons = require(ReplicatedStorage.Shared.Icons)
 local Lang = require(script.Parent.Parent.Lang)
 local Audio = require(script.Parent.Parent.Audio)
+local Prefs = require(script.Parent.Parent.Prefs)
 
 local Theme = {}
 
@@ -27,6 +28,13 @@ Theme.Blue = Color3.fromRGB(70, 140, 255)
 Theme.Grey = Color3.fromRGB(128, 134, 170)
 Theme.White = Color3.new(1, 1, 1)
 Theme.Dim = Color3.fromRGB(176, 182, 220) -- secondary text
+
+-- Touch: smallest button height (design px) inside windows, which fit at ~0.85-1.0, so a
+-- tap target lands at >= 44 px real. The HUD sets its own touch sizes (Root.real).
+Theme.isTouch = Prefs.isTouch
+Theme.TouchMin = 52
+-- Smallest scaled-text size (design px) on touch; 9 on PC.
+Theme.MinText = if Prefs.isTouch then 12 else 9
 
 function Theme.rgb(c: { number }): Color3
 	return Color3.fromRGB(c[1], c[2], c[3])
@@ -118,7 +126,7 @@ function Theme.text(props: { [string]: any }): TextLabel
 		local st = Theme.textStroke(if type(props.Stroke) == "number" then props.Stroke else 2)
 		st.Parent = t
 	end
-	local sizeConstraint = Theme.new("UITextSizeConstraint", { MaxTextSize = props.MaxTextSize or 40, MinTextSize = props.MinTextSize or 9 })
+	local sizeConstraint = Theme.new("UITextSizeConstraint", { MaxTextSize = props.MaxTextSize or 40, MinTextSize = props.MinTextSize or Theme.MinText })
 	sizeConstraint.Parent = t
 	if props.Parent then
 		t.Parent = props.Parent
@@ -226,6 +234,7 @@ export type ButtonOpts = {
 	Name: string?,
 	Title: boolean?,
 	ZIndex: number?,
+	KeepSize: boolean?, -- touch: skip the TouchMin size floor (caller sized it)
 }
 
 -- Chunky button face: light top, flat middle and a darker "lip" along the bottom edge.
@@ -280,9 +289,21 @@ end
 function Theme.button(opts: ButtonOpts): TextButton
 	local color = opts.Color or Theme.Blue
 	local z = opts.ZIndex or 1
+	local size = opts.Size or UDim2.fromOffset(160, 50)
+	if Theme.isTouch and not opts.KeepSize then
+		-- fingers: never a button shorter than TouchMin (tall enough to tap) or narrower than it
+		local h, w = size.Y, size.X
+		if h.Scale == 0 and h.Offset < Theme.TouchMin then
+			h = UDim.new(0, Theme.TouchMin)
+		end
+		if w.Scale == 0 and w.Offset < Theme.TouchMin then
+			w = UDim.new(0, Theme.TouchMin)
+		end
+		size = UDim2.new(w, h)
+	end
 	local b = Theme.new("TextButton", {
 		Name = opts.Name or "Button",
-		Size = opts.Size or UDim2.fromOffset(160, 50),
+		Size = size,
 		Position = opts.Position or UDim2.new(),
 		AnchorPoint = opts.AnchorPoint or Vector2.zero,
 		BackgroundColor3 = Color3.new(1, 1, 1),
@@ -364,7 +385,7 @@ function Theme.setButton(b: TextButton, text: string?, color: Color3?)
 end
 
 -- Pill: icon + value, used for currencies and chips.
-function Theme.pill(props: { Name: string?, Icon: string, IconName: string?, Color: Color3, Size: UDim2, Parent: Instance?, LayoutOrder: number? }): (Frame, TextLabel)
+function Theme.pill(props: { Name: string?, Icon: string, IconName: string?, Color: Color3, Size: UDim2, Parent: Instance?, LayoutOrder: number?, RightPad: number? }): (Frame, TextLabel)
 	local f = Theme.new("Frame", {
 		Name = props.Name or "Pill",
 		Size = props.Size,
@@ -383,8 +404,8 @@ function Theme.pill(props: { Name: string?, Icon: string, IconName: string?, Col
 	local value = Theme.text({
 		Name = "Value",
 		Text = "0",
-		Size = UDim2.new(1, -52, 1, -10),
-		Position = UDim2.new(0, 44, 0.5, 0),
+		Size = UDim2.new(1, if Theme.isTouch then -(props.Size.Y.Offset + (props.RightPad or 10)) else -(52 + (props.RightPad or 0)), 1, -10),
+		Position = UDim2.new(0, if Theme.isTouch then props.Size.Y.Offset - 2 else 44, 0.5, 0),
 		AnchorPoint = Vector2.new(0, 0.5),
 		TextXAlignment = Enum.TextXAlignment.Left,
 		MaxTextSize = 24,
@@ -426,7 +447,7 @@ end
 function Theme.toggle(props: { Key: string, Parent: Instance?, Size: UDim2?, LayoutOrder: number?, Get: () -> boolean, Set: (boolean) -> (), Name: string? }): (Frame, () -> ())
 	local row = Theme.new("Frame", {
 		Name = props.Name or "Toggle",
-		Size = props.Size or UDim2.new(1, 0, 0, 44),
+		Size = props.Size or UDim2.new(1, 0, 0, if Theme.isTouch then 62 else 44),
 		BackgroundColor3 = Theme.Panel2,
 		LayoutOrder = props.LayoutOrder or 0,
 	}, { Theme.corner(12) }) :: Frame

@@ -51,6 +51,15 @@ end
 ---------------------------------------------------------------------------
 -- Layout
 ---------------------------------------------------------------------------
+-- Touch: tappable pieces are sized for >= 44 px real at the ~0.75 phone HUD scale.
+local T = Root.isTouch
+local function pick(pc: any, touch: any): any
+	if T then
+		return touch
+	end
+	return pc
+end
+
 local root = Theme.new("Frame", { Name = "MatchHud", Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Visible = false, Parent = Root.gui }) :: Frame
 
 -- players strip
@@ -111,34 +120,34 @@ action.Visible = false
 local actionKey = Theme.text({ Name = "Key", Text = "", Size = UDim2.fromOffset(90, 18), Position = UDim2.new(0.5, 150, 1, -24), AnchorPoint = Vector2.new(0, 0.5), MaxTextSize = 15, TextColor3 = Theme.Dim, TextXAlignment = Enum.TextXAlignment.Left, Parent = bottom })
 
 -- right: leave, auto-play, emotes
-local side = Theme.new("Frame", { Name = "Side", Size = UDim2.fromOffset(150, 230), Position = UDim2.new(1, -8, 0, 76), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, Parent = root }, { Theme.list(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Right) }) :: Frame
+local side = Theme.new("Frame", { Name = "Side", Size = pick(UDim2.fromOffset(150, 230), UDim2.fromOffset(160, 214)), Position = UDim2.new(1, -8, 0, 76), AnchorPoint = Vector2.new(1, 0), BackgroundTransparency = 1, Parent = root }, { Theme.list(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Right) }) :: Frame
 Root.mount(side, root)
-local leaveButton = Theme.button({ Name = "Leave", Key = "match.leave", Prefix = "🚪 ", Color = Theme.Red, Size = UDim2.fromOffset(140, 44), TextSize = 20, LayoutOrder = 1, Parent = side, OnClick = function()
+local leaveButton = Theme.button({ Name = "Leave", Key = "match.leave", Prefix = "🚪 ", Color = Theme.Red, Size = pick(UDim2.fromOffset(140, 44), UDim2.fromOffset(160, 62)), TextSize = 20, KeepSize = true, LayoutOrder = 1, Parent = side, OnClick = function()
 	if MatchHud.onLeave then
 		MatchHud.onLeave()
 	end
 end })
-local autoButton = Theme.button({ Name = "AutoPlay", Text = "", Color = Theme.Grey, Size = UDim2.fromOffset(140, 44), TextSize = 17, LayoutOrder = 2, Parent = side })
-local emoteButton = Theme.button({ Name = "Emote", Text = "😀", Color = Theme.Purple, Size = UDim2.fromOffset(60, 60), Corner = 30, TextSize = 34, LayoutOrder = 3, Parent = side })
-local emoteGrid = Theme.panel({ Name = "Emotes", Size = UDim2.fromOffset(236, 124), Position = UDim2.new(1, -164, 0, 176), AnchorPoint = Vector2.new(1, 0), Corner = 16, Visible = false, ZIndex = 12, Parent = root })
+local autoButton = Theme.button({ Name = "AutoPlay", Text = "", Color = Theme.Grey, Size = pick(UDim2.fromOffset(140, 44), UDim2.fromOffset(160, 62)), TextSize = pick(17, 18), KeepSize = true, LayoutOrder = 2, Parent = side })
+local emoteButton = Theme.button({ Name = "Emote", Text = "😀", Color = Theme.Purple, Size = pick(UDim2.fromOffset(60, 60), UDim2.fromOffset(64, 64)), Corner = 32, TextSize = 34, KeepSize = true, LayoutOrder = 3, Parent = side })
+local emoteGrid = Theme.panel({ Name = "Emotes", Size = pick(UDim2.fromOffset(236, 124), UDim2.fromOffset(300, 152)), Position = pick(UDim2.new(1, -164, 0, 176), UDim2.new(1, -176, 0, 150)), AnchorPoint = Vector2.new(1, 0), Corner = 16, Visible = false, ZIndex = 12, Parent = root })
 Root.mount(emoteGrid, root)
-Theme.new("UIGridLayout", { CellSize = UDim2.fromOffset(50, 50), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Parent = emoteGrid })
+Theme.new("UIGridLayout", { CellSize = pick(UDim2.fromOffset(50, 50), UDim2.fromOffset(62, 62)), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder, HorizontalAlignment = Enum.HorizontalAlignment.Center, VerticalAlignment = Enum.VerticalAlignment.Center, Parent = emoteGrid })
 
 -- spectator bar
-local spec = Theme.panel({ Name = "Spectate", Size = UDim2.fromOffset(520, 58), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Corner = 18, Visible = false, Parent = root })
+local spec = Theme.panel({ Name = "Spectate", Size = pick(UDim2.fromOffset(520, 58), UDim2.fromOffset(560, 78)), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), Corner = 18, Visible = false, Parent = root })
 Root.mount(spec, root)
-Theme.button({ Name = "Prev", Text = "◀", Color = Theme.Blue, Size = UDim2.fromOffset(50, 42), Position = UDim2.fromOffset(8, 8), TextSize = 24, Parent = spec, OnClick = function()
+Theme.button({ Name = "Prev", Text = "◀", Color = Theme.Blue, Size = pick(UDim2.fromOffset(50, 42), UDim2.fromOffset(64, 62)), Position = UDim2.fromOffset(8, 8), TextSize = 24, KeepSize = true, Parent = spec, OnClick = function()
 	if MatchHud.onSpectateStep then
 		MatchHud.onSpectateStep(-1)
 	end
 end })
-local specLabel = Theme.text({ Name = "Label", Key = "match.spectating", Prefix = "👁 ", Size = UDim2.fromOffset(190, 36), Position = UDim2.fromOffset(64, 11), MaxTextSize = 20, Parent = spec })
-Theme.button({ Name = "Next", Text = "▶", Color = Theme.Blue, Size = UDim2.fromOffset(50, 42), Position = UDim2.fromOffset(260, 8), TextSize = 24, Parent = spec, OnClick = function()
+local specLabel = Theme.text({ Name = "Label", Key = "match.spectating", Prefix = "👁 ", Size = UDim2.fromOffset(190, 36), Position = pick(UDim2.fromOffset(64, 11), UDim2.fromOffset(80, 21)), MaxTextSize = 20, Parent = spec })
+Theme.button({ Name = "Next", Text = "▶", Color = Theme.Blue, Size = pick(UDim2.fromOffset(50, 42), UDim2.fromOffset(64, 62)), Position = pick(UDim2.fromOffset(260, 8), UDim2.fromOffset(276, 8)), TextSize = 24, KeepSize = true, Parent = spec, OnClick = function()
 	if MatchHud.onSpectateStep then
 		MatchHud.onSpectateStep(1)
 	end
 end })
-Theme.button({ Name = "Free", Key = "match.free_cam", Prefix = "🎥 ", Color = Theme.Purple, Size = UDim2.fromOffset(190, 42), Position = UDim2.fromOffset(320, 8), TextSize = 18, Parent = spec, OnClick = function()
+Theme.button({ Name = "Free", Key = "match.free_cam", Prefix = "🎥 ", Color = Theme.Purple, Size = pick(UDim2.fromOffset(190, 42), UDim2.fromOffset(190, 62)), Position = pick(UDim2.fromOffset(320, 8), UDim2.fromOffset(352, 8)), TextSize = 18, KeepSize = true, Parent = spec, OnClick = function()
 	if MatchHud.onFreeCam then
 		MatchHud.onFreeCam()
 	end
@@ -164,8 +173,8 @@ local resultsHead = Theme.new("Frame", { Name = "Head", Size = UDim2.new(1, 0, 0
 local resultsTitle = Theme.text({ Name = "Title", Text = "", Title = true, Size = UDim2.new(1, -30, 0, 52), Position = UDim2.fromOffset(15, 8), MaxTextSize = 50, Stroke = 4, ZIndex = 41, Parent = results })
 local resultsSub = Theme.text({ Name = "Sub", Text = "", Size = UDim2.new(1, -30, 0, 26), Position = UDim2.fromOffset(15, 62), MaxTextSize = 22, ZIndex = 41, Parent = results })
 local resultRows = Theme.new("Frame", { Name = "Rows", Size = UDim2.new(1, -40, 0, 216), Position = UDim2.fromOffset(20, 108), BackgroundTransparency = 1, ZIndex = 41, Parent = results }, { Theme.list(Enum.FillDirection.Vertical, 6) }) :: Frame
-local againButton = Theme.button({ Name = "Again", Key = "match.play_again", Prefix = "▶ ", Color = Theme.Green, Size = UDim2.fromOffset(250, 60), Position = UDim2.new(0, 20, 1, -76), TextSize = 28, Title = true, ZIndex = 41, Parent = results })
-local lobbyButton = Theme.button({ Name = "Lobby", Key = "match.to_lobby", Color = Theme.Blue, Size = UDim2.fromOffset(196, 60), Position = UDim2.new(1, -20, 1, -76), AnchorPoint = Vector2.new(1, 0), TextSize = 22, ZIndex = 41, Parent = results })
+local againButton = Theme.button({ Name = "Again", Key = "match.play_again", Prefix = "▶ ", Color = Theme.Green, Size = pick(UDim2.fromOffset(250, 60), UDim2.fromOffset(250, 66)), Position = UDim2.new(0, 20, 1, pick(-76, -82)), TextSize = 28, KeepSize = true, Title = true, ZIndex = 41, Parent = results })
+local lobbyButton = Theme.button({ Name = "Lobby", Key = "match.to_lobby", Color = Theme.Blue, Size = pick(UDim2.fromOffset(196, 60), UDim2.fromOffset(196, 66)), Position = UDim2.new(1, -20, 1, pick(-76, -82)), AnchorPoint = Vector2.new(1, 0), TextSize = 22, KeepSize = true, ZIndex = 41, Parent = results })
 local lastResult: { [string]: any }? = nil
 
 -- tutorial / coach line
@@ -377,7 +386,7 @@ local function refreshHand()
 			local color = rgb(def.color)
 			local b = Theme.new("TextButton", {
 				Name = "Card_" .. card,
-				Size = UDim2.fromOffset(84, if selected then 120 else 108),
+				Size = if T then UDim2.fromOffset(100, if selected then 124 else 112) else UDim2.fromOffset(84, if selected then 120 else 108),
 				BackgroundColor3 = if usable then Theme.Panel else Color3.fromRGB(30, 30, 44),
 				AutoButtonColor = false,
 				Text = "",
@@ -386,8 +395,8 @@ local function refreshHand()
 			}, { Theme.corner(14), Theme.stroke(if selected then 5 else 3, if selected then Theme.White elseif usable then color else Theme.Ink) }) :: TextButton
 			Theme.new("Frame", { Size = UDim2.new(1, 0, 0.56, 0), BackgroundColor3 = if usable then color else color:Lerp(Color3.fromRGB(30, 30, 44), 0.7), BorderSizePixel = 0, Parent = b }, { Theme.corner(14) })
 			Theme.text({ Text = def.icon, Stroke = false, Size = UDim2.fromScale(0.7, 0.42), Position = UDim2.fromScale(0.15, 0.07), TextTransparency = if usable then 0 else 0.4, Parent = b })
-			Theme.text({ Text = Lang.t("card." .. card .. ".name"), Title = true, Size = UDim2.new(1, -8, 0.2, 0), Position = UDim2.new(0, 4, 0.58, 0), MaxTextSize = 17, TextTransparency = if usable then 0 else 0.4, Parent = b })
-			Theme.text({ Text = Lang.t("card." .. card .. ".short"), Size = UDim2.new(1, -8, 0.2, 0), Position = UDim2.new(0, 4, 0.78, 0), MaxTextSize = 12, TextColor3 = Theme.Dim, TextWrapped = true, Parent = b })
+			Theme.text({ Text = Lang.t("card." .. card .. ".name"), Title = true, Size = UDim2.new(1, -8, 0.19, 0), Position = UDim2.new(0, 4, 0.56, 0), MaxTextSize = pick(17, 19), TextTransparency = if usable then 0 else 0.4, Parent = b })
+			Theme.text({ Text = Lang.t("card." .. card .. ".short"), Size = UDim2.new(1, -8, pick(0.2, 0.25), 0), Position = UDim2.new(0, 4, pick(0.78, 0.75), 0), MaxTextSize = pick(12, 14), MinTextSize = pick(9, 12), TextColor3 = Theme.Dim, TextWrapped = true, Parent = b })
 			-- the rule of the card, bottom centre, while the pointer is on it
 			b.MouseEnter:Connect(function()
 				hint.Text = def.icon .. " " .. Lang.t("card." .. card .. ".name") .. ": " .. Lang.t("card." .. card .. ".desc")
