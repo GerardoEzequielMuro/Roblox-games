@@ -235,3 +235,60 @@ Con `tools/uipreview` (`--all`, más laptop y tablet). Resultado: 0 hallazgos en
 4. Timer sin recuadro.
 
 Verificación: `rojo build` OK, `luau-lsp analyze` sin salida, tests puros (`tests/*.luau`) pasan.
+
+## Ronda 5: ritmo de progresión
+
+Simulador de ritmo para un jugador free (obby: curva de dificultad por banda de stages + economía de monedas). Se corre desde `obby-sky-tower/` con `export PATH=/tmp/tools:$PATH; luau sim/pacing_sim.luau` (opcional `-a <jugadores> <días>`, por defecto 41 y 14). El modelo está en `sim/pacing_model.luau` y usa los módulos reales (`Layout.generate` de las 10 torres, `Rules.coinsForStage`, `Gifts`, `Powerups`, y el nuevo `Economy`). El test `tests/pacing_test.luau` (187 checks) falla si un hito se sale de su ventana o si la curva tiene un pico.
+
+**Política del jugador simulado**: camina cada stage (riesgo por salto, kill cubes, spinners, láseres, esperas de movers/lava, muerte y vuelta al último pad que guarda), reclama el diario a los 25 s y cada regalo de tiempo apenas abre, agarra 75% de las monedas del camino, compra el cosmético más caro que puede pagar, usa skip gratis tras 4 muertes en el mismo stage y compra skip con monedas (150) tras 8, y compra escudo en las tiendas de mundo si le sobran monedas. Día 1: sesión de 60 min; después 30 min por día.
+
+**Objetivos (adaptados a obby)**: primera recompensa < 10 s; primera compra < 60 s; 3 compras en ~5 min (en un obby solo se gasta en cosméticos, por eso no pedí 3 en 3 min: el ingreso es ~25 monedas/min); un mundo nuevo (10 stages) cada 1,5-12 min en la torre 1 (el primer mundo es el tutorial, rápido a propósito); nunca más de 10 min sin algo nuevo (mundo, obstáculo nuevo, compra, regalo de tiempo); el "primer prestigio" acá es la cima de la torre 1 (la primera Win): 30-60 min; las torres 2-10 son la cola larga (~17 h de juego activo en total según la curva analítica). Dificultad: los primeros 10 stages son victorias rápidas (<= 30 s cada uno), cada mundo no más de 1,7x el anterior, ningún stage de la torre 1 pasa de 150 s esperados (antes 196 s), ningún stage del juego pasa de 350 s (antes 560 s), los mundos 7-10 promedian >= 44 s y las torres 4-10 >= 60 s (no más fácil que antes).
+
+### Hitos antes / después (mediana de 41 jugadores)
+
+| Hito | Antes | Después |
+|---|---|---|
+| Primera moneda / recompensa | 0:02 | 0:02 |
+| Stage 1 (primer checkpoint) | 0:17 | 0:17 |
+| Primer regalo de tiempo | 1:02 | 1:01 |
+| Primera compra | 2:25 | 0:32 |
+| Tercera compra | 16:52 | 4:33 |
+| Compras en la primera hora | 4 | 7 |
+| Mayor tramo sin nada nuevo (1ra hora) | 8:11 | 8:59 |
+| Mundo 2 (stage 10) | 2:59 | 2:56 |
+| Stage 50 | 14:00 | 15:10 |
+| Cima torre 1 (stage 100, primera Win) | 42:48 | 47:25 |
+| Cima torre 2 / 5 | 1h36 / 5h21 | 1h50 / 5h45 |
+| Stage al final del día 14 (30 min/día) | 683 | 625 |
+| s esperados por stage, mundos 6-10 de la torre 1 | 21,7 / 44,5 / 46,5 / 48,6 / 49,3 | 32,2 / 34,4 / 45,0 / 47,3 / 52,4 |
+| Promedio por torre 1..10 (s/stage esperados) | 30 / 42 / 41 / 68 / 71 / 70 / 75 / 79 / 82 / 103 | 30 / 48 / 45 / 68 / 76 / 68 / 74 / 69 / 72 / 75 |
+| Mediana por torre 1..10 | 19 / 31 / 29 / 38 / 52 / 42 / 39 / 42 / 37 / 57 | 23 / 37 / 41 / 56 / 51 / 52 / 56 / 59 / 56 / 54 |
+| Stage más duro de la torre 1 (esperado) | 196 s (stage 75, wallhop) | 134 s |
+| Stage más duro de todo el juego (esperado) | 560 s | 317 s |
+
+Lectura: el promedio por torre queda igual o más alto hasta la torre 7 y algo más bajo en las 8-10, pero solo porque el "antes" estaba inflado por outliers de 500 s (wallhop, disappear, falling); la mediana de cada torre (el stage típico) sube en 8 de 10 torres (igual en la 5, un poco menos en la 10). Es decir: sin picos, y el stage normal es más difícil que antes.
+
+### Qué cambié y por qué
+
+1. **`src/shared/Economy.luau` (nuevo, puro)**: saqué de `Config` los números de monedas (`CoinsPerTower`, `CoinPickupValue`, `CoinsPerWin`, diario, regalos de tiempo, códigos, precios de trails y efectos). `Config` los re-exporta con los mismos nombres (mismo patrón que `Pricing`). Hacía falta porque `Config` usa `Color3`/`Enum`/`script` y no se carga con `luau` a secas.
+2. **Precios de cosméticos (monedas, no Robux)**: Cloud 100 -> 20, Mint 250 -> 50, Fire 500 -> 160, Ocean 800 -> 350, Candy 1200 -> 650, Toxic 1800 -> 1200; Sparkles 400 -> 100, Smoke 900 -> 400, Star Aura 1500 -> 900. Galaxy, Flames y Rainbow igual. Motivo: la primera compra tardaba 2:25 y la tercera ~17 min.
+3. **Quitar picos en `Layout.luau`**: wallhop con `gapScale` de 0.72 a 0.82 según dificultad (los ledges chicos al 90% del alcance eran 150-500 s), piso del delay de disappear/falling 0.28 -> 0.45 s (nadie llega a saltar antes), y lava con `gapScale = 0.88` (la lava que sube ya es la presión).
+4. **Compensar para que el juego NO sea más fácil (feedback del dueño: muy fácil)**, sin pasar el límite físico (`MAX_REACH` 0.93, el test de layout lo sigue exigiendo):
+   - `Layout.reach`: stages 11-50 suben de 0.60-0.80 a 0.60-0.84, stages 51-100 de 0.80-0.89 a 0.84-0.93, torres 2-10 fijas en 0.93 (antes 0.89-0.915).
+   - `Layout.difficulty` de la torre 1: exponente 0.75 -> 0.55 (las plataformas se achican antes).
+   - Los tipos "regalados" ahora también suben con la dificultad (antes tenían un gap fijo bajo): spinner y laser 0.6 -> 0.88, beam 0.6 -> 0.92, conveyor 0.75 -> 0.92, wind y killbricks 0.85 -> 0.95, y el primer salto del truss 0.7 -> 0.9.
+   - Tamaños mínimos tardíos: ancho de jumps 2.8 -> 2.5, disappear/falling/lava 3.2 -> 2.8, glass 3.4 -> 3.0, ice 4 -> 3.6, mixed 3.6 -> 3.1, moving 4 -> 3.6. Período de los movers 2.2 -> 2.05 s (el test exige >= 2 s).
+   - Probé subir más la dificultad de las torres 2-10 y rompe el test de hazards ("new hazards in play"); lo dejé afuera.
+5. No toqué monedas por stage, regalos de tiempo, diario ni precios en Robux. El salto (JumpPower 50) tampoco: el layout test lo limita y todo el mapa está calibrado contra ese salto.
+
+Como el generador comparte un solo RNG, cambiar cantidad de plataformas cambia qué tipo toca en muchos stages (mismo seed, mapa distinto). No hay datos guardados que dependan del mapa, solo del número de stage. Las cimas salen un poco más tarde que antes (torre 1: 47 min, sigue en la ventana 30-60).
+
+### Límites del simulador
+
+- El riesgo por salto, las esperas y la curva de habilidad (`PacingModel.Tune`) son estimaciones mías, no datos medidos. Sirve para ritmo relativo (rampas, picos, ventanas), no para predecir tiempos reales: un jugador casual real probablemente tarde más por stage.
+- No modela la carga inicial (3-5 s), ni abandonos por frustración, ni el x2 del fin de semana, ni pases/Robux, ni los poderes de la tienda salvo escudo y skip. Tampoco power-ups de velocidad/gravedad/doble salto que bajarían el tiempo.
+- Las muertes en pads sin guardado se aproximan como rehacer los stages anteriores sin volver a fallarlos.
+- Después de comprar todo el catálogo (~torre 3) las monedas no tienen destino salvo skips de 150 y escudos: hay ~25 mil monedas sobrando al final. Falta un sumidero de cola larga (más cosméticos caros, por ejemplo) si se quiere que la economía siga enganchando en las torres 4-10.
+- El "algo nuevo" cuenta mundo nuevo, primer encuentro con un tipo de obstáculo, compra, regalo de tiempo y diario; no cuenta cambios de ambiente o eventos.
+
+Verificación: `rojo build default.project.json` OK, `luau-lsp analyze` sin salida, tests puros (`tests/*_test.luau`, incluido el nuevo `pacing_test`, 187 checks) pasan.

@@ -259,7 +259,7 @@ end
 function Layout.difficulty(g: number): number
 	local base
 	if g <= Layout.STAGES then
-		base = 0.78 * ((g - 1) / (Layout.STAGES - 1)) ^ 0.75
+		base = 0.8 * ((g - 1) / (Layout.STAGES - 1)) ^ 0.55
 	else
 		base = 0.78 + 0.22 * ((g - Layout.STAGES) / (Layout.TOTAL - Layout.STAGES)) ^ 0.7
 	end
@@ -272,11 +272,11 @@ function Layout.reach(g: number): number
 	if g <= 10 then
 		return lerp(0.42, 0.58, (g - 1) / 9)
 	elseif g <= 50 then
-		return lerp(0.6, 0.8, (g - 11) / 39)
+		return lerp(0.6, 0.84, (g - 11) / 39)
 	elseif g <= Layout.STAGES then
-		return lerp(0.8, 0.89, (g - 51) / 49)
+		return lerp(0.84, 0.93, ((g - 51) / 49) ^ 0.8)
 	end
-	return lerp(0.89, 0.915, ((g - Layout.STAGES - 1) / (Layout.TOTAL - Layout.STAGES - 1)) ^ 0.6)
+	return lerp(0.93, 0.93, ((g - Layout.STAGES - 1) / (Layout.TOTAL - Layout.STAGES - 1)) ^ 0.6)
 end
 
 -- Checkpoint spacing: every pad saves up to stage 50; after that only some do (the others are rest
@@ -426,7 +426,7 @@ function Kinds.jumps(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 2.6, c.d),
 		minLen = 2.4,
-		width = lerp(6, 2.8, c.d),
+		width = lerp(6, 2.5, c.d),
 		latAmp = 3,
 	})
 	local hazards: { Hazard } = {}
@@ -452,7 +452,7 @@ function Kinds.killbricks(c: Ctx): KindResult
 		minLen = 3,
 		width = 8,
 		latAmp = 0,
-		gapScale = 0.85,
+		gapScale = lerp(0.85, 0.95, c.d),
 	})
 	local hazards: { Hazard } = {}
 	local prevEnd, prevY = c.s0, 0
@@ -498,7 +498,7 @@ function Kinds.beam(c: Ctx): KindResult
 		minLen = 6,
 		width = lerp(2.4, 1, c.d),
 		latAmp = lerp(1.2, 2.2, c.d),
-		gapScale = lerp(0.6, 0.85, c.d),
+		gapScale = lerp(0.6, 0.92, c.d),
 	})
 	return { nodes = nodes, hazards = {} }
 end
@@ -515,7 +515,7 @@ function Kinds.conveyor(c: Ctx): KindResult
 		minLen = 6,
 		width = lerp(6, 4.5, c.d),
 		latAmp = 2,
-		gapScale = 0.75,
+		gapScale = lerp(0.75, 0.92, c.d),
 	})
 	local hazards: { Hazard } = {}
 	for i, n in nodes do
@@ -539,7 +539,7 @@ end
 function Kinds.truss(c: Ctx): KindResult
 	local rng = c.rng
 	local nodes: { Node } = {}
-	local g1 = gapFor(c, 0, 0.7)
+	local g1 = gapFor(c, 0, lerp(0.7, 0.9, c.d))
 	local walk = rng.range(8, 12)
 	local a1 = node("platform", c.s0 + g1 + walk / 2, 0, 0, walk, lerp(6, 4, c.d))
 	table.insert(nodes, a1)
@@ -611,11 +611,11 @@ function Kinds.disappear(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3, c.d),
 		minLen = 2.6,
-		width = lerp(6, 3.2, c.d),
+		width = lerp(6, 2.8, c.d),
 		latAmp = 3,
 	})
 	for _, n in nodes do
-		n.delay = lerp(0.9, 0.28, c.d)
+		n.delay = lerp(0.9, 0.45, c.d) -- floor: under ~0.45 s nobody can hop on in time
 	end
 	return { nodes = nodes, hazards = {} }
 end
@@ -630,7 +630,7 @@ function Kinds.moving(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(7, 4, c.d),
 		minLen = 3.6,
-		width = lerp(7, 4, c.d),
+		width = lerp(7, 3.6, c.d),
 		latAmp = 0,
 		maxN = 6,
 		gapScale = 0.85,
@@ -639,7 +639,7 @@ function Kinds.moving(c: Ctx): KindResult
 		local vertical = c.d > 0.4 and i % 2 == 0
 		n.moveAxis = if vertical then "y" else "lat"
 		n.moveAmp = if vertical then lerp(2, 3, c.d) else math.min(lerp(3.5, 6.5, c.d), Layout.MAX_LAT_EXTENT - n.width / 2)
-		n.movePeriod = lerp(5, 2.2, c.d)
+		n.movePeriod = lerp(4.8, 2.05, c.d)
 		n.movePhase = c.rng.next()
 	end
 	return { nodes = nodes, hazards = {} }
@@ -657,7 +657,7 @@ function Kinds.spinner(c: Ctx): KindResult
 		minLen = 11,
 		width = lerp(14, 11, c.d),
 		latAmp = 0,
-		gapScale = 0.6,
+		gapScale = lerp(0.6, 0.88, c.d), -- the easy kinds ramp too, so no kind stays a free stage late on
 		maxN = 3,
 	})
 	local hazards: { Hazard } = {}
@@ -687,7 +687,7 @@ function Kinds.ice(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(7, 4, c.d),
 		minLen = 3,
-		width = lerp(6, 4, c.d),
+		width = lerp(6, 3.6, c.d),
 		latAmp = 2,
 		gapScale = 0.9,
 	})
@@ -704,7 +704,7 @@ function Kinds.glass(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3.4, c.d),
 		minLen = 3,
-		width = lerp(5, 3.4, c.d),
+		width = lerp(5, 3.0, c.d),
 		latAmp = 3,
 		gapScale = 0.9,
 	})
@@ -721,11 +721,11 @@ function Kinds.falling(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3, c.d),
 		minLen = 2.6,
-		width = lerp(5, 3.2, c.d),
+		width = lerp(5, 2.8, c.d),
 		latAmp = 2,
 	})
 	for _, n in nodes do
-		n.delay = lerp(0.8, 0.28, c.d)
+		n.delay = lerp(0.8, 0.45, c.d)
 	end
 	return { nodes = nodes, hazards = {} }
 end
@@ -742,7 +742,7 @@ function Kinds.laser(c: Ctx): KindResult
 		minLen = 10,
 		width = lerp(8, 6, c.d),
 		latAmp = 0,
-		gapScale = 0.6,
+		gapScale = lerp(0.6, 0.88, c.d),
 		maxN = 3,
 	})
 	local hazards: { Hazard } = {}
@@ -782,8 +782,9 @@ function Kinds.lava(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(5, 3, c.d),
 		minLen = 2.6,
-		width = lerp(5, 3.2, c.d),
+		width = lerp(5, 2.8, c.d),
 		latAmp = 3,
+		gapScale = 0.88, -- the rising lava is the pressure
 	})
 	local lavaStart, lavaEnd = c.s0 + 1, c.s1 - 1
 	return {
@@ -818,6 +819,7 @@ function Kinds.wallhop(c: Ctx): KindResult
 		minLen = 2,
 		width = ledgeW,
 		latAmp = 0,
+		gapScale = lerp(0.72, 0.82, c.d), -- tiny ledges at full reach were the hardest stage of each tower by far
 	})
 	local ledgeLat = side * 4
 	for _, n in nodes do
@@ -854,7 +856,7 @@ function Kinds.wind(c: Ctx): KindResult
 		minLen = 3.5,
 		width = lerp(7, 4.2, c.d),
 		latAmp = 2,
-		gapScale = 0.85,
+		gapScale = lerp(0.85, 0.95, c.d),
 	})
 	local hazards: { Hazard } = {}
 	local zones = if c.d > 0.5 then 3 else 2
@@ -888,7 +890,7 @@ function Kinds.mixed(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3.2, c.d),
 		minLen = 2.8,
-		width = lerp(6, 3.6, c.d),
+		width = lerp(6, 3.1, c.d),
 		latAmp = 2.5,
 		gapScale = 0.9,
 	})

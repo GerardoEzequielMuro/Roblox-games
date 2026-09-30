@@ -243,6 +243,7 @@ return Ambience
 local TowerStyle = require(script.Parent.TowerStyle)
 local Rules = require(script.Parent.Rules)
 local Pricing = require(script.Parent.Pricing)
+local Economy = require(script.Parent.Economy)
 
 local Config = {}
 
@@ -356,49 +357,39 @@ Config.GlassRevealDistance = 16
 
 -- Coins --------------------------------------------------------------------------------------
 Config.CoinsPerStage = Rules.coinsForStage -- 5 + 2 per world reached (capped at 55)
-Config.CoinsPerTower = 250 -- bonus for every summit (stage 100, 200 ... 1000)
-Config.CoinPickupValue = 3
-Config.CoinsPerWin = 250
+Config.CoinsPerTower = Economy.CoinsPerTower -- bonus for every summit (stage 100, 200 ... 1000)
+Config.CoinPickupValue = Economy.CoinPickupValue
+Config.CoinsPerWin = Economy.CoinsPerWin
 Config.VIPCoinBonus = 0.5 -- +50%
 
 -- Rewards -------------------------------------------------------------------------------------
-Config.DailyRewards = { 25, 40, 60, 80, 100, 150, 250 } -- by streak day (day 7+ repeats last)
-Config.DailyFreeSkipOnDay = 7 -- streak day that also gives a free skip
-Config.DailyCooldown = 20 * 3600 -- can claim again after 20 h
-Config.DailyStreakWindow = 48 * 3600 -- miss this and the streak resets
+Config.DailyRewards = Economy.DailyRewards -- by streak day (day 7+ repeats last)
+Config.DailyFreeSkipOnDay = Economy.DailyFreeSkipOnDay -- streak day that also gives a free skip
+Config.DailyCooldown = Economy.DailyCooldown -- can claim again after 20 h
+Config.DailyStreakWindow = Economy.DailyStreakWindow -- miss this and the streak resets
 
-export type PlaytimeReward = { minutes: number, coins: number, freeSkips: number }
-Config.PlaytimeRewards = {
-	{ minutes = 1, coins = 20, freeSkips = 0 }, -- first gift inside the first minute
-	{ minutes = 5, coins = 30, freeSkips = 0 },
-	{ minutes = 15, coins = 75, freeSkips = 0 },
-	{ minutes = 30, coins = 150, freeSkips = 1 },
-	{ minutes = 60, coins = 300, freeSkips = 2 },
-} :: { PlaytimeReward }
+export type PlaytimeReward = Economy.PlaytimeReward
+Config.PlaytimeRewards = Economy.PlaytimeRewards
 
-export type Code = { coins: number, freeSkips: number?, expires: number? }
-Config.Codes = {
-	RELEASE = { coins = 100 },
-	SKYHIGH = { coins = 150, freeSkips = 1 },
-	CLOUDS = { coins = 50 },
-} :: { [string]: Code }
+export type Code = Economy.Code
+Config.Codes = Economy.Codes
 
 -- Cosmetics -----------------------------------------------------------------------------------
 -- exclusive = only granted by something else ("StarterPack", "Group"); never sold for coins
 -- exclusive "Gift" = tower gifts (Shared/Gifts), "Lounge" = free in the Winner's Lounge (Shared/Perks)
 export type Trail = { id: string, name: string, price: number, colors: { Color3 }, pass: string?, exclusive: string? }
 Config.Trails = {
-	{ id = "white", name = "Cloud", price = 100, colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 230, 255) } },
-	{ id = "mint", name = "Mint", price = 250, colors = { Color3.fromRGB(120, 255, 200), Color3.fromRGB(40, 200, 160) } },
-	{ id = "fire", name = "Fire", price = 500, colors = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 60, 20) } },
-	{ id = "ocean", name = "Ocean", price = 800, colors = { Color3.fromRGB(90, 200, 255), Color3.fromRGB(20, 60, 220) } },
-	{ id = "candy", name = "Candy", price = 1200, colors = { Color3.fromRGB(255, 120, 200), Color3.fromRGB(140, 220, 255) } },
-	{ id = "toxic", name = "Toxic", price = 1800, colors = { Color3.fromRGB(180, 255, 40), Color3.fromRGB(30, 140, 30) } },
-	{ id = "galaxy", name = "Galaxy", price = 3000, colors = { Color3.fromRGB(160, 80, 255), Color3.fromRGB(20, 10, 60) } },
+	{ id = "white", name = "Cloud", price = Economy.TrailPrice.white, colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 230, 255) } },
+	{ id = "mint", name = "Mint", price = Economy.TrailPrice.mint, colors = { Color3.fromRGB(120, 255, 200), Color3.fromRGB(40, 200, 160) } },
+	{ id = "fire", name = "Fire", price = Economy.TrailPrice.fire, colors = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 60, 20) } },
+	{ id = "ocean", name = "Ocean", price = Economy.TrailPrice.ocean, colors = { Color3.fromRGB(90, 200, 255), Color3.fromRGB(20, 60, 220) } },
+	{ id = "candy", name = "Candy", price = Economy.TrailPrice.candy, colors = { Color3.fromRGB(255, 120, 200), Color3.fromRGB(140, 220, 255) } },
+	{ id = "toxic", name = "Toxic", price = Economy.TrailPrice.toxic, colors = { Color3.fromRGB(180, 255, 40), Color3.fromRGB(30, 140, 30) } },
+	{ id = "galaxy", name = "Galaxy", price = Economy.TrailPrice.galaxy, colors = { Color3.fromRGB(160, 80, 255), Color3.fromRGB(20, 10, 60) } },
 	{
 		id = "rainbow",
 		name = "Rainbow",
-		price = 6000,
+		price = Economy.TrailPrice.rainbow,
 		colors = {
 			Color3.fromRGB(255, 60, 60),
 			Color3.fromRGB(255, 200, 40),
@@ -418,10 +409,10 @@ Config.Trails = {
 
 export type Effect = { id: string, name: string, price: number, kind: string, color: Color3, exclusive: string? }
 Config.Effects = {
-	{ id = "sparkles", name = "Sparkles", price = 400, kind = "Sparkles", color = Color3.fromRGB(255, 240, 120) },
-	{ id = "stars", name = "Star Aura", price = 1500, kind = "Aura", color = Color3.fromRGB(140, 220, 255) },
-	{ id = "smoke", name = "Smoke", price = 900, kind = "Smoke", color = Color3.fromRGB(230, 230, 240) },
-	{ id = "flames", name = "Flames", price = 2500, kind = "Fire", color = Color3.fromRGB(255, 120, 30) },
+	{ id = "sparkles", name = "Sparkles", price = Economy.EffectPrice.sparkles, kind = "Sparkles", color = Color3.fromRGB(255, 240, 120) },
+	{ id = "stars", name = "Star Aura", price = Economy.EffectPrice.stars, kind = "Aura", color = Color3.fromRGB(140, 220, 255) },
+	{ id = "smoke", name = "Smoke", price = Economy.EffectPrice.smoke, kind = "Smoke", color = Color3.fromRGB(230, 230, 240) },
+	{ id = "flames", name = "Flames", price = Economy.EffectPrice.flames, kind = "Fire", color = Color3.fromRGB(255, 120, 30) },
 	{ id = "aurora", name = "Aurora", price = 0, kind = "Aura", color = Color3.fromRGB(120, 255, 200), exclusive = "Gift" },
 	{ id = "lounge_stars", name = "Starlight", price = 0, kind = "Aura", color = Color3.fromRGB(255, 240, 160), exclusive = "Lounge" },
 } :: { Effect }
@@ -679,6 +670,65 @@ return DecorPlan
       </Item>
       <Item class="ModuleScript" referent="7">
         <Properties>
+          <string name="Name">Economy</string>
+          <string name="Source"><![CDATA[--!strict
+-- Coin economy numbers (what the free player earns and what the cosmetics cost). PURE Luau, no
+-- Roblox APIs, so sim/pacing_sim.luau and tests/pacing_test.luau can load the REAL numbers
+-- (Config requires this module and re-exports every field, like it does with Shared/Pricing).
+-- Robux prices are NOT here: they live in Shared/Pricing.
+local Economy = {}
+
+Economy.CoinsPerTower = 250 -- bonus for every summit (stage 100, 200 ... 1000)
+Economy.CoinPickupValue = 3
+Economy.CoinsPerWin = 250
+
+Economy.DailyRewards = { 25, 40, 60, 80, 100, 150, 250 } -- by streak day (day 7+ repeats last)
+Economy.DailyFreeSkipOnDay = 7 -- streak day that also gives a free skip
+Economy.DailyCooldown = 20 * 3600 -- can claim again after 20 h
+Economy.DailyStreakWindow = 48 * 3600 -- miss this and the streak resets
+
+export type PlaytimeReward = { minutes: number, coins: number, freeSkips: number }
+Economy.PlaytimeRewards = {
+	{ minutes = 1, coins = 20, freeSkips = 0 }, -- first gift inside the first minute
+	{ minutes = 5, coins = 30, freeSkips = 0 },
+	{ minutes = 15, coins = 75, freeSkips = 0 },
+	{ minutes = 30, coins = 150, freeSkips = 1 },
+	{ minutes = 60, coins = 300, freeSkips = 2 },
+} :: { PlaytimeReward }
+
+export type Code = { coins: number, freeSkips: number?, expires: number? }
+Economy.Codes = {
+	RELEASE = { coins = 100 },
+	SKYHIGH = { coins = 150, freeSkips = 1 },
+	CLOUDS = { coins = 50 },
+} :: { [string]: Code }
+
+-- Coin prices of the cosmetics sold in the menu shop (Config.Trails / Config.Effects take them
+-- from here; the free / exclusive ones have no entry).
+Economy.TrailPrice = {
+	white = 20,
+	mint = 50,
+	fire = 160,
+	ocean = 350,
+	candy = 650,
+	toxic = 1200,
+	galaxy = 3000,
+	rainbow = 6000,
+} :: { [string]: number }
+
+Economy.EffectPrice = {
+	sparkles = 100,
+	smoke = 400,
+	stars = 900,
+	flames = 2500,
+} :: { [string]: number }
+
+return Economy
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="8">
+        <Properties>
           <string name="Name">Gifts</string>
           <string name="Source"><![CDATA[--!strict
 -- The gift at the top of every tower: ten different, fixed rewards (nothing random, nothing to
@@ -762,7 +812,7 @@ return Gifts
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="9">
         <Properties>
           <string name="Name">Icons</string>
           <string name="Source"><![CDATA[--!strict
@@ -889,7 +939,7 @@ return Icons
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="9">
+      <Item class="ModuleScript" referent="10">
         <Properties>
           <string name="Name">Layout</string>
           <string name="Source"><![CDATA[--!strict
@@ -1153,7 +1203,7 @@ end
 function Layout.difficulty(g: number): number
 	local base
 	if g <= Layout.STAGES then
-		base = 0.78 * ((g - 1) / (Layout.STAGES - 1)) ^ 0.75
+		base = 0.8 * ((g - 1) / (Layout.STAGES - 1)) ^ 0.55
 	else
 		base = 0.78 + 0.22 * ((g - Layout.STAGES) / (Layout.TOTAL - Layout.STAGES)) ^ 0.7
 	end
@@ -1166,11 +1216,11 @@ function Layout.reach(g: number): number
 	if g <= 10 then
 		return lerp(0.42, 0.58, (g - 1) / 9)
 	elseif g <= 50 then
-		return lerp(0.6, 0.8, (g - 11) / 39)
+		return lerp(0.6, 0.84, (g - 11) / 39)
 	elseif g <= Layout.STAGES then
-		return lerp(0.8, 0.89, (g - 51) / 49)
+		return lerp(0.84, 0.93, ((g - 51) / 49) ^ 0.8)
 	end
-	return lerp(0.89, 0.915, ((g - Layout.STAGES - 1) / (Layout.TOTAL - Layout.STAGES - 1)) ^ 0.6)
+	return lerp(0.93, 0.93, ((g - Layout.STAGES - 1) / (Layout.TOTAL - Layout.STAGES - 1)) ^ 0.6)
 end
 
 -- Checkpoint spacing: every pad saves up to stage 50; after that only some do (the others are rest
@@ -1320,7 +1370,7 @@ function Kinds.jumps(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 2.6, c.d),
 		minLen = 2.4,
-		width = lerp(6, 2.8, c.d),
+		width = lerp(6, 2.5, c.d),
 		latAmp = 3,
 	})
 	local hazards: { Hazard } = {}
@@ -1346,7 +1396,7 @@ function Kinds.killbricks(c: Ctx): KindResult
 		minLen = 3,
 		width = 8,
 		latAmp = 0,
-		gapScale = 0.85,
+		gapScale = lerp(0.85, 0.95, c.d),
 	})
 	local hazards: { Hazard } = {}
 	local prevEnd, prevY = c.s0, 0
@@ -1392,7 +1442,7 @@ function Kinds.beam(c: Ctx): KindResult
 		minLen = 6,
 		width = lerp(2.4, 1, c.d),
 		latAmp = lerp(1.2, 2.2, c.d),
-		gapScale = lerp(0.6, 0.85, c.d),
+		gapScale = lerp(0.6, 0.92, c.d),
 	})
 	return { nodes = nodes, hazards = {} }
 end
@@ -1409,7 +1459,7 @@ function Kinds.conveyor(c: Ctx): KindResult
 		minLen = 6,
 		width = lerp(6, 4.5, c.d),
 		latAmp = 2,
-		gapScale = 0.75,
+		gapScale = lerp(0.75, 0.92, c.d),
 	})
 	local hazards: { Hazard } = {}
 	for i, n in nodes do
@@ -1433,7 +1483,7 @@ end
 function Kinds.truss(c: Ctx): KindResult
 	local rng = c.rng
 	local nodes: { Node } = {}
-	local g1 = gapFor(c, 0, 0.7)
+	local g1 = gapFor(c, 0, lerp(0.7, 0.9, c.d))
 	local walk = rng.range(8, 12)
 	local a1 = node("platform", c.s0 + g1 + walk / 2, 0, 0, walk, lerp(6, 4, c.d))
 	table.insert(nodes, a1)
@@ -1505,11 +1555,11 @@ function Kinds.disappear(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3, c.d),
 		minLen = 2.6,
-		width = lerp(6, 3.2, c.d),
+		width = lerp(6, 2.8, c.d),
 		latAmp = 3,
 	})
 	for _, n in nodes do
-		n.delay = lerp(0.9, 0.28, c.d)
+		n.delay = lerp(0.9, 0.45, c.d) -- floor: under ~0.45 s nobody can hop on in time
 	end
 	return { nodes = nodes, hazards = {} }
 end
@@ -1524,7 +1574,7 @@ function Kinds.moving(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(7, 4, c.d),
 		minLen = 3.6,
-		width = lerp(7, 4, c.d),
+		width = lerp(7, 3.6, c.d),
 		latAmp = 0,
 		maxN = 6,
 		gapScale = 0.85,
@@ -1533,7 +1583,7 @@ function Kinds.moving(c: Ctx): KindResult
 		local vertical = c.d > 0.4 and i % 2 == 0
 		n.moveAxis = if vertical then "y" else "lat"
 		n.moveAmp = if vertical then lerp(2, 3, c.d) else math.min(lerp(3.5, 6.5, c.d), Layout.MAX_LAT_EXTENT - n.width / 2)
-		n.movePeriod = lerp(5, 2.2, c.d)
+		n.movePeriod = lerp(4.8, 2.05, c.d)
 		n.movePhase = c.rng.next()
 	end
 	return { nodes = nodes, hazards = {} }
@@ -1551,7 +1601,7 @@ function Kinds.spinner(c: Ctx): KindResult
 		minLen = 11,
 		width = lerp(14, 11, c.d),
 		latAmp = 0,
-		gapScale = 0.6,
+		gapScale = lerp(0.6, 0.88, c.d), -- the easy kinds ramp too, so no kind stays a free stage late on
 		maxN = 3,
 	})
 	local hazards: { Hazard } = {}
@@ -1581,7 +1631,7 @@ function Kinds.ice(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(7, 4, c.d),
 		minLen = 3,
-		width = lerp(6, 4, c.d),
+		width = lerp(6, 3.6, c.d),
 		latAmp = 2,
 		gapScale = 0.9,
 	})
@@ -1598,7 +1648,7 @@ function Kinds.glass(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3.4, c.d),
 		minLen = 3,
-		width = lerp(5, 3.4, c.d),
+		width = lerp(5, 3.0, c.d),
 		latAmp = 3,
 		gapScale = 0.9,
 	})
@@ -1615,11 +1665,11 @@ function Kinds.falling(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3, c.d),
 		minLen = 2.6,
-		width = lerp(5, 3.2, c.d),
+		width = lerp(5, 2.8, c.d),
 		latAmp = 2,
 	})
 	for _, n in nodes do
-		n.delay = lerp(0.8, 0.28, c.d)
+		n.delay = lerp(0.8, 0.45, c.d)
 	end
 	return { nodes = nodes, hazards = {} }
 end
@@ -1636,7 +1686,7 @@ function Kinds.laser(c: Ctx): KindResult
 		minLen = 10,
 		width = lerp(8, 6, c.d),
 		latAmp = 0,
-		gapScale = 0.6,
+		gapScale = lerp(0.6, 0.88, c.d),
 		maxN = 3,
 	})
 	local hazards: { Hazard } = {}
@@ -1676,8 +1726,9 @@ function Kinds.lava(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(5, 3, c.d),
 		minLen = 2.6,
-		width = lerp(5, 3.2, c.d),
+		width = lerp(5, 2.8, c.d),
 		latAmp = 3,
+		gapScale = 0.88, -- the rising lava is the pressure
 	})
 	local lavaStart, lavaEnd = c.s0 + 1, c.s1 - 1
 	return {
@@ -1712,6 +1763,7 @@ function Kinds.wallhop(c: Ctx): KindResult
 		minLen = 2,
 		width = ledgeW,
 		latAmp = 0,
+		gapScale = lerp(0.72, 0.82, c.d), -- tiny ledges at full reach were the hardest stage of each tower by far
 	})
 	local ledgeLat = side * 4
 	for _, n in nodes do
@@ -1748,7 +1800,7 @@ function Kinds.wind(c: Ctx): KindResult
 		minLen = 3.5,
 		width = lerp(7, 4.2, c.d),
 		latAmp = 2,
-		gapScale = 0.85,
+		gapScale = lerp(0.85, 0.95, c.d),
 	})
 	local hazards: { Hazard } = {}
 	local zones = if c.d > 0.5 then 3 else 2
@@ -1782,7 +1834,7 @@ function Kinds.mixed(c: Ctx): KindResult
 		y1 = c.rise,
 		desiredLen = lerp(6, 3.2, c.d),
 		minLen = 2.8,
-		width = lerp(6, 3.6, c.d),
+		width = lerp(6, 3.1, c.d),
 		latAmp = 2.5,
 		gapScale = 0.9,
 	})
@@ -1969,7 +2021,7 @@ return Layout
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="10">
+      <Item class="ModuleScript" referent="11">
         <Properties>
           <string name="Name">LiveEvents</string>
           <string name="Source"><![CDATA[--!strict
@@ -2089,7 +2141,7 @@ return LiveEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="11">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">Locale</string>
           <string name="Source"><![CDATA[--!strict
@@ -2244,11 +2296,11 @@ return Locale
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="12">
+      <Item class="Folder" referent="13">
         <Properties>
           <string name="Name">Locales</string>
         </Properties>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="14">
           <Properties>
             <string name="Name">de</string>
             <string name="Source"><![CDATA[-- Deutsch
@@ -2597,7 +2649,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="14">
+        <Item class="ModuleScript" referent="15">
           <Properties>
             <string name="Name">en</string>
             <string name="Source"><![CDATA[-- English (default). Keys are shared by every language file; {name} = placeholder.
@@ -2957,7 +3009,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="15">
+        <Item class="ModuleScript" referent="16">
           <Properties>
             <string name="Name">es</string>
             <string name="Source"><![CDATA[-- Español
@@ -3306,7 +3358,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="16">
+        <Item class="ModuleScript" referent="17">
           <Properties>
             <string name="Name">fr</string>
             <string name="Source"><![CDATA[-- Français
@@ -3655,7 +3707,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="17">
+        <Item class="ModuleScript" referent="18">
           <Properties>
             <string name="Name">id</string>
             <string name="Source"><![CDATA[-- Bahasa Indonesia
@@ -4004,7 +4056,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="18">
+        <Item class="ModuleScript" referent="19">
           <Properties>
             <string name="Name">ja</string>
             <string name="Source"><![CDATA[-- 日本語
@@ -4353,7 +4405,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="19">
+        <Item class="ModuleScript" referent="20">
           <Properties>
             <string name="Name">ko</string>
             <string name="Source"><![CDATA[-- 한국어
@@ -4702,7 +4754,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="20">
+        <Item class="ModuleScript" referent="21">
           <Properties>
             <string name="Name">pt</string>
             <string name="Source"><![CDATA[-- Português (Brasil)
@@ -5051,7 +5103,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="22">
           <Properties>
             <string name="Name">ru</string>
             <string name="Source"><![CDATA[-- Русский
@@ -5400,7 +5452,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="22">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">th</string>
             <string name="Source"><![CDATA[-- ไทย
@@ -5749,7 +5801,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="23">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">tr</string>
             <string name="Source"><![CDATA[-- Türkçe
@@ -6098,7 +6150,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="24">
+        <Item class="ModuleScript" referent="25">
           <Properties>
             <string name="Name">vi</string>
             <string name="Source"><![CDATA[-- Tiếng Việt
@@ -6448,7 +6500,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="26">
         <Properties>
           <string name="Name">ModelFit</string>
           <string name="Source"><![CDATA[--!strict
@@ -6510,7 +6562,7 @@ return ModelFit
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="27">
         <Properties>
           <string name="Name">Perks</string>
           <string name="Source"><![CDATA[--!strict
@@ -6602,7 +6654,7 @@ return Perks
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="28">
         <Properties>
           <string name="Name">Powerups</string>
           <string name="Source"><![CDATA[--!strict
@@ -6719,7 +6771,7 @@ return Powerups
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">Pricing</string>
           <string name="Source"><![CDATA[--!strict
@@ -6817,7 +6869,7 @@ return Pricing
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">Quality</string>
           <string name="Source"><![CDATA[--!strict
@@ -6850,7 +6902,7 @@ return Quality
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">Referral</string>
           <string name="Source"><![CDATA[--!strict
@@ -6881,7 +6933,7 @@ return Referral
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">Rules</string>
           <string name="Source"><![CDATA[--!strict
@@ -7121,7 +7173,7 @@ return Rules
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">RunTime</string>
           <string name="Source"><![CDATA[--!strict
@@ -7145,7 +7197,7 @@ return RunTime
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="33">
+      <Item class="ModuleScript" referent="34">
         <Properties>
           <string name="Name">Segments</string>
           <string name="Source"><![CDATA[--!strict
@@ -7193,7 +7245,7 @@ return Segments
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="34">
+      <Item class="ModuleScript" referent="35">
         <Properties>
           <string name="Name">TowerStyle</string>
           <string name="Source"><![CDATA[--!strict
@@ -7341,11 +7393,11 @@ return TowerStyle
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="35">
+  <Item class="ServerScriptService" referent="36">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Script" referent="36">
+    <Item class="Script" referent="37">
       <Properties>
         <string name="Name">Server</string>
         <token name="RunContext">0</token>
@@ -7535,7 +7587,7 @@ task.spawn(function()
 end)
 ]]></string>
       </Properties>
-      <Item class="ModuleScript" referent="37">
+      <Item class="ModuleScript" referent="38">
         <Properties>
           <string name="Name">Checkpoints</string>
           <string name="Source"><![CDATA[--!strict
@@ -8168,7 +8220,7 @@ return Checkpoints
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="38">
+      <Item class="ModuleScript" referent="39">
         <Properties>
           <string name="Name">Cosmetics</string>
           <string name="Source"><![CDATA[--!strict
@@ -8566,7 +8618,7 @@ return Cosmetics
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="39">
+      <Item class="ModuleScript" referent="40">
         <Properties>
           <string name="Name">Data</string>
           <string name="Source"><![CDATA[--!strict
@@ -8845,7 +8897,7 @@ return Data
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="40">
+      <Item class="ModuleScript" referent="41">
         <Properties>
           <string name="Name">Events</string>
           <string name="Source"><![CDATA[--!strict
@@ -8957,7 +9009,7 @@ return Events
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="41">
+      <Item class="ModuleScript" referent="42">
         <Properties>
           <string name="Name">Leaderboard</string>
           <string name="Source"><![CDATA[--!strict
@@ -9145,7 +9197,7 @@ return Leaderboard
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="42">
+      <Item class="ModuleScript" referent="43">
         <Properties>
           <string name="Name">Lounge</string>
           <string name="Source"><![CDATA[--!strict
@@ -9289,7 +9341,7 @@ return Lounge
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="43">
+      <Item class="ModuleScript" referent="44">
         <Properties>
           <string name="Name">Monetization</string>
           <string name="Source"><![CDATA[--!strict
@@ -9508,7 +9560,7 @@ return Monetization
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="44">
+      <Item class="ModuleScript" referent="45">
         <Properties>
           <string name="Name">Nametags</string>
           <string name="Source"><![CDATA[--!strict
@@ -9622,7 +9674,7 @@ return Nametags
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="45">
+      <Item class="ModuleScript" referent="46">
         <Properties>
           <string name="Name">Obstacles</string>
           <string name="Source"><![CDATA[--!strict
@@ -10061,7 +10113,7 @@ return Obstacles
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="46">
+      <Item class="ModuleScript" referent="47">
         <Properties>
           <string name="Name">Referrals</string>
           <string name="Source"><![CDATA[--!strict
@@ -10238,7 +10290,7 @@ return Referrals
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="47">
+      <Item class="ModuleScript" referent="48">
         <Properties>
           <string name="Name">Remotes</string>
           <string name="Source"><![CDATA[--!strict
@@ -10349,7 +10401,7 @@ return Remotes
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="48">
+      <Item class="ModuleScript" referent="49">
         <Properties>
           <string name="Name">Rewards</string>
           <string name="Source"><![CDATA[--!strict
@@ -10489,7 +10541,7 @@ return Rewards
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="49">
+      <Item class="ModuleScript" referent="50">
         <Properties>
           <string name="Name">Scenery</string>
           <string name="Source"><![CDATA[--!strict
@@ -11972,7 +12024,7 @@ return Scenery
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="50">
+      <Item class="ModuleScript" referent="51">
         <Properties>
           <string name="Name">Session</string>
           <string name="Source"><![CDATA[--!strict
@@ -12261,7 +12313,7 @@ return Session
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="51">
+      <Item class="ModuleScript" referent="52">
         <Properties>
           <string name="Name">Shops</string>
           <string name="Source"><![CDATA[--!strict
@@ -12429,7 +12481,7 @@ return Shops
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="52">
+      <Item class="ModuleScript" referent="53">
         <Properties>
           <string name="Name">StageGenerator</string>
           <string name="Source"><![CDATA[--!strict
@@ -13430,7 +13482,7 @@ return StageGenerator
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="53">
+      <Item class="ModuleScript" referent="54">
         <Properties>
           <string name="Name">Towers</string>
           <string name="Source"><![CDATA[--!strict
@@ -13577,11 +13629,11 @@ return Towers
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="54">
+      <Item class="Folder" referent="55">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">ModelSlots</string>
             <string name="Source"><![CDATA[--!strict
@@ -13747,28 +13799,28 @@ return ModelSlots
       </Item>
     </Item>
   </Item>
-  <Item class="ServerStorage" referent="56">
+  <Item class="ServerStorage" referent="57">
     <Properties>
       <string name="Name">ServerStorage</string>
     </Properties>
-    <Item class="Folder" referent="57">
+    <Item class="Folder" referent="58">
       <Properties>
         <string name="Name">ModelLibrary</string>
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="58">
+  <Item class="StarterPlayer" referent="59">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CharacterJumpPower">50</float>
       <bool name="CharacterUseJumpPower">true</bool>
       <float name="CharacterWalkSpeed">16</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="59">
+    <Item class="StarterPlayerScripts" referent="60">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="LocalScript" referent="60">
+      <Item class="LocalScript" referent="61">
         <Properties>
           <string name="Name">Client</string>
           <string name="Source"><![CDATA[--!strict
@@ -13910,7 +13962,7 @@ task.spawn(function()
 end)
 ]]></string>
         </Properties>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="62">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -13950,7 +14002,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="62">
+        <Item class="ModuleScript" referent="63">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -14011,11 +14063,11 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="63">
+        <Item class="Folder" referent="64">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="64">
+          <Item class="ModuleScript" referent="65">
             <Properties>
               <string name="Name">Cards</string>
               <string name="Source"><![CDATA[--!strict
@@ -14121,7 +14173,7 @@ return Cards
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="65">
+          <Item class="ModuleScript" referent="66">
             <Properties>
               <string name="Name">Celebrate</string>
               <string name="Source"><![CDATA[--!strict
@@ -14288,7 +14340,7 @@ return Celebrate
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="66">
+          <Item class="ModuleScript" referent="67">
             <Properties>
               <string name="Name">EventBar</string>
               <string name="Source"><![CDATA[--!strict
@@ -14382,7 +14434,7 @@ return EventBar
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="67">
+          <Item class="ModuleScript" referent="68">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -15062,7 +15114,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="68">
+          <Item class="ModuleScript" referent="69">
             <Properties>
               <string name="Name">Intro</string>
               <string name="Source"><![CDATA[--!strict
@@ -15144,7 +15196,7 @@ return Intro
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="69">
+          <Item class="ModuleScript" referent="70">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!strict
@@ -15840,7 +15892,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">Progress</string>
               <string name="Source"><![CDATA[--!strict
@@ -16099,7 +16151,7 @@ return Progress
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">Prompts</string>
               <string name="Source"><![CDATA[--!strict
@@ -16237,7 +16289,7 @@ return Prompts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">RewardsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16444,7 +16496,7 @@ return RewardsPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="74">
             <Properties>
               <string name="Name">SettingsPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16597,7 +16649,7 @@ return SettingsPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="74">
+          <Item class="ModuleScript" referent="75">
             <Properties>
               <string name="Name">ShopPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16757,7 +16809,7 @@ return ShopPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="76">
             <Properties>
               <string name="Name">StarterPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16849,7 +16901,7 @@ return StarterPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">StorePanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16979,7 +17031,7 @@ return StorePanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">Toast</string>
               <string name="Source"><![CDATA[--!strict
@@ -17063,7 +17115,7 @@ return Toast
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">TravelPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -17131,7 +17183,7 @@ return TravelPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">WinPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -17226,11 +17278,11 @@ return WinPanel
             </Properties>
           </Item>
         </Item>
-        <Item class="Folder" referent="80">
+        <Item class="Folder" referent="81">
           <Properties>
             <string name="Name">World</string>
           </Properties>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">Atmos</string>
               <string name="Source"><![CDATA[--!strict
@@ -17424,7 +17476,7 @@ return Atmos
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">ChatTags</string>
               <string name="Source"><![CDATA[--!strict
@@ -17465,7 +17517,7 @@ return ChatTags
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">Juice</string>
               <string name="Source"><![CDATA[--!strict
@@ -18039,7 +18091,7 @@ return Juice
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">LocalFx</string>
               <string name="Source"><![CDATA[--!strict
@@ -18383,7 +18435,7 @@ return LocalFx
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Weather</string>
               <string name="Source"><![CDATA[--!strict
@@ -18516,7 +18568,7 @@ return Weather
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">WorldText</string>
               <string name="Source"><![CDATA[--!strict
@@ -18615,7 +18667,7 @@ return WorldText
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="87">
+  <Item class="Workspace" referent="88">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="FallenPartsDestroyHeight">-200</float>

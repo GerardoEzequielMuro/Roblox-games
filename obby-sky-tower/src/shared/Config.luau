@@ -5,6 +5,7 @@
 local TowerStyle = require(script.Parent.TowerStyle)
 local Rules = require(script.Parent.Rules)
 local Pricing = require(script.Parent.Pricing)
+local Economy = require(script.Parent.Economy)
 
 local Config = {}
 
@@ -118,49 +119,39 @@ Config.GlassRevealDistance = 16
 
 -- Coins --------------------------------------------------------------------------------------
 Config.CoinsPerStage = Rules.coinsForStage -- 5 + 2 per world reached (capped at 55)
-Config.CoinsPerTower = 250 -- bonus for every summit (stage 100, 200 ... 1000)
-Config.CoinPickupValue = 3
-Config.CoinsPerWin = 250
+Config.CoinsPerTower = Economy.CoinsPerTower -- bonus for every summit (stage 100, 200 ... 1000)
+Config.CoinPickupValue = Economy.CoinPickupValue
+Config.CoinsPerWin = Economy.CoinsPerWin
 Config.VIPCoinBonus = 0.5 -- +50%
 
 -- Rewards -------------------------------------------------------------------------------------
-Config.DailyRewards = { 25, 40, 60, 80, 100, 150, 250 } -- by streak day (day 7+ repeats last)
-Config.DailyFreeSkipOnDay = 7 -- streak day that also gives a free skip
-Config.DailyCooldown = 20 * 3600 -- can claim again after 20 h
-Config.DailyStreakWindow = 48 * 3600 -- miss this and the streak resets
+Config.DailyRewards = Economy.DailyRewards -- by streak day (day 7+ repeats last)
+Config.DailyFreeSkipOnDay = Economy.DailyFreeSkipOnDay -- streak day that also gives a free skip
+Config.DailyCooldown = Economy.DailyCooldown -- can claim again after 20 h
+Config.DailyStreakWindow = Economy.DailyStreakWindow -- miss this and the streak resets
 
-export type PlaytimeReward = { minutes: number, coins: number, freeSkips: number }
-Config.PlaytimeRewards = {
-	{ minutes = 1, coins = 20, freeSkips = 0 }, -- first gift inside the first minute
-	{ minutes = 5, coins = 30, freeSkips = 0 },
-	{ minutes = 15, coins = 75, freeSkips = 0 },
-	{ minutes = 30, coins = 150, freeSkips = 1 },
-	{ minutes = 60, coins = 300, freeSkips = 2 },
-} :: { PlaytimeReward }
+export type PlaytimeReward = Economy.PlaytimeReward
+Config.PlaytimeRewards = Economy.PlaytimeRewards
 
-export type Code = { coins: number, freeSkips: number?, expires: number? }
-Config.Codes = {
-	RELEASE = { coins = 100 },
-	SKYHIGH = { coins = 150, freeSkips = 1 },
-	CLOUDS = { coins = 50 },
-} :: { [string]: Code }
+export type Code = Economy.Code
+Config.Codes = Economy.Codes
 
 -- Cosmetics -----------------------------------------------------------------------------------
 -- exclusive = only granted by something else ("StarterPack", "Group"); never sold for coins
 -- exclusive "Gift" = tower gifts (Shared/Gifts), "Lounge" = free in the Winner's Lounge (Shared/Perks)
 export type Trail = { id: string, name: string, price: number, colors: { Color3 }, pass: string?, exclusive: string? }
 Config.Trails = {
-	{ id = "white", name = "Cloud", price = 100, colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 230, 255) } },
-	{ id = "mint", name = "Mint", price = 250, colors = { Color3.fromRGB(120, 255, 200), Color3.fromRGB(40, 200, 160) } },
-	{ id = "fire", name = "Fire", price = 500, colors = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 60, 20) } },
-	{ id = "ocean", name = "Ocean", price = 800, colors = { Color3.fromRGB(90, 200, 255), Color3.fromRGB(20, 60, 220) } },
-	{ id = "candy", name = "Candy", price = 1200, colors = { Color3.fromRGB(255, 120, 200), Color3.fromRGB(140, 220, 255) } },
-	{ id = "toxic", name = "Toxic", price = 1800, colors = { Color3.fromRGB(180, 255, 40), Color3.fromRGB(30, 140, 30) } },
-	{ id = "galaxy", name = "Galaxy", price = 3000, colors = { Color3.fromRGB(160, 80, 255), Color3.fromRGB(20, 10, 60) } },
+	{ id = "white", name = "Cloud", price = Economy.TrailPrice.white, colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 230, 255) } },
+	{ id = "mint", name = "Mint", price = Economy.TrailPrice.mint, colors = { Color3.fromRGB(120, 255, 200), Color3.fromRGB(40, 200, 160) } },
+	{ id = "fire", name = "Fire", price = Economy.TrailPrice.fire, colors = { Color3.fromRGB(255, 220, 60), Color3.fromRGB(255, 60, 20) } },
+	{ id = "ocean", name = "Ocean", price = Economy.TrailPrice.ocean, colors = { Color3.fromRGB(90, 200, 255), Color3.fromRGB(20, 60, 220) } },
+	{ id = "candy", name = "Candy", price = Economy.TrailPrice.candy, colors = { Color3.fromRGB(255, 120, 200), Color3.fromRGB(140, 220, 255) } },
+	{ id = "toxic", name = "Toxic", price = Economy.TrailPrice.toxic, colors = { Color3.fromRGB(180, 255, 40), Color3.fromRGB(30, 140, 30) } },
+	{ id = "galaxy", name = "Galaxy", price = Economy.TrailPrice.galaxy, colors = { Color3.fromRGB(160, 80, 255), Color3.fromRGB(20, 10, 60) } },
 	{
 		id = "rainbow",
 		name = "Rainbow",
-		price = 6000,
+		price = Economy.TrailPrice.rainbow,
 		colors = {
 			Color3.fromRGB(255, 60, 60),
 			Color3.fromRGB(255, 200, 40),
@@ -180,10 +171,10 @@ Config.Trails = {
 
 export type Effect = { id: string, name: string, price: number, kind: string, color: Color3, exclusive: string? }
 Config.Effects = {
-	{ id = "sparkles", name = "Sparkles", price = 400, kind = "Sparkles", color = Color3.fromRGB(255, 240, 120) },
-	{ id = "stars", name = "Star Aura", price = 1500, kind = "Aura", color = Color3.fromRGB(140, 220, 255) },
-	{ id = "smoke", name = "Smoke", price = 900, kind = "Smoke", color = Color3.fromRGB(230, 230, 240) },
-	{ id = "flames", name = "Flames", price = 2500, kind = "Fire", color = Color3.fromRGB(255, 120, 30) },
+	{ id = "sparkles", name = "Sparkles", price = Economy.EffectPrice.sparkles, kind = "Sparkles", color = Color3.fromRGB(255, 240, 120) },
+	{ id = "stars", name = "Star Aura", price = Economy.EffectPrice.stars, kind = "Aura", color = Color3.fromRGB(140, 220, 255) },
+	{ id = "smoke", name = "Smoke", price = Economy.EffectPrice.smoke, kind = "Smoke", color = Color3.fromRGB(230, 230, 240) },
+	{ id = "flames", name = "Flames", price = Economy.EffectPrice.flames, kind = "Fire", color = Color3.fromRGB(255, 120, 30) },
 	{ id = "aurora", name = "Aurora", price = 0, kind = "Aura", color = Color3.fromRGB(120, 255, 200), exclusive = "Gift" },
 	{ id = "lounge_stars", name = "Starlight", price = 0, kind = "Aura", color = Color3.fromRGB(255, 240, 160), exclusive = "Lounge" },
 } :: { Effect }
