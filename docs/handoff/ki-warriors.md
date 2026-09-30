@@ -151,3 +151,42 @@ Desde `ki-warriors/` con `PATH=/tmp/tools:$PATH`:
 - Un recibo de Tier Skip cuando no hay temporada activa devuelve 60 Gems (`skipRefundGems`): es un caso raro, pero conviene confirmar que te parezca bien.
 - Traducciones de los 10 idiomas que no son en/es: revisar con hablantes.
 - Siguen los pendientes de la ronda 1 que no eran código puro (iconos, materiales de estructuras, sombras de toasts, opción "Automático" en idioma).
+
+## Ronda 3: ranuras de modelos
+
+Sin Studio, igual que antes. Objetivo: poder soltar modelos 3D reales (Creator Store / Toolbox / IA de Studio) en el repo sin tocar código; el armado con partes queda de respaldo.
+
+### Qué cambié
+
+- `ki-warriors/assets/models/` (nueva, solo con `README.md`): Rojo la monta como `ServerStorage.ModelLibrary` en `default`, `test`, `showcase`, `showcase_low` y `showcase_touch` (`.project.json`). El README no molesta a Rojo (se ignora).
+- `src/shared/ModelFit.luau` (nuevo, puro): escala para entrar en una caja (`fitScale`), lista de variantes `slot`, `slot_1`, `slot_2`... (`collectVariants`), elección determinística por posición (`pickVariant`) y regla de presupuesto (`withinBudget`).
+- `src/server/World/ModelSlots.luau` (nuevo): `ModelSlots.spawn(slot, cf, targetSize, parent, fallback, opts?)`. Si hay modelo: lo clona, **borra todos los scripts y avisa**, ancla, ajusta colisión (`opts.collide`, igual que el primitivo), lo escala parejo (`ScaleTo` / `Size`) y lo apoya con la base en `cf`. Si no hay, o pasa el tope de partes, o no hay presupuesto, llama al `fallback` sin cambios.
+- `WorldBuilder.luau`: helper `slot(...)` (cadena específica > genérica, tope de partes por ranura, suma las partes del modelo a `partCount`, y consume los mismos draws del `Random` para que el layout no cambie). 14 ranuras: `tree`, `pine`, `cactus`, `rock`, `bush`, `tower`, `totem`, `ki_crystal`, `warp_gate`, `floating_island`, `boss_statue` (+ `boss_<id>`), `master`, `altar_monolith`, `landmark` (+ `landmark_<tema>`). Tabla y tamaños en `docs/modelos/ki-warriors.md`.
+- Cliente: todo el mundo se construye en el server, así que la biblioteca es solo de ServerStorage (decisión documentada).
+- No toqué geometría de juego (coliseo, zonas de entrenamiento, suelo, montañas, lagos, prompts/portal/estrella).
+- `tests/modelfit_check.luau` (nuevo, puro).
+
+### Cómo lo verifiqué
+
+Desde `ki-warriors/` con `PATH=/tmp/tools:$PATH`:
+- `rojo build` de `default`, `test`, `showcase`, `showcase_low`, `showcase_touch`: OK con la carpeta solo con README (el README no aparece en el `.rbxlx`).
+- `rojo sourcemap` + `luau-lsp analyze src`: 0 líneas.
+- Tests puros: los 7 pasan (`modelfit_check.luau` nuevo: fit, variantes, picker determinístico y repartido, presupuesto).
+- Prueba del swap: armé un `tree.rbxmx` temporal (Model con una Part y un Script), compilé y confirmé que aparece `ServerStorage.ModelLibrary.tree` con sus hijos; lo borré.
+- Con la biblioteca vacía el camino es el `fallback` original; conservé el orden de los draws de `Random` y de `vary`, así que el mundo y `PartCount` no cambian (no lo pude correr).
+
+### Qué mirar en Studio
+
+1. Con la carpeta vacía: el mundo igual que antes (mismo `PartCount` en el atributo de `World`) y el AutoTest (`test.project.json`) sin cambios.
+2. Soltar un `tree.rbxm` de prueba: que se apoye en el piso (no flote ni se hunda), que entre bien en 9x15 studs, que no haya colisión, y que los scripts se borren con el warning en Output. Probar `tree_1`/`tree_2` para ver el reparto por posición.
+3. `warp_gate`: que el anillo quede de frente al jugador que viene del centro de la plaza y que el disco del portal quede dentro del aro (si el modelo mira para otro lado hay que rotarlo en Studio antes de guardarlo).
+4. `boss_statue`: está detrás del arena, a 0.72 del radio; revisar que no tape la pelea ni esté fuera de los pilares.
+5. `master`: el orbe queda invisible (la etiqueta y su luz se mantienen). Revisar que el modelo mire hacia los jugadores.
+6. `landmark*`: los modelos son enormes; probar con Streaming y que los ajustes de `LANDMARK_BOX` en `WorldBuilder` (tamaños y `lift`) queden bien.
+7. Si un modelo entra con el tamaño chico/grande, se ajusta la caja en la tabla de ranuras (`targetSize` en el código de cada prop).
+
+### Pendiente
+
+- Elegir y bajar los modelos (hoy no hay ninguno: no inventé ids).
+- Los props que dependen del color del tema (cristales, hongos/shards, pilones, lollipops) siguen primitivos: un modelo no se tiñe. Si hace falta, agregar ranuras por tema.
+- Si se usa un landmark de modelo, el `Random` de las nubes del cielo del planeta queda corrido (el landmark original consume draws que no se compensan); solo cambian las nubes.

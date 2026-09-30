@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local ModelSlots = require(script.Parent.ModelSlots)
 
 local WorldBuilder = {}
 
@@ -356,6 +357,43 @@ end
 local NEON: Opts = { mat = Enum.Material.Neon, collide = false }
 local DECOR: Opts = { collide = false }
 
+-- Model slots (see ModelSlots / assets/models/README.md). `fallback` is the primitive build and
+-- runs unchanged when the library has no model for `name` (or it is over budget). `burn` = how
+-- many rng draws the primitive build makes, consumed when a model replaces it so the layout of
+-- everything placed afterwards stays identical. Returns true when a model was placed.
+-- `names` may list several slots in priority order (specific, then generic).
+-- Per-slot part caps (repeated props must be light: ~60 scattered props per planet). Anything
+-- not listed uses ModelSlots.PART_CAP. Documented in docs/modelos/ki-warriors.md.
+local SLOT_CAPS: { [string]: number } = {
+	tree = 40, pine = 40, cactus = 40, rock = 25, bush = 25, tower = 60, totem = 40,
+	floating_island = 150, ki_crystal = 100, warp_gate = 150, master = 150, altar_monolith = 100,
+}
+local function slot(names: { string }, cf: CFrame, size: Vector3, parent: Instance, collide: boolean, fallback: () -> (), rng: Random?, burn: number?): boolean
+	local function try(i: number): Instance?
+		if i > #names then
+			fallback()
+			return nil
+		end
+		return ModelSlots.spawn(names[i], cf, size, parent, function()
+			return try(i + 1)
+		end, {
+			collide = collide,
+			maxParts = SLOT_CAPS[names[i]],
+			budgetLeft = Config.Budget.worldParts - partCount,
+			onPlaced = function(_, n)
+				partCount += n
+			end,
+		})
+	end
+	local inst = try(1)
+	if inst and rng and burn then
+		for _ = 1, burn do
+			rng:NextNumber()
+		end
+	end
+	return inst ~= nil
+end
+
 -- Colour noise: every natural part gets a slightly different shade (own RNG, so it never
 -- changes where things are placed). Flat single-tone hills were the main "2016" tell.
 local tone = Random.new(7331)
@@ -470,15 +508,21 @@ end
 -- Props
 ---------------------------------------------------------------------------
 local function tree(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 0.9 * s, 8 * s, vary(th.trunk), WOOD)
-	local c = vary(th.foliage[rng:NextInteger(1, #th.foliage)], 0.1)
-	local leaf = leafOpts(th)
-	blob(parent, CFrame.new(pos + Vector3.new(0, 10 * s, 0)), Vector3.new(9, 7.5, 9) * s, c, leaf)
-	blob(parent, CFrame.new(pos + Vector3.new(2 * s, 13 * s, 1 * s)), Vector3.new(6, 5, 6) * s, c:Lerp(Color3.new(1, 1, 1), 0.16), leaf)
-	blob(parent, CFrame.new(pos + Vector3.new(-2.4 * s, 8.4 * s, -1.4 * s)), Vector3.new(5.5, 4.5, 5.5) * s, c:Lerp(Color3.new(0, 0, 0), 0.14), leaf)
+	local pick = rng:NextInteger(1, #th.foliage)
+	slot({ "tree" }, CFrame.new(pos), Vector3.new(9, 15.5, 9) * s, parent, false, function()
+		cyl(parent, pos + Vector3.new(0, 4 * s, 0), 0.9 * s, 8 * s, vary(th.trunk), WOOD)
+		local c = vary(th.foliage[pick], 0.1)
+		local leaf = leafOpts(th)
+		blob(parent, CFrame.new(pos + Vector3.new(0, 10 * s, 0)), Vector3.new(9, 7.5, 9) * s, c, leaf)
+		blob(parent, CFrame.new(pos + Vector3.new(2 * s, 13 * s, 1 * s)), Vector3.new(6, 5, 6) * s, c:Lerp(Color3.new(1, 1, 1), 0.16), leaf)
+		blob(parent, CFrame.new(pos + Vector3.new(-2.4 * s, 8.4 * s, -1.4 * s)), Vector3.new(5.5, 4.5, 5.5) * s, c:Lerp(Color3.new(0, 0, 0), 0.14), leaf)
+	end)
 end
 
 local function pine(parent: Instance, pos: Vector3, s: number, th: Theme)
+	if slot({ "pine" }, CFrame.new(pos), Vector3.new(8.4, 11.2, 8.4) * s, parent, false, function() end) then
+		return
+	end
 	cyl(parent, pos + Vector3.new(0, 2 * s, 0), 0.7 * s, 4 * s, vary(th.trunk), WOOD)
 	local green = vary(th.foliage[1], 0.1)
 	for i = 0, 2 do
@@ -511,7 +555,14 @@ local function shard(parent: Instance, pos: Vector3, s: number, th: Theme, rng: 
 end
 
 local function cactus(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	local c = vary(th.foliage[rng:NextInteger(1, 2)])
+	local pick = rng:NextInteger(1, 2)
+	local placed = slot({ "cactus" }, CFrame.new(pos), Vector3.new(6.6, 9.8, 6.6) * s, parent, false, function() end)
+	if placed then
+		rng:NextNumber()
+		rng:NextNumber()
+		return
+	end
+	local c = vary(th.foliage[pick])
 	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 1.1 * s, 8 * s, c, leafOpts(th))
 	ball(parent, pos + Vector3.new(0, 8 * s, 0), 1.1 * s, c, DECOR)
 	for _, side in { -1, 1 } do
@@ -525,8 +576,12 @@ end
 -- broken tower / street lamp for the city themes
 local function tower(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
 	local h = rng:NextNumber(10, 22) * s
-	local yaw = CFrame.Angles(math.rad(rng:NextNumber(-5, 5)), rng:NextNumber(0, 6.28), math.rad(rng:NextNumber(-5, 5)))
+	local tx, ty, tz = rng:NextNumber(-5, 5), rng:NextNumber(0, 6.28), rng:NextNumber(-5, 5)
+	local yaw = CFrame.Angles(math.rad(tx), ty, math.rad(tz))
 	local cf = CFrame.new(pos) * yaw
+	if slot({ "tower" }, CFrame.new(pos) * CFrame.Angles(0, ty, 0), Vector3.new(5 * s, h + 2.4, 5 * s), parent, true, function() end) then
+		return
+	end
 	block(parent, cf * CFrame.new(0, h / 2, 0), Vector3.new(5, h, 5) * Vector3.new(s, 1, s), th.foliage[1], { collide = true })
 	block(parent, cf * CFrame.new(0, h + 1.2, 0.6) * CFrame.Angles(math.rad(14), 0, math.rad(8)), Vector3.new(4, 2.4, 3.4) * s, th.foliage[2], DECOR)
 	for k = 1, 3 do
@@ -543,7 +598,11 @@ local function lolly(parent: Instance, pos: Vector3, s: number, th: Theme, rng: 
 end
 
 local function rock(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	local cf = CFrame.new(pos + Vector3.new(0, 1.2 * s, 0)) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3))
+	local rx, ry, rz = rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3)
+	if slot({ "rock" }, CFrame.new(pos) * CFrame.Angles(0, ry, 0), Vector3.new(6, 4, 5) * s, parent, true, function() end) then
+		return
+	end
+	local cf = CFrame.new(pos + Vector3.new(0, 1.2 * s, 0)) * CFrame.Angles(rx, ry, rz)
 	local c = vary(th.rock, 0.1)
 	block(parent, cf, Vector3.new(4.5, 3, 3.6) * s, c, rockOpts(th, true))
 	block(parent, cf * CFrame.new(1.2 * s, 1.4 * s, 0.4 * s) * CFrame.Angles(0.3, 0.6, 0.2), Vector3.new(2.6, 2, 2.4) * s, c:Lerp(Color3.new(1, 1, 1), 0.14), rockOpts(th, false))
@@ -617,8 +676,13 @@ end
 local GLOWY = { volcano = true, storm = true, void = true, ruins = true, future = true, wasteland = true }
 
 local function bush(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random, theme: string)
-	local c = vary(th.foliage[rng:NextInteger(1, 2)], 0.1)
-	blob(parent, CFrame.new(pos + Vector3.new(0, 1 * s, 0)) * CFrame.Angles(0, rng:NextNumber(0, 3), 0), Vector3.new(4.2, 2.6, 3.4) * s, c, leafOpts(th))
+	local pick = rng:NextInteger(1, 2)
+	local yaw = rng:NextNumber(0, 3)
+	if slot({ "bush" }, CFrame.new(pos) * CFrame.Angles(0, yaw, 0), Vector3.new(4.4, 3, 3.6) * s, parent, false, function() end) then
+		return
+	end
+	local c = vary(th.foliage[pick], 0.1)
+	blob(parent, CFrame.new(pos + Vector3.new(0, 1 * s, 0)) * CFrame.Angles(0, yaw, 0), Vector3.new(4.2, 2.6, 3.4) * s, c, leafOpts(th))
 	blob(parent, CFrame.new(pos + Vector3.new(1.3 * s, 1.7 * s, 0.4 * s)), Vector3.new(2.4, 2, 2.4) * s, c:Lerp(Color3.new(1, 1, 1), 0.14), leafOpts(th))
 	if GLOWY[theme] then
 		ball(parent, pos + Vector3.new(-0.8 * s, 2.3 * s, 0.6 * s), 0.45 * s, th.accent, NEON)
@@ -728,7 +792,7 @@ local function skyFeature(parent: Instance, pos: Vector3, theme: string, th: The
 end
 
 -- One giant landmark per theme, beyond the rim: what you see first when you land.
-local function landmark(parent: Instance, pos: Vector3, theme: string, th: Theme, rng: Random)
+local function landmarkPrimitive(parent: Instance, pos: Vector3, theme: string, th: Theme, rng: Random)
 	if theme == "meadow" then
 		-- world tree
 		cyl(parent, pos + Vector3.new(0, 80, 0), 17, 170, th.trunk, { collide = true })
@@ -895,6 +959,31 @@ local function landmark(parent: Instance, pos: Vector3, theme: string, th: Theme
 	end
 end
 
+-- Model slot `landmark_<theme>` (then generic `landmark`): target box and vertical offset of the
+-- bottom of the primitive landmark (the void moon floats). Footprint centred on `pos`.
+local LANDMARK_BOX: { [string]: { size: Vector3, lift: number } } = {
+	meadow = { size = Vector3.new(170, 290, 150), lift = 0 },
+	volcano = { size = Vector3.new(300, 290, 300), lift = 0 },
+	ice = { size = Vector3.new(190, 270, 190), lift = 0 },
+	storm = { size = Vector3.new(80, 300, 80), lift = 0 },
+	desert = { size = Vector3.new(200, 330, 200), lift = 0 },
+	wasteland = { size = Vector3.new(300, 250, 300), lift = 0 },
+	ruins = { size = Vector3.new(330, 350, 330), lift = 0 },
+	candy = { size = Vector3.new(270, 310, 270), lift = 0 },
+	future = { size = Vector3.new(120, 250, 80), lift = 0 },
+	void = { size = Vector3.new(290, 150, 290), lift = 176 },
+}
+local function landmark(parent: Instance, pos: Vector3, theme: string, th: Theme, rng: Random)
+	local box = LANDMARK_BOX[theme]
+	if box then
+		local cf = CFrame.new(pos + Vector3.new(0, box.lift, 0))
+		if slot({ "landmark_" .. theme, "landmark" }, cf, box.size, parent, true, function() end) then
+			return
+		end
+	end
+	landmarkPrimitive(parent, pos, theme, th, rng)
+end
+
 ---------------------------------------------------------------------------
 -- Training zones
 ---------------------------------------------------------------------------
@@ -1055,9 +1144,11 @@ local function buildCamp(parent: Instance, center: Vector3, camp: any, th: Theme
 	for i = 1, 5 do
 		local a = i / 5 * math.pi * 2 + 0.3
 		local p = center + Vector3.new(math.cos(a) * camp.radius * 0.92, 0, math.sin(a) * camp.radius * 0.92)
-		block(f, CFrame.new(p + Vector3.new(0, 5, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(2.2, 10, 2.2), th.trunk, { mat = Enum.Material.Wood, collide = true })
-		block(f, CFrame.new(p + Vector3.new(0, 8.4, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(3, 2.4, 3), c, DECOR)
-		block(f, CFrame.new(p + Vector3.new(0, 11, 0)) * CFrame.Angles(0, -a + 0.78, 0), Vector3.new(1.6, 1.6, 1.6), acc, NEON)
+		if not slot({ "totem" }, CFrame.new(p) * CFrame.Angles(0, -a, 0), Vector3.new(3, 11.8, 3), f, true, function() end) then
+			block(f, CFrame.new(p + Vector3.new(0, 5, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(2.2, 10, 2.2), th.trunk, { mat = Enum.Material.Wood, collide = true })
+			block(f, CFrame.new(p + Vector3.new(0, 8.4, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(3, 2.4, 3), c, DECOR)
+			block(f, CFrame.new(p + Vector3.new(0, 11, 0)) * CFrame.Angles(0, -a + 0.78, 0), Vector3.new(1.6, 1.6, 1.6), acc, NEON)
+		end
 		local flag = block(f, CFrame.new(p + Vector3.new(0, 6.2, 0)) * CFrame.Angles(0, -a, 0) * CFrame.new(0, 0, 2.2), Vector3.new(0.3, 4.4, 3.2), acc, { collide = false, anim = "flag" })
 		flag:SetAttribute("KiwPhase", i)
 	end
@@ -1100,6 +1191,12 @@ local function buildBossArena(parent: Instance, center: Vector3, boss: any, th: 
 			light(tip, acc, 30, 1.5)
 		end
 	end
+	-- optional statue behind the arena (nothing is built there without a model): `boss_<npc id>`,
+	-- then generic `boss_statue`. Decorative, non-collidable, faces the sign.
+	do
+		local sp = center - toward * (r * 0.72)
+		slot({ "boss_" .. boss.npc, "boss_statue" }, CFrame.lookAt(Vector3.new(sp.X, 0.8, sp.Z), Vector3.new(center.X + toward.X * r, 0.8, center.Z + toward.Z * r)), Vector3.new(14, 22, 14), f, false, function() end)
+	end
 	local signPos = center + toward * (r + 10)
 	gate(f, Vector3.new(signPos.X, 0, signPos.Z), toward, Color3.fromRGB(90, 20, 40), acc, {
 		{ key = "npc." .. boss.npc },
@@ -1131,9 +1228,16 @@ local function buildPlaza(parent: Instance, center: Vector3, pl: any, th: Theme)
 	cyl(f, center + Vector3.new(0, 1.6, 0), 12, 1.6, th.rock, rockOpts(th, true))
 	cyl(f, center + Vector3.new(0, 3.0, 0), 8.5, 1.4, th.plaza, { collide = true })
 	cyl(f, center + Vector3.new(0, 4.2, 0), 5.5, 1.2, th.plazaTrim, { collide = true })
-	local core = block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(math.rad(35), 0, math.rad(45)), Vector3.new(5.5, 5.5, 5.5), th.accent, { mat = Enum.Material.Neon, collide = false, anim = "spinbob", name = "KiCrystal" })
-	light(core, th.accent, 50, 1.6)
-	block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(0, math.rad(45), 0), Vector3.new(2.6, 13, 2.6), th.accent:Lerp(th.plazaTrim, 0.35), { collide = false, anim = "spinbob" })
+	-- `ki_crystal` model replaces the floating crystal + column (static; the glow light stays on
+	-- a hidden anchor part). The rings keep orbiting around it.
+	if slot({ "ki_crystal" }, CFrame.new(center + Vector3.new(0, 8.5, 0)), Vector3.new(7, 13, 7), f, false, function() end) then
+		local anchor = block(f, CFrame.new(center + Vector3.new(0, 15, 0)), Vector3.new(1, 1, 1), th.accent, { collide = false, trans = 1, name = "KiCrystal" })
+		light(anchor, th.accent, 50, 1.6)
+	else
+		local core = block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(math.rad(35), 0, math.rad(45)), Vector3.new(5.5, 5.5, 5.5), th.accent, { mat = Enum.Material.Neon, collide = false, anim = "spinbob", name = "KiCrystal" })
+		light(core, th.accent, 50, 1.6)
+		block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(0, math.rad(45), 0), Vector3.new(2.6, 13, 2.6), th.accent:Lerp(th.plazaTrim, 0.35), { collide = false, anim = "spinbob" })
+	end
 	for i = 1, 2 do
 		ring(f, center + Vector3.new(0, 15, 0), 8 + i * 2.5, 0.7, th.plazaTrim, "orbit", i * 1.7)
 	end
@@ -1170,11 +1274,15 @@ local function buildPlaza(parent: Instance, center: Vector3, pl: any, th: Theme)
 	gate.Parent = f
 	cyl(gate, gatePos + Vector3.new(0, 0.6, 0), 9, 1.2, th.rock, { collide = true })
 	cyl(gate, gatePos + Vector3.new(0, 1.3, 0), 7.4, 0.3, th.accent2, NEON)
-	local n = 14
-	for i = 1, n do
-		local a = i / n * math.pi * 2
-		local p = gatePos + Vector3.new(0, 9.5 + math.sin(a) * 7.4, math.cos(a) * 7.4)
-		block(gate, CFrame.new(p) * CFrame.Angles(a, 0, 0), Vector3.new(2.2, 2.2, 3.6), if i % 2 == 0 then th.plaza else th.accent2, if i % 2 == 0 then DECOR else NEON)
+	-- `warp_gate` model replaces the ring of blocks (the portal disc + prompt below stay). The
+	-- ring lies in the YZ plane facing +X: its local X (depth) is the thin axis of the box.
+	if not slot({ "warp_gate" }, CFrame.new(gatePos + Vector3.new(0, 1, 0)) * CFrame.Angles(0, math.rad(90), 0), Vector3.new(17.4, 17.4, 3.6), gate, false, function() end) then
+		local n = 14
+		for i = 1, n do
+			local a = i / n * math.pi * 2
+			local p = gatePos + Vector3.new(0, 9.5 + math.sin(a) * 7.4, math.cos(a) * 7.4)
+			block(gate, CFrame.new(p) * CFrame.Angles(a, 0, 0), Vector3.new(2.2, 2.2, 3.6), if i % 2 == 0 then th.plaza else th.accent2, if i % 2 == 0 then DECOR else NEON)
+		end
 	end
 	local disc = rod(gate, CFrame.new(gatePos + Vector3.new(0, 9.5, 0)), 6.4, 0.5, th.accent, { mat = Enum.Material.Neon, collide = false, trans = 0.25, name = "Portal", anim = "pulse" })
 	light(disc, th.accent, 40, 2)
@@ -1375,9 +1483,12 @@ local function buildPlanet(world: Instance, pl: any, info: { [string]: any })
 	for i = 1, 4 do
 		local a = i / 4 * math.pi * 2 + 0.6
 		local p = center + Vector3.new(math.cos(a) * (R * 0.72), 95 + i * 14, math.sin(a) * (R * 0.72))
-		local island = blob(f, CFrame.new(p), Vector3.new(60, 24, 60), th.cliffMid, { collide = false, anim = "bob" })
-		island:SetAttribute("KiwPhase", i * 1.3)
-		island:SetAttribute("KiwAmp", 2.5)
+		-- `floating_island` model replaces the bobbing rock blob (walk-on top disc stays primitive)
+		if not slot({ "floating_island" }, CFrame.new(p - Vector3.new(0, 12, 0)), Vector3.new(60, 24, 60), f, false, function() end) then
+			local island = blob(f, CFrame.new(p), Vector3.new(60, 24, 60), th.cliffMid, { collide = false, anim = "bob" })
+			island:SetAttribute("KiwPhase", i * 1.3)
+			island:SetAttribute("KiwAmp", 2.5)
+		end
 		cyl(f, p + Vector3.new(0, 7, 0), 27, 4, th.ground, { mat = th.groundMat, collide = true })
 		cyl(f, p + Vector3.new(0, 9.2, 0), 25.5, 0.4, th.patchA, { mat = th.groundMat, collide = false })
 		crystal(f, p + Vector3.new(0, 9, 0), 2.4, if i % 2 == 0 then th.accent else th.accent2, rng)
@@ -1463,7 +1574,10 @@ local function buildAltar(world: Instance, info: { [string]: any })
 	cyl(f, center + Vector3.new(0, 1.74, 0), W.radius - 1.5, 0.1, gold, NEON)
 	cyl(f, center + Vector3.new(0, 1.78, 0), W.radius - 2.6, 0.1, navy, DECOR)
 	-- monolith with a star window
-	block(f, CFrame.new(center + Vector3.new(0, 12, 0)), Vector3.new(7, 22, 3), navy:Lerp(Color3.new(0, 0, 0), 0.3), { collide = true, name = "Monolith" })
+	-- `altar_monolith` model replaces the monolith slab (star + prompt stay in front of it)
+	if not slot({ "altar_monolith" }, CFrame.new(center + Vector3.new(0, 1, 0)), Vector3.new(7, 22, 3), f, true, function() end) then
+		block(f, CFrame.new(center + Vector3.new(0, 12, 0)), Vector3.new(7, 22, 3), navy:Lerp(Color3.new(0, 0, 0), 0.3), { collide = true, name = "Monolith" })
+	end
 	local star = block(f, CFrame.new(center + Vector3.new(0, 16, 0)) * CFrame.Angles(0, 0, math.rad(45)), Vector3.new(4, 4, 3.4), gold, { mat = Enum.Material.Neon, collide = false, anim = "pulse", name = "Star" })
 	light(star, gold, 40, 2)
 	block(f, CFrame.new(center + Vector3.new(0, 23.6, 0)), Vector3.new(9, 1.4, 4), gold, NEON)
@@ -1573,18 +1687,26 @@ local function buildMaster(world: Instance, info: { [string]: any })
 	local robe, skin, sash = Color3.fromRGB(240, 120, 50), Color3.fromRGB(240, 200, 160), Color3.fromRGB(50, 80, 170)
 	local cf = CFrame.lookAt(pos, Vector3.new(info.centers[1].X, pos.Y, info.centers[1].Z + 22))
 	cyl(f, pos + Vector3.new(0, 0.3, 0), 3.2, 0.6, Color3.fromRGB(90, 84, 110), { collide = true })
-	blob(f, cf * CFrame.new(0, 2.6, 0), Vector3.new(4.2, 4.6, 3.4), robe, DECOR)
-	block(f, cf * CFrame.new(0, 2.4, -0.1), Vector3.new(4.3, 0.7, 3.5), sash, DECOR)
-	ball(f, (cf * CFrame.new(0, 5.6, 0)).Position, 1.5, skin, DECOR)
-	blob(f, cf * CFrame.new(0, 4.9, -1.1), Vector3.new(1.6, 2, 0.8), Color3.fromRGB(245, 245, 250), DECOR) -- beard
-	blob(f, cf * CFrame.new(0, 6.7, 0.2), Vector3.new(1.2, 1.2, 1.2), Color3.fromRGB(245, 245, 250), DECOR) -- top knot
-	for _, side in { -1, 1 } do
-		blob(f, cf * CFrame.new(side * 2.3, 3.2, -0.3), Vector3.new(1.3, 2.8, 1.3), robe:Lerp(Color3.new(0, 0, 0), 0.1), DECOR)
-		block(f, cf * CFrame.new(side * 0.5, 5.8, -1.4), Vector3.new(0.35, 0.2, 0.1), Color3.fromRGB(30, 26, 40), DECOR)
+	-- `master` model replaces the primitive figure (robe, head, beard, arms, staff); the base disc,
+	-- the glow orb and the name tag stay (the orb turns invisible when a model is used).
+	local modelled = slot({ "master" }, cf * CFrame.new(0, 0.6, 0), Vector3.new(7, 9, 4), f, false, function() end)
+	if not modelled then
+		blob(f, cf * CFrame.new(0, 2.6, 0), Vector3.new(4.2, 4.6, 3.4), robe, DECOR)
+		block(f, cf * CFrame.new(0, 2.4, -0.1), Vector3.new(4.3, 0.7, 3.5), sash, DECOR)
+		ball(f, (cf * CFrame.new(0, 5.6, 0)).Position, 1.5, skin, DECOR)
+		blob(f, cf * CFrame.new(0, 4.9, -1.1), Vector3.new(1.6, 2, 0.8), Color3.fromRGB(245, 245, 250), DECOR) -- beard
+		blob(f, cf * CFrame.new(0, 6.7, 0.2), Vector3.new(1.2, 1.2, 1.2), Color3.fromRGB(245, 245, 250), DECOR) -- top knot
+		for _, side in { -1, 1 } do
+			blob(f, cf * CFrame.new(side * 2.3, 3.2, -0.3), Vector3.new(1.3, 2.8, 1.3), robe:Lerp(Color3.new(0, 0, 0), 0.1), DECOR)
+			block(f, cf * CFrame.new(side * 0.5, 5.8, -1.4), Vector3.new(0.35, 0.2, 0.1), Color3.fromRGB(30, 26, 40), DECOR)
+		end
+		rod(f, cf * CFrame.new(2.9, 3.6, -0.8) * CFrame.Angles(0, 0, math.rad(90)), 0.22, 8, Color3.fromRGB(120, 84, 58), DECOR)
 	end
-	rod(f, cf * CFrame.new(2.9, 3.6, -0.8) * CFrame.Angles(0, 0, math.rad(90)), 0.22, 8, Color3.fromRGB(120, 84, 58), DECOR)
 	local orb = ball(f, (cf * CFrame.new(2.9, 7.9, -0.8)).Position, 0.8, Color3.fromRGB(90, 230, 255), { mat = Enum.Material.Neon, collide = false, anim = "pulse" })
 	light(orb, Color3.fromRGB(90, 230, 255), 18, 1.5)
+	if modelled then
+		orb.Transparency = 1
+	end
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Tag"
 	bb.Size = UDim2.fromOffset(170, 44)

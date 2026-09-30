@@ -7539,6 +7539,87 @@ return {
       </Item>
       <Item class="ModuleScript" referent="27">
         <Properties>
+          <string name="Name">ModelFit</string>
+          <string name="Source"><![CDATA[--!strict
+-- Pure math behind the model slots (server World/ModelSlots). No Roblox types, so it runs
+-- under the plain `luau` CLI (tests/modelfit_check.luau).
+local ModelFit = {}
+
+-- Uniform scale that makes a model of `size` fit inside `target` (keeps proportions). Axes with
+-- a degenerate size (<= 0) or a non-positive target are ignored; falls back to 1.
+function ModelFit.fitScale(size: { number }, target: { number }): number
+	local best = math.huge
+	for i = 1, 3 do
+		local s, t = size[i], target[i]
+		if s ~= nil and t ~= nil and s > 1e-4 and t > 0 then
+			best = math.min(best, t / s)
+		end
+	end
+	if best == math.huge or best ~= best then
+		return 1
+	end
+	return best
+end
+
+-- Library child names that belong to a slot: `slot` first (if present), then slot_1, slot_2...
+-- in numeric order. Anything else is ignored (e.g. `tree_old`, `tree_x`, `tree2`).
+function ModelFit.collectVariants(names: { string }, slot: string): { string }
+	local has: { [string]: boolean } = {}
+	local numbered: { { n: number, name: string } } = {}
+	local prefix = slot .. "_"
+	for _, name in names do
+		has[name] = true
+		if string.sub(name, 1, #prefix) == prefix then
+			local rest = string.sub(name, #prefix + 1)
+			if string.match(rest, "^%d+$") then
+				table.insert(numbered, { n = tonumber(rest) :: number, name = name })
+			end
+		end
+	end
+	table.sort(numbered, function(a, b)
+		return a.n < b.n
+	end)
+	local out: { string } = {}
+	if has[slot] then
+		table.insert(out, slot)
+	end
+	for _, v in numbered do
+		table.insert(out, v.name)
+	end
+	return out
+end
+
+-- Deterministic 1..count pick from a world position (same spot -> same variant, neighbouring
+-- props differ). Positions are rounded to 0.1 stud so float noise cannot flip the choice.
+function ModelFit.pickVariant(count: number, x: number, y: number, z: number): number
+	if count <= 1 then
+		return 1
+	end
+	local function q(v: number): number
+		return math.floor(v * 10 + 0.5)
+	end
+	local h = (q(x) * 73856093 + q(y) * 19349663 + q(z) * 83492791) % 2147483629
+	h = (h * 1103515245 + 12345) % 2147483629 -- one LCG round so low bits mix
+	return h % count + 1
+end
+
+-- Whether a model of `parts` parts is allowed (per-slot cap and what is left of the world budget).
+function ModelFit.withinBudget(parts: number, cap: number, budgetLeft: number?): boolean
+	if parts > cap then
+		return false
+	end
+	if budgetLeft ~= nil and parts > budgetLeft then
+		return false
+	end
+	return true
+end
+
+return ModelFit
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="28">
+        <Properties>
           <string name="Name">Names</string>
           <string name="Source"><![CDATA[--!strict
 -- THE name table. Every proper name the player can see (game, currencies, planets, training
@@ -7720,7 +7801,7 @@ return {
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">Quests</string>
           <string name="Source"><![CDATA[--!strict
@@ -7770,7 +7851,7 @@ return Quests
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">Referral</string>
           <string name="Source"><![CDATA[--!strict
@@ -7798,7 +7879,7 @@ return Referral
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">Seeds</string>
           <string name="Source"><![CDATA[--!strict
@@ -7886,15 +7967,15 @@ return Seeds
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="31">
+  <Item class="ServerScriptService" referent="32">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="32">
+    <Item class="Folder" referent="33">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="Script" referent="33">
+      <Item class="Script" referent="34">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -8029,11 +8110,11 @@ end
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="34">
+      <Item class="Folder" referent="35">
         <Properties>
           <string name="Name">Services</string>
         </Properties>
-        <Item class="ModuleScript" referent="35">
+        <Item class="ModuleScript" referent="36">
           <Properties>
             <string name="Name">Arena</string>
             <string name="Source"><![CDATA[--!strict
@@ -8298,7 +8379,7 @@ return Arena
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">Auras</string>
             <string name="Source"><![CDATA[--!strict
@@ -8432,7 +8513,7 @@ return Auras
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">Auto</string>
             <string name="Source"><![CDATA[--!strict
@@ -8577,7 +8658,7 @@ return Auto
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Combat</string>
             <string name="Source"><![CDATA[--!strict
@@ -9305,7 +9386,7 @@ return Combat
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Cosmetics</string>
             <string name="Source"><![CDATA[--!strict
@@ -9424,7 +9505,7 @@ return Cosmetics
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Data</string>
             <string name="Source"><![CDATA[--!strict
@@ -9833,7 +9914,7 @@ return Data
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Fighters</string>
             <string name="Source"><![CDATA[--!strict
@@ -10293,7 +10374,7 @@ return Fighters
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Guard</string>
             <string name="Source"><![CDATA[--!strict
@@ -10364,7 +10445,7 @@ return Guard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Hooks</string>
             <string name="Source"><![CDATA[--!strict
@@ -10401,7 +10482,7 @@ return Hooks
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Items</string>
             <string name="Source"><![CDATA[--!strict
@@ -10547,7 +10628,7 @@ return Items
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -10754,7 +10835,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">LiveEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -10897,7 +10978,7 @@ return LiveEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Monetization</string>
             <string name="Source"><![CDATA[--!strict
@@ -11167,7 +11248,7 @@ return Monetization
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Npcs</string>
             <string name="Source"><![CDATA[--!strict
@@ -11772,7 +11853,7 @@ return Npcs
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">Offline</string>
             <string name="Source"><![CDATA[--!strict
@@ -11877,7 +11958,7 @@ return Offline
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">Progression</string>
             <string name="Source"><![CDATA[--!strict
@@ -12086,7 +12167,7 @@ return Progression
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">QuestService</string>
             <string name="Source"><![CDATA[--!strict
@@ -12281,7 +12362,7 @@ return QuestService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">Relics</string>
             <string name="Source"><![CDATA[--!strict
@@ -12469,7 +12550,7 @@ return Relics
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -12569,7 +12650,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="55">
           <Properties>
             <string name="Name">Rewards</string>
             <string name="Source"><![CDATA[--!strict
@@ -12761,7 +12842,7 @@ return Rewards
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">Season</string>
             <string name="Source"><![CDATA[--!strict
@@ -12958,7 +13039,7 @@ return Season
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">Social</string>
             <string name="Source"><![CDATA[--!strict
@@ -13186,7 +13267,7 @@ return Social
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -13513,7 +13594,7 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">Story</string>
             <string name="Source"><![CDATA[--!strict
@@ -13688,7 +13769,7 @@ return Story
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">Training</string>
             <string name="Source"><![CDATA[--!strict
@@ -13900,7 +13981,7 @@ return Training
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">WorldBoss</string>
             <string name="Source"><![CDATA[--!strict
@@ -14075,11 +14156,166 @@ return WorldBoss
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="61">
+      <Item class="Folder" referent="62">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="62">
+        <Item class="ModuleScript" referent="63">
+          <Properties>
+            <string name="Name">ModelSlots</string>
+            <string name="Source"><![CDATA[--!strict
+-- Model slots: lets real 3D models (Creator Store / Toolbox / Studio AI) replace the primitive
+-- props of the world WITHOUT touching code. Drop `<slot>.rbxm` (or `<slot>_1.rbxm`, `_2`... for
+-- variants) into assets/models/; Rojo maps that folder to ServerStorage.ModelLibrary.
+-- With an empty library every call just runs its fallback (the current primitive build).
+--
+-- Safety: every Script/LocalScript/ModuleScript inside a cloned model is deleted (free models
+-- can carry malicious scripts). Models over the part cap are skipped (fallback is used).
+-- Client-side props: this game builds all world props on the SERVER (the client only animates
+-- them), so the library lives in ServerStorage and is not replicated to players.
+local ServerStorage = game:GetService("ServerStorage")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
+
+local ModelSlots = {}
+
+ModelSlots.PART_CAP = 300 -- default max BaseParts of one model
+
+export type Opts = {
+	collide: boolean?, -- keep the prop walk-on / solid (must match the primitive it replaces); default false
+	maxParts: number?, -- per-slot part cap (default PART_CAP)
+	budgetLeft: number?, -- parts still available in the world budget
+	onPlaced: ((inst: Instance, parts: number) -> ())?,
+}
+
+local warned: { [string]: boolean } = {}
+local function warnOnce(key: string, msg: string)
+	if not warned[key] then
+		warned[key] = true
+		warn("[ModelSlots] " .. msg)
+	end
+end
+
+local function library(): Instance?
+	return ServerStorage:FindFirstChild("ModelLibrary")
+end
+
+function ModelSlots.has(slotName: string): boolean
+	local lib = library()
+	if not lib then
+		return false
+	end
+	local names = {}
+	for _, c in lib:GetChildren() do
+		table.insert(names, c.Name)
+	end
+	return #ModelFit.collectVariants(names, slotName) > 0
+end
+
+local function countParts(inst: Instance): number
+	local n = if inst:IsA("BasePart") then 1 else 0
+	for _, d in inst:GetDescendants() do
+		if d:IsA("BasePart") then
+			n += 1
+		end
+	end
+	return n
+end
+ModelSlots.countParts = countParts
+
+-- Deletes every script; returns how many were removed.
+local function stripScripts(root: Instance): number
+	local n = 0
+	for _, d in root:GetDescendants() do
+		if d:IsA("LuaSourceContainer") then
+			n += 1
+			d:Destroy()
+		end
+	end
+	return n
+end
+
+local function prepare(inst: Instance, collide: boolean)
+	local function setup(p: BasePart)
+		p.Anchored = true
+		p.CanCollide = collide
+		if not collide then
+			p.CanQuery = false
+			p.CanTouch = false
+		end
+	end
+	if inst:IsA("BasePart") then
+		setup(inst)
+	end
+	for _, d in inst:GetDescendants() do
+		if d:IsA("BasePart") then
+			setup(d)
+		end
+	end
+end
+
+function ModelSlots.spawn(slotName: string, cf: CFrame, targetSize: Vector3, parent: Instance, fallback: () -> Instance?, opts: Opts?): Instance?
+	local lib = library()
+	if lib then
+		local names = {}
+		for _, c in lib:GetChildren() do
+			table.insert(names, c.Name)
+		end
+		local variants = ModelFit.collectVariants(names, slotName)
+		if #variants > 0 then
+			local pos = cf.Position
+			local pick = variants[ModelFit.pickVariant(#variants, pos.X, pos.Y, pos.Z)]
+			local template = lib:FindFirstChild(pick)
+			if template and (template:IsA("Model") or template:IsA("BasePart")) then
+				local o: Opts = opts or {}
+				local parts = countParts(template)
+				local cap = o.maxParts or ModelSlots.PART_CAP
+				if parts == 0 then
+					warnOnce(pick, pick .. " no tiene partes; uso el modelo primitivo")
+				elseif not ModelFit.withinBudget(parts, cap, o.budgetLeft) then
+					warnOnce(pick, string.format("%s tiene %d partes (tope %d / presupuesto %s); uso el modelo primitivo", pick, parts, cap, tostring(o.budgetLeft)))
+				else
+					local inst: Instance = template:Clone()
+					local removed = stripScripts(inst)
+					if removed > 0 then
+						warnOnce(pick .. "#scripts", string.format("%s traia %d script(s): eliminados por seguridad", pick, removed))
+					end
+					prepare(inst, o.collide == true)
+					inst.Name = slotName
+					inst:SetAttribute("ModelSlot", pick)
+					-- fit: uniform scale to the target box, bottom-centre of the box sits on cf
+					local ts = { targetSize.X, targetSize.Y, targetSize.Z }
+					if inst:IsA("Model") then
+						local _, size = inst:GetBoundingBox()
+						inst:ScaleTo(inst:GetScale() * ModelFit.fitScale({ size.X, size.Y, size.Z }, ts))
+						local bbCf, bbSize = inst:GetBoundingBox()
+						local pivotInBox = bbCf:ToObjectSpace(inst:GetPivot())
+						inst:PivotTo(cf * CFrame.new(0, bbSize.Y / 2, 0) * pivotInBox)
+					else
+						local part = inst :: BasePart
+						part.Size = part.Size * ModelFit.fitScale({ part.Size.X, part.Size.Y, part.Size.Z }, ts)
+						part.CFrame = cf * CFrame.new(0, part.Size.Y / 2, 0)
+					end
+					inst.Parent = parent
+					if o.onPlaced then
+						o.onPlaced(inst, parts)
+					end
+					return inst
+				end
+			else
+				warnOnce(pick, pick .. " debe ser un Model o una parte (MeshPart/Part); uso el modelo primitivo")
+			end
+		end
+	end
+	return fallback()
+end
+
+return ModelSlots
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">WorldBuilder</string>
             <string name="Source"><![CDATA[--!strict
@@ -14092,6 +14328,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local ModelSlots = require(script.Parent.ModelSlots)
 
 local WorldBuilder = {}
 
@@ -14440,6 +14677,43 @@ end
 local NEON: Opts = { mat = Enum.Material.Neon, collide = false }
 local DECOR: Opts = { collide = false }
 
+-- Model slots (see ModelSlots / assets/models/README.md). `fallback` is the primitive build and
+-- runs unchanged when the library has no model for `name` (or it is over budget). `burn` = how
+-- many rng draws the primitive build makes, consumed when a model replaces it so the layout of
+-- everything placed afterwards stays identical. Returns true when a model was placed.
+-- `names` may list several slots in priority order (specific, then generic).
+-- Per-slot part caps (repeated props must be light: ~60 scattered props per planet). Anything
+-- not listed uses ModelSlots.PART_CAP. Documented in docs/modelos/ki-warriors.md.
+local SLOT_CAPS: { [string]: number } = {
+	tree = 40, pine = 40, cactus = 40, rock = 25, bush = 25, tower = 60, totem = 40,
+	floating_island = 150, ki_crystal = 100, warp_gate = 150, master = 150, altar_monolith = 100,
+}
+local function slot(names: { string }, cf: CFrame, size: Vector3, parent: Instance, collide: boolean, fallback: () -> (), rng: Random?, burn: number?): boolean
+	local function try(i: number): Instance?
+		if i > #names then
+			fallback()
+			return nil
+		end
+		return ModelSlots.spawn(names[i], cf, size, parent, function()
+			return try(i + 1)
+		end, {
+			collide = collide,
+			maxParts = SLOT_CAPS[names[i]],
+			budgetLeft = Config.Budget.worldParts - partCount,
+			onPlaced = function(_, n)
+				partCount += n
+			end,
+		})
+	end
+	local inst = try(1)
+	if inst and rng and burn then
+		for _ = 1, burn do
+			rng:NextNumber()
+		end
+	end
+	return inst ~= nil
+end
+
 -- Colour noise: every natural part gets a slightly different shade (own RNG, so it never
 -- changes where things are placed). Flat single-tone hills were the main "2016" tell.
 local tone = Random.new(7331)
@@ -14554,15 +14828,21 @@ end
 -- Props
 ---------------------------------------------------------------------------
 local function tree(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 0.9 * s, 8 * s, vary(th.trunk), WOOD)
-	local c = vary(th.foliage[rng:NextInteger(1, #th.foliage)], 0.1)
-	local leaf = leafOpts(th)
-	blob(parent, CFrame.new(pos + Vector3.new(0, 10 * s, 0)), Vector3.new(9, 7.5, 9) * s, c, leaf)
-	blob(parent, CFrame.new(pos + Vector3.new(2 * s, 13 * s, 1 * s)), Vector3.new(6, 5, 6) * s, c:Lerp(Color3.new(1, 1, 1), 0.16), leaf)
-	blob(parent, CFrame.new(pos + Vector3.new(-2.4 * s, 8.4 * s, -1.4 * s)), Vector3.new(5.5, 4.5, 5.5) * s, c:Lerp(Color3.new(0, 0, 0), 0.14), leaf)
+	local pick = rng:NextInteger(1, #th.foliage)
+	slot({ "tree" }, CFrame.new(pos), Vector3.new(9, 15.5, 9) * s, parent, false, function()
+		cyl(parent, pos + Vector3.new(0, 4 * s, 0), 0.9 * s, 8 * s, vary(th.trunk), WOOD)
+		local c = vary(th.foliage[pick], 0.1)
+		local leaf = leafOpts(th)
+		blob(parent, CFrame.new(pos + Vector3.new(0, 10 * s, 0)), Vector3.new(9, 7.5, 9) * s, c, leaf)
+		blob(parent, CFrame.new(pos + Vector3.new(2 * s, 13 * s, 1 * s)), Vector3.new(6, 5, 6) * s, c:Lerp(Color3.new(1, 1, 1), 0.16), leaf)
+		blob(parent, CFrame.new(pos + Vector3.new(-2.4 * s, 8.4 * s, -1.4 * s)), Vector3.new(5.5, 4.5, 5.5) * s, c:Lerp(Color3.new(0, 0, 0), 0.14), leaf)
+	end)
 end
 
 local function pine(parent: Instance, pos: Vector3, s: number, th: Theme)
+	if slot({ "pine" }, CFrame.new(pos), Vector3.new(8.4, 11.2, 8.4) * s, parent, false, function() end) then
+		return
+	end
 	cyl(parent, pos + Vector3.new(0, 2 * s, 0), 0.7 * s, 4 * s, vary(th.trunk), WOOD)
 	local green = vary(th.foliage[1], 0.1)
 	for i = 0, 2 do
@@ -14595,7 +14875,14 @@ local function shard(parent: Instance, pos: Vector3, s: number, th: Theme, rng: 
 end
 
 local function cactus(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	local c = vary(th.foliage[rng:NextInteger(1, 2)])
+	local pick = rng:NextInteger(1, 2)
+	local placed = slot({ "cactus" }, CFrame.new(pos), Vector3.new(6.6, 9.8, 6.6) * s, parent, false, function() end)
+	if placed then
+		rng:NextNumber()
+		rng:NextNumber()
+		return
+	end
+	local c = vary(th.foliage[pick])
 	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 1.1 * s, 8 * s, c, leafOpts(th))
 	ball(parent, pos + Vector3.new(0, 8 * s, 0), 1.1 * s, c, DECOR)
 	for _, side in { -1, 1 } do
@@ -14609,8 +14896,12 @@ end
 -- broken tower / street lamp for the city themes
 local function tower(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
 	local h = rng:NextNumber(10, 22) * s
-	local yaw = CFrame.Angles(math.rad(rng:NextNumber(-5, 5)), rng:NextNumber(0, 6.28), math.rad(rng:NextNumber(-5, 5)))
+	local tx, ty, tz = rng:NextNumber(-5, 5), rng:NextNumber(0, 6.28), rng:NextNumber(-5, 5)
+	local yaw = CFrame.Angles(math.rad(tx), ty, math.rad(tz))
 	local cf = CFrame.new(pos) * yaw
+	if slot({ "tower" }, CFrame.new(pos) * CFrame.Angles(0, ty, 0), Vector3.new(5 * s, h + 2.4, 5 * s), parent, true, function() end) then
+		return
+	end
 	block(parent, cf * CFrame.new(0, h / 2, 0), Vector3.new(5, h, 5) * Vector3.new(s, 1, s), th.foliage[1], { collide = true })
 	block(parent, cf * CFrame.new(0, h + 1.2, 0.6) * CFrame.Angles(math.rad(14), 0, math.rad(8)), Vector3.new(4, 2.4, 3.4) * s, th.foliage[2], DECOR)
 	for k = 1, 3 do
@@ -14627,7 +14918,11 @@ local function lolly(parent: Instance, pos: Vector3, s: number, th: Theme, rng: 
 end
 
 local function rock(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	local cf = CFrame.new(pos + Vector3.new(0, 1.2 * s, 0)) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3))
+	local rx, ry, rz = rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3)
+	if slot({ "rock" }, CFrame.new(pos) * CFrame.Angles(0, ry, 0), Vector3.new(6, 4, 5) * s, parent, true, function() end) then
+		return
+	end
+	local cf = CFrame.new(pos + Vector3.new(0, 1.2 * s, 0)) * CFrame.Angles(rx, ry, rz)
 	local c = vary(th.rock, 0.1)
 	block(parent, cf, Vector3.new(4.5, 3, 3.6) * s, c, rockOpts(th, true))
 	block(parent, cf * CFrame.new(1.2 * s, 1.4 * s, 0.4 * s) * CFrame.Angles(0.3, 0.6, 0.2), Vector3.new(2.6, 2, 2.4) * s, c:Lerp(Color3.new(1, 1, 1), 0.14), rockOpts(th, false))
@@ -14701,8 +14996,13 @@ end
 local GLOWY = { volcano = true, storm = true, void = true, ruins = true, future = true, wasteland = true }
 
 local function bush(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random, theme: string)
-	local c = vary(th.foliage[rng:NextInteger(1, 2)], 0.1)
-	blob(parent, CFrame.new(pos + Vector3.new(0, 1 * s, 0)) * CFrame.Angles(0, rng:NextNumber(0, 3), 0), Vector3.new(4.2, 2.6, 3.4) * s, c, leafOpts(th))
+	local pick = rng:NextInteger(1, 2)
+	local yaw = rng:NextNumber(0, 3)
+	if slot({ "bush" }, CFrame.new(pos) * CFrame.Angles(0, yaw, 0), Vector3.new(4.4, 3, 3.6) * s, parent, false, function() end) then
+		return
+	end
+	local c = vary(th.foliage[pick], 0.1)
+	blob(parent, CFrame.new(pos + Vector3.new(0, 1 * s, 0)) * CFrame.Angles(0, yaw, 0), Vector3.new(4.2, 2.6, 3.4) * s, c, leafOpts(th))
 	blob(parent, CFrame.new(pos + Vector3.new(1.3 * s, 1.7 * s, 0.4 * s)), Vector3.new(2.4, 2, 2.4) * s, c:Lerp(Color3.new(1, 1, 1), 0.14), leafOpts(th))
 	if GLOWY[theme] then
 		ball(parent, pos + Vector3.new(-0.8 * s, 2.3 * s, 0.6 * s), 0.45 * s, th.accent, NEON)
@@ -14812,7 +15112,7 @@ local function skyFeature(parent: Instance, pos: Vector3, theme: string, th: The
 end
 
 -- One giant landmark per theme, beyond the rim: what you see first when you land.
-local function landmark(parent: Instance, pos: Vector3, theme: string, th: Theme, rng: Random)
+local function landmarkPrimitive(parent: Instance, pos: Vector3, theme: string, th: Theme, rng: Random)
 	if theme == "meadow" then
 		-- world tree
 		cyl(parent, pos + Vector3.new(0, 80, 0), 17, 170, th.trunk, { collide = true })
@@ -14979,6 +15279,31 @@ local function landmark(parent: Instance, pos: Vector3, theme: string, th: Theme
 	end
 end
 
+-- Model slot `landmark_<theme>` (then generic `landmark`): target box and vertical offset of the
+-- bottom of the primitive landmark (the void moon floats). Footprint centred on `pos`.
+local LANDMARK_BOX: { [string]: { size: Vector3, lift: number } } = {
+	meadow = { size = Vector3.new(170, 290, 150), lift = 0 },
+	volcano = { size = Vector3.new(300, 290, 300), lift = 0 },
+	ice = { size = Vector3.new(190, 270, 190), lift = 0 },
+	storm = { size = Vector3.new(80, 300, 80), lift = 0 },
+	desert = { size = Vector3.new(200, 330, 200), lift = 0 },
+	wasteland = { size = Vector3.new(300, 250, 300), lift = 0 },
+	ruins = { size = Vector3.new(330, 350, 330), lift = 0 },
+	candy = { size = Vector3.new(270, 310, 270), lift = 0 },
+	future = { size = Vector3.new(120, 250, 80), lift = 0 },
+	void = { size = Vector3.new(290, 150, 290), lift = 176 },
+}
+local function landmark(parent: Instance, pos: Vector3, theme: string, th: Theme, rng: Random)
+	local box = LANDMARK_BOX[theme]
+	if box then
+		local cf = CFrame.new(pos + Vector3.new(0, box.lift, 0))
+		if slot({ "landmark_" .. theme, "landmark" }, cf, box.size, parent, true, function() end) then
+			return
+		end
+	end
+	landmarkPrimitive(parent, pos, theme, th, rng)
+end
+
 ---------------------------------------------------------------------------
 -- Training zones
 ---------------------------------------------------------------------------
@@ -15139,9 +15464,11 @@ local function buildCamp(parent: Instance, center: Vector3, camp: any, th: Theme
 	for i = 1, 5 do
 		local a = i / 5 * math.pi * 2 + 0.3
 		local p = center + Vector3.new(math.cos(a) * camp.radius * 0.92, 0, math.sin(a) * camp.radius * 0.92)
-		block(f, CFrame.new(p + Vector3.new(0, 5, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(2.2, 10, 2.2), th.trunk, { mat = Enum.Material.Wood, collide = true })
-		block(f, CFrame.new(p + Vector3.new(0, 8.4, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(3, 2.4, 3), c, DECOR)
-		block(f, CFrame.new(p + Vector3.new(0, 11, 0)) * CFrame.Angles(0, -a + 0.78, 0), Vector3.new(1.6, 1.6, 1.6), acc, NEON)
+		if not slot({ "totem" }, CFrame.new(p) * CFrame.Angles(0, -a, 0), Vector3.new(3, 11.8, 3), f, true, function() end) then
+			block(f, CFrame.new(p + Vector3.new(0, 5, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(2.2, 10, 2.2), th.trunk, { mat = Enum.Material.Wood, collide = true })
+			block(f, CFrame.new(p + Vector3.new(0, 8.4, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(3, 2.4, 3), c, DECOR)
+			block(f, CFrame.new(p + Vector3.new(0, 11, 0)) * CFrame.Angles(0, -a + 0.78, 0), Vector3.new(1.6, 1.6, 1.6), acc, NEON)
+		end
 		local flag = block(f, CFrame.new(p + Vector3.new(0, 6.2, 0)) * CFrame.Angles(0, -a, 0) * CFrame.new(0, 0, 2.2), Vector3.new(0.3, 4.4, 3.2), acc, { collide = false, anim = "flag" })
 		flag:SetAttribute("KiwPhase", i)
 	end
@@ -15184,6 +15511,12 @@ local function buildBossArena(parent: Instance, center: Vector3, boss: any, th: 
 			light(tip, acc, 30, 1.5)
 		end
 	end
+	-- optional statue behind the arena (nothing is built there without a model): `boss_<npc id>`,
+	-- then generic `boss_statue`. Decorative, non-collidable, faces the sign.
+	do
+		local sp = center - toward * (r * 0.72)
+		slot({ "boss_" .. boss.npc, "boss_statue" }, CFrame.lookAt(Vector3.new(sp.X, 0.8, sp.Z), Vector3.new(center.X + toward.X * r, 0.8, center.Z + toward.Z * r)), Vector3.new(14, 22, 14), f, false, function() end)
+	end
 	local signPos = center + toward * (r + 10)
 	gate(f, Vector3.new(signPos.X, 0, signPos.Z), toward, Color3.fromRGB(90, 20, 40), acc, {
 		{ key = "npc." .. boss.npc },
@@ -15215,9 +15548,16 @@ local function buildPlaza(parent: Instance, center: Vector3, pl: any, th: Theme)
 	cyl(f, center + Vector3.new(0, 1.6, 0), 12, 1.6, th.rock, rockOpts(th, true))
 	cyl(f, center + Vector3.new(0, 3.0, 0), 8.5, 1.4, th.plaza, { collide = true })
 	cyl(f, center + Vector3.new(0, 4.2, 0), 5.5, 1.2, th.plazaTrim, { collide = true })
-	local core = block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(math.rad(35), 0, math.rad(45)), Vector3.new(5.5, 5.5, 5.5), th.accent, { mat = Enum.Material.Neon, collide = false, anim = "spinbob", name = "KiCrystal" })
-	light(core, th.accent, 50, 1.6)
-	block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(0, math.rad(45), 0), Vector3.new(2.6, 13, 2.6), th.accent:Lerp(th.plazaTrim, 0.35), { collide = false, anim = "spinbob" })
+	-- `ki_crystal` model replaces the floating crystal + column (static; the glow light stays on
+	-- a hidden anchor part). The rings keep orbiting around it.
+	if slot({ "ki_crystal" }, CFrame.new(center + Vector3.new(0, 8.5, 0)), Vector3.new(7, 13, 7), f, false, function() end) then
+		local anchor = block(f, CFrame.new(center + Vector3.new(0, 15, 0)), Vector3.new(1, 1, 1), th.accent, { collide = false, trans = 1, name = "KiCrystal" })
+		light(anchor, th.accent, 50, 1.6)
+	else
+		local core = block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(math.rad(35), 0, math.rad(45)), Vector3.new(5.5, 5.5, 5.5), th.accent, { mat = Enum.Material.Neon, collide = false, anim = "spinbob", name = "KiCrystal" })
+		light(core, th.accent, 50, 1.6)
+		block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(0, math.rad(45), 0), Vector3.new(2.6, 13, 2.6), th.accent:Lerp(th.plazaTrim, 0.35), { collide = false, anim = "spinbob" })
+	end
 	for i = 1, 2 do
 		ring(f, center + Vector3.new(0, 15, 0), 8 + i * 2.5, 0.7, th.plazaTrim, "orbit", i * 1.7)
 	end
@@ -15254,11 +15594,15 @@ local function buildPlaza(parent: Instance, center: Vector3, pl: any, th: Theme)
 	gate.Parent = f
 	cyl(gate, gatePos + Vector3.new(0, 0.6, 0), 9, 1.2, th.rock, { collide = true })
 	cyl(gate, gatePos + Vector3.new(0, 1.3, 0), 7.4, 0.3, th.accent2, NEON)
-	local n = 14
-	for i = 1, n do
-		local a = i / n * math.pi * 2
-		local p = gatePos + Vector3.new(0, 9.5 + math.sin(a) * 7.4, math.cos(a) * 7.4)
-		block(gate, CFrame.new(p) * CFrame.Angles(a, 0, 0), Vector3.new(2.2, 2.2, 3.6), if i % 2 == 0 then th.plaza else th.accent2, if i % 2 == 0 then DECOR else NEON)
+	-- `warp_gate` model replaces the ring of blocks (the portal disc + prompt below stay). The
+	-- ring lies in the YZ plane facing +X: its local X (depth) is the thin axis of the box.
+	if not slot({ "warp_gate" }, CFrame.new(gatePos + Vector3.new(0, 1, 0)) * CFrame.Angles(0, math.rad(90), 0), Vector3.new(17.4, 17.4, 3.6), gate, false, function() end) then
+		local n = 14
+		for i = 1, n do
+			local a = i / n * math.pi * 2
+			local p = gatePos + Vector3.new(0, 9.5 + math.sin(a) * 7.4, math.cos(a) * 7.4)
+			block(gate, CFrame.new(p) * CFrame.Angles(a, 0, 0), Vector3.new(2.2, 2.2, 3.6), if i % 2 == 0 then th.plaza else th.accent2, if i % 2 == 0 then DECOR else NEON)
+		end
 	end
 	local disc = rod(gate, CFrame.new(gatePos + Vector3.new(0, 9.5, 0)), 6.4, 0.5, th.accent, { mat = Enum.Material.Neon, collide = false, trans = 0.25, name = "Portal", anim = "pulse" })
 	light(disc, th.accent, 40, 2)
@@ -15459,9 +15803,12 @@ local function buildPlanet(world: Instance, pl: any, info: { [string]: any })
 	for i = 1, 4 do
 		local a = i / 4 * math.pi * 2 + 0.6
 		local p = center + Vector3.new(math.cos(a) * (R * 0.72), 95 + i * 14, math.sin(a) * (R * 0.72))
-		local island = blob(f, CFrame.new(p), Vector3.new(60, 24, 60), th.cliffMid, { collide = false, anim = "bob" })
-		island:SetAttribute("KiwPhase", i * 1.3)
-		island:SetAttribute("KiwAmp", 2.5)
+		-- `floating_island` model replaces the bobbing rock blob (walk-on top disc stays primitive)
+		if not slot({ "floating_island" }, CFrame.new(p - Vector3.new(0, 12, 0)), Vector3.new(60, 24, 60), f, false, function() end) then
+			local island = blob(f, CFrame.new(p), Vector3.new(60, 24, 60), th.cliffMid, { collide = false, anim = "bob" })
+			island:SetAttribute("KiwPhase", i * 1.3)
+			island:SetAttribute("KiwAmp", 2.5)
+		end
 		cyl(f, p + Vector3.new(0, 7, 0), 27, 4, th.ground, { mat = th.groundMat, collide = true })
 		cyl(f, p + Vector3.new(0, 9.2, 0), 25.5, 0.4, th.patchA, { mat = th.groundMat, collide = false })
 		crystal(f, p + Vector3.new(0, 9, 0), 2.4, if i % 2 == 0 then th.accent else th.accent2, rng)
@@ -15547,7 +15894,10 @@ local function buildAltar(world: Instance, info: { [string]: any })
 	cyl(f, center + Vector3.new(0, 1.74, 0), W.radius - 1.5, 0.1, gold, NEON)
 	cyl(f, center + Vector3.new(0, 1.78, 0), W.radius - 2.6, 0.1, navy, DECOR)
 	-- monolith with a star window
-	block(f, CFrame.new(center + Vector3.new(0, 12, 0)), Vector3.new(7, 22, 3), navy:Lerp(Color3.new(0, 0, 0), 0.3), { collide = true, name = "Monolith" })
+	-- `altar_monolith` model replaces the monolith slab (star + prompt stay in front of it)
+	if not slot({ "altar_monolith" }, CFrame.new(center + Vector3.new(0, 1, 0)), Vector3.new(7, 22, 3), f, true, function() end) then
+		block(f, CFrame.new(center + Vector3.new(0, 12, 0)), Vector3.new(7, 22, 3), navy:Lerp(Color3.new(0, 0, 0), 0.3), { collide = true, name = "Monolith" })
+	end
 	local star = block(f, CFrame.new(center + Vector3.new(0, 16, 0)) * CFrame.Angles(0, 0, math.rad(45)), Vector3.new(4, 4, 3.4), gold, { mat = Enum.Material.Neon, collide = false, anim = "pulse", name = "Star" })
 	light(star, gold, 40, 2)
 	block(f, CFrame.new(center + Vector3.new(0, 23.6, 0)), Vector3.new(9, 1.4, 4), gold, NEON)
@@ -15657,18 +16007,26 @@ local function buildMaster(world: Instance, info: { [string]: any })
 	local robe, skin, sash = Color3.fromRGB(240, 120, 50), Color3.fromRGB(240, 200, 160), Color3.fromRGB(50, 80, 170)
 	local cf = CFrame.lookAt(pos, Vector3.new(info.centers[1].X, pos.Y, info.centers[1].Z + 22))
 	cyl(f, pos + Vector3.new(0, 0.3, 0), 3.2, 0.6, Color3.fromRGB(90, 84, 110), { collide = true })
-	blob(f, cf * CFrame.new(0, 2.6, 0), Vector3.new(4.2, 4.6, 3.4), robe, DECOR)
-	block(f, cf * CFrame.new(0, 2.4, -0.1), Vector3.new(4.3, 0.7, 3.5), sash, DECOR)
-	ball(f, (cf * CFrame.new(0, 5.6, 0)).Position, 1.5, skin, DECOR)
-	blob(f, cf * CFrame.new(0, 4.9, -1.1), Vector3.new(1.6, 2, 0.8), Color3.fromRGB(245, 245, 250), DECOR) -- beard
-	blob(f, cf * CFrame.new(0, 6.7, 0.2), Vector3.new(1.2, 1.2, 1.2), Color3.fromRGB(245, 245, 250), DECOR) -- top knot
-	for _, side in { -1, 1 } do
-		blob(f, cf * CFrame.new(side * 2.3, 3.2, -0.3), Vector3.new(1.3, 2.8, 1.3), robe:Lerp(Color3.new(0, 0, 0), 0.1), DECOR)
-		block(f, cf * CFrame.new(side * 0.5, 5.8, -1.4), Vector3.new(0.35, 0.2, 0.1), Color3.fromRGB(30, 26, 40), DECOR)
+	-- `master` model replaces the primitive figure (robe, head, beard, arms, staff); the base disc,
+	-- the glow orb and the name tag stay (the orb turns invisible when a model is used).
+	local modelled = slot({ "master" }, cf * CFrame.new(0, 0.6, 0), Vector3.new(7, 9, 4), f, false, function() end)
+	if not modelled then
+		blob(f, cf * CFrame.new(0, 2.6, 0), Vector3.new(4.2, 4.6, 3.4), robe, DECOR)
+		block(f, cf * CFrame.new(0, 2.4, -0.1), Vector3.new(4.3, 0.7, 3.5), sash, DECOR)
+		ball(f, (cf * CFrame.new(0, 5.6, 0)).Position, 1.5, skin, DECOR)
+		blob(f, cf * CFrame.new(0, 4.9, -1.1), Vector3.new(1.6, 2, 0.8), Color3.fromRGB(245, 245, 250), DECOR) -- beard
+		blob(f, cf * CFrame.new(0, 6.7, 0.2), Vector3.new(1.2, 1.2, 1.2), Color3.fromRGB(245, 245, 250), DECOR) -- top knot
+		for _, side in { -1, 1 } do
+			blob(f, cf * CFrame.new(side * 2.3, 3.2, -0.3), Vector3.new(1.3, 2.8, 1.3), robe:Lerp(Color3.new(0, 0, 0), 0.1), DECOR)
+			block(f, cf * CFrame.new(side * 0.5, 5.8, -1.4), Vector3.new(0.35, 0.2, 0.1), Color3.fromRGB(30, 26, 40), DECOR)
+		end
+		rod(f, cf * CFrame.new(2.9, 3.6, -0.8) * CFrame.Angles(0, 0, math.rad(90)), 0.22, 8, Color3.fromRGB(120, 84, 58), DECOR)
 	end
-	rod(f, cf * CFrame.new(2.9, 3.6, -0.8) * CFrame.Angles(0, 0, math.rad(90)), 0.22, 8, Color3.fromRGB(120, 84, 58), DECOR)
 	local orb = ball(f, (cf * CFrame.new(2.9, 7.9, -0.8)).Position, 0.8, Color3.fromRGB(90, 230, 255), { mat = Enum.Material.Neon, collide = false, anim = "pulse" })
 	light(orb, Color3.fromRGB(90, 230, 255), 18, 1.5)
+	if modelled then
+		orb.Transparency = 1
+	end
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Tag"
 	bb.Size = UDim2.fromOffset(170, 44)
@@ -15718,21 +16076,31 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="63">
+  <Item class="ServerStorage" referent="65">
+    <Properties>
+      <string name="Name">ServerStorage</string>
+    </Properties>
+    <Item class="Folder" referent="66">
+      <Properties>
+        <string name="Name">ModelLibrary</string>
+      </Properties>
+    </Item>
+  </Item>
+  <Item class="StarterPlayer" referent="67">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">60</float>
       <float name="CameraMinZoomDistance">6</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="64">
+    <Item class="StarterPlayerScripts" referent="68">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="65">
+      <Item class="Folder" referent="69">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="66">
+        <Item class="ModuleScript" referent="70">
           <Properties>
             <string name="Name">Ads</string>
             <string name="Source"><![CDATA[--!strict
@@ -15804,7 +16172,7 @@ return Ads
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="67">
+        <Item class="ModuleScript" referent="71">
           <Properties>
             <string name="Name">CharFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -16836,7 +17204,7 @@ return CharFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="68">
+        <Item class="ModuleScript" referent="72">
           <Properties>
             <string name="Name">CombatFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -17267,7 +17635,7 @@ return CombatFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="69">
+        <Item class="ModuleScript" referent="73">
           <Properties>
             <string name="Name">Controls</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -17804,7 +18172,7 @@ return Controls
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="70">
+        <Item class="ModuleScript" referent="74">
           <Properties>
             <string name="Name">Flight</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -17994,7 +18362,7 @@ return Flight
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="71">
+        <Item class="ModuleScript" referent="75">
           <Properties>
             <string name="Name">Fx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -18339,7 +18707,7 @@ return Fx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="72">
+        <Item class="ModuleScript" referent="76">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -18459,7 +18827,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="73">
+        <Item class="LocalScript" referent="77">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -18525,7 +18893,7 @@ end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="74">
+        <Item class="ModuleScript" referent="78">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -18641,7 +19009,7 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="75">
+        <Item class="ModuleScript" referent="79">
           <Properties>
             <string name="Name">NpcRender</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19155,7 +19523,7 @@ return NpcRender
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="76">
+        <Item class="ModuleScript" referent="80">
           <Properties>
             <string name="Name">Purchase</string>
             <string name="Source"><![CDATA[--!strict
@@ -19206,7 +19574,7 @@ return Purchase
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="77">
+        <Item class="ModuleScript" referent="81">
           <Properties>
             <string name="Name">RelicsClient</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19445,7 +19813,7 @@ return RelicsClient
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="78">
+        <Item class="ModuleScript" referent="82">
           <Properties>
             <string name="Name">StoryText</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19534,11 +19902,11 @@ return StoryText
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="79">
+        <Item class="Folder" referent="83">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">EventsHud</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -19792,7 +20160,7 @@ return EventsHud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -20478,7 +20846,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -20653,7 +21021,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">Menu</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -20861,7 +21229,7 @@ return Menu
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">Panels1</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21156,7 +21524,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">Panels2</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21788,7 +22156,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="90">
             <Properties>
               <string name="Name">Panels3</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22023,7 +22391,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="87">
+          <Item class="ModuleScript" referent="91">
             <Properties>
               <string name="Name">QuestTracker</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22266,7 +22634,7 @@ return QuestTracker
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="88">
+          <Item class="ModuleScript" referent="92">
             <Properties>
               <string name="Name">Root</string>
               <string name="Source"><![CDATA[--!strict
@@ -22382,7 +22750,7 @@ return Root
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="89">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22846,7 +23214,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="90">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Toasts</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22987,7 +23355,7 @@ return Toasts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="91">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">TouchControls</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -23185,7 +23553,7 @@ return TouchControls
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="92">
+          <Item class="ModuleScript" referent="96">
             <Properties>
               <string name="Name">Windows</string>
               <string name="Source"><![CDATA[--!strict
@@ -23430,7 +23798,7 @@ return Windows
             </Properties>
           </Item>
         </Item>
-        <Item class="ModuleScript" referent="93">
+        <Item class="ModuleScript" referent="97">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -23708,7 +24076,7 @@ return WorldFx
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="94">
+  <Item class="Workspace" referent="98">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="FallenPartsDestroyHeight">-400</float>

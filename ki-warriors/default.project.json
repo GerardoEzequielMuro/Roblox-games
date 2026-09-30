@@ -45,6 +45,12 @@
         "ClockTime": 13.6,
         "GlobalShadows": true
       }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "ModelLibrary": {
+        "$path": "assets/models"
+      }
     }
   }
 }
