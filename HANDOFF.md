@@ -71,6 +71,38 @@ Los 6 juegos tienen los íconos integrados: muestran la imagen cuando el ícono 
 
 **Archivos para publicar:** regeneré desde `src` `KiWarriors.rbxlx`, `SkyTowerObby.rbxlx` y `TapPetsSimulator.rbxlx`. En los otros 3 juegos el `.rbxlx` no está en el repo: se genera con `rojo build`.
 
+
+## 4b. Ronda 2: precios realistas y retención
+
+Base: `docs/research/top-juegos-y-precios.md`. Son precios de juegos reales sacados de wikis y guías: el proxy bloqueó la API de Roblox, así que no están confirmados contra la tienda. El detalle de cada juego está en la sección "Ronda 2" de `docs/handoff/<juego>.md`.
+
+| Juego | Precios | Retención nueva | Tests |
+|---|---|---|---|
+| Crop Kingdom | 2x Cash 349, 2x Grow Speed 399 (nuevo), Instant Grow 9 R$ (compra de impulso), packs 49/199/499/999 | Chip "te faltan $X para...", regalo de bienvenida al terminar el tutorial | goals y pricing (nuevos) |
+| Sky Tower Obby | Skip 19 R$ (niveles 1-300) y 29 R$ (301-1000), x10 a 149, Fusion Coil 139, Starter 59 | Regalo al primer minuto, anuncio al servidor al llegar a una cumbre | pricing (nuevo) |
+| Tap Pets | x8 Hatch 699, Super Lucky 699 (con odds visibles), Auto Rebirth 199, +6 slots 649, Magic Eggs 599 | Racha diaria visible, reloj al próximo evento | passes_pricing 117 (nuevo), policy_hud 136 |
+| Planet Crackers | Lucky 249, Super Lucky 699, x8 Open 699, +4 slots 649 | Evento Star Surge martes y sábado con reloj. **En el PvP no cuenta ningún pase pago.** | unit 175 |
+| ki-warriors | 7 pases y 5 productos nuevos, 2 pases de batalla a 399 | Semillas (Vigor/Titan/Spark) con stock por hora, 11 skins de saga, 2 nubes, auras, forma Unbound, 2 ataques oscuros. **Todo lo pago también se gana jugando**, y en la arena no funcionan las ventajas pagas. La temporada 1 arranca el 01/10. | 4 tests nuevos, locale 423 |
+| Ruleta PvP | Double Coins 199, pase de temporada 399, tier 39, pack 999 | Pase de temporada mensual (gratis + premium) que se sube solo jugando, chip de metas. **Un test asegura que nada pago afecta el partido.** | unit_core 1017 |
+
+**Precios tachados honestos:** en varios juegos el precio tachado de las ofertas era inventado (un "-70%" que no existía). Ahora se calcula con lo que cuesta de verdad el contenido comprado por separado, y hay un test que lo controla. Mostrar un descuento falso es justo lo que puede traer problemas con Roblox.
+
+**Decisiones tuyas pendientes, nuevas:**
+- Tap Pets: el pase "Secret Hunter" (1.299 R$), que sube la chance de la mascota más rara. No lo agregué porque se acerca a pay-to-win.
+- Crop Kingdom: el Starter Pack a 15 R$ con tachado 49. El 49 no es el precio real de nada. La investigación recomienda 29-49 R$.
+
+**Todos los IDs de pases y productos siguen en 0.** Hay que crearlos en el Creator Dashboard y pegar los IDs en el `Config.luau` de cada juego.
+
+## 4c. Hasta dónde conviene seguir sin Studio
+
+Después de 2 rondas, todo lo que se puede verificar sin Studio está hecho. Lo que falta necesita ver el juego andando:
+
+- **Muchísima UI nueva que nadie vio:** ventanas de temporada y de estilo, chips de meta, tienda con 13 tarjetas, botones x8, cinemática con 8 mascotas. Seguro hay textos cortados o cosas encimadas.
+- **Los AutoTest de Studio se actualizaron pero nunca se corrieron.**
+- **Assets:** íconos subidos, modelos 3D y sonido.
+
+Otra ronda de código a ciegas suma riesgo: más código sin ver, sobre código que tampoco se vio. **Lo siguiente es correr el AutoTest de cada juego en Studio y arreglar lo que falle.** Recomendado de a un juego por vez, empezando por ki-warriors.
+
 ## 5. Cómo verificar sin Studio (lo que usé acá)
 
 Las mismas herramientas corren en Windows (Rojo ya lo tenés en `huerta-tycoon\tools\rojo.exe`):
