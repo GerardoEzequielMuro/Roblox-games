@@ -195,14 +195,28 @@ NpcRender.build = build
 ---------------------------------------------------------------------------
 -- Tracking
 ---------------------------------------------------------------------------
+-- Name + health plate size in screen pixels. Offset sizing keeps it the same size at any
+-- distance (scale sizing would grow into a wall as you walk up to it); it is also capped
+-- to a fraction of the viewport so it stays small on phones and in small Studio windows.
+local function plateSize(boss: boolean): UDim2
+	local w, h = if boss then 170 else 96, if boss then 34 else 24
+	local cam = workspace.CurrentCamera
+	local vp = if cam then cam.ViewportSize else Vector2.new(1280, 720)
+	local k = math.clamp(math.min(vp.X * (if boss then 0.16 else 0.09) / w, vp.Y * 0.05 / h), 0.55, 1)
+	return UDim2.fromOffset(math.floor(w * k), math.floor(h * k))
+end
+
 local function healthBar(v: Visual)
 	local def = v.def
 	local s = def.scale or 1
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Hp"
-	bb.Size = if def.boss then UDim2.fromOffset(210, 42) else UDim2.fromOffset(104, 26)
+	bb.Size = plateSize(def.boss == true)
 	bb.StudsOffset = Vector3.new(0, 4.6 * s + 1.4, 0)
-	bb.MaxDistance = if def.boss then 240 else 75
+	bb.MaxDistance = if def.boss then 200 else 70
+	bb.AlwaysOnTop = false
+	bb.ClipsDescendants = true
+	bb.ResetOnSpawn = false
 	bb.LightInfluence = 0
 	bb.Adornee = v.pivot
 	local name = Instance.new("TextLabel")
@@ -455,6 +469,23 @@ function NpcRender.init()
 			end
 		end
 	end)
+	-- keep the plates small when the window / phone orientation changes
+	local function resizePlates()
+		for _, v in visuals do
+			if v.gui then
+				v.gui.Size = plateSize(v.def.boss == true)
+			end
+		end
+	end
+	local function hookCamera()
+		local cam = workspace.CurrentCamera
+		if cam then
+			cam:GetPropertyChangedSignal("ViewportSize"):Connect(resizePlates)
+		end
+		resizePlates()
+	end
+	workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(hookCamera)
+	hookCamera()
 	RunService.RenderStepped:Connect(function(dt)
 		if Fx.frozen() then
 			return

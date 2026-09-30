@@ -105,9 +105,20 @@ function Fx.get(kind: string): BasePart
 	return p
 end
 
+-- Tweens still running on pooled parts: cancelled on release, so a finished effect can never
+-- keep resizing / moving a part that was already handed to another effect.
+local running: { [Instance]: { Tween } } = setmetatable({}, { __mode = "k" }) :: any
+
 function Fx.release(p: BasePart)
 	if not p or p.Parent == nil then
 		return
+	end
+	local list = running[p]
+	if list then
+		running[p] = nil
+		for _, t in list do
+			t:Cancel()
+		end
 	end
 	p.Parent = nil
 	local kind = p.Name:sub(4)
@@ -126,6 +137,23 @@ end
 
 function Fx.tween(obj: Instance, time: number, props: { [string]: any }, style: Enum.EasingStyle?, dir: Enum.EasingDirection?): Tween
 	local t = TweenService:Create(obj, TweenInfo.new(time, style or Enum.EasingStyle.Quad, dir or Enum.EasingDirection.Out), props)
+	if obj.Parent == Fx.folder then
+		local list = running[obj]
+		if not list then
+			list = {}
+			running[obj] = list
+		end
+		table.insert(list, t)
+		t.Completed:Once(function()
+			local l = running[obj]
+			if l then
+				local i = table.find(l, t)
+				if i then
+					table.remove(l, i)
+				end
+			end
+		end)
+	end
 	t:Play()
 	return t
 end
@@ -153,6 +181,13 @@ function Fx.burst(pos: Vector3, fromR: number, toR: number, color: Color3, time:
 	Fx.flash("ball", CFrame.new(pos), Vector3.one * fromR * 2, color, time, { Size = Vector3.one * toR * 2, Transparency = 1 }, trans or 0.3)
 end
 
+-- Expanding see-through shell (ForceField material: bright rim, clear centre). Used for bursts
+-- that start around a character, where a Neon ball would hide the character completely.
+function Fx.shell(pos: Vector3, fromR: number, toR: number, color: Color3, time: number, trans: number?)
+	local p = Fx.flash("ball", CFrame.new(pos), Vector3.one * fromR * 2, color, time, { Size = Vector3.one * toR * 2, Transparency = 1 }, trans or 0.2)
+	p.Material = Enum.Material.ForceField
+end
+
 -- Shards flying out of a point (geometry sparks: visible at any graphics quality).
 function Fx.sparks(pos: Vector3, color: Color3, count: number, speed: number, size: number?)
 	local n = if Fx.lite then math.ceil(count / 2) else count
@@ -166,7 +201,53 @@ function Fx.sparks(pos: Vector3, color: Color3, count: number, speed: number, si
 		local len = s * (2 + math.random() * 3)
 		local from = pos + dir * 0.6
 		local to = pos + dir * speed * (0.18 + math.random() * 0.2)
-		Fx.flash("block", CFrame.lookAt(from, to), Vector3.new(s * 0.45, s * 0.45, len), color, 0.22 + math.random() * 0.12, { CFrame = CFrame.lookAt(to, to + dir), Size = Vector3.new(0.05, 0.05, len * 0.3), Transparency = 0.6 })
+		Fx.flash("block", CFrame.lookAt(from, to), Vector3.new(s * 0.45, s * 0.45, len), color, 0.22 + math.random() * 0.12, { CFrame = CFrame.lookAt(to, to + dir), Size = Vector3.new(0.05, 0.05, len * 0.3), Transparency = 1 })
+	end
+end
+
+-- One-shot particle burst at a point (no parts kept alive: an Attachment on Terrain with
+-- a ParticleEmitter that emits once and is destroyed after its longest lifetime).
+-- Uses the emitter's built-in default texture, no uploaded assets.
+function Fx.particles(pos: Vector3, color: Color3, count: number, speed: number, size: number?, life: number?)
+	local lifetime = life or 0.45
+	local att = Instance.new("Attachment")
+	att.Position = pos -- Terrain sits at the origin, so this is the world position
+	local e = Instance.new("ParticleEmitter")
+	e.Enabled = false
+	e.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.35), color)
+	e.LightEmission = 1
+	e.LightInfluence = 0
+	e.Speed = NumberRange.new(speed * 0.5, speed)
+	e.SpreadAngle = Vector2.new(180, 180)
+	e.Lifetime = NumberRange.new(lifetime * 0.6, lifetime)
+	e.Drag = 4
+	e.Acceleration = Vector3.new(0, -12, 0)
+	local sz = size or 0.6
+	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, sz), NumberSequenceKeypoint.new(1, 0) })
+	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.1), NumberSequenceKeypoint.new(1, 1) })
+	e.Parent = att
+	att.Parent = workspace.Terrain
+	e:Emit(count)
+	task.delay(lifetime + 0.1, function()
+		att:Destroy()
+	end)
+end
+
+-- Ground debris for impacts. It used to be grey Slate cubes flying up, which read as "dark
+-- cubes floating" around fights. Now: a particle puff in the ground colour (full quality) or
+-- a few small bright specks that shrink and fade out completely (lite / quality 1).
+function Fx.debris(ground: Vector3, radius: number, color: Color3, count: number)
+	if not Fx.lite then
+		Fx.particles(ground + Vector3.new(0, 0.6, 0), color, count * 2, 10 + radius * 0.6, 0.9, 0.5)
+		return
+	end
+	local speck = color:Lerp(Color3.new(1, 1, 1), 0.5)
+	for i = 1, math.ceil(count / 2) do
+		local a = i / count * math.pi * 4 + math.random() * 0.4
+		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
+		local from = ground + dir * radius * 0.3 + Vector3.new(0, 0.3, 0)
+		local to = ground + dir * radius * (0.6 + math.random() * 0.3) + Vector3.new(0, 1.5 + math.random() * 2, 0)
+		Fx.flash("block", CFrame.new(from), Vector3.new(0.35, 0.35, 0.35), speck, 0.35, { CFrame = CFrame.new(to), Size = Vector3.new(0.05, 0.05, 0.05), Transparency = 1 }, 0.1)
 	end
 end
 

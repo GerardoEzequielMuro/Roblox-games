@@ -32,6 +32,9 @@ type Theme = {
 	foliage: { Color3 },
 	trunk: Color3,
 	prop: string,
+	rockMat: Enum.Material?, -- cliffs, rocks, pads (default Rock)
+	foliageMat: Enum.Material?, -- tree crowns, bushes (default Grass)
+	pathMat: Enum.Material?, -- paths (default Ground)
 }
 
 local Themes: { [string]: Theme } = {
@@ -52,6 +55,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(64, 160, 72), Color3.fromRGB(96, 190, 84), Color3.fromRGB(255, 150, 190) },
 		trunk = Color3.fromRGB(122, 84, 58),
 		prop = "tree",
+		rockMat = Enum.Material.Rock,
+		foliageMat = Enum.Material.Grass,
+		pathMat = Enum.Material.Ground,
 	},
 	volcano = {
 		ground = Color3.fromRGB(84, 58, 56),
@@ -70,6 +76,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(40, 30, 34), Color3.fromRGB(70, 44, 40), Color3.fromRGB(255, 100, 40) },
 		trunk = Color3.fromRGB(40, 30, 32),
 		prop = "spire",
+		rockMat = Enum.Material.Basalt,
+		foliageMat = Enum.Material.Basalt,
+		pathMat = Enum.Material.Slate,
 	},
 	ice = {
 		ground = Color3.fromRGB(214, 234, 250),
@@ -88,6 +97,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(60, 130, 140), Color3.fromRGB(240, 250, 255), Color3.fromRGB(110, 200, 230) },
 		trunk = Color3.fromRGB(90, 80, 100),
 		prop = "pine",
+		rockMat = Enum.Material.Glacier,
+		foliageMat = Enum.Material.Snow,
+		pathMat = Enum.Material.Ice,
 	},
 	storm = {
 		ground = Color3.fromRGB(104, 116, 150),
@@ -106,6 +118,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(90, 100, 150), Color3.fromRGB(150, 160, 210), Color3.fromRGB(255, 236, 100) },
 		trunk = Color3.fromRGB(60, 64, 90),
 		prop = "pylon",
+		rockMat = Enum.Material.Slate,
+		foliageMat = Enum.Material.Slate,
+		pathMat = Enum.Material.Pavement,
 	},
 	desert = {
 		ground = Color3.fromRGB(226, 190, 120),
@@ -124,6 +139,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(70, 150, 96), Color3.fromRGB(110, 180, 110), Color3.fromRGB(255, 120, 150) },
 		trunk = Color3.fromRGB(96, 104, 110),
 		prop = "cactus",
+		rockMat = Enum.Material.Sandstone,
+		foliageMat = Enum.Material.Grass,
+		pathMat = Enum.Material.Sand,
 	},
 	wasteland = {
 		ground = Color3.fromRGB(176, 112, 84),
@@ -142,6 +160,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(120, 70, 66), Color3.fromRGB(170, 110, 90), Color3.fromRGB(120, 230, 255) },
 		trunk = Color3.fromRGB(90, 60, 60),
 		prop = "spire",
+		rockMat = Enum.Material.Rock,
+		foliageMat = Enum.Material.Ground,
+		pathMat = Enum.Material.Ground,
 	},
 	ruins = {
 		ground = Color3.fromRGB(108, 116, 118),
@@ -160,6 +181,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(70, 78, 86), Color3.fromRGB(110, 120, 126), Color3.fromRGB(120, 255, 140) },
 		trunk = Color3.fromRGB(50, 56, 62),
 		prop = "tower",
+		rockMat = Enum.Material.Concrete,
+		foliageMat = Enum.Material.Slate,
+		pathMat = Enum.Material.Asphalt,
 	},
 	candy = {
 		ground = Color3.fromRGB(255, 190, 220),
@@ -178,6 +202,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(255, 120, 170), Color3.fromRGB(120, 230, 220), Color3.fromRGB(255, 240, 120) },
 		trunk = Color3.fromRGB(255, 250, 245),
 		prop = "lolly",
+		rockMat = Enum.Material.SmoothPlastic,
+		foliageMat = Enum.Material.SmoothPlastic,
+		pathMat = Enum.Material.SmoothPlastic,
 	},
 	future = {
 		ground = Color3.fromRGB(70, 66, 80),
@@ -196,6 +223,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(56, 52, 66), Color3.fromRGB(96, 90, 104), Color3.fromRGB(255, 90, 90) },
 		trunk = Color3.fromRGB(40, 38, 48),
 		prop = "tower",
+		rockMat = Enum.Material.Metal,
+		foliageMat = Enum.Material.Slate,
+		pathMat = Enum.Material.Asphalt,
 	},
 	void = {
 		ground = Color3.fromRGB(44, 30, 76),
@@ -214,6 +244,9 @@ local Themes: { [string]: Theme } = {
 		foliage = { Color3.fromRGB(80, 40, 140), Color3.fromRGB(255, 80, 210), Color3.fromRGB(90, 240, 255) },
 		trunk = Color3.fromRGB(24, 16, 40),
 		prop = "shard",
+		rockMat = Enum.Material.Slate,
+		foliageMat = Enum.Material.Glass,
+		pathMat = Enum.Material.Slate,
 	},
 }
 WorldBuilder.Themes = Themes
@@ -323,6 +356,24 @@ end
 local NEON: Opts = { mat = Enum.Material.Neon, collide = false }
 local DECOR: Opts = { collide = false }
 
+-- Colour noise: every natural part gets a slightly different shade (own RNG, so it never
+-- changes where things are placed). Flat single-tone hills were the main "2016" tell.
+local tone = Random.new(7331)
+local function vary(c: Color3, amount: number?): Color3
+	local a = amount or 0.07
+	local k = tone:NextNumber(-a, a)
+	local h, sat, v = c:ToHSV()
+	h = (h + tone:NextNumber(-0.012, 0.012)) % 1
+	return Color3.fromHSV(h, math.clamp(sat * (1 + tone:NextNumber(-0.08, 0.05)), 0, 1), math.clamp(v * (1 + k), 0, 1))
+end
+local function rockOpts(th: Theme, collide: boolean): Opts
+	return { mat = th.rockMat or Enum.Material.Rock, collide = collide }
+end
+local function leafOpts(th: Theme): Opts
+	return { mat = th.foliageMat or Enum.Material.Grass, collide = false }
+end
+local WOOD: Opts = { mat = Enum.Material.Wood, collide = false }
+
 -- A floating ring. The server only places an invisible marker; each client builds the ring
 -- from thin segments and animates it (WorldFx), so it costs one replicated part.
 local function ring(parent: Instance, pos: Vector3, radius: number, thick: number, color: Color3, motion: string, phase: number?)
@@ -408,8 +459,8 @@ local function gate(parent: Instance, pos: Vector3, facing: Vector3, color: Colo
 	local look = CFrame.lookAt(pos, pos + facing)
 	local stone = Color3.fromRGB(70, 62, 86)
 	for _, side in { -1, 1 } do
-		block(parent, look * CFrame.new(side * 8, 6, 0), Vector3.new(2.4, 12, 2.4), stone, { collide = true })
-		block(parent, look * CFrame.new(side * 8, 0.6, 0), Vector3.new(3.4, 1.2, 3.4), stone:Lerp(Color3.new(0, 0, 0), 0.2), DECOR)
+		block(parent, look * CFrame.new(side * 8, 6, 0), Vector3.new(2.4, 12, 2.4), stone, { mat = Enum.Material.Slate, collide = true })
+		block(parent, look * CFrame.new(side * 8, 0.6, 0), Vector3.new(3.4, 1.2, 3.4), stone:Lerp(Color3.new(0, 0, 0), 0.2), { mat = Enum.Material.Slate, collide = false })
 		block(parent, look * CFrame.new(side * 8, 12.6, 0), Vector3.new(3, 1.2, 3), glow, NEON)
 	end
 	sign(parent, look * CFrame.new(0, 12.4, 0), Vector3.new(13.6, 3.4, 0.8), color, lines)
@@ -419,27 +470,29 @@ end
 -- Props
 ---------------------------------------------------------------------------
 local function tree(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 0.9 * s, 8 * s, th.trunk, DECOR)
-	local c = th.foliage[rng:NextInteger(1, #th.foliage)]
-	blob(parent, CFrame.new(pos + Vector3.new(0, 10 * s, 0)), Vector3.new(9, 7.5, 9) * s, c, DECOR)
-	blob(parent, CFrame.new(pos + Vector3.new(2 * s, 13 * s, 1 * s)), Vector3.new(6, 5, 6) * s, c:Lerp(Color3.new(1, 1, 1), 0.16), DECOR)
-	blob(parent, CFrame.new(pos + Vector3.new(-2.4 * s, 8.4 * s, -1.4 * s)), Vector3.new(5.5, 4.5, 5.5) * s, c:Lerp(Color3.new(0, 0, 0), 0.14), DECOR)
+	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 0.9 * s, 8 * s, vary(th.trunk), WOOD)
+	local c = vary(th.foliage[rng:NextInteger(1, #th.foliage)], 0.1)
+	local leaf = leafOpts(th)
+	blob(parent, CFrame.new(pos + Vector3.new(0, 10 * s, 0)), Vector3.new(9, 7.5, 9) * s, c, leaf)
+	blob(parent, CFrame.new(pos + Vector3.new(2 * s, 13 * s, 1 * s)), Vector3.new(6, 5, 6) * s, c:Lerp(Color3.new(1, 1, 1), 0.16), leaf)
+	blob(parent, CFrame.new(pos + Vector3.new(-2.4 * s, 8.4 * s, -1.4 * s)), Vector3.new(5.5, 4.5, 5.5) * s, c:Lerp(Color3.new(0, 0, 0), 0.14), leaf)
 end
 
 local function pine(parent: Instance, pos: Vector3, s: number, th: Theme)
-	cyl(parent, pos + Vector3.new(0, 2 * s, 0), 0.7 * s, 4 * s, th.trunk, DECOR)
+	cyl(parent, pos + Vector3.new(0, 2 * s, 0), 0.7 * s, 4 * s, vary(th.trunk), WOOD)
+	local green = vary(th.foliage[1], 0.1)
 	for i = 0, 2 do
 		local r = (4.2 - i * 1.2) * s
-		cyl(parent, pos + Vector3.new(0, (4.4 + i * 2.6) * s, 0), r, 2.4 * s, th.foliage[1]:Lerp(th.foliage[2], i * 0.12), DECOR)
-		cyl(parent, pos + Vector3.new(0, (5.7 + i * 2.6) * s, 0), r * 0.82, 0.5 * s, th.foliage[2], DECOR)
+		cyl(parent, pos + Vector3.new(0, (4.4 + i * 2.6) * s, 0), r, 2.4 * s, green:Lerp(th.foliage[2], i * 0.12), leafOpts(th))
+		cyl(parent, pos + Vector3.new(0, (5.7 + i * 2.6) * s, 0), r * 0.82, 0.5 * s, th.foliage[2], { mat = Enum.Material.Snow, collide = false })
 	end
 end
 
 local function spire(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
 	local tilt = CFrame.Angles(math.rad(rng:NextNumber(-10, 10)), rng:NextNumber(0, 6.28), math.rad(rng:NextNumber(-10, 10)))
 	local cf = CFrame.new(pos) * tilt
-	block(parent, cf * CFrame.new(0, 3 * s, 0), Vector3.new(3.4, 6, 3.4) * s, th.foliage[1], DECOR)
-	block(parent, cf * CFrame.new(0, 7.5 * s, 0), Vector3.new(2.4, 4, 2.4) * s, th.foliage[2], DECOR)
+	block(parent, cf * CFrame.new(0, 3 * s, 0), Vector3.new(3.4, 6, 3.4) * s, vary(th.foliage[1]), rockOpts(th, false))
+	block(parent, cf * CFrame.new(0, 7.5 * s, 0), Vector3.new(2.4, 4, 2.4) * s, vary(th.foliage[2]), rockOpts(th, false))
 	block(parent, cf * CFrame.new(0, 10.4 * s, 0) * CFrame.Angles(0, math.rad(45), 0), Vector3.new(1.3, 2.2, 1.3) * s, th.foliage[3], NEON)
 end
 
@@ -458,8 +511,8 @@ local function shard(parent: Instance, pos: Vector3, s: number, th: Theme, rng: 
 end
 
 local function cactus(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
-	local c = th.foliage[rng:NextInteger(1, 2)]
-	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 1.1 * s, 8 * s, c, DECOR)
+	local c = vary(th.foliage[rng:NextInteger(1, 2)])
+	cyl(parent, pos + Vector3.new(0, 4 * s, 0), 1.1 * s, 8 * s, c, leafOpts(th))
 	ball(parent, pos + Vector3.new(0, 8 * s, 0), 1.1 * s, c, DECOR)
 	for _, side in { -1, 1 } do
 		local h = rng:NextNumber(2.4, 4) * s
@@ -491,8 +544,9 @@ end
 
 local function rock(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random)
 	local cf = CFrame.new(pos + Vector3.new(0, 1.2 * s, 0)) * CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, 6.28), rng:NextNumber(-0.3, 0.3))
-	block(parent, cf, Vector3.new(4.5, 3, 3.6) * s, th.rock, { collide = true })
-	block(parent, cf * CFrame.new(1.2 * s, 1.4 * s, 0.4 * s) * CFrame.Angles(0.3, 0.6, 0.2), Vector3.new(2.6, 2, 2.4) * s, th.rock:Lerp(Color3.new(1, 1, 1), 0.14), DECOR)
+	local c = vary(th.rock, 0.1)
+	block(parent, cf, Vector3.new(4.5, 3, 3.6) * s, c, rockOpts(th, true))
+	block(parent, cf * CFrame.new(1.2 * s, 1.4 * s, 0.4 * s) * CFrame.Angles(0.3, 0.6, 0.2), Vector3.new(2.6, 2, 2.4) * s, c:Lerp(Color3.new(1, 1, 1), 0.14), rockOpts(th, false))
 end
 
 local function crystal(parent: Instance, pos: Vector3, s: number, color: Color3, rng: Random)
@@ -539,23 +593,23 @@ local function mountain(parent: Instance, pos: Vector3, r: number, h: number, th
 		local k = (i - 1) / 4
 		local color = if k < 0.6 then th.cliffLow:Lerp(th.cliffMid, k / 0.6) else th.cliffMid:Lerp(th.cliffTop, (k - 0.6) / 0.4)
 		local extra = if i == 1 then 12 else 0
-		cyl(parent, pos + Vector3.new(0, h * (t[2] + t[3] / 2) - extra / 2, 0), r * t[1], h * t[3] + extra, color, { collide = i <= 2 })
+		cyl(parent, pos + Vector3.new(0, h * (t[2] + t[3] / 2) - extra / 2, 0), r * t[1], h * t[3] + extra, vary(color, 0.05), rockOpts(th, i <= 2))
 	end
-	blob(parent, CFrame.new(pos + Vector3.new(0, h * 0.99, 0)), Vector3.new(r * 0.36, h * 0.16, r * 0.36), th.cliffTop, DECOR)
+	blob(parent, CFrame.new(pos + Vector3.new(0, h * 0.99, 0)), Vector3.new(r * 0.36, h * 0.16, r * 0.36), th.cliffTop, rockOpts(th, false))
 	for _ = 1, 2 do
 		local a = rng:NextNumber(0, math.pi * 2)
 		local hill = pos + Vector3.new(math.cos(a) * r * 0.95, 0, math.sin(a) * r * 0.95)
-		blob(parent, CFrame.new(hill + Vector3.new(0, h * 0.06, 0)) * CFrame.Angles(0, a, 0), Vector3.new(r * 1.2, h * 0.42, r * 0.9), th.cliffLow:Lerp(th.cliffMid, rng:NextNumber(0.3, 0.8)), DECOR)
+		blob(parent, CFrame.new(hill + Vector3.new(0, h * 0.06, 0)) * CFrame.Angles(0, a, 0), Vector3.new(r * 1.2, h * 0.42, r * 0.9), vary(th.cliffLow:Lerp(th.cliffMid, rng:NextNumber(0.3, 0.8)), 0.08), rockOpts(th, false))
 	end
 end
 
 -- Walkable two-step plateau with something on top.
 local function terrace(parent: Instance, pos: Vector3, r: number, th: Theme, rng: Random)
 	local side = th.cliffMid:Lerp(th.path, 0.35)
-	cyl(parent, pos + Vector3.new(0, 1.1, 0), r, 2.2, side, { collide = true })
+	cyl(parent, pos + Vector3.new(0, 1.1, 0), r, 2.2, side, rockOpts(th, true))
 	cyl(parent, pos + Vector3.new(0, 2.3, 0), r - 0.6, 0.3, th.patchA, { mat = th.groundMat, collide = false })
 	local off = Vector3.new(rng:NextNumber(-0.25, 0.25) * r, 0, rng:NextNumber(-0.25, 0.25) * r)
-	cyl(parent, pos + off + Vector3.new(0, 3.4, 0), r * 0.56, 2.2, side:Lerp(Color3.new(1, 1, 1), 0.08), { collide = true })
+	cyl(parent, pos + off + Vector3.new(0, 3.4, 0), r * 0.56, 2.2, side:Lerp(Color3.new(1, 1, 1), 0.08), rockOpts(th, true))
 	cyl(parent, pos + off + Vector3.new(0, 4.6, 0), r * 0.56 - 0.5, 0.3, th.patchA:Lerp(Color3.new(1, 1, 1), 0.12), { mat = th.groundMat, collide = false })
 	return pos + off + Vector3.new(0, 4.7, 0)
 end
@@ -563,9 +617,9 @@ end
 local GLOWY = { volcano = true, storm = true, void = true, ruins = true, future = true, wasteland = true }
 
 local function bush(parent: Instance, pos: Vector3, s: number, th: Theme, rng: Random, theme: string)
-	local c = th.foliage[rng:NextInteger(1, 2)]
-	blob(parent, CFrame.new(pos + Vector3.new(0, 1 * s, 0)) * CFrame.Angles(0, rng:NextNumber(0, 3), 0), Vector3.new(4.2, 2.6, 3.4) * s, c, DECOR)
-	blob(parent, CFrame.new(pos + Vector3.new(1.3 * s, 1.7 * s, 0.4 * s)), Vector3.new(2.4, 2, 2.4) * s, c:Lerp(Color3.new(1, 1, 1), 0.14), DECOR)
+	local c = vary(th.foliage[rng:NextInteger(1, 2)], 0.1)
+	blob(parent, CFrame.new(pos + Vector3.new(0, 1 * s, 0)) * CFrame.Angles(0, rng:NextNumber(0, 3), 0), Vector3.new(4.2, 2.6, 3.4) * s, c, leafOpts(th))
+	blob(parent, CFrame.new(pos + Vector3.new(1.3 * s, 1.7 * s, 0.4 * s)), Vector3.new(2.4, 2, 2.4) * s, c:Lerp(Color3.new(1, 1, 1), 0.14), leafOpts(th))
 	if GLOWY[theme] then
 		ball(parent, pos + Vector3.new(-0.8 * s, 2.3 * s, 0.6 * s), 0.45 * s, th.accent, NEON)
 	end
@@ -607,6 +661,32 @@ local function lake(parent: Instance, pos: Vector3, r: number, th: Theme, rng: R
 	for i = 1, 7 do
 		local a = i / 7 * math.pi * 2 + rng:NextNumber(-0.2, 0.2)
 		rock(parent, pos + Vector3.new(math.cos(a) * (r + 1.5), 0, math.sin(a) * (r + 1.5)), rng:NextNumber(0.6, 1.1), th, rng)
+	end
+end
+
+-- Small ground detail that breaks up flat ground: grass tufts on soft ground, snow mounds on
+-- ice, pebble clusters on rock. Two parts each, own RNG (placement of everything else is
+-- unchanged). DETAIL_PER_PLANET * 2 parts per planet, counted in the world part budget.
+local DETAIL_PER_PLANET = 30
+local TUFT_THEMES = { meadow = "grass", desert = "grass", candy = "grass", wasteland = "grass", ice = "snow" }
+local function groundDetail(parent: Instance, pos: Vector3, th: Theme, rng: Random, theme: string)
+	local kind = TUFT_THEMES[theme] or "pebble"
+	local yaw = CFrame.Angles(0, rng:NextNumber(0, 6.28), 0)
+	if kind == "grass" then
+		local c = vary(th.foliage[1]:Lerp(th.patchA, 0.35), 0.12)
+		local s = rng:NextNumber(0.8, 1.4)
+		-- two crossed flattened blades read as a tuft from any side
+		blob(parent, CFrame.new(pos + Vector3.new(0, 0.7 * s, 0)) * yaw, Vector3.new(2.2, 1.6, 0.35) * s, c, { mat = Enum.Material.Grass, collide = false })
+		blob(parent, CFrame.new(pos + Vector3.new(0, 0.6 * s, 0)) * yaw * CFrame.Angles(0, math.rad(90), 0), Vector3.new(1.8, 1.3, 0.35) * s, c:Lerp(Color3.new(1, 1, 1), 0.12), { mat = Enum.Material.Grass, collide = false })
+	elseif kind == "snow" then
+		local s = rng:NextNumber(1, 2.2)
+		blob(parent, CFrame.new(pos + Vector3.new(0, 0.2, 0)) * yaw, Vector3.new(4.5, 1.4, 3.2) * s, vary(th.patchA, 0.04), { mat = Enum.Material.Snow, collide = false })
+		blob(parent, CFrame.new(pos + Vector3.new(1.2 * s, 0.3, 0.6 * s)) * yaw, Vector3.new(2.2, 1, 1.8) * s, vary(th.ground, 0.04), { mat = Enum.Material.Snow, collide = false })
+	else
+		local c = vary(th.rock, 0.12)
+		local s = rng:NextNumber(0.6, 1.2)
+		block(parent, CFrame.new(pos + Vector3.new(0, 0.35 * s, 0)) * yaw * CFrame.Angles(0.2, 0, 0.15), Vector3.new(1.6, 0.9, 1.3) * s, c, rockOpts(th, false))
+		block(parent, CFrame.new(pos + Vector3.new(1.3 * s, 0.25 * s, 0.5 * s)) * yaw * CFrame.Angles(-0.2, 0.7, 0.1), Vector3.new(1, 0.6, 0.9) * s, c:Lerp(Color3.new(1, 1, 1), 0.1), rockOpts(th, false))
 	end
 end
 
@@ -839,7 +919,7 @@ local function buildZone(parent: Instance, center: Vector3, zone: any, th: Theme
 	f.Name = "Zone_" .. zone.id
 	f.Parent = parent
 	-- stepped pad with a bright rim and a painted inner disc
-	cyl(f, center + Vector3.new(0, 0.35, 0), r + 3, 0.7, th.rock, { collide = true })
+	cyl(f, center + Vector3.new(0, 0.35, 0), r + 3, 0.7, th.rock, rockOpts(th, true))
 	cyl(f, center + Vector3.new(0, 0.8, 0), r, 0.5, Color3.fromRGB(44, 38, 62), { collide = true })
 	cyl(f, center + Vector3.new(0, 1.0, 0), r - 1.5, 0.2, c, NEON).Name = "Rim"
 	cyl(f, center + Vector3.new(0, 1.06, 0), r - 3.2, 0.2, Color3.fromRGB(56, 48, 80), DECOR)
@@ -975,7 +1055,7 @@ local function buildCamp(parent: Instance, center: Vector3, camp: any, th: Theme
 	for i = 1, 5 do
 		local a = i / 5 * math.pi * 2 + 0.3
 		local p = center + Vector3.new(math.cos(a) * camp.radius * 0.92, 0, math.sin(a) * camp.radius * 0.92)
-		block(f, CFrame.new(p + Vector3.new(0, 5, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(2.2, 10, 2.2), th.trunk, { collide = true })
+		block(f, CFrame.new(p + Vector3.new(0, 5, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(2.2, 10, 2.2), th.trunk, { mat = Enum.Material.Wood, collide = true })
 		block(f, CFrame.new(p + Vector3.new(0, 8.4, 0)) * CFrame.Angles(0, -a, 0), Vector3.new(3, 2.4, 3), c, DECOR)
 		block(f, CFrame.new(p + Vector3.new(0, 11, 0)) * CFrame.Angles(0, -a + 0.78, 0), Vector3.new(1.6, 1.6, 1.6), acc, NEON)
 		local flag = block(f, CFrame.new(p + Vector3.new(0, 6.2, 0)) * CFrame.Angles(0, -a, 0) * CFrame.new(0, 0, 2.2), Vector3.new(0.3, 4.4, 3.2), acc, { collide = false, anim = "flag" })
@@ -1012,8 +1092,8 @@ local function buildBossArena(parent: Instance, center: Vector3, boss: any, th: 
 		local p = center + Vector3.new(math.cos(a) * (r + 1), 0, math.sin(a) * (r + 1))
 		local h = if i % 2 == 0 then 30 else 20
 		local cf = CFrame.lookAt(p, Vector3.new(center.X, p.Y, center.Z)) * CFrame.Angles(math.rad(-14), 0, 0)
-		block(f, cf * CFrame.new(0, h / 2, 0), Vector3.new(5, h, 5), th.cliffLow, { collide = true })
-		block(f, cf * CFrame.new(0, h + 2, 0) * CFrame.Angles(math.rad(-24), 0, 0), Vector3.new(3.4, 7, 3.4), th.cliffMid, DECOR)
+		block(f, cf * CFrame.new(0, h / 2, 0), Vector3.new(5, h, 5), vary(th.cliffLow), rockOpts(th, true))
+		block(f, cf * CFrame.new(0, h + 2, 0) * CFrame.Angles(math.rad(-24), 0, 0), Vector3.new(3.4, 7, 3.4), vary(th.cliffMid), rockOpts(th, false))
 		local tip = block(f, cf * CFrame.new(0, h + 6, -1.6) * CFrame.Angles(math.rad(-30), 0, math.rad(45)), Vector3.new(1.8, 1.8, 1.8), acc, { mat = Enum.Material.Neon, collide = false, anim = "pulse" })
 		tip:SetAttribute("KiwPhase", i)
 		if i % 2 == 0 then
@@ -1036,8 +1116,8 @@ local function buildPlaza(parent: Instance, center: Vector3, pl: any, th: Theme)
 	f.Name = "Plaza"
 	f.Parent = parent
 	local R = Config.PlazaRadius
-	cyl(f, center + Vector3.new(0, 0.2, 0), R, 0.4, th.plaza:Lerp(Color3.new(0, 0, 0), 0.25), { collide = true })
-	cyl(f, center + Vector3.new(0, 0.5, 0), R - 3, 0.3, th.plaza, { collide = true })
+	cyl(f, center + Vector3.new(0, 0.2, 0), R, 0.4, th.plaza:Lerp(Color3.new(0, 0, 0), 0.25), { mat = Enum.Material.Slate, collide = true })
+	cyl(f, center + Vector3.new(0, 0.5, 0), R - 3, 0.3, th.plaza, { mat = Enum.Material.Pavement, collide = true })
 	cyl(f, center + Vector3.new(0, 0.66, 0), R - 8, 0.2, th.plazaTrim, NEON)
 	cyl(f, center + Vector3.new(0, 0.72, 0), R - 10, 0.2, th.plaza:Lerp(Color3.new(1, 1, 1), 0.12), DECOR)
 	-- painted sunburst
@@ -1048,7 +1128,7 @@ local function buildPlaza(parent: Instance, center: Vector3, pl: any, th: Theme)
 	end
 	cyl(f, center + Vector3.new(0, 0.9, 0), 17, 0.3, th.plazaTrim:Lerp(th.plaza, 0.4), DECOR)
 	-- monument: a floating ki crystal over a stepped base
-	cyl(f, center + Vector3.new(0, 1.6, 0), 12, 1.6, th.rock, { collide = true })
+	cyl(f, center + Vector3.new(0, 1.6, 0), 12, 1.6, th.rock, rockOpts(th, true))
 	cyl(f, center + Vector3.new(0, 3.0, 0), 8.5, 1.4, th.plaza, { collide = true })
 	cyl(f, center + Vector3.new(0, 4.2, 0), 5.5, 1.2, th.plazaTrim, { collide = true })
 	local core = block(f, CFrame.new(center + Vector3.new(0, 15, 0)) * CFrame.Angles(math.rad(35), 0, math.rad(45)), Vector3.new(5.5, 5.5, 5.5), th.accent, { mat = Enum.Material.Neon, collide = false, anim = "spinbob", name = "KiCrystal" })
@@ -1127,8 +1207,8 @@ local function buildPlanet(world: Instance, pl: any, info: { [string]: any })
 
 	-- ground: a thick disc, a darker skirt, painted patches
 	cyl(f, center + Vector3.new(0, -8, 0), R, 16, th.ground, { mat = th.groundMat, collide = true, name = "Ground" })
-	cyl(f, center + Vector3.new(0, -30, 0), R * 0.82, 30, th.cliffLow, { collide = false })
-	cyl(f, center + Vector3.new(0, -58, 0), R * 0.5, 30, th.cliffLow:Lerp(Color3.new(0, 0, 0), 0.3), { collide = false })
+	cyl(f, center + Vector3.new(0, -30, 0), R * 0.82, 30, th.cliffLow, rockOpts(th, false))
+	cyl(f, center + Vector3.new(0, -58, 0), R * 0.5, 30, th.cliffLow:Lerp(Color3.new(0, 0, 0), 0.3), rockOpts(th, false))
 	cyl(f, center + Vector3.new(0, 0.04, 0), R - 14, 0.1, th.ground:Lerp(th.patchA, 0.35), { mat = th.groundMat, collide = false })
 
 	local pois: { { pos: Vector3, r: number } } = { { pos = center, r = Config.PlazaRadius + 10 } }
@@ -1163,7 +1243,7 @@ local function buildPlanet(world: Instance, pl: any, info: { [string]: any })
 		local r = rng:NextNumber(40, R - 50)
 		local p = center + Vector3.new(math.cos(a) * r, 0.1 + i * 0.004, math.sin(a) * r)
 		local size = rng:NextNumber(16, 46)
-		local p1 = blob(f, CFrame.new(p), Vector3.new(size * 2, 0.5, size * rng:NextNumber(1.2, 2)), if i % 2 == 0 then th.patchA else th.patchB, DECOR)
+		local p1 = blob(f, CFrame.new(p), Vector3.new(size * 2, 0.5, size * rng:NextNumber(1.2, 2)), vary(if i % 2 == 0 then th.patchA else th.patchB, 0.06), { mat = th.groundMat, collide = false })
 		p1.CFrame = CFrame.new(p) * CFrame.Angles(0, rng:NextNumber(0, 3.14), 0)
 	end
 
@@ -1175,7 +1255,7 @@ local function buildPlanet(world: Instance, pl: any, info: { [string]: any })
 		local len = d.Magnitude - poi.r + 14 - from
 		if len > 4 then
 			local mid = center + d.Unit * (from + len / 2) + Vector3.new(0, 0.22, 0)
-			block(f, CFrame.lookAt(mid, mid + d.Unit), Vector3.new(11, 0.24, len), th.path, DECOR)
+			block(f, CFrame.lookAt(mid, mid + d.Unit), Vector3.new(11, 0.24, len), th.path, { mat = th.pathMat or Enum.Material.Ground, collide = false })
 			block(f, CFrame.lookAt(mid + Vector3.new(0, 0.05, 0), mid + d.Unit + Vector3.new(0, 0.05, 0)), Vector3.new(6.5, 0.24, len), th.path:Lerp(Color3.new(1, 1, 1), 0.18), DECOR)
 			-- lantern posts along the way, alternating sides
 			local side = d.Unit:Cross(Vector3.yAxis)
@@ -1269,6 +1349,24 @@ local function buildPlanet(world: Instance, pl: any, info: { [string]: any })
 				bush(f, p, rng:NextNumber(0.8, 1.5), th, rng, pl.theme)
 			else
 				flowers(f, p, th, rng, pl.theme)
+			end
+		end
+	end
+
+	-- ground detail (own RNG so the layout above stays exactly as it was)
+	do
+		local drng = Random.new(5000 + pl.index * 31)
+		local put = 0
+		for _ = 1, DETAIL_PER_PLANET * 4 do
+			if put >= DETAIL_PER_PLANET then
+				break
+			end
+			local a = drng:NextNumber(0, math.pi * 2)
+			local r = drng:NextNumber(Config.PlazaRadius + 6, R - 20)
+			local p = center + Vector3.new(math.cos(a) * r, 0, math.sin(a) * r)
+			if free(p, 2) then
+				put += 1
+				groundDetail(f, p, th, drng, pl.theme)
 			end
 		end
 	end
@@ -1489,7 +1587,7 @@ local function buildMaster(world: Instance, info: { [string]: any })
 	light(orb, Color3.fromRGB(90, 230, 255), 18, 1.5)
 	local bb = Instance.new("BillboardGui")
 	bb.Name = "Tag"
-	bb.Size = UDim2.fromOffset(220, 60)
+	bb.Size = UDim2.fromOffset(170, 44)
 	bb.StudsOffset = Vector3.new(0, 10, 0)
 	bb.MaxDistance = 120
 	bb.AlwaysOnTop = false

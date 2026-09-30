@@ -40,17 +40,18 @@ Hud.banner = nil :: any
 -- Vitals dock: power, form, HP, ki, currencies
 ---------------------------------------------------------------------------
 local function currency(parent: Instance, name: string, icon: string, color: Color3, pos: UDim2): TextLabel
-	local f = new("Frame", { Name = name, Size = UDim2.fromOffset(122, 30), Position = pos, BackgroundColor3 = Theme.PanelDark, BackgroundTransparency = 0.25, Parent = parent }, {
+	local f = new("Frame", { Name = name, Size = UDim2.fromOffset(122, 30), Position = pos, BackgroundColor3 = Color3.new(1, 1, 1), BackgroundTransparency = 0.12, Parent = parent }, {
 		Theme.corner(15),
 		Theme.stroke(2.5),
+		Theme.gradient(Theme.PanelLight:Lerp(color, 0.12), Theme.PanelDark),
 	})
 	local medal = new("Frame", { Size = UDim2.fromOffset(34, 34), Position = UDim2.fromOffset(-3, -2), BackgroundColor3 = Color3.new(1, 1, 1), ZIndex = 2, Parent = f }, {
 		Theme.corner(17),
 		Theme.stroke(2.5),
 		Theme.gradient(Theme.lighten(color, 0.4), color),
 	})
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = medal }).ZIndex = 3
-	local value = Theme.text({ Name = "Value", Text = "0", Font = Theme.Display, Size = UDim2.new(1, -42, 1, -4), Position = UDim2.fromOffset(36, 2), MaxTextSize = 24, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.lighten(color, 0.55), Parent = f })
+	Theme.icon(icon, { Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = medal }).ZIndex = 3
+	local value = Theme.text({ Name = "Value", Text = "0", Font = Theme.Display, Size = UDim2.new(1, -42, 1, -4), Position = UDim2.fromOffset(36, 2), MaxTextSize = 25, Stroke = 2.5, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.lighten(color, 0.55), Parent = f })
 	new("UIScale", { Parent = f })
 	refs[name .. "Pill"] = f
 	return value
@@ -76,7 +77,7 @@ local function buildVitals()
 		Theme.stroke(3),
 		Theme.gradient(Color3.fromRGB(255, 200, 70), Color3.fromRGB(240, 96, 30)),
 	})
-	Theme.text({ Text = "💥", Stroke = false, Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = badge })
+	Theme.icon("💥", { Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = badge })
 	refs.power = Theme.text({ Name = "Power", Text = "0", Font = Theme.Display, Size = UDim2.fromOffset(120, 38), Position = UDim2.fromOffset(44, 0), MaxTextSize = 38, Stroke = 3, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Color3.fromRGB(255, 226, 110), Parent = powerRow })
 	Theme.text({ Key = "hud.power", Size = UDim2.fromOffset(84, 14), Position = UDim2.fromOffset(168, 4), MaxTextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Dim, Parent = powerRow })
 	refs.form = Theme.text({ Name = "Form", Text = "", Size = UDim2.fromOffset(88, 18), Position = UDim2.fromOffset(166, 18), MaxTextSize = 15, TextXAlignment = Enum.TextXAlignment.Left, Parent = powerRow })
@@ -105,11 +106,13 @@ local function toggleButton(key: string, locKey: string, order: number, parent: 
 		LayoutOrder = order,
 		Parent = parent,
 	}, { Theme.corner(13), Theme.stroke(2.5), new("UIGradient", { Name = "G", Rotation = 90 }) })
+	Theme.gloss(b, 13, 0.86) -- first child drawn, so it sits under the dot and the label
 	local dot = new("Frame", { Name = "Dot", Size = UDim2.fromOffset(12, 12), Position = UDim2.fromOffset(7, 7), BackgroundColor3 = Theme.Grey, Parent = b }, { Theme.corner(6), Theme.stroke(1.5) })
 	local _ = dot
 	Theme.text({ Name = "Label", Text = "", Size = UDim2.new(1, -28, 1, -6), Position = UDim2.fromOffset(23, 3), MaxTextSize = 13, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
 	b:SetAttribute("SettingKey", key)
 	b:SetAttribute("LocKey", locKey)
+	Theme.pressable(b, 1.04)
 	b.Activated:Connect(function()
 		Theme.play("click", 0.3)
 		Controls.toggleSetting(key)
@@ -166,7 +169,7 @@ local function buildTraining()
 		})
 		local ring = new("UIStroke", { Thickness = 3, Color = Theme.White, ApplyStrokeMode = Enum.ApplyStrokeMode.Border, Parent = b })
 		local scale = new("UIScale", { Parent = b })
-		Theme.text({ Text = info.icon, Stroke = false, Size = UDim2.fromScale(0.58, 0.58), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b })
+		Theme.icon(info.icon, { Size = UDim2.fromScale(0.58, 0.58), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b })
 		if not touch then
 			Theme.text({ Text = tostring(i), Font = Theme.Display, Size = UDim2.fromOffset(18, 20), Position = UDim2.fromOffset(-2, -6), MaxTextSize = 20, Stroke = 2.5, Parent = b }).ZIndex = 4
 		end
@@ -189,6 +192,7 @@ local function buildTraining()
 	}, { Theme.corner(12), Theme.stroke(3), new("UIGradient", { Name = "G", Rotation = 90 }) })
 	Theme.gloss(gear, 12, 0.85)
 	new("UIScale", { Parent = gear })
+	Theme.pressable(gear)
 	refs.gearTop = Theme.text({ Name = "Top", Text = "", Size = UDim2.new(1, -8, 0.5, -2), Position = UDim2.fromOffset(4, 3), MaxTextSize = 17, Parent = gear })
 	refs.gearBottom = Theme.text({ Name = "Bottom", Text = "", Font = Theme.Display, Size = UDim2.new(1, -8, 0.5, -4), Position = UDim2.new(0, 4, 0.5, 0), MaxTextSize = 20, TextColor3 = Theme.Yellow, Parent = gear })
 	gear.Activated:Connect(function()
@@ -219,11 +223,12 @@ local function moveSlot(parent: Instance, order: number, icon: string, key: stri
 	-- cooldown: a fill of the move colour that drains as the move comes back
 	local clip = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ClipsDescendants = true, Parent = f }, { Theme.corner(8) })
 	local cool = new("Frame", { Name = "Cool", Size = UDim2.fromScale(1, 0), Position = UDim2.fromScale(0, 1), AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = color, BackgroundTransparency = 0.35, BorderSizePixel = 0, Parent = clip })
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Parent = f }).ZIndex = 2
+	Theme.icon(icon, { Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.42), AnchorPoint = Vector2.new(0.5, 0.5), Parent = f }).ZIndex = 2
 	local keyLabel = Theme.text({ Text = key, Font = Theme.Display, Size = UDim2.fromOffset(34, 16), Position = UDim2.new(1, 1, 1, 1), AnchorPoint = Vector2.new(1, 1), MaxTextSize = 16, Stroke = 2.5, TextXAlignment = Enum.TextXAlignment.Right, TextColor3 = Theme.Yellow, Parent = f })
 	keyLabel.ZIndex = 4
 	f:SetAttribute("LocKey", locKey)
 	new("UIScale", { Parent = f })
+	Theme.pressable(f, 1.08)
 	if onClick then
 		f.Activated:Connect(onClick)
 	end
@@ -305,8 +310,8 @@ local function buildCombat()
 	new("UIScale", { Parent = combo })
 	Root.mount(combo)
 	refs.combo = combo
-	refs.comboN = Theme.text({ Text = "x2", Font = Theme.Display, Size = UDim2.new(1, 0, 0, 64), MaxTextSize = 64, Stroke = 4, TextColor3 = Theme.Yellow, Rotation = -6, Parent = combo })
-	Theme.text({ Key = "hud.hits", Font = Theme.Display, Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 60), MaxTextSize = 28, Stroke = 3, Rotation = -6, Parent = combo })
+	refs.comboN = Theme.text({ Text = "x2", Font = Theme.Comic, Size = UDim2.new(1, 0, 0, 64), MaxTextSize = 64, Stroke = 4, TextColor3 = Theme.Yellow, Rotation = -6, Parent = combo })
+	Theme.text({ Key = "hud.hits", Font = Theme.Comic, Size = UDim2.new(1, 0, 0, 30), Position = UDim2.fromOffset(0, 60), MaxTextSize = 28, Stroke = 3, Rotation = -6, Parent = combo })
 
 	local beamMeter, setBeam = Theme.bar({ Name = "BeamMeter", Size = UDim2.fromOffset(260, 20), Position = if touch then UDim2.new(0.42, 0, 0.62, 0) else UDim2.new(0.5, 0, 1, -150), AnchorPoint = Vector2.new(0.5, 1), Color = Theme.Blue, TextSize = 13, Parent = Root.gui })
 	beamMeter.Visible = false
@@ -314,7 +319,7 @@ local function buildCombat()
 	refs.beamMeter, refs.setBeam = beamMeter, setBeam
 
 	-- giant form name for a second when you transform
-	local title = Theme.text({ Name = "FormTitle", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(900, 120), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = 110, Stroke = 6, Visible = false, Parent = Root.gui })
+	local title = Theme.text({ Name = "FormTitle", Text = "", Font = Theme.Comic, Size = UDim2.fromOffset(900, 120), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0.5), MaxTextSize = 110, Stroke = 6, Visible = false, Parent = Root.gui })
 	new("UIScale", { Parent = title })
 	Root.mount(title)
 	refs.formTitle = title
@@ -438,7 +443,7 @@ local function refreshFull()
 		refs.gear.G.Color = Theme.buttonFace(if s.sparks >= nextTier.cost then Theme.Green else Theme.Orange)
 	else
 		refs.gearTop.Text = "🏋️ " .. cur
-		refs.gearBottom.Text = "MAX"
+		refs.gearBottom.Text = Lang.t("ui.max")
 		refs.gear.G.Color = Theme.buttonFace(Theme.Grey)
 	end
 	-- zone pill
@@ -550,7 +555,7 @@ local function cooldowns()
 	if started then
 		local charge = math.clamp((now - started) / C.beamMaxCharge, 0, 1)
 		refs.beamMeter.Visible = true
-		refs.setBeam(charge, if charge >= 1 then "MAX" else math.floor(charge * 100) .. "%")
+		refs.setBeam(charge, if charge >= 1 then Lang.t("ui.max") else math.floor(charge * 100) .. "%")
 	elseif refs.beamMeter.Visible then
 		refs.beamMeter.Visible = false
 	end

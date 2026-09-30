@@ -110,7 +110,7 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		ZIndex = 23,
 		Parent = frame,
 	}, { Theme.corner(35), Theme.stroke(4), Theme.gradient(Theme.White, Theme.lighten(color, 0.55)) })
-	local medalIcon = Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = medal })
+	local medalIcon = Theme.icon(icon, { Size = UDim2.fromScale(0.66, 0.66), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = medal })
 	medalIcon.ZIndex = 24
 	local titleLabel = Theme.text({
 		Text = "",
@@ -140,6 +140,14 @@ function Windows.create(name: string, icon: string, titleKey: string, color: Col
 		end,
 	})
 	close.ZIndex = 30
+	-- the pack's "close" icon replaces the X once uploaded
+	if Theme.iconImage("✖") then
+		local label = close:FindFirstChild("Label") :: TextLabel?
+		if label then
+			label.Visible = false
+		end
+		Theme.icon("✖", { Size = UDim2.fromScale(0.62, 0.62), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = close })
+	end
 	for _, d in close:GetDescendants() do
 		if d:IsA("GuiObject") then
 			d.ZIndex = 31

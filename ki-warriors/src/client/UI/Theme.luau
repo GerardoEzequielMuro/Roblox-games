@@ -1,8 +1,11 @@
 --!nonstrict
 -- Anime-fighter UI kit: dark glass panels, thick outlines, loud accent colours, chunky
 -- buttons. Everything is UICorner / UIStroke / UIGradient: no image assets.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local Icons = require(ReplicatedStorage.Shared.Icons)
+local Glyphs = require(ReplicatedStorage.Shared.Glyphs)
 local Lang = require(script.Parent.Parent.Lang)
 local Fx = require(script.Parent.Parent.Fx)
 
@@ -10,7 +13,8 @@ local Theme = {}
 
 Theme.Font = Enum.Font.GothamBlack
 Theme.FontBold = Enum.Font.GothamBold
-Theme.Display = Enum.Font.Bangers -- numbers and short Latin words
+Theme.Display = Enum.Font.FredokaOne -- numbers: round, heavy, readable at small sizes
+Theme.Comic = Enum.Font.Bangers -- anime shouts: combo counter, form names, damage numbers
 Theme.Ink = Color3.fromRGB(18, 14, 34) -- outlines
 Theme.Panel = Color3.fromRGB(30, 26, 56)
 Theme.PanelLight = Color3.fromRGB(52, 46, 92)
@@ -27,6 +31,11 @@ Theme.Purple = Color3.fromRGB(176, 104, 255)
 Theme.Pink = Color3.fromRGB(255, 96, 176)
 Theme.Grey = Color3.fromRGB(120, 116, 150)
 Theme.White = Color3.new(1, 1, 1)
+
+-- Uploaded icon image for an emoji glyph ("rbxassetid://..."), or nil to keep the emoji.
+function Theme.iconImage(glyph: string?): string?
+	return Glyphs.image(glyph, Icons.get)
+end
 
 function Theme.rgb(t: { number }): Color3
 	return Color3.fromRGB(t[1], t[2], t[3])
@@ -120,6 +129,37 @@ function Theme.text(props: { [string]: any }): TextLabel
 		t.Parent = props.Parent
 	end
 	return t
+end
+
+-- Icon for an emoji glyph. When the shared icon pack has an uploaded image for it, an
+-- ImageLabel (ScaleType Fit, transparent background); otherwise exactly the emoji TextLabel
+-- the UI always used (Theme.text without outline). Takes the same props as Theme.text.
+function Theme.icon(glyph: string, props: { [string]: any }): GuiObject
+	local image = Theme.iconImage(glyph)
+	if not image then
+		local p = table.clone(props)
+		p.Text = glyph
+		if p.Stroke == nil then
+			p.Stroke = false
+		end
+		return Theme.text(p)
+	end
+	local img = Theme.new("ImageLabel", {
+		Name = "Icon",
+		BackgroundTransparency = 1,
+		Image = image,
+		ScaleType = Enum.ScaleType.Fit,
+		Size = UDim2.fromScale(1, 1),
+	})
+	for k, v in props do
+		if k ~= "Parent" and k ~= "Stroke" and k ~= "MaxTextSize" and k ~= "Key" and k ~= "Args" and k ~= "Font" and string.sub(k, 1, 4) ~= "Text" then
+			img[k] = v
+		end
+	end
+	if props.Parent then
+		img.Parent = props.Parent
+	end
+	return img
 end
 
 -- Dark glass panel with an ink outline. Extra props: Corner, StrokeThickness, Accent (top edge colour).
@@ -242,11 +282,18 @@ function Theme.button(opts: ButtonOpts): TextButton
 		Theme.new("UIGradient", { Color = Theme.buttonFace(color), Rotation = 90 }),
 	})
 	Theme.gloss(b, corner)
-	local hasIcon = opts.Icon ~= nil
+	local iconGlyph, text = opts.Icon, opts.Text
+	if iconGlyph == nil and opts.Key == nil then
+		-- "💎 120": when that glyph has an uploaded image, show it as an icon + "120"
+		local g, rest = Glyphs.split(text)
+		if g and Theme.iconImage(g) then
+			iconGlyph, text = g, rest
+		end
+	end
+	local hasIcon = iconGlyph ~= nil
 	if hasIcon then
-		local icon = Theme.text({
+		local icon = Theme.icon(iconGlyph :: string, {
 			Name = "Icon",
-			Text = opts.Icon,
 			Stroke = false,
 			Size = UDim2.new(0, 30, 1, -12),
 			Position = UDim2.new(0, 8, 0.5, -1),
@@ -258,7 +305,7 @@ function Theme.button(opts: ButtonOpts): TextButton
 	end
 	local label = Theme.text({
 		Name = "Label",
-		Text = opts.Text or "",
+		Text = text or "",
 		Size = if hasIcon then UDim2.new(1, -46, 1, -10) else UDim2.new(1, -12, 1, -10),
 		Position = if hasIcon then UDim2.new(0, 40, 0.5, -1) else UDim2.new(0.5, 0, 0.5, -1),
 		AnchorPoint = if hasIcon then Vector2.new(0, 0.5) else Vector2.new(0.5, 0.5),
@@ -382,6 +429,24 @@ function Theme.badge(parent: GuiObject): Frame
 	local pulse = Theme.new("UIScale", { Parent = f })
 	TweenService:Create(pulse, TweenInfo.new(0.55, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.22 }):Play()
 	return f
+end
+
+-- Hover grow + press squash on any button (uses / creates its UIScale; Theme.pop shares it).
+function Theme.pressable(b: GuiButton, hover: number?)
+	local scale = b:FindFirstChildOfClass("UIScale") or Theme.new("UIScale", { Parent = b })
+	local up = hover or 1.05
+	b.MouseEnter:Connect(function()
+		TweenService:Create(scale, TweenInfo.new(0.12), { Scale = up }):Play()
+	end)
+	b.MouseLeave:Connect(function()
+		TweenService:Create(scale, TweenInfo.new(0.12), { Scale = 1 }):Play()
+	end)
+	b.MouseButton1Down:Connect(function()
+		TweenService:Create(scale, TweenInfo.new(0.06), { Scale = 0.92 }):Play()
+	end)
+	b.MouseButton1Up:Connect(function()
+		TweenService:Create(scale, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	end)
 end
 
 function Theme.pop(obj: GuiObject, amount: number?)

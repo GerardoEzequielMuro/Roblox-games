@@ -21,16 +21,16 @@ local function c(r, g, b)
 end
 
 local SKIES = {
-	meadow = { clock = 13.6, brightness = 2.1, ambient = c(120, 130, 150), outdoor = c(150, 160, 175), top = c(255, 250, 235), fog = c(190, 225, 255), density = 0.26, haze = 1.2, stars = 0, tint = c(255, 255, 255), sat = 0.18 },
-	volcano = { clock = 17.75, brightness = 2.2, ambient = c(140, 84, 70), outdoor = c(170, 100, 80), top = c(255, 160, 90), fog = c(255, 140, 90), density = 0.34, haze = 2.2, stars = 0, tint = c(255, 236, 224), sat = 0.2 },
-	ice = { clock = 8.2, brightness = 2.4, ambient = c(130, 150, 190), outdoor = c(160, 185, 220), top = c(230, 245, 255), fog = c(210, 235, 255), density = 0.3, haze = 1.4, stars = 0, tint = c(236, 246, 255), sat = 0.1 },
-	storm = { clock = 18.4, brightness = 1.9, ambient = c(110, 110, 160), outdoor = c(130, 130, 190), top = c(190, 190, 255), fog = c(150, 140, 210), density = 0.36, haze = 2, stars = 1500, tint = c(236, 232, 255), sat = 0.12 },
-	desert = { clock = 15.6, brightness = 2.4, ambient = c(150, 130, 110), outdoor = c(180, 160, 130), top = c(255, 236, 200), fog = c(255, 220, 170), density = 0.3, haze = 1.8, stars = 0, tint = c(255, 246, 232), sat = 0.14 },
-	wasteland = { clock = 18.05, brightness = 2.1, ambient = c(130, 96, 120), outdoor = c(160, 110, 130), top = c(255, 170, 150), fog = c(230, 130, 140), density = 0.34, haze = 2, stars = 800, tint = c(255, 236, 236), sat = 0.16 },
+	meadow = { clock = 13.6, brightness = 2.1, ambient = c(120, 130, 150), outdoor = c(150, 160, 175), top = c(255, 250, 235), fog = c(190, 225, 255), density = 0.26, haze = 1.2, stars = 0, tint = c(255, 255, 255), sat = 0.11 },
+	volcano = { clock = 17.75, brightness = 2.2, ambient = c(140, 84, 70), outdoor = c(170, 100, 80), top = c(255, 160, 90), fog = c(255, 140, 90), density = 0.34, haze = 2.2, stars = 0, tint = c(255, 236, 224), sat = 0.12 },
+	ice = { clock = 8.2, brightness = 2.4, ambient = c(130, 150, 190), outdoor = c(160, 185, 220), top = c(230, 245, 255), fog = c(210, 235, 255), density = 0.3, haze = 1.4, stars = 0, tint = c(236, 246, 255), sat = 0.06 },
+	storm = { clock = 18.4, brightness = 1.9, ambient = c(110, 110, 160), outdoor = c(130, 130, 190), top = c(190, 190, 255), fog = c(150, 140, 210), density = 0.36, haze = 2, stars = 1500, tint = c(236, 232, 255), sat = 0.07 },
+	desert = { clock = 15.6, brightness = 2.4, ambient = c(150, 130, 110), outdoor = c(180, 160, 130), top = c(255, 236, 200), fog = c(255, 220, 170), density = 0.3, haze = 1.8, stars = 0, tint = c(255, 246, 232), sat = 0.08 },
+	wasteland = { clock = 18.05, brightness = 2.1, ambient = c(130, 96, 120), outdoor = c(160, 110, 130), top = c(255, 170, 150), fog = c(230, 130, 140), density = 0.34, haze = 2, stars = 800, tint = c(255, 236, 236), sat = 0.1 },
 	ruins = { clock = 6.4, brightness = 1.7, ambient = c(100, 116, 116), outdoor = c(120, 140, 136), top = c(190, 220, 200), fog = c(130, 160, 150), density = 0.4, haze = 2.4, stars = 0, tint = c(226, 246, 236), sat = -0.05 },
-	candy = { clock = 11.5, brightness = 2.2, ambient = c(170, 140, 170), outdoor = c(200, 170, 200), top = c(255, 230, 245), fog = c(255, 200, 230), density = 0.26, haze = 1.2, stars = 0, tint = c(255, 244, 250), sat = 0.22 },
-	future = { clock = 18.35, brightness = 1.8, ambient = c(110, 84, 100), outdoor = c(140, 96, 110), top = c(255, 130, 120), fog = c(150, 70, 90), density = 0.38, haze = 2.2, stars = 2500, tint = c(255, 232, 232), sat = 0.1 },
-	void = { clock = 0.3, brightness = 1.6, ambient = c(90, 64, 150), outdoor = c(110, 80, 180), top = c(200, 140, 255), fog = c(60, 30, 110), density = 0.3, haze = 1.6, stars = 5000, tint = c(240, 226, 255), sat = 0.2 },
+	candy = { clock = 11.5, brightness = 2.2, ambient = c(170, 140, 170), outdoor = c(200, 170, 200), top = c(255, 230, 245), fog = c(255, 200, 230), density = 0.26, haze = 1.2, stars = 0, tint = c(255, 244, 250), sat = 0.13 },
+	future = { clock = 18.35, brightness = 1.8, ambient = c(110, 84, 100), outdoor = c(140, 96, 110), top = c(255, 130, 120), fog = c(150, 70, 90), density = 0.38, haze = 2.2, stars = 2500, tint = c(255, 232, 232), sat = 0.06 },
+	void = { clock = 0.3, brightness = 1.6, ambient = c(90, 64, 150), outdoor = c(110, 80, 180), top = c(200, 140, 255), fog = c(60, 30, 110), density = 0.3, haze = 1.6, stars = 5000, tint = c(240, 226, 255), sat = 0.12 },
 }
 
 local atmosphere: Atmosphere
@@ -199,22 +199,27 @@ function WorldFx.init()
 	sky.SunAngularSize = 16
 	sky.MoonAngularSize = 14
 	sky.Parent = Lighting
+	-- Grade: a touch more contrast and less saturation than before (flat primaries looked
+	-- dated); the planet palettes carry the colour. Bloom only catches Neon / the sun.
 	grade = Instance.new("ColorCorrectionEffect")
-	grade.Contrast = 0.06
+	grade.Contrast = 0.1
+	grade.Brightness = 0.02
 	grade.Parent = Lighting
 	local bloom = Instance.new("BloomEffect")
-	bloom.Intensity = 0.3
-	bloom.Size = 22
-	bloom.Threshold = 1.7
+	bloom.Intensity = 0.45
+	bloom.Size = 26
+	bloom.Threshold = 1.35
 	bloom.Parent = Lighting
 	local rays = Instance.new("SunRaysEffect")
-	rays.Intensity = 0.06
-	rays.Spread = 0.6
+	rays.Intensity = 0.07
+	rays.Spread = 0.55
 	rays.Parent = Lighting
-	Lighting.EnvironmentDiffuseScale = 0.6
-	Lighting.EnvironmentSpecularScale = 0.4
+	-- full environment lighting so the part Materials (Grass, Rock, Slate...) read in Future
+	Lighting.EnvironmentDiffuseScale = 1
+	Lighting.EnvironmentSpecularScale = 0.7
+	Lighting.ShadowSoftness = 0.25
 	Lighting.GeographicLatitude = 28
-	Lighting.ExposureCompensation = -0.12
+	Lighting.ExposureCompensation = -0.08
 
 	applySky(WorldFx.themeOf(Net.get("planet") or 1), true)
 	Net.Changed:Connect(function(kind)

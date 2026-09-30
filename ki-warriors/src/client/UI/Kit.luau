@@ -56,7 +56,14 @@ function Kit.row(parent: Instance, height: number, order: number?, accent: Color
 end
 
 -- Text inside a row / card (ZIndex above the card).
+-- A lone glyph ("✔", "👊") becomes an icon image once the pack is uploaded.
 function Kit.text(parent: Instance, props: { [string]: any }): TextLabel
+	if type(props.Text) == "string" and Theme.iconImage(props.Text) then
+		local icon = Theme.icon(props.Text, props)
+		icon.ZIndex = (props.ZIndex or 23)
+		icon.Parent = parent
+		return icon :: any
+	end
 	local t = Theme.text(props)
 	t.ZIndex = (props.ZIndex or 23)
 	t.Parent = parent
@@ -70,7 +77,7 @@ function Kit.chip(parent: Instance, icon: string, color: Color3, size: number, p
 		Theme.stroke(2.5),
 		Theme.gradient(Theme.lighten(color, 0.35), Theme.darken(color, 0.15)),
 	})
-	local t = Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = f })
+	local t = Theme.icon(icon, { Size = UDim2.fromScale(0.64, 0.64), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = f })
 	t.ZIndex = 24
 	return f
 end

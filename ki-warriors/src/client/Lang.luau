@@ -2,8 +2,10 @@
 -- Client language: the saved preference (profile.lang) or the account locale. Static labels
 -- register with Lang.bind and re-render live when the language changes; dynamic texts are
 -- rebuilt by their windows' refresh functions (Net.Changed "full" fires on a switch).
+local LocalizationService = game:GetService("LocalizationService")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
 
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Net = require(script.Parent.Net)
@@ -14,7 +16,27 @@ local Lang = {}
 local forced = workspace:GetAttribute("ForceLanguage")
 local forcedCode: string? = if type(forced) == "string" and Locale.Supported[forced] then forced else nil
 
-Lang.code = forcedCode or Locale.resolve(Players.LocalPlayer.LocaleId)
+-- Account language. Live: the player's Roblox language (Player.LocaleId), then the Roblox
+-- and OS locales if that one is empty or unsupported. Studio: Player.LocaleId follows the
+-- Studio UI language (English for most people), so the OS locale goes first there; that is
+-- why a Spanish-speaking tester used to get an English HUD in Studio.
+local function accountLocale(): string
+	local okRoblox, roblox = pcall(function()
+		return LocalizationService.RobloxLocaleId
+	end)
+	local okSystem, system = pcall(function()
+		return LocalizationService.SystemLocaleId
+	end)
+	local playerId = Players.LocalPlayer.LocaleId
+	local robloxId = if okRoblox then roblox else nil
+	local systemId = if okSystem then system else nil
+	if RunService:IsStudio() then
+		return Locale.resolveFirst(systemId, playerId, robloxId)
+	end
+	return Locale.resolveFirst(playerId, robloxId, systemId)
+end
+
+Lang.code = forcedCode or accountLocale()
 local changed = Instance.new("BindableEvent")
 Lang.Changed = changed.Event
 
@@ -81,7 +103,7 @@ Net.Changed:Connect(function(kind)
 		return
 	end
 	local pref = Net.get("lang")
-	local want = forcedCode or (if type(pref) == "string" and Locale.Supported[pref] then pref else Locale.resolve(Players.LocalPlayer.LocaleId))
+	local want = forcedCode or (if type(pref) == "string" and Locale.Supported[pref] then pref else accountLocale())
 	if want ~= Lang.code then
 		Lang.set(want)
 	end

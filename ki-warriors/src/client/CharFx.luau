@@ -377,16 +377,23 @@ local function updateAura(rig: Rig, now: number, camPos: Vector3)
 		local w = (1.25 - t * 0.95) * scale
 		p.Size = Vector3.new(w, h, w)
 		p.CFrame = rootCf * CFrame.new(math.cos(a) * r, -2.8 + t * 7.5 * scale, math.sin(a) * r)
-		p.Color = if style == "shadow" and i % 3 == 0 then c2 else c1:Lerp(c2, t * 0.8)
-		p.Material = if style == "shadow" and i % 3 == 0 then Enum.Material.SmoothPlastic else Enum.Material.Neon
-		p.Transparency = 0.22 + t * 0.7
+		-- shadow forms: every third tongue is a darker streak, still glowing and see-through
+		-- (it used to be opaque SmoothPlastic in a near-black colour: dark blobs on the body)
+		local dark = style == "shadow" and i % 3 == 0
+		p.Color = if dark then c2:Lerp(c1, 0.4) else c1:Lerp(c2, t * 0.8)
+		p.Transparency = (if dark then 0.4 else 0.22) + t * 0.58
 	end
 	local pulse = 1 + math.sin(now * 9) * 0.05
 	local shell = rig.shell
 	shell.Size = Vector3.new(6.2, 9.4, 6.2) * scale * pulse
 	shell.CFrame = rootCf * CFrame.new(0, 0.6, 0)
 	shell.Color = c1
-	shell.Transparency = 0.95 - math.min(intensity, 1.2) * 0.07
+	-- ForceField: bright rim, clear centre. A Neon ellipsoid here read as a solid coloured ball
+	-- over the character (worst with Eclipse's purple under bloom).
+	if shell.Material ~= Enum.Material.ForceField then
+		shell.Material = Enum.Material.ForceField
+	end
+	shell.Transparency = 0.62 - math.min(intensity, 1.2) * 0.14
 	local ring = rig.ring
 	local grounded = hum and hum.FloorMaterial ~= Enum.Material.Air
 	if grounded then
@@ -596,9 +603,10 @@ local function updateTag(rig: Rig)
 	if not bb then
 		bb = Instance.new("BillboardGui")
 		bb.Name = "KiwTag"
-		bb.Size = UDim2.fromOffset(190, 46)
+		bb.Size = UDim2.fromOffset(150, 38)
 		bb.StudsOffset = Vector3.new(0, 3.1, 0)
-		bb.MaxDistance = 140
+		bb.MaxDistance = 120
+		bb.AlwaysOnTop = false
 		bb.LightInfluence = 0
 		local t = Instance.new("TextLabel")
 		t.Name = "Power"
@@ -724,7 +732,7 @@ local function transformBurst(rig: Rig, form: number)
 	-- light pillar
 	local pillar = Fx.get("cyl")
 	pillar.Color = c2
-	pillar.Transparency = 0.2
+	pillar.Transparency = 0.4
 	pillar.Size = Vector3.new(120, 3, 3)
 	pillar.CFrame = CFrame.new(pos + Vector3.new(0, 56, 0)) * CFrame.Angles(0, 0, rad(90))
 	Fx.tween(pillar, 0.5, { Size = Vector3.new(120, 16, 16), Transparency = 1 })
@@ -736,23 +744,20 @@ local function transformBurst(rig: Rig, form: number)
 	pillar2.CFrame = pillar.CFrame
 	Fx.tween(pillar2, 0.7, { Size = Vector3.new(120, 26, 26), Transparency = 1 })
 	task.delay(0.7, Fx.release, pillar2)
-	Fx.burst(pos, 3, 22, c1, 0.5, 0.35)
-	Fx.burst(pos, 2, 13, WHITE, 0.3, 0.2)
+	-- see-through shells (a Neon ball starting at character size hid the character)
+	Fx.shell(pos, 4, 22, c1, 0.5, 0.15)
+	Fx.shell(pos, 3.5, 13, WHITE, 0.3, 0.3)
+	if not Fx.lite then
+		Fx.particles(pos, c2, 26, 38, 1.1, 0.6)
+	end
 	Fx.ring(ground, 3, 34, c1, 0.6, 0.8)
 	Fx.ring(ground + Vector3.new(0, 0.1, 0), 2, 22, c2, 0.45, 0.5)
 	Fx.sparks(pos, c2, 16, 70, 0.8)
-	-- small chips kicked off the ground that shrink and fade, and speed lines shooting up
+	-- ground debris (particles / fading specks) and speed lines shooting up
+	Fx.debris(ground, 7, c1:Lerp(Color3.fromRGB(230, 220, 200), 0.5), if Fx.lite then 5 else 10)
 	for i = 1, (if Fx.lite then 5 else 10) do
 		local a = i / 10 * math.pi * 2 + math.random() * 0.5
 		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
-		local chip = Fx.get("block")
-		chip.Material = Enum.Material.Slate
-		chip.Color = Color3.fromRGB(130, 122, 126)
-		local sz = 0.4 + math.random() * 0.5
-		chip.Size = Vector3.new(sz, sz * 0.7, sz)
-		chip.CFrame = CFrame.new(ground + dir * 3) * CFrame.Angles(math.random() * 3, a, math.random() * 3)
-		Fx.tween(chip, 0.5, { CFrame = CFrame.new(ground + dir * 5.5 + Vector3.new(0, 4 + math.random() * 4, 0)) * CFrame.Angles(a, a * 2, 1), Size = Vector3.new(0.08, 0.08, 0.08), Transparency = 0.85 })
-		task.delay(0.5, Fx.release, chip)
 		local from = ground + dir * (2.5 + math.random() * 2)
 		Fx.flash("block", CFrame.new(from + Vector3.new(0, 1, 0)), Vector3.new(0.22, 2.5, 0.22), c2, 0.35, { CFrame = CFrame.new(from + Vector3.new(0, 11, 0)), Size = Vector3.new(0.06, 6, 0.06), Transparency = 1 }, 0.15)
 	end
@@ -856,7 +861,7 @@ function CharFx.init()
 			if d.f > 0 then
 				transformBurst(rig, d.f)
 			else
-				Fx.burst(rig.root.Position, 5, 2, Color3.fromRGB(200, 220, 255), 0.25, 0.5)
+				Fx.shell(rig.root.Position, 5, 3, Color3.fromRGB(200, 220, 255), 0.25, 0.4)
 			end
 		end
 	end)

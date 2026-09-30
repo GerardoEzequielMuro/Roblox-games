@@ -60,7 +60,7 @@ local function openSub(entry, anchor: GuiObject)
 	new("UIScale", { Parent = f })
 	for i, win in entry.sub do
 		local b = new("TextButton", { Name = "Sub_" .. win, Size = UDim2.new(1, -10, 0, 34), Position = UDim2.fromOffset(5, 5 + (i - 1) * 38), BackgroundColor3 = Theme.PanelLight, BackgroundTransparency = 0.4, AutoButtonColor = true, Text = "", ZIndex = 31, Parent = f }, { Theme.corner(8) })
-		Theme.text({ Text = SUB_ICONS[win] or "", Stroke = false, Size = UDim2.fromOffset(24, 24), Position = UDim2.fromOffset(6, 5), Parent = b }).ZIndex = 32
+		Theme.icon(SUB_ICONS[win] or "", { Size = UDim2.fromOffset(24, 24), Position = UDim2.fromOffset(6, 5), Parent = b }).ZIndex = 32
 		local t = Theme.text({ Key = "menu." .. win, Size = UDim2.new(1, -40, 1, -10), Position = UDim2.fromOffset(36, 5), MaxTextSize = 17, TextXAlignment = Enum.TextXAlignment.Left, Parent = b })
 		t.ZIndex = 32
 		b.Activated:Connect(function()
@@ -101,7 +101,7 @@ local function build()
 			Theme.stroke(3, Theme.lighten(e.color, 0.2)),
 			Theme.gradient(Theme.PanelLight, Theme.PanelDark),
 		})
-		Theme.text({ Text = e.icon, Stroke = false, Size = UDim2.fromScale(0.58, 0.58), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b })
+		Theme.icon(e.icon, { Size = UDim2.fromScale(0.58, 0.58), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b })
 		Theme.text({ Key = "menu." .. e.name, Size = UDim2.fromOffset(SIZE + 14, 14), Position = UDim2.new(0.5, 0, 1, 1), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 12, Parent = b })
 		local scale = new("UIScale", { Parent = b })
 		b.MouseEnter:Connect(function()

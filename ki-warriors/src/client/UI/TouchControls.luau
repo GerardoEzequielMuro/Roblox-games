@@ -56,7 +56,7 @@ local function button(name: string, icon: string, color: Color3): Btn
 	})
 	-- thin coloured inner ring: which move this is, without a loud button
 	new("Frame", { Name = "Tint", Size = UDim2.new(1, -10, 1, -10), Position = UDim2.fromOffset(5, 5), BackgroundColor3 = color, BackgroundTransparency = 0.72, BorderSizePixel = 0, Parent = b }, { Theme.corner(size) })
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b }).ZIndex = 2
+	Theme.icon(icon, { Size = UDim2.fromScale(0.6, 0.6), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = b }).ZIndex = 2
 	local clip = new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, ClipsDescendants = true, ZIndex = 3, Parent = b }, { Theme.corner(size) })
 	local cool = new("Frame", { Name = "Cool", Size = UDim2.fromScale(1, 0), Position = UDim2.fromScale(0, 1), AnchorPoint = Vector2.new(0, 1), BackgroundColor3 = color, BackgroundTransparency = 0.35, BorderSizePixel = 0, ZIndex = 3, Parent = clip })
 	local sc = new("UIScale", { Parent = b })

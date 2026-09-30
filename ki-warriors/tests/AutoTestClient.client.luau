@@ -1292,6 +1292,9 @@ task.wait(0.3)
 check("closing the window gives input back", Controls.enabled == true)
 
 -- Languages: switch live, every language has every key
+-- (the saved preference is restored at the end: this test used to leave "en" saved in the
+-- Studio profile, so the HUD stayed English afterwards even for a Spanish tester)
+local langBefore = Net.get("lang")
 ok = req("SetLanguage", { lang = "es" })
 check("language switch re-renders the HUD", ok and waitFor(function()
 	return Lang.code == "es" and (function()
@@ -1314,7 +1317,7 @@ check("12 language packs loaded on the client", allLang and #Locale.Languages ==
 check("proper names come from Names in every language", Locale.t("ja", "form.kindled") == "Kindled" and Locale.t("es", "planet.kaldera") == "Kaldera")
 ok = req("SetLanguage", { lang = "xx" })
 check("unknown language rejected", not ok)
-req("SetLanguage", { lang = "en" })
+req("SetLanguage", { lang = if type(langBefore) == "string" then langBefore else "" })
 task.wait(0.6)
 
 ---------------------------------------------------------------------------

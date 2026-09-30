@@ -129,7 +129,7 @@ local function renderUpgrades(body: Frame)
 		Kit.text(row, { Text = Lang.t("upgrade." .. u.id .. ".desc") .. "  " .. upgradeValue(u, level) .. (if level < u.max then " → " .. upgradeValue(u, level + 1) else ""), Size = UDim2.new(0.62, -10, 0, 18), Position = UDim2.fromOffset(76, 34), MaxTextSize = 14, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Dim, Font = Theme.FontBold })
 		Kit.text(row, { Text = Lang.t("ui.level", { n = level, max = u.max }), Size = UDim2.fromOffset(120, 14), Position = UDim2.fromOffset(76, 52), MaxTextSize = 12, TextXAlignment = Enum.TextXAlignment.Left, TextColor3 = Theme.Yellow })
 		if level >= u.max then
-			Kit.text(row, { Text = "MAX", Font = Theme.Display, Size = UDim2.fromOffset(120, 30), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxTextSize = 26, TextColor3 = Theme.Green })
+			Kit.text(row, { Text = Lang.t("ui.max"), Font = Theme.Display, Size = UDim2.fromOffset(120, 30), Position = UDim2.new(1, -12, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), MaxTextSize = 26, TextColor3 = Theme.Green })
 		else
 			local cost = Formulas.upgradeCost(u.id, level)
 			Kit.button(row, "💎 " .. Format.abbrev(cost), if s.gems >= cost then Theme.Green else Theme.Grey, 130, function()

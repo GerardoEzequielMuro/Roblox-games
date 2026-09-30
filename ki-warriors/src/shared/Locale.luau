@@ -120,6 +120,24 @@ function Locale.resolve(localeId: string?): string
 	return if Locale.Supported[base] then base else Locale.Default
 end
 
+-- First candidate locale ("es-ar", "", nil...) that maps to a supported language, else the
+-- default. The client passes its sources in priority order (see Lang.luau).
+function Locale.resolveFirst(...: string?): string
+	for i = 1, select("#", ...) do
+		local id = select(i, ...)
+		if type(id) == "string" then
+			local base = id:lower():match("^(%a+)") or ""
+			if base == "in" then
+				base = "id"
+			end
+			if Locale.Supported[base] then
+				return base
+			end
+		end
+	end
+	return Locale.Default
+end
+
 -- Server helper: a message the client translates.
 function Locale.m(key: string, args: { [string]: any }?): Message
 	return { key = key, args = args }

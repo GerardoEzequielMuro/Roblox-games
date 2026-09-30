@@ -323,22 +323,12 @@ local function shock(d)
 	Fx.ring(ground, 2, d.r * 1.15, c1, 0.5, 1)
 	Fx.ring(ground, 1, d.r * 0.8, WHITE, 0.35, 0.6)
 	Fx.burst(d.p, 3, d.r * 0.7, c1, 0.4, 0.35)
-	-- debris: small chips thrown out of the ring that shrink and fade, plus speed lines
+	-- debris (particles / fading specks) plus speed lines along the ground
 	local n = if Fx.lite then 6 else 12
+	Fx.debris(ground, d.r, c1:Lerp(Color3.fromRGB(230, 220, 200), 0.5), n)
 	for i = 1, n do
 		local a = i / n * math.pi * 2 + math.random() * 0.4
 		local dir = Vector3.new(math.cos(a), 0, math.sin(a))
-		local at = ground + dir * d.r * 0.35
-		local chip = Fx.get("block")
-		chip.Material = Enum.Material.Slate
-		chip.Color = Color3.fromRGB(130, 122, 126)
-		local sz = 0.6 + math.random() * 0.7
-		chip.Size = Vector3.new(sz, sz * 0.7, sz)
-		chip.CFrame = CFrame.new(at) * CFrame.Angles(math.random() * 3, a, math.random() * 3)
-		local to = ground + dir * d.r * (0.7 + math.random() * 0.4) + Vector3.new(0, 3 + math.random() * 5, 0)
-		Fx.tween(chip, 0.45, { CFrame = CFrame.new(to) * CFrame.Angles(a, a * 3, 2), Size = Vector3.new(0.1, 0.1, 0.1), Transparency = 0.8 })
-		task.delay(0.45, Fx.release, chip)
-		-- speed line along the ground
 		local from = ground + dir * d.r * 0.2 + Vector3.new(0, 0.4, 0)
 		Fx.flash("block", CFrame.lookAt(from, from + dir), Vector3.new(0.35, 0.2, d.r * 0.3), WHITE, 0.25, { CFrame = CFrame.lookAt(from + dir * d.r * 0.8, from + dir * d.r), Size = Vector3.new(0.1, 0.1, d.r * 0.5), Transparency = 1 }, 0.2)
 	end
