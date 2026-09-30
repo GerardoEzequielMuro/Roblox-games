@@ -1,0 +1,63 @@
+{
+  "name": "SkyTowerObby",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "__ShotsEnd": {
+        "$path": "tests/ShotsEnd.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        },
+        "__Shots": {
+          "$path": "tests/Shots.client.luau"
+        }
+      },
+      "$properties": {
+        "CharacterUseJumpPower": true,
+        "CharacterJumpPower": 50,
+        "CharacterWalkSpeed": 16
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "Gravity": 196.2,
+        "StreamingEnabled": false,
+        "FallenPartsDestroyHeight": -200
+      },
+      "$attributes": {
+        "ShotSeconds": 300,
+        "ShotsLow": true
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "Brightness": 2.5,
+        "ClockTime": 14.5,
+        "GlobalShadows": true
+      }
+    },
+    "ServerStorage": {
+      "__AutoTest": {
+        "$className": "BoolValue"
+      }
+    }
+  }
+}

@@ -1,0 +1,5 @@
+sourcemap.json
+*.rbxl.lock
+*.rbxlx.lock
+autotest.rbxlx
+uiaudit*.project.json

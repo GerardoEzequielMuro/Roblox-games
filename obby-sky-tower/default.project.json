@@ -1,0 +1,51 @@
+{
+  "name": "SkyTowerObby",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        }
+      },
+      "$properties": {
+        "CharacterUseJumpPower": true,
+        "CharacterJumpPower": 50,
+        "CharacterWalkSpeed": 16
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "Gravity": 196.2,
+        "StreamingEnabled": true,
+        "FallenPartsDestroyHeight": -200,
+        "StreamingMinRadius": 128,
+        "StreamingTargetRadius": 448,
+        "StreamOutBehavior": "Opportunistic"
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "Brightness": 2.5,
+        "ClockTime": 14.5,
+        "GlobalShadows": true
+      }
+    }
+  }
+}

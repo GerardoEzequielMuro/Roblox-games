@@ -1,0 +1,59 @@
+{
+  "name": "SpinShowdownShowcaseLow",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "Shared": {
+        "$path": "src/shared"
+      }
+    },
+    "ServerScriptService": {
+      "Server": {
+        "$path": "src/server"
+      },
+      "Showcase": {
+        "$path": "tests/Showcase.server.luau"
+      }
+    },
+    "StarterPlayer": {
+      "StarterPlayerScripts": {
+        "Client": {
+          "$path": "src/client"
+        },
+        "ShowcaseClient": {
+          "$path": "tests/ShowcaseClient.client.luau"
+        }
+      },
+      "$properties": {
+        "CameraMaxZoomDistance": 60
+      }
+    },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
+    "Workspace": {
+      "$properties": {
+        "Gravity": 196.2
+      },
+      "$attributes": {
+        "ShowcaseSizes": 1,
+        "ShowcaseSeconds": 120,
+        "ShowcaseLow": true
+      }
+    },
+    "Lighting": {
+      "$properties": {
+        "Technology": "Future",
+        "GlobalShadows": true
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "__AutoTest": {
+        "$className": "BoolValue"
+      }
+    }
+  }
+}

@@ -1,0 +1,333 @@
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m97[m[36m:[mgift, [1;31mSecret[m) scale with the best regular pet of the owner's top galaxy (x1.2 … x10), so they
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m103[m[36m:[m* Clients send `(node, hit count)` batches every 0.2 s. The server clamps them with a [1;31mtoken[m
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m162[m[36m:[malso holds the **[1;31mSecret[m Galaxy Guardian at 0.001%**. The panel shows every outcome with its
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m168[m[36m:[m| Dawn | 120 | Pebble Pup 55% · Dust Bunny 30% · Comet Cat 12% · Rover Bot 2.9% · Solar Fox 0.099% · [1;31mSecret[m 0.001% |
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m169[m[36m:[m| Verdant | 66K | Moss Slime 55% · Spore Moth 30% · Vine Lizard 12% · Nebula Owl 2.9% · Emerald Stag 0.099% · [1;31mSecret[m 0.001% |
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m170[m[36m:[m| Frost | 130M | Ice Mite 55% · Snow Seal 30% · Glacier Cub 12% · Aurora Wisp 2.9% · Frost Wyrm 0.099% · [1;31mSecret[m 0.001% |
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m171[m[36m:[m| Ember | 1.5T | Cinder Newt 58% · Magma Crab 30% · Ash Hound 11% · Forge Golem 0.98% · Inferno Drake 0.019% · [1;31mSecret[m 0.001% |
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m172[m[36m:[m| Storm | 6.6Qa | Spark Mite 58% · Thunder Ram 30% · Cloud Ray 11% · Volt Drone 0.98% · Tempest Griffin 0.019% · [1;31mSecret[m 0.001% |
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m173[m[36m:[m| Void | 93Qi | Void Jelly 58% · Rift Bat 30% · Star Eater 11% · Quasar Sphinx 0.98% · Null Dragon 0.019% · [1;31mSecret[m 0.001% |
+[35manime-planet-clicker/DESIGN.md[m[36m:[m[32m208[m[36m:[m| Announcements | Legendary+ pets to the server, Mythic / [1;31mSecret[m / Prism to every server, Gate breaks to the server |
+[35manime-planet-clicker/sim/check_config.luau[m[36m:[m[32m42[m[36m:[m	local found = p.id == Config.[1;31mSecret[mPet or p.id == Config.GroupGiftPet
+[35manime-planet-clicker/src/client/Miner.luau[m[36m:[m[32m29[m[36m:[mlocal [1;31mtoken[ms = 0
+[35manime-planet-clicker/src/client/Miner.luau[m[36m:[m[32m118[m[36m:[m	[1;31mtoken[ms = math.min(rate, [1;31mtoken[ms + (now - lastRefill) * rate)
+[35manime-planet-clicker/src/client/Miner.luau[m[36m:[m[32m120[m[36m:[m	if [1;31mtoken[ms < 1 then
+[35manime-planet-clicker/src/client/Miner.luau[m[36m:[m[32m123[m[36m:[m	[1;31mtoken[ms -= 1
+[35manime-planet-clicker/src/client/PlanetField.luau[m[36m:[m[32m345[m[36m:[mlocal load[1;31mToken[m = 0
+[35manime-planet-clicker/src/client/PlanetField.luau[m[36m:[m[32m348[m[36m:[m	load[1;31mToken[m += 1
+[35manime-planet-clicker/src/client/PlanetField.luau[m[36m:[m[32m349[m[36m:[m	local [1;31mtoken[m = load[1;31mToken[m
+[35manime-planet-clicker/src/client/PlanetField.luau[m[36m:[m[32m358[m[36m:[m	if [1;31mtoken[m ~= load[1;31mToken[m then
+[35manime-planet-clicker/src/client/UI/CapsulePanel.luau[m[36m:[m[32m101[m[36m:[m		local vp = PetIcon.new(o.id, 0, o.rarity == "[1;31mSecret[m" and not known)
+[35manime-planet-clicker/src/client/UI/CapsulePanel.luau[m[36m:[m[32m105[m[36m:[m		Theme.text({ Text = if o.rarity == "[1;31mSecret[m" and not known then "???" else Lang.pet(o.id), Size = UDim2.new(1, -6, 0, 26), Position = UDim2.fromOffset(3, 82), MaxTextSize = 15, TextWrapped = true, Parent = cell })
+[35manime-planet-clicker/src/client/UI/Toasts.luau[m[36m:[m[32m132[m[36m:[mlocal mile[1;31mToken[m = 0
+[35manime-planet-clicker/src/client/UI/Toasts.luau[m[36m:[m[32m134[m[36m:[m	mile[1;31mToken[m += 1
+[35manime-planet-clicker/src/client/UI/Toasts.luau[m[36m:[m[32m135[m[36m:[m	local my = mile[1;31mToken[m
+[35manime-planet-clicker/src/client/UI/Toasts.luau[m[36m:[m[32m144[m[36m:[m		if my ~= mile[1;31mToken[m then
+[35manime-planet-clicker/src/client/UI/Toasts.luau[m[36m:[m[32m150[m[36m:[m		if my == mile[1;31mToken[m then
+[35manime-planet-clicker/src/server/Services/Mining.luau[m[36m:[m[32m4[m[36m:[m--   * clients send (node, hit count) batches; a [1;31mtoken[m bucket caps them at the player's
+[35manime-planet-clicker/src/server/Services/Mining.luau[m[36m:[m[32m26[m[36m:[mlocal buckets: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35manime-planet-clicker/src/server/Services/Mining.luau[m[36m:[m[32m385[m[36m:[m		b = { [1;31mtoken[ms = cap, t = now }
+[35manime-planet-clicker/src/server/Services/Mining.luau[m[36m:[m[32m388[m[36m:[m	b.[1;31mtoken[ms = math.min(cap, b.[1;31mtoken[ms + (now - b.t) * rate)
+[35manime-planet-clicker/src/server/Services/Mining.luau[m[36m:[m[32m390[m[36m:[m	local accepted = math.min(count, math.floor(b.[1;31mtoken[ms))
+[35manime-planet-clicker/src/server/Services/Mining.luau[m[36m:[m[32m394[m[36m:[m	b.[1;31mtoken[ms -= accepted
+[35manime-planet-clicker/src/server/Services/Remotes.luau[m[36m:[m[32m3[m[36m:[m-- per-player [1;31mtoken[m-bucket rate limit.
+[35manime-planet-clicker/src/server/Services/Remotes.luau[m[36m:[m[32m39[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35manime-planet-clicker/src/server/Services/Remotes.luau[m[36m:[m[32m71[m[36m:[m		b = { [1;31mtoken[ms = BURST, t = now }
+[35manime-planet-clicker/src/server/Services/Remotes.luau[m[36m:[m[32m74[m[36m:[m	b.[1;31mtoken[ms = math.min(BURST, b.[1;31mtoken[ms + (now - b.t) * RATE)
+[35manime-planet-clicker/src/server/Services/Remotes.luau[m[36m:[m[32m76[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35manime-planet-clicker/src/server/Services/Remotes.luau[m[36m:[m[32m79[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35manime-planet-clicker/src/server/Services/Social.luau[m[36m:[m[32m38[m[36m:[m	return r.rarity == "Mythic" or r.rarity == "[1;31mSecret[m" or r.tier == 2
+[35manime-planet-clicker/src/shared/Config.luau[m[36m:[m[32m28[m[36m:[m	{ name = "[1;31mSecret[m", order = 7, color = { 40, 235, 225 } },
+[35manime-planet-clicker/src/shared/Config.luau[m[36m:[m[32m141[m[36m:[mConfig.BaseHitsPerSecond = 6 -- manual cap (server [1;31mtoken[m bucket)
+[35manime-planet-clicker/src/shared/Config.luau[m[36m:[m[32m335[m[36m:[m	{ id = "galaxyguardian", rarity = "[1;31mSecret[m", zone = 0, power = 0, scale = 10, look = { body = "dragon", color = { 20, 60, 90 }, accent = { 40, 235, 225 }, wings = "feather", horns = "crown", tail = "comet", fly = true, glow = true, neonAccent = true } },
+[35manime-planet-clicker/src/shared/Config.luau[m[36m:[m[32m338[m[36m:[mConfig.[1;31mSecret[mPet = "galaxyguardian"
+[35manime-planet-clicker/src/shared/Config.luau[m[36m:[m[32m339[m[36m:[mConfig.[1;31mSecret[mChance = 0.001 -- percent (1 in 100,000), inside every galaxy capsule
+[35manime-planet-clicker/src/shared/Config.luau[m[36m:[m[32m342[m[36m:[m-- Capsules. chances are percentages that sum to 100 (the [1;31mSecret[m is carved out at runtime so
+[35manime-planet-clicker/src/shared/Formulas.luau[m[36m:[m[32m48[m[36m:[m-- Galaxy capsules also hold the [1;31mSecret[m pet at a fixed Config.[1;31mSecret[mChance.
+[35manime-planet-clicker/src/shared/Formulas.luau[m[36m:[m[32m66[m[36m:[m	local [1;31msecret[m = if cap.exclusive then 0 else Config.[1;31mSecret[mChance
+[35manime-planet-clicker/src/shared/Formulas.luau[m[36m:[m[32m67[m[36m:[m	local scale = (100 - [1;31msecret[m) / total
+[35manime-planet-clicker/src/shared/Formulas.luau[m[36m:[m[32m75[m[36m:[m	if [1;31msecret[m > 0 then
+[35manime-planet-clicker/src/shared/Formulas.luau[m[36m:[m[32m76[m[36m:[m		table.insert(out, { id = Config.[1;31mSecret[mPet, rarity = "[1;31mSecret[m", chance = [1;31msecret[m })
+[35manime-planet-clicker/src/shared/Formulas.luau[m[36m:[m[32m77[m[36m:[m		sum += [1;31msecret[m
+[35manime-planet-clicker/src/shared/Locales/de.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "Geheim",
+[35manime-planet-clicker/src/shared/Locales/en.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[m",
+[35manime-planet-clicker/src/shared/Locales/es.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[mo",
+[35manime-planet-clicker/src/shared/Locales/fr.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[m",
+[35manime-planet-clicker/src/shared/Locales/id.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "Rahasia",
+[35manime-planet-clicker/src/shared/Locales/ja.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "シークレット",
+[35manime-planet-clicker/src/shared/Locales/ko.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "비밀",
+[35manime-planet-clicker/src/shared/Locales/pt.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[mo",
+[35manime-planet-clicker/src/shared/Locales/ru.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "Секретный",
+[35manime-planet-clicker/src/shared/Locales/th.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "ซีเคร็ต",
+[35manime-planet-clicker/src/shared/Locales/tr.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "Gizli",
+[35manime-planet-clicker/src/shared/Locales/vi.luau[m[36m:[m[32m235[m[36m:[m	["rarity.[1;31mSecret[m"] = "Bí mật",
+[35manime-planet-clicker/src/shared/PetModel.luau[m[36m:[m[32m419[m[36m:[mlocal RARITY_SIZE = { Common = 1, Uncommon = 1.04, Rare = 1.1, Epic = 1.18, Legendary = 1.3, Mythic = 1.42, [1;31mSecret[m = 1.55 }
+[35manime-planet-clicker/tests/ShowcaseClient.client.luau[m[36m:[m[32m338[m[36m:[mlocal [1;31mtoken[m = 0
+[35manime-planet-clicker/tests/ShowcaseClient.client.luau[m[36m:[m[32m340[m[36m:[m	[1;31mtoken[m += 1
+[35manime-planet-clicker/tests/ShowcaseClient.client.luau[m[36m:[m[32m341[m[36m:[m	local my = [1;31mtoken[m
+[35manime-planet-clicker/tests/ShowcaseClient.client.luau[m[36m:[m[32m343[m[36m:[m		if my ~= [1;31mtoken[m then
+[35manime-planet-clicker/tests/unit.luau[m[36m:[m[32m45[m[36m:[mcheck("roll at 0 gives the rarest entry", F.rollCapsule("dawn", 1, 0).rarity == "[1;31mSecret[m")
+[35manime-planet-clicker/tests/unit.luau[m[36m:[m[32m47[m[36m:[mcheck("exclusive capsule has no [1;31msecret[m", #F.odds("quantum", 1) == 3)
+[35mhuerta-tycoon/src/client/UI/Hud.luau[m[36m:[m[32m138[m[36m:[m	local tpHide[1;31mToken[m = 0
+[35mhuerta-tycoon/src/client/UI/Hud.luau[m[36m:[m[32m141[m[36m:[m		tpHide[1;31mToken[m += 1
+[35mhuerta-tycoon/src/client/UI/Hud.luau[m[36m:[m[32m142[m[36m:[m		local [1;31mtoken[m = tpHide[1;31mToken[m
+[35mhuerta-tycoon/src/client/UI/Hud.luau[m[36m:[m[32m145[m[36m:[m			if [1;31mtoken[m == tpHide[1;31mToken[m then
+[35mhuerta-tycoon/src/client/UI/Hud.luau[m[36m:[m[32m154[m[36m:[m			tpHide[1;31mToken[m += 1
+[35mhuerta-tycoon/src/client/UI/Weather.luau[m[36m:[m[32m34[m[36m:[mlocal flash[1;31mToken[m = 0
+[35mhuerta-tycoon/src/client/UI/Weather.luau[m[36m:[m[32m231[m[36m:[mlocal function flashLoop([1;31mtoken[m: number)
+[35mhuerta-tycoon/src/client/UI/Weather.luau[m[36m:[m[32m232[m[36m:[m	while flash[1;31mToken[m == [1;31mtoken[m do
+[35mhuerta-tycoon/src/client/UI/Weather.luau[m[36m:[m[32m234[m[36m:[m		if flash[1;31mToken[m ~= [1;31mtoken[m or not flashCC then
+[35mhuerta-tycoon/src/client/UI/Weather.luau[m[36m:[m[32m265[m[36m:[m	flash[1;31mToken[m += 1
+[35mhuerta-tycoon/src/client/UI/Weather.luau[m[36m:[m[32m270[m[36m:[m		task.spawn(flashLoop, flash[1;31mToken[m)
+[35mhuerta-tycoon/src/server/Services/Remotes.luau[m[36m:[m[32m28[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mhuerta-tycoon/src/server/Services/Remotes.luau[m[36m:[m[32m87[m[36m:[m		b = { [1;31mtoken[ms = BURST, t = now }
+[35mhuerta-tycoon/src/server/Services/Remotes.luau[m[36m:[m[32m90[m[36m:[m	b.[1;31mtoken[ms = math.min(BURST, b.[1;31mtoken[ms + (now - b.t) * RATE)
+[35mhuerta-tycoon/src/server/Services/Remotes.luau[m[36m:[m[32m92[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mhuerta-tycoon/src/server/Services/Remotes.luau[m[36m:[m[32m95[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mhuerta-tycoon/tests/I18nAudit.client.luau[m[36m:[m[32m46[m[36m:[mlocal step, [1;31mtoken[m = 0, 0
+[35mhuerta-tycoon/tests/I18nAudit.client.luau[m[36m:[m[32m58[m[36m:[m	[1;31mtoken[m += 1
+[35mhuerta-tycoon/tests/I18nAudit.client.luau[m[36m:[m[32m59[m[36m:[m	local my = [1;31mtoken[m
+[35mhuerta-tycoon/tests/I18nAudit.client.luau[m[36m:[m[32m61[m[36m:[m		if my == [1;31mtoken[m then advance() end
+[35mhuerta-tycoon/tests/Showcase.client.luau[m[36m:[m[32m179[m[36m:[mlocal [1;31mtoken[m = 0
+[35mhuerta-tycoon/tests/Showcase.client.luau[m[36m:[m[32m185[m[36m:[m	[1;31mtoken[m += 1
+[35mhuerta-tycoon/tests/Showcase.client.luau[m[36m:[m[32m186[m[36m:[m	local my = [1;31mtoken[m
+[35mhuerta-tycoon/tests/Showcase.client.luau[m[36m:[m[32m188[m[36m:[m		if my ~= [1;31mtoken[m then
+[35mhuerta-tycoon/tools/uiaudit/UiAudit.client.luau[m[36m:[m[32m47[m[36m:[mlocal [1;31mtoken[m = 0
+[35mhuerta-tycoon/tools/uiaudit/UiAudit.client.luau[m[36m:[m[32m49[m[36m:[m	[1;31mtoken[m += 1
+[35mhuerta-tycoon/tools/uiaudit/UiAudit.client.luau[m[36m:[m[32m50[m[36m:[m	local my = [1;31mtoken[m
+[35mhuerta-tycoon/tools/uiaudit/UiAudit.client.luau[m[36m:[m[32m52[m[36m:[m		if my == [1;31mtoken[m then audit() end
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m8[m[36m:[m      <[1;31mtoken[m name="Technology">4</[1;31mtoken[m>
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m63[m[36m:[m	manualPerSecond = 8, -- server cap ([1;31mtoken[m bucket)
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m1340[m[36m:[m          <[1;31mtoken[m name="RunContext">0</[1;31mtoken[m>
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m2246[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m2256[m[36m:[m		b = { [1;31mtoken[ms = ACT_BURST, t = now }
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m2259[m[36m:[m	b.[1;31mtoken[ms = math.min(ACT_BURST, b.[1;31mtoken[ms + (now - b.t) * ACT_RATE)
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m2261[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m2264[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m3984[m[36m:[m-- with a per-player [1;31mtoken[m-bucket rate limit.
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4005[m[36m:[m-- cooldown or [1;31mtoken[m bucket in Combat / Training)
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4017[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4049[m[36m:[m		b = { [1;31mtoken[ms = BURST, t = now }
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4052[m[36m:[m	b.[1;31mtoken[ms = math.min(BURST, b.[1;31mtoken[ms + (now - b.t) * RATE)
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4054[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4057[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4381[m[36m:[m-- Stat training: manual reps (every punch is a rep of the selected stat, [1;31mtoken[m bucket),
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4401[m[36m:[mlocal bucket: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4424[m[36m:[m-- One manual rep (called for every punch the client sends), capped by a [1;31mtoken[m bucket.
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4433[m[36m:[m		b = { [1;31mtoken[ms = Config.Train.manualBurst, t = now }
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4436[m[36m:[m	b.[1;31mtoken[ms = math.min(Config.Train.manualBurst, b.[1;31mtoken[ms + (now - b.t) * Config.Train.manualPerSecond)
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4438[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m4441[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mki-warriors/KiWarriors.rbxlx[m[36m:[m[32m10815[m[36m:[m      <[1;31mtoken[m name="StreamOutBehavior">2</[1;31mtoken[m>
+[35mki-warriors/src/server/Services/Combat.luau[m[36m:[m[32m625[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mki-warriors/src/server/Services/Combat.luau[m[36m:[m[32m635[m[36m:[m		b = { [1;31mtoken[ms = ACT_BURST, t = now }
+[35mki-warriors/src/server/Services/Combat.luau[m[36m:[m[32m638[m[36m:[m	b.[1;31mtoken[ms = math.min(ACT_BURST, b.[1;31mtoken[ms + (now - b.t) * ACT_RATE)
+[35mki-warriors/src/server/Services/Combat.luau[m[36m:[m[32m640[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mki-warriors/src/server/Services/Combat.luau[m[36m:[m[32m643[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mki-warriors/src/server/Services/Remotes.luau[m[36m:[m[32m3[m[36m:[m-- with a per-player [1;31mtoken[m-bucket rate limit.
+[35mki-warriors/src/server/Services/Remotes.luau[m[36m:[m[32m24[m[36m:[m-- cooldown or [1;31mtoken[m bucket in Combat / Training)
+[35mki-warriors/src/server/Services/Remotes.luau[m[36m:[m[32m36[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mki-warriors/src/server/Services/Remotes.luau[m[36m:[m[32m68[m[36m:[m		b = { [1;31mtoken[ms = BURST, t = now }
+[35mki-warriors/src/server/Services/Remotes.luau[m[36m:[m[32m71[m[36m:[m	b.[1;31mtoken[ms = math.min(BURST, b.[1;31mtoken[ms + (now - b.t) * RATE)
+[35mki-warriors/src/server/Services/Remotes.luau[m[36m:[m[32m73[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mki-warriors/src/server/Services/Remotes.luau[m[36m:[m[32m76[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mki-warriors/src/server/Services/Training.luau[m[36m:[m[32m2[m[36m:[m-- Stat training: manual reps (every punch is a rep of the selected stat, [1;31mtoken[m bucket),
+[35mki-warriors/src/server/Services/Training.luau[m[36m:[m[32m22[m[36m:[mlocal bucket: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mki-warriors/src/server/Services/Training.luau[m[36m:[m[32m45[m[36m:[m-- One manual rep (called for every punch the client sends), capped by a [1;31mtoken[m bucket.
+[35mki-warriors/src/server/Services/Training.luau[m[36m:[m[32m54[m[36m:[m		b = { [1;31mtoken[ms = Config.Train.manualBurst, t = now }
+[35mki-warriors/src/server/Services/Training.luau[m[36m:[m[32m57[m[36m:[m	b.[1;31mtoken[ms = math.min(Config.Train.manualBurst, b.[1;31mtoken[ms + (now - b.t) * Config.Train.manualPerSecond)
+[35mki-warriors/src/server/Services/Training.luau[m[36m:[m[32m59[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mki-warriors/src/server/Services/Training.luau[m[36m:[m[32m62[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mki-warriors/src/shared/Config.luau[m[36m:[m[32m36[m[36m:[m	manualPerSecond = 8, -- server cap ([1;31mtoken[m bucket)
+[35mki-warriors/tests/AutoTestClient.client.luau[m[36m:[m[32m181[m[36m:[mcheck("rep burst clamped by the [1;31mtoken[m bucket", accepted >= 1 and accepted <= Config.Train.manualBurst + Config.Train.manualPerSecond * 0.8 + 1, accepted)
+[35mki-warriors/tests/ShowcaseClient.client.luau[m[36m:[m[32m261[m[36m:[mlocal [1;31mtoken[m = 0
+[35mki-warriors/tests/ShowcaseClient.client.luau[m[36m:[m[32m263[m[36m:[m	[1;31mtoken[m += 1
+[35mki-warriors/tests/ShowcaseClient.client.luau[m[36m:[m[32m264[m[36m:[m	local my = [1;31mtoken[m
+[35mki-warriors/tests/ShowcaseClient.client.luau[m[36m:[m[32m266[m[36m:[m		if my ~= [1;31mtoken[m then
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m15[m[36m:[mand Rainbow pets, the 1-in-100,000 [1;31mSecret[m pet, leaderboards, and a friend boost.
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m31[m[36m:[m* Exclusive and [1;31mSecret[m pets have no fixed power. They scale with the strongest regular pet in
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m39[m[36m:[m  server clamps it with a [1;31mtoken[m bucket: 12 taps/s plus a 6-tap burst. An autoclicker can't
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m132[m[36m:[m* Floating numbers, rings, sparks and counter [1;31mtoken[ms are pooled. The inventory only builds the
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m180[m[36m:[m39 pets. Every world egg also holds the **[1;31mSecret[m Shadow Dragon at 1 in 100,000**. Every
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m181[m[36m:[mLegendary, Mythic or [1;31mSecret[m hatch is announced to the whole server.
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m191[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m202[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m212[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m222[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m232[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m242[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m253[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m264[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/DESIGN.md[m[36m:[m[32m287[m[36m:[m| Rare hatches | Legendary+ hatches are announced to the server; Mythic, [1;31mSecret[m and Rainbow hatches to every server (MessagingService, max 1 publish / 2 s per server, shown one every 4 s) |
+[35mpet-tap-simulator/README.md[m[36m:[m[32m67[m[36m:[m  Services/Tapping.luau      tap batches ([1;31mtoken[m-bucket cap), Auto Tap, timers
+[35mpet-tap-simulator/README.md[m[36m:[m[32m87[m[36m:[m  Tapper.luau                tap anywhere, batching; pooled feedback (+N pop, ring, sparks, [1;31mtoken[m
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m8[m[36m:[m      <[1;31mtoken[m name="Technology">4</[1;31mtoken[m>
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m75[m[36m:[m	{ name = "[1;31mSecret[m", order = 7, color = { 20, 20, 30 }, broadcast = true },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m119[m[36m:[m	zone: number, -- for the index book (0 = exclusive / [1;31msecret[m)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m191[m[36m:[m	-- [1;31mSecret[m (1 in 100,000 from every world egg)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m192[m[36m:[m	P("shadowdragon", "Shadow Dragon", "[1;31mSecret[m", 0, "ball", { 20, 15, 30 }, { 170, 60, 255 }, "none", { "horns", "wings", "tail", "spikes", "crown", "glow" }, 1.8, 0, "Neon"),
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m247[m[36m:[mlocal [1;31mSECRET[m = 0.001 -- percent (1 in 100,000)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m251[m[36m:[m		{ pet = "dog", chance = 60 }, { pet = "cat", chance = 30 }, { pet = "bunny", chance = 8.999 }, { pet = "bear", chance = 1 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m254[m[36m:[m		{ pet = "piggy", chance = 55 }, { pet = "chick", chance = 32 }, { pet = "fox", chance = 10.5 }, { pet = "owl", chance = 2.399 }, { pet = "unicorn", chance = 0.1 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m257[m[36m:[m		{ pet = "gummybear", chance = 58 }, { pet = "lollipup", chance = 30 }, { pet = "cupcakecat", chance = 10 }, { pet = "candydragon", chance = 1.999 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m260[m[36m:[m		{ pet = "donutdog", chance = 60 }, { pet = "marshbunny", chance = 33 }, { pet = "cottonfox", chance = 6.899 }, { pet = "jellyphoenix", chance = 0.1 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m263[m[36m:[m		{ pet = "penguin", chance = 60 }, { pet = "snowfox", chance = 30 }, { pet = "polarbear", chance = 8.5 }, { pet = "icewolf", chance = 1.499 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m266[m[36m:[m		{ pet = "arcticowl", chance = 62 }, { pet = "yeti", chance = 30 }, { pet = "frostphoenix", chance = 7.9 }, { pet = "icedragon", chance = 0.099 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m269[m[36m:[m		{ pet = "lavapup", chance = 60 }, { pet = "embercat", chance = 30 }, { pet = "magmagolem", chance = 9.4 }, { pet = "firedragon", chance = 0.58 }, { pet = "hellhound", chance = 0.019 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m272[m[36m:[m		{ pet = "mooncat", chance = 60 }, { pet = "starbunny", chance = 30 }, { pet = "alienpup", chance = 9.4 }, { pet = "nebulaowl", chance = 0.58 }, { pet = "galaxydragon", chance = 0.019 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m472[m[36m:[m-- Completing a zone's index (every non-[1;31msecret[m pet of that zone) gives gems and a permanent tap bonus.
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m1261[m[36m:[m	["rarity.[1;31mSecret[m"] = "Geheim",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m1660[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[m",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m2059[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[mo",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m2458[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[m",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m2857[m[36m:[m	["rarity.[1;31mSecret[m"] = "Rahasia",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m3256[m[36m:[m	["rarity.[1;31mSecret[m"] = "シークレット",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m3655[m[36m:[m	["rarity.[1;31mSecret[m"] = "시크릿",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m4054[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[mo",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m4453[m[36m:[m	["rarity.[1;31mSecret[m"] = "Секретный",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m4852[m[36m:[m	["rarity.[1;31mSecret[m"] = "ลับ",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m5251[m[36m:[m	["rarity.[1;31mSecret[m"] = "Gizli",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m5650[m[36m:[m	["rarity.[1;31mSecret[m"] = "Bí Mật",
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m5938[m[36m:[mlocal [1;31mSECRET[m = Color3.fromRGB(170, 60, 255)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m6614[m[36m:[m	if def.rarity == "[1;31mSecret[m" then
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m6659[m[36m:[m	local rcol = if def.rarity == "[1;31mSecret[m" then [1;31mSECRET[m else Palette.rarity(def.rarity)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m6693[m[36m:[m		local orbs = order - 3 -- Legendary 2, Mythic 3, [1;31mSecret[m 4
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m6703[m[36m:[m	if def.rarity == "[1;31mSecret[m" then
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m6814[m[36m:[m          <[1;31mtoken[m name="RunContext">0</[1;31mtoken[m>
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m8945[m[36m:[m-- with a per-player [1;31mtoken[m-bucket rate limit. Adapted from Crop Kingdom.
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m8977[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9016[m[36m:[m		b = { [1;31mtoken[ms = BURST, t = now }
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9019[m[36m:[m	b.[1;31mtoken[ms = math.min(BURST, b.[1;31mtoken[ms + (now - b.t) * RATE)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9021[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9024[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9096[m[36m:[m-- Every non-[1;31msecret[m, non-exclusive pet that belongs to a zone's index page.
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9283[m[36m:[m	return r.rarity == "Mythic" or r.rarity == "[1;31mSecret[m" or r.tier == 2
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9860[m[36m:[m-- it with a [1;31mtoken[m bucket (Config.MaxTapsPerSecond) so autoclickers can't exceed the cap.
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9876[m[36m:[mtype Bucket = { [1;31mtoken[ms: number, t: number }
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9928[m[36m:[m		b = { [1;31mtoken[ms = cap, t = now }
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9931[m[36m:[m	b.[1;31mtoken[ms = math.min(cap, b.[1;31mtoken[ms + (now - b.t) * Config.MaxTapsPerSecond)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9933[m[36m:[m	local accepted = math.min(count, math.floor(b.[1;31mtoken[ms))
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m9937[m[36m:[m	b.[1;31mtoken[ms -= accepted
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12708[m[36m:[m-- Local feedback per tap: a +N that pops and floats away, a ring, a burst of sparks, a [1;31mtoken[m
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12745[m[36m:[mlocal [1;31mtoken[ms = Config.MaxTapsPerSecond
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12749[m[36m:[m-- where flying [1;31mtoken[ms land (the HUD sets it)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12798[m[36m:[mtype [1;31mToken[m = { frame: Frame, from: Vector2, ctrl: Vector2, t: number }
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12799[m[36m:[mlocal [1;31mtoken[mPool: { Frame } = {}
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12800[m[36m:[mlocal flying: { [1;31mToken[m } = {}
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12834[m[36m:[mlocal function take[1;31mToken[m(): Frame
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12835[m[36m:[m	local t = table.remove([1;31mtoken[mPool)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12904[m[36m:[m	-- [1;31mtoken[m that flies into the counter
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12906[m[36m:[m		local [1;31mtoken[m = take[1;31mToken[m()
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12908[m[36m:[m		[1;31mtoken[m.Size = UDim2.fromOffset(size, size)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12909[m[36m:[m		[1;31mtoken[m.Position = UDim2.fromOffset(pos.X, pos.Y)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12910[m[36m:[m		[1;31mtoken[m.BackgroundTransparency = 0
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12911[m[36m:[m		table.insert(flying, { frame = [1;31mtoken[m, from = pos, ctrl = pos + Vector2.new(math.random(-140, 140) * s, -math.random(40, 150) * s), t = 0 })
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12996[m[36m:[m	[1;31mtoken[ms = math.min(Config.MaxTapsPerSecond, [1;31mtoken[ms + (now - lastRefill) * Config.MaxTapsPerSecond)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m12998[m[36m:[m	if [1;31mtoken[ms < 1 then
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13001[m[36m:[m	[1;31mtoken[ms -= 1
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13016[m[36m:[m-- It goes through the same client [1;31mtoken[m bucket, and the server clamps taps anyway.
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13104[m[36m:[m		-- [1;31mtoken[ms fly along a curve into the Taps counter
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13122[m[36m:[m					table.insert([1;31mtoken[mPool, f.frame)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13325[m[36m:[m			local [1;31msecret[m = pet.rarity == "[1;31mSecret[m"
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13326[m[36m:[m			local rc = if [1;31msecret[m then Color3.fromRGB(90, 50, 130) else Palette.rarity(pet.rarity)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13333[m[36m:[m			local icon = PetIcon.new(o.pet, 0, [1;31msecret[m and not discovered[o.pet])
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13341[m[36m:[m			Theme.text({ Text = if [1;31msecret[m and not discovered[o.pet] then Lang.t("egg.unknown") else Lang.pet(pet.id), Size = UDim2.new(1, -6, 0, 20), Position = UDim2.fromOffset(3, 24), MaxTextSize = 16, Parent = plate })
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13494[m[36m:[mlocal [1;31mSECRET[m = Color3.fromRGB(170, 60, 255)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m13498[m[36m:[m	return if rarity == "[1;31mSecret[m" then [1;31mSECRET[m else Palette.rarity(rarity)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m14543[m[36m:[m-- page 1..5 = zones, 6 = exclusive & [1;31msecret[m
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m14612[m[36m:[m			if p.rarity ~= "[1;31mSecret[m" then
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m14640[m[36m:[m				local rc = if p.rarity == "[1;31mSecret[m" then Color3.fromRGB(90, 50, 130) else Palette.rarity(p.rarity)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m14869[m[36m:[mlocal [1;31mSECRET[m = Color3.fromRGB(190, 90, 255)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m15013[m[36m:[m		local rc = if def.rarity == "[1;31mSecret[m" then Color3.fromRGB(60, 40, 80) else Palette.rarity(def.rarity)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m15193[m[36m:[m			local rc = if def.rarity == "[1;31mSecret[m" then [1;31mSECRET[m else Palette.rarity(def.rarity)
+[35mpet-tap-simulator/TapPetsSimulator.rbxlx[m[36m:[m[32m16755[m[36m:[m	if data.rarity == "[1;31mSecret[m" then
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m10[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m21[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m31[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m41[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m51[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m61[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m72[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/sim/odds_table.md[m[36m:[m[32m83[m[36m:[m| Shadow Dragon | [1;31mSecret[m | 1 in 100,000 | 10x best pet of your top zone |
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m5[m[36m:[m-- Local feedback per tap: a +N that pops and floats away, a ring, a burst of sparks, a [1;31mtoken[m
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m42[m[36m:[mlocal [1;31mtoken[ms = Config.MaxTapsPerSecond
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m46[m[36m:[m-- where flying [1;31mtoken[ms land (the HUD sets it)
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m95[m[36m:[mtype [1;31mToken[m = { frame: Frame, from: Vector2, ctrl: Vector2, t: number }
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m96[m[36m:[mlocal [1;31mtoken[mPool: { Frame } = {}
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m97[m[36m:[mlocal flying: { [1;31mToken[m } = {}
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m131[m[36m:[mlocal function take[1;31mToken[m(): Frame
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m132[m[36m:[m	local t = table.remove([1;31mtoken[mPool)
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m201[m[36m:[m	-- [1;31mtoken[m that flies into the counter
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m203[m[36m:[m		local [1;31mtoken[m = take[1;31mToken[m()
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m205[m[36m:[m		[1;31mtoken[m.Size = UDim2.fromOffset(size, size)
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m206[m[36m:[m		[1;31mtoken[m.Position = UDim2.fromOffset(pos.X, pos.Y)
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m207[m[36m:[m		[1;31mtoken[m.BackgroundTransparency = 0
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m208[m[36m:[m		table.insert(flying, { frame = [1;31mtoken[m, from = pos, ctrl = pos + Vector2.new(math.random(-140, 140) * s, -math.random(40, 150) * s), t = 0 })
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m293[m[36m:[m	[1;31mtoken[ms = math.min(Config.MaxTapsPerSecond, [1;31mtoken[ms + (now - lastRefill) * Config.MaxTapsPerSecond)
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m295[m[36m:[m	if [1;31mtoken[ms < 1 then
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m298[m[36m:[m	[1;31mtoken[ms -= 1
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m313[m[36m:[m-- It goes through the same client [1;31mtoken[m bucket, and the server clamps taps anyway.
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m401[m[36m:[m		-- [1;31mtoken[ms fly along a curve into the Taps counter
+[35mpet-tap-simulator/src/client/Tapper.luau[m[36m:[m[32m419[m[36m:[m					table.insert([1;31mtoken[mPool, f.frame)
+[35mpet-tap-simulator/src/client/UI/EggPanel.luau[m[36m:[m[32m171[m[36m:[m			local [1;31msecret[m = pet.rarity == "[1;31mSecret[m"
+[35mpet-tap-simulator/src/client/UI/EggPanel.luau[m[36m:[m[32m172[m[36m:[m			local rc = if [1;31msecret[m then Color3.fromRGB(90, 50, 130) else Palette.rarity(pet.rarity)
+[35mpet-tap-simulator/src/client/UI/EggPanel.luau[m[36m:[m[32m179[m[36m:[m			local icon = PetIcon.new(o.pet, 0, [1;31msecret[m and not discovered[o.pet])
+[35mpet-tap-simulator/src/client/UI/EggPanel.luau[m[36m:[m[32m187[m[36m:[m			Theme.text({ Text = if [1;31msecret[m and not discovered[o.pet] then Lang.t("egg.unknown") else Lang.pet(pet.id), Size = UDim2.new(1, -6, 0, 20), Position = UDim2.fromOffset(3, 24), MaxTextSize = 16, Parent = plate })
+[35mpet-tap-simulator/src/client/UI/HatchCinematic.luau[m[36m:[m[32m55[m[36m:[mlocal [1;31mSECRET[m = Color3.fromRGB(170, 60, 255)
+[35mpet-tap-simulator/src/client/UI/HatchCinematic.luau[m[36m:[m[32m59[m[36m:[m	return if rarity == "[1;31mSecret[m" then [1;31mSECRET[m else Palette.rarity(rarity)
+[35mpet-tap-simulator/src/client/UI/IndexWindow.luau[m[36m:[m[32m17[m[36m:[m-- page 1..5 = zones, 6 = exclusive & [1;31msecret[m
+[35mpet-tap-simulator/src/client/UI/IndexWindow.luau[m[36m:[m[32m86[m[36m:[m			if p.rarity ~= "[1;31mSecret[m" then
+[35mpet-tap-simulator/src/client/UI/IndexWindow.luau[m[36m:[m[32m114[m[36m:[m				local rc = if p.rarity == "[1;31mSecret[m" then Color3.fromRGB(90, 50, 130) else Palette.rarity(p.rarity)
+[35mpet-tap-simulator/src/client/UI/PetsWindow.luau[m[36m:[m[32m28[m[36m:[mlocal [1;31mSECRET[m = Color3.fromRGB(190, 90, 255)
+[35mpet-tap-simulator/src/client/UI/PetsWindow.luau[m[36m:[m[32m201[m[36m:[m		local rc = if def.rarity == "[1;31mSecret[m" then Color3.fromRGB(60, 40, 80) else Palette.rarity(def.rarity)
+[35mpet-tap-simulator/src/client/UI/PetsWindow.luau[m[36m:[m[32m391[m[36m:[m			local rc = if def.rarity == "[1;31mSecret[m" then [1;31mSECRET[m else Palette.rarity(def.rarity)
+[35mpet-tap-simulator/src/client/UI/Toasts.luau[m[36m:[m[32m124[m[36m:[m	if data.rarity == "[1;31mSecret[m" then
+[35mpet-tap-simulator/src/server/Services/Remotes.luau[m[36m:[m[32m3[m[36m:[m-- with a per-player [1;31mtoken[m-bucket rate limit. Adapted from Crop Kingdom.
+[35mpet-tap-simulator/src/server/Services/Remotes.luau[m[36m:[m[32m35[m[36m:[mlocal budget: { [Player]: { [1;31mtoken[ms: number, t: number } } = {}
+[35mpet-tap-simulator/src/server/Services/Remotes.luau[m[36m:[m[32m74[m[36m:[m		b = { [1;31mtoken[ms = BURST, t = now }
+[35mpet-tap-simulator/src/server/Services/Remotes.luau[m[36m:[m[32m77[m[36m:[m	b.[1;31mtoken[ms = math.min(BURST, b.[1;31mtoken[ms + (now - b.t) * RATE)
+[35mpet-tap-simulator/src/server/Services/Remotes.luau[m[36m:[m[32m79[m[36m:[m	if b.[1;31mtoken[ms < 1 then
+[35mpet-tap-simulator/src/server/Services/Remotes.luau[m[36m:[m[32m82[m[36m:[m	b.[1;31mtoken[ms -= 1
+[35mpet-tap-simulator/src/server/Services/Rewards.luau[m[36m:[m[32m49[m[36m:[m-- Every non-[1;31msecret[m, non-exclusive pet that belongs to a zone's index page.
+[35mpet-tap-simulator/src/server/Services/Social.luau[m[36m:[m[32m38[m[36m:[m	return r.rarity == "Mythic" or r.rarity == "[1;31mSecret[m" or r.tier == 2
+[35mpet-tap-simulator/src/server/Services/Tapping.luau[m[36m:[m[32m3[m[36m:[m-- it with a [1;31mtoken[m bucket (Config.MaxTapsPerSecond) so autoclickers can't exceed the cap.
+[35mpet-tap-simulator/src/server/Services/Tapping.luau[m[36m:[m[32m19[m[36m:[mtype Bucket = { [1;31mtoken[ms: number, t: number }
+[35mpet-tap-simulator/src/server/Services/Tapping.luau[m[36m:[m[32m71[m[36m:[m		b = { [1;31mtoken[ms = cap, t = now }
+[35mpet-tap-simulator/src/server/Services/Tapping.luau[m[36m:[m[32m74[m[36m:[m	b.[1;31mtoken[ms = math.min(cap, b.[1;31mtoken[ms + (now - b.t) * Config.MaxTapsPerSecond)
+[35mpet-tap-simulator/src/server/Services/Tapping.luau[m[36m:[m[32m76[m[36m:[m	local accepted = math.min(count, math.floor(b.[1;31mtoken[ms))
+[35mpet-tap-simulator/src/server/Services/Tapping.luau[m[36m:[m[32m80[m[36m:[m	b.[1;31mtoken[ms -= accepted
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m48[m[36m:[m	{ name = "[1;31mSecret[m", order = 7, color = { 20, 20, 30 }, broadcast = true },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m107[m[36m:[m	zone: number, -- for the index book (0 = exclusive / [1;31msecret[m)
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m179[m[36m:[m	-- [1;31mSecret[m (1 in 100,000 from every world egg)
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m180[m[36m:[m	P("shadowdragon", "Shadow Dragon", "[1;31mSecret[m", 0, "ball", { 20, 15, 30 }, { 170, 60, 255 }, "none", { "horns", "wings", "tail", "spikes", "crown", "glow" }, 1.8, 0, "Neon"),
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m235[m[36m:[mlocal [1;31mSECRET[m = 0.001 -- percent (1 in 100,000)
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m239[m[36m:[m		{ pet = "dog", chance = 60 }, { pet = "cat", chance = 30 }, { pet = "bunny", chance = 8.999 }, { pet = "bear", chance = 1 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m242[m[36m:[m		{ pet = "piggy", chance = 55 }, { pet = "chick", chance = 32 }, { pet = "fox", chance = 10.5 }, { pet = "owl", chance = 2.399 }, { pet = "unicorn", chance = 0.1 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m245[m[36m:[m		{ pet = "gummybear", chance = 58 }, { pet = "lollipup", chance = 30 }, { pet = "cupcakecat", chance = 10 }, { pet = "candydragon", chance = 1.999 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m248[m[36m:[m		{ pet = "donutdog", chance = 60 }, { pet = "marshbunny", chance = 33 }, { pet = "cottonfox", chance = 6.899 }, { pet = "jellyphoenix", chance = 0.1 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m251[m[36m:[m		{ pet = "penguin", chance = 60 }, { pet = "snowfox", chance = 30 }, { pet = "polarbear", chance = 8.5 }, { pet = "icewolf", chance = 1.499 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m254[m[36m:[m		{ pet = "arcticowl", chance = 62 }, { pet = "yeti", chance = 30 }, { pet = "frostphoenix", chance = 7.9 }, { pet = "icedragon", chance = 0.099 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m257[m[36m:[m		{ pet = "lavapup", chance = 60 }, { pet = "embercat", chance = 30 }, { pet = "magmagolem", chance = 9.4 }, { pet = "firedragon", chance = 0.58 }, { pet = "hellhound", chance = 0.019 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m260[m[36m:[m		{ pet = "mooncat", chance = 60 }, { pet = "starbunny", chance = 30 }, { pet = "alienpup", chance = 9.4 }, { pet = "nebulaowl", chance = 0.58 }, { pet = "galaxydragon", chance = 0.019 }, { pet = "shadowdragon", chance = [1;31mSECRET[m },
+[35mpet-tap-simulator/src/shared/Config.luau[m[36m:[m[32m460[m[36m:[m-- Completing a zone's index (every non-[1;31msecret[m pet of that zone) gives gems and a permanent tap bonus.
+[35mpet-tap-simulator/src/shared/Locales/de.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "Geheim",
+[35mpet-tap-simulator/src/shared/Locales/en.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[m",
+[35mpet-tap-simulator/src/shared/Locales/es.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[mo",
+[35mpet-tap-simulator/src/shared/Locales/fr.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[m",
+[35mpet-tap-simulator/src/shared/Locales/id.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "Rahasia",
+[35mpet-tap-simulator/src/shared/Locales/ja.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "シークレット",
+[35mpet-tap-simulator/src/shared/Locales/ko.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "시크릿",
+[35mpet-tap-simulator/src/shared/Locales/pt.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "[1;31mSecret[mo",
+[35mpet-tap-simulator/src/shared/Locales/ru.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "Секретный",
+[35mpet-tap-simulator/src/shared/Locales/th.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "ลับ",
+[35mpet-tap-simulator/src/shared/Locales/tr.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "Gizli",
+[35mpet-tap-simulator/src/shared/Locales/vi.luau[m[36m:[m[32m188[m[36m:[m	["rarity.[1;31mSecret[m"] = "Bí Mật",
+[35mpet-tap-simulator/src/shared/PetModel.luau[m[36m:[m[32m32[m[36m:[mlocal [1;31mSECRET[m = Color3.fromRGB(170, 60, 255)
+[35mpet-tap-simulator/src/shared/PetModel.luau[m[36m:[m[32m708[m[36m:[m	if def.rarity == "[1;31mSecret[m" then
+[35mpet-tap-simulator/src/shared/PetModel.luau[m[36m:[m[32m753[m[36m:[m	local rcol = if def.rarity == "[1;31mSecret[m" then [1;31mSECRET[m else Palette.rarity(def.rarity)
+[35mpet-tap-simulator/src/shared/PetModel.luau[m[36m:[m[32m787[m[36m:[m		local orbs = order - 3 -- Legendary 2, Mythic 3, [1;31mSecret[m 4
+[35mpet-tap-simulator/src/shared/PetModel.luau[m[36m:[m[32m797[m[36m:[m	if def.rarity == "[1;31mSecret[m" then
+[35mpet-tap-simulator/tests/ShowcaseClient.client.luau[m[36m:[m[32m332[m[36m:[mlocal [1;31mtoken[m = 0
+[35mpet-tap-simulator/tests/ShowcaseClient.client.luau[m[36m:[m[32m334[m[36m:[m	[1;31mtoken[m += 1
+[35mpet-tap-simulator/tests/ShowcaseClient.client.luau[m[36m:[m[32m335[m[36m:[m	local my = [1;31mtoken[m
+[35mpet-tap-simulator/tests/ShowcaseClient.client.luau[m[36m:[m[32m337[m[36m:[m		if my ~= [1;31mtoken[m then
