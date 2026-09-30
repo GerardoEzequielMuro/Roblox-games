@@ -186,7 +186,7 @@ Config.Leagues = {
 	{ id = "champion", icon = "👑", trophies = 1500, color = { 255, 105, 180 } },
 }
 Config.MaxLevel = 100
-Config.LevelCoins = 100 -- coins on every level up (+10 per level)
+Config.LevelCoins = 60 -- coins on every level up (+10 per level)
 Config.StreakBonus = 0.1 -- +10% coins per consecutive win, capped below
 Config.StreakBonusCap = 5
 
@@ -212,10 +212,10 @@ Config.CosmeticKinds = { "wheel", "table", "finisher", "emote", "title", "aura" 
 Config.Cosmetics = {
 	-- wheel skins: rim / hub colours, material, tint strength over the outcome colours
 	c("wheel", "w_classic", "🎡", "common", { type = "default" }, { rim = { 40, 46, 80 }, hub = { 255, 205, 60 }, trim = { 255, 255, 255 }, material = "SmoothPlastic", tint = { 255, 255, 255 }, mix = 0 }),
-	c("wheel", "w_neon", "🌈", "rare", { type = "coins", n = 600 }, { rim = { 20, 16, 40 }, hub = { 0, 240, 255 }, trim = { 255, 60, 220 }, material = "Neon", tint = { 255, 255, 255 }, mix = 0 }),
-	c("wheel", "w_candy", "🍭", "rare", { type = "coins", n = 900 }, { rim = { 255, 140, 190 }, hub = { 255, 255, 255 }, trim = { 120, 220, 255 }, material = "SmoothPlastic", tint = { 255, 200, 230 }, mix = 0.35 }),
+	c("wheel", "w_neon", "🌈", "rare", { type = "coins", n = 500 }, { rim = { 20, 16, 40 }, hub = { 0, 240, 255 }, trim = { 255, 60, 220 }, material = "Neon", tint = { 255, 255, 255 }, mix = 0 }),
+	c("wheel", "w_candy", "🍭", "rare", { type = "coins", n = 1200 }, { rim = { 255, 140, 190 }, hub = { 255, 255, 255 }, trim = { 120, 220, 255 }, material = "SmoothPlastic", tint = { 255, 200, 230 }, mix = 0.35 }),
 	c("wheel", "w_slime", "🧪", "rare", { type = "level", n = 5 }, { rim = { 40, 120, 50 }, hub = { 170, 255, 90 }, trim = { 220, 255, 140 }, material = "Glass", tint = { 150, 255, 120 }, mix = 0.3 }),
-	c("wheel", "w_lava", "🌋", "epic", { type = "coins", n = 2200 }, { rim = { 50, 20, 15 }, hub = { 255, 120, 30 }, trim = { 255, 200, 60 }, material = "Slate", tint = { 255, 120, 60 }, mix = 0.3 }),
+	c("wheel", "w_lava", "🌋", "epic", { type = "coins", n = 9000 }, { rim = { 50, 20, 15 }, hub = { 255, 120, 30 }, trim = { 255, 200, 60 }, material = "Slate", tint = { 255, 120, 60 }, mix = 0.3 }),
 	c("wheel", "w_ice", "❄️", "epic", { type = "league", key = "gold" }, { rim = { 190, 225, 255 }, hub = { 255, 255, 255 }, trim = { 120, 190, 255 }, material = "Ice", tint = { 200, 230, 255 }, mix = 0.4 }),
 	c("wheel", "w_galaxy", "🌌", "epic", { type = "daily" }, { rim = { 28, 18, 60 }, hub = { 200, 150, 255 }, trim = { 120, 220, 255 }, material = "Foil", tint = { 140, 110, 255 }, mix = 0.35 }),
 	c("wheel", "w_arcade", "🕹️", "epic", { type = "starter" }, { rim = { 30, 30, 36 }, hub = { 255, 60, 90 }, trim = { 60, 255, 170 }, material = "Neon", tint = { 255, 255, 255 }, mix = 0 }),
@@ -228,7 +228,7 @@ Config.Cosmetics = {
 	-- table skins: seat pods and the table ring
 	c("table", "t_default", "🪑", "common", { type = "default" }, { base = { 52, 60, 110 }, accent = { 0, 220, 255 }, material = "SmoothPlastic" }),
 	c("table", "t_carbon", "⬛", "rare", { type = "coins", n = 700 }, { base = { 30, 32, 38 }, accent = { 255, 70, 70 }, material = "DiamondPlate" }),
-	c("table", "t_bubblegum", "🫧", "rare", { type = "coins", n = 1100 }, { base = { 255, 150, 200 }, accent = { 255, 255, 255 }, material = "SmoothPlastic" }),
+	c("table", "t_bubblegum", "🫧", "rare", { type = "coins", n = 2200 }, { base = { 255, 150, 200 }, accent = { 255, 255, 255 }, material = "SmoothPlastic" }),
 	c("table", "t_jungle", "🌿", "rare", { type = "level", n = 8 }, { base = { 60, 120, 60 }, accent = { 220, 255, 120 }, material = "Wood" }),
 	c("table", "t_frost", "🧊", "epic", { type = "wins", n = 25 }, { base = { 170, 215, 255 }, accent = { 255, 255, 255 }, material = "Ice" }),
 	c("table", "t_royal", "🏰", "legendary", { type = "pass", key = "LegendSkins" }, { base = { 110, 20, 50 }, accent = { 255, 215, 90 }, material = "Fabric" }),
@@ -237,9 +237,9 @@ Config.Cosmetics = {
 	-- finishers: how your victims leave the table (pure presentation)
 	c("finisher", "f_hammer", "🔨", "common", { type = "default" }),
 	c("finisher", "f_confetti", "🎉", "rare", { type = "starter" }),
-	c("finisher", "f_rocket", "🚀", "rare", { type = "coins", n = 1200 }),
+	c("finisher", "f_rocket", "🚀", "rare", { type = "coins", n = 3200 }),
 	c("finisher", "f_slime", "🟢", "rare", { type = "level", n = 10 }),
-	c("finisher", "f_freeze", "🥶", "epic", { type = "coins", n = 2600 }),
+	c("finisher", "f_freeze", "🥶", "epic", { type = "coins", n = 12000 }),
 	c("finisher", "f_ufo", "🛸", "epic", { type = "pass", key = "FinisherPack" }),
 	c("finisher", "f_blackhole", "🕳️", "legendary", { type = "pass", key = "FinisherPack" }),
 	c("finisher", "f_lightning", "🌩️", "legendary", { type = "pass", key = "FinisherPack" }),
@@ -252,7 +252,7 @@ Config.Cosmetics = {
 	c("emote", "e_cool", "😎", "rare", { type = "coins", n = 300 }, { move = "lean" }),
 	c("emote", "e_cry", "😭", "rare", { type = "coins", n = 300 }, { move = "shake" }),
 	c("emote", "e_angry", "😡", "rare", { type = "level", n = 3 }, { move = "stomp" }),
-	c("emote", "e_clap", "👏", "rare", { type = "wins", n = 5 }, { move = "hop" }),
+	c("emote", "e_clap", "👏", "rare", { type = "wins", n = 4 }, { move = "hop" }),
 	c("emote", "e_skull", "💀", "epic", { type = "pass", key = "EmotePack" }, { move = "lean" }),
 	c("emote", "e_heart", "💖", "epic", { type = "pass", key = "EmotePack" }, { move = "spin" }),
 	c("emote", "e_dance", "🕺", "epic", { type = "pass", key = "EmotePack" }, { move = "spin" }),
@@ -263,8 +263,8 @@ Config.Cosmetics = {
 	-- titles (text comes from the locale: "title.<id>")
 	c("title", "ti_rookie", "🔰", "common", { type = "default" }),
 	c("title", "ti_spinner", "🎡", "common", { type = "level", n = 2 }),
-	c("title", "ti_survivor", "🩹", "rare", { type = "wins", n = 3 }),
-	c("title", "ti_lucky", "🍀", "rare", { type = "coins", n = 800 }),
+	c("title", "ti_survivor", "🩹", "rare", { type = "wins", n = 2 }),
+	c("title", "ti_lucky", "🍀", "rare", { type = "coins", n = 900 }),
 	c("title", "ti_hotstreak", "🔥", "epic", { type = "streak", n = 3 }),
 	c("title", "ti_untouchable", "🛡️", "epic", { type = "wins", n = 50 }),
 	c("title", "ti_master", "🧠", "legendary", { type = "level", n = 30 }),
@@ -279,10 +279,10 @@ Config.Cosmetics = {
 
 	-- auras
 	c("aura", "a_none", "🚫", "common", { type = "default" }),
-	c("aura", "a_sparks", "✨", "rare", { type = "coins", n = 1000 }, { color = { 255, 230, 120 }, shape = "sparks" }),
-	c("aura", "a_hearts", "💗", "rare", { type = "coins", n = 1400 }, { color = { 255, 120, 180 }, shape = "rise" }),
+	c("aura", "a_sparks", "✨", "rare", { type = "coins", n = 1600 }, { color = { 255, 230, 120 }, shape = "sparks" }),
+	c("aura", "a_hearts", "💗", "rare", { type = "coins", n = 5500 }, { color = { 255, 120, 180 }, shape = "rise" }),
 	c("aura", "a_frost", "❄️", "epic", { type = "level", n = 15 }, { color = { 170, 225, 255 }, shape = "orbit" }),
-	c("aura", "a_flames", "🔥", "epic", { type = "coins", n = 3200 }, { color = { 255, 120, 40 }, shape = "rise" }),
+	c("aura", "a_flames", "🔥", "epic", { type = "coins", n = 16000 }, { color = { 255, 120, 40 }, shape = "rise" }),
 	c("aura", "a_stars", "🌟", "epic", { type = "league", key = "platinum" }, { color = { 200, 160, 255 }, shape = "orbit" }),
 	c("aura", "a_gold", "👑", "legendary", { type = "pass", key = "VIP" }, { color = { 255, 215, 90 }, shape = "orbit" }),
 	c("aura", "a_core", "🔋", "rare", { type = "event", key = "core" }, { color = { 0, 240, 255 }, shape = "sparks" }),
@@ -360,12 +360,12 @@ Config.DailyRewards = {
 }
 -- Session gifts (minutes played this session).
 Config.Gifts = {
-	{ minutes = 5, reward = { kind = "coins", amount = 60 } },
-	{ minutes = 10, reward = { kind = "coins", amount = 120 } },
+	{ minutes = 3, reward = { kind = "coins", amount = 60 } },
+	{ minutes = 8, reward = { kind = "coins", amount = 120 } },
 	{ minutes = 15, reward = { kind = "xp", amount = 100 } },
-	{ minutes = 25, reward = { kind = "coins", amount = 250 } },
-	{ minutes = 40, reward = { kind = "coins", amount = 400 } },
-	{ minutes = 60, reward = { kind = "coins", amount = 700 } },
+	{ minutes = 24, reward = { kind = "coins", amount = 250 } },
+	{ minutes = 38, reward = { kind = "coins", amount = 400 } },
+	{ minutes = 55, reward = { kind = "coins", amount = 700 } },
 }
 Config.Codes = {
 	SHOWDOWN = { kind = "coins", amount = 500 },
@@ -401,7 +401,7 @@ Config.GroupGift = { coins = 400 }
 export type SeasonReward = { kind: string, amount: number, item: string? }
 Config.SeasonPass = {
 	tiers = 30,
-	pointsPerTier = 60,
+	pointsPerTier = 140,
 	points = { base = 20, top3 = 10, win = 25, minPlayersForTop3 = 4, practiceDivisor = 2 }, -- practice = table with bots only
 	duplicatePremiumCoins = 600, -- a second premium purchase in one season pays coins instead
 	maxTierSkipCoins = 100, -- a tier skip bought when already at the last tier pays coins instead

@@ -7,7 +7,7 @@ local Config: typeof(require(script.Parent.Config)) = if script then require(scr
 local Progression = {}
 
 function Progression.xpForLevel(level: number): number
-	return 100 + 40 * (level - 1)
+	return 45 + 15 * (level - 1)
 end
 
 -- Applies xp to (level, xp). Returns the new level, the leftover xp and levels gained.

@@ -852,11 +852,14 @@ end
 -- Progression
 ---------------------------------------------------------------------------
 do
-	local l, xp, g = Progression.addXp(1, 0, 99)
-	check("xp below the level", l == 1 and xp == 99 and g == 0)
-	l, xp, g = Progression.addXp(1, 99, 1)
-	check("level up at 100", l == 2 and xp == 0 and g == 1)
-	l, xp, g = Progression.addXp(1, 0, 100 + 140 + 5)
+	-- the first level is cheap on purpose (Progression.xpForLevel): the first level-up lands inside the first matches
+	local need1, need2 = Progression.xpForLevel(1), Progression.xpForLevel(2)
+	check("first level needs at most one average first match", need1 <= 50, need1)
+	local l, xp, g = Progression.addXp(1, 0, need1 - 1)
+	check("xp below the level", l == 1 and xp == need1 - 1 and g == 0)
+	l, xp, g = Progression.addXp(1, need1 - 1, 1)
+	check("level up at the threshold", l == 2 and xp == 0 and g == 1)
+	l, xp, g = Progression.addXp(1, 0, need1 + need2 + 5)
 	check("two levels at once", l == 3 and xp == 5 and g == 2)
 	l = Progression.addXp(Config.MaxLevel, 0, 1e9)
 	check("level capped", l == Config.MaxLevel)
@@ -1111,7 +1114,9 @@ do
 	check("points: positive everywhere", allOk)
 	-- a free player can finish the pass: ~average match pays well under the monthly play needed
 	local perMatch = SeasonPass.matchPoints(3, 5, 2)
-	check("season: full track needs at most ~100 average matches", SeasonPass.maxPoints() / perMatch <= 100, SeasonPass.maxPoints() / perMatch)
+	-- a monthly pass: ~140 average matches = 3-4 weeks of a daily 25 min player (see sim/pacing_sim.luau)
+	check("season: full track needs at most ~150 average matches", SeasonPass.maxPoints() / perMatch <= 150, SeasonPass.maxPoints() / perMatch)
+	check("season: full track needs at least ~100 average matches (not a weekend job)", SeasonPass.maxPoints() / perMatch >= 100, SeasonPass.maxPoints() / perMatch)
 
 	-- state machine
 	local st = SeasonPass.fresh(24300)

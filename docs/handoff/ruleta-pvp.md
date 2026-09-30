@@ -187,3 +187,38 @@ Todo verificado con `tools/uipreview` (capturas en `docs/previews/ruleta-pvp/`).
 - Que las ventanas (Play, Shop, Season, Locker) se vean completas y scrolleen bien con el dedo, y que los textos de 12-14 px se lean.
 - El medallón de Play con la rueda (con los íconos subidos se verá la imagen `wheel`).
 - Que el tamaño del HUD en un teléfono chico (escala mínima 0.62) siga usable.
+
+## Ronda 5: ritmo de progresión
+
+Armé `sim/pacing_sim.luau` (modelo en `sim/PacingModel.luau`, se corre con `luau sim/pacing_sim.luau` desde `ruleta-pvp/`) y `tests/pacing_test.luau` (falla si un hito sale de su ventana). El sim usa los módulos reales: `MatchCore` + `BotBrain` juegan el asiento humano (de ahí salen puestos, turnos y stats por partida), y `Progression`, `SeasonPass`, `Quests` y `Config` ponen todos los números de premios, precios y desbloqueos. Jugador free: toca el Power Core, compra el cosmético de monedas más barato que puede pagar, reclama diario, regalos de sesión, misiones (y persigue las de chaos/teams) y tiers gratis del pase; sesión de 75 min el día 0 y 25 min por día después; 40 jugadores con semilla, mediana y p90.
+
+### Hitos antes / después (mediana, p90 entre paréntesis)
+| Hito | Antes | Después | Objetivo |
+|---|---|---|---|
+| Primera moneda (Power Core) | 8 s | 8 s | < 10 s |
+| 1ª partida pagada | 4,1 min | 4,1 min | < 6 min |
+| 1ª compra (emote 300) | partida 1 | partida 1 | partidas 2-3 |
+| 3ª compra | 13 min (21) | 11 min (16) | < 30 min |
+| Nivel 2 | 8,0 min | 5,3 min | < 10 min |
+| Nivel 5 (Auto Charge) | 19,9 min | 11,3 min | < 30 min |
+| Nivel 10 | día 3 | 38 min | < 2 h |
+| Tier 1 del pase | 10 min | 23 min | < 30 min |
+| Pase completo (25 min/día) | día 9 | día 23 (p90 25) | día 18-31 |
+| Toda la tienda de monedas | día 7 | día 22 | día 14-35 |
+| Mayor tramo sin nada nuevo en la 1ª hora | 10,3 min (p90 12,2) | 10,8 min (p90 14,8) | <= 12 (p90 <= 17) |
+| Nivel al día 7 / 30 | 16 / 34 | 27 / 55 | sigue subiendo |
+
+### Qué cambié y por qué (todo en `Config.luau` salvo una fórmula)
+- **Pase de temporada**: `pointsPerTier` 60 -> 140. Con 60 un jugador de 25 min/día lo terminaba en 9 días (el pase es mensual y tiene que durar 3-4 semanas). Ahora ~140 partidas promedio. El precio del salto de tier (Robux) no se tocó. `DESIGN.md` actualizado.
+- **Precios en monedas** (subí el techo, bajé un poco el piso): w_neon 600->500, t_carbon 700->700, ti_lucky 800->900, w_candy 900->1200, a_sparks 1000->1600, t_bubblegum 1100->2200, f_rocket 1200->3200, a_hearts 1400->5500, w_lava 2200->9000, f_freeze 2600->12000, a_flames 3200->16000. Los dos emotes de 300 quedan igual (primera compra en la partida 1). Antes la tienda entera se vaciaba en una semana; ahora dura ~3 semanas y hay una compra cada ~10-15 min en la primera hora.
+- **Regalos de sesión** (`Gifts`): 5/10/15/25/40/60 min -> 3/8/15/24/38/55 min (mismos premios). Primer regalo con la primera partida y un regalo cada 7-14 min en la hora 1.
+- **XP de nivel** (`Progression.xpForLevel`): `100 + 40*(L-1)` -> `45 + 15*(L-1)`, y `Config.LevelCoins` 100 -> 60 (por nivel, +10 por nivel como antes). El nivel 2 cae en las primeras 1-2 partidas y hay subida de nivel cada 2-3 partidas hasta el nivel 10; bajé las monedas por nivel para que la inflación de subidas rápidas no se coma la tienda.
+- **Desbloqueos por victorias**: `ti_survivor` 3 -> 2 victorias y `e_clap` 5 -> 4 (un hito nuevo antes en la hora 1).
+- **Tests** (`tests/unit_core.luau`): los 3 tests de XP usaban 100/140 literales; ahora usan `xpForLevel` (cambio intencional: primer nivel barato). El test "pase completo en <= 100 partidas" pasó a "entre 100 y 150" (el pase ahora es de ~140, pensado para un mes).
+
+### Límites del sim
+- Duración de partida modelada (no medida): cuenta turnos reales del motor y los tiempos de `Config.Timing`/`Wheel`, pero el tiempo humano por turno (4 s decidiendo + 2 s girando), caminar a la mesa (12 s) y dejar la mesa 5 s después de caer son supuestos. Da ~3,4 min por partida; si en Studio dura distinto, los hitos en minutos se escalan.
+- El humano juega como `BotBrain` (puestos de un jugador decente, sin skill de frenada); 60% de las mesas con un 2º humano (el resto paga la mitad de puntos/trofeos). Sin duelos (necesitan amigo).
+- Sin eventos en vivo (DoubleXP), códigos ni Starter Pack: es el peor caso free. Power Core: 4 toques/s a mano y solo en el lobby.
+- Los "hitos" se cuentan al final de cada partida (el jugador mira el HUD entre partidas), por eso el tramo máximo sin novedades tiene granularidad de ~3,4 min; con partidas así, "nunca más de 10 min" equivale a 3 partidas seguidas sin nada y el piso realista es ~11-12 min en mediana. Quedan huecos hacia el minuto 55-75 (se acaban los regalos y los niveles se espacian); si se quiere más densidad ahí, el palanca es un 7º regalo (la fila de regalos de `MenuWindows` hoy entra con 6) o tiers más baratos al principio del pase (requiere curva no lineal en `SeasonPass`).
+- Sin ramas de tienda elegidas por gusto: el jugador compra siempre lo más barato (maximiza la cadencia). Sin reset mensual del pase en el sim (asume instalación a principio de mes). Sin nivel 100 (~meses) ni trofeos de liga campeón.

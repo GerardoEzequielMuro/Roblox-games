@@ -225,7 +225,7 @@ IDs are 0 until they are created in the Creator Dashboard; items with id 0 canno
 
 ### Season pass
 
-Monthly (same id as the trophy season), 30 tiers of 60 points. Points come only from playing
+Monthly (same id as the trophy season), 30 tiers of 140 points (about 140 average matches: 3-4 weeks of a 25 min/day player, see `sim/pacing_sim.luau`). Points come only from playing
 (`SeasonPass.matchPoints`: 20 per match, +10 top 3, +25 win, half on a table with bots only);
 nothing bought multiplies them. Free track: coins, a title, an emote, an aura. Premium track:
 coins plus title, emote, table, aura and two wheels. Every reward is fixed and shown before
