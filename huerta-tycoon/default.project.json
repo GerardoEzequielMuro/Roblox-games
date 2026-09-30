@@ -45,6 +45,12 @@
         "StreamingMinRadius": 256,
         "StreamingTargetRadius": 768
       }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "ModelLibrary": {
+        "$path": "assets/models"
+      }
     }
   }
 }

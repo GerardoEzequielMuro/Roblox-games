@@ -191,3 +191,26 @@ Detalles de implementación:
 - Gifting/trading de semillas entre jugadores: no hecho (requiere selector de jugador, límites anti-alts y reglas de PolicyService si vienen de packs pagos).
 - Crear los productos/pases en el Creator Dashboard y pegar los ids: `DoubleGrow`, `InstantGrowOne`, `CashMedium`, `CashHuge` son nuevos.
 - Los precios de referencia vienen de fuentes secundarias (ver aviso en el research); confirmar antes de lanzar.
+
+## Ronda 3: ranuras de modelos
+
+**Qué cambié**
+- Nueva carpeta `huerta-tycoon/assets/models/` (solo README) mapeada como `ServerStorage.ModelLibrary` en `default`, `test`, `showcase` e `i18naudit` `.project.json`.
+- `src/server/World/ModelSlots.luau`: `ModelSlots.spawn(slot, cf, targetSize, parent, fallback, opts)`. Clona `slot` o `slot_1..n` (elegido por posición, sin usar `Props.rng`), borra todo script del clon (con warn), escala con `ScaleTo` para entrar en el tamaño objetivo, apoya la base, ancla, ajusta colisión al primitivo (solid / decor, tronco invisible para árboles) y respeta un tope de partes por ranura (y 6000 en total), si no usa el `fallback`.
+- `src/shared/ModelFit.luau`: matemática pura (escala, elegir variante, presupuesto, yaw).
+- `Props.luau`: 12 ranuras: `tree`, `bush`, `rock`, `farmhouse`, `barn` (solo el edificio), `fountain`, `carrot_statue`, `tractor` (sin remolque), `lamp`, `bench`, `scarecrow`, `balloon`. Los primitivos quedaron como funciones locales `*Primitive` o dentro del `fallback`; sin modelos el flujo y el stream de `rng` es idéntico. Plataformas, parcelas, puestos y cultivos no se tocaron. El molino no tiene ranura (aspas con CK_Spin).
+- Como el mapa se construye en el servidor, no hay variante de cliente.
+- Doc para Gerar: `docs/modelos/huerta-tycoon.md`.
+
+**Cómo lo verifiqué**
+- `tests/modelslots_test.luau` (1699 checks) y todos los `tests/*_test.luau` pasan con `luau`.
+- `luau-lsp analyze` sobre `src`: sin salida.
+- `rojo build` de default, test y showcase OK (i18naudit ya apuntaba a rutas `C:/work/...` de Windows y falla en Linux, preexistente). Con la carpeta solo con README, Rojo crea un Folder vacío `ModelLibrary` sin quejas.
+- Prueba temporal: un `tree.rbxmx` (Model + Part + Script) en `assets/models` aparece en `ServerStorage.ModelLibrary.tree` del build; archivo borrado.
+- No pude probar `ScaleTo`/`GetBoundingBox` en runtime (sin Studio).
+
+**Qué mirar en Studio**
+- Con la biblioteca vacía el mapa debe verse igual que antes.
+- Soltá un `tree.rbxm` y un `farmhouse.rbxm`: que apoyen en el piso, miren hacia la puerta/plaza (-Z), escalen bien y colisionen como se espera (casa sólida, árbol solo el tronco).
+- Fuente y casa pierden el chorro y el humo con modelo. El globo tiene que seguir flotando; los faroles con luz.
+- Output: buscar `[ModelSlots]` por scripts borrados o modelos que pasan el tope de partes.

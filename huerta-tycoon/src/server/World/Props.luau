@@ -4,6 +4,9 @@
 -- Conventions: a prop's CFrame is at ground level, +Y up, and its front is its LookVector (local -Z).
 local Workspace = game:GetService("Workspace")
 local CollectionService = game:GetService("CollectionService")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local ModelSlots = require(script.Parent.ModelSlots)
+local ModelFit = require(ReplicatedStorage.Shared.ModelFit)
 
 local Props = {}
 
@@ -210,7 +213,7 @@ local function green(): Color3
 	return Color3.fromHSV(0.27 + rng:NextNumber(-0.035, 0.05), 0.62 + rng:NextNumber(-0.05, 0.1), 0.56 + rng:NextNumber(0, 0.16))
 end
 
-function Props.tree(parent: Instance, pos: Vector3, s: number)
+local function treePrimitive(parent: Instance, pos: Vector3, s: number)
 	local m = Instance.new("Model")
 	m.Name = "Tree"
 	local at = CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
@@ -244,7 +247,7 @@ function Props.tree(parent: Instance, pos: Vector3, s: number)
 	m.Parent = parent
 end
 
-function Props.bush(parent: Instance, pos: Vector3, s: number)
+local function bushPrimitive(parent: Instance, pos: Vector3, s: number)
 	local c = green()
 	local at = CFrame.new(pos) * CFrame.Angles(0, rng:NextNumber(0, math.pi * 2), 0)
 	B(parent, "Bush", Vector3.one * 3.4 * s, at * CFrame.new(0, 1.1 * s, 0), c, Enum.Material.Grass, DECOR)
@@ -252,7 +255,7 @@ function Props.bush(parent: Instance, pos: Vector3, s: number)
 	B(parent, "Bush", Vector3.one * 2.2 * s, at * CFrame.new(-1.3 * s, 0.7 * s, -0.6 * s), Props.darken(c, 0.08), Enum.Material.Grass, TINY)
 end
 
-function Props.rock(parent: Instance, pos: Vector3, s: number)
+local function rockPrimitive(parent: Instance, pos: Vector3, s: number)
 	local g = rng:NextInteger(132, 168)
 	local c = Color3.fromRGB(g, g - 3, g - 8)
 	local rot = CFrame.Angles(rng:NextNumber(-0.3, 0.3), rng:NextNumber(0, math.pi), rng:NextNumber(-0.3, 0.3))
@@ -299,7 +302,7 @@ end
 
 -- ===================================================================== small props
 
-function Props.lamp(parent: Instance, pos: Vector3, lit: boolean)
+local function lampPrimitive(parent: Instance, pos: Vector3, lit: boolean)
 	local m = Instance.new("Model")
 	m.Name = "Lamp"
 	local at = CFrame.new(pos)
@@ -363,7 +366,7 @@ function Props.wateringCan(parent: Instance, cf: CFrame)
 	P(parent, "CanHandle", Vector3.new(0.25, 1.3, 0.25), cf * CFrame.new(0, 1.2, 0.95), c, Enum.Material.Metal, TINY)
 end
 
-function Props.scarecrow(parent: Instance, cf: CFrame)
+local function scarecrowPrimitive(parent: Instance, cf: CFrame)
 	local straw = Color3.fromRGB(222, 190, 110)
 	P(parent, "ScarecrowPole", Vector3.new(0.45, 6.2, 0.45), cf * CFrame.new(0, 3.1, 0), WOOD_DARK, Enum.Material.Wood, DECOR)
 	P(parent, "ScarecrowArms", Vector3.new(5.4, 0.4, 0.4), cf * CFrame.new(0, 4.5, 0), WOOD_DARK, Enum.Material.Wood, TINY)
@@ -380,7 +383,7 @@ function Props.scarecrow(parent: Instance, cf: CFrame)
 	end
 end
 
-function Props.bench(parent: Instance, cf: CFrame)
+local function benchPrimitive(parent: Instance, cf: CFrame)
 	P(parent, "BenchSeat", Vector3.new(6.4, 0.4, 2), cf * CFrame.new(0, 1.7, 0), WOOD, Enum.Material.WoodPlanks, { CanQuery = false })
 	P(parent, "BenchBack", Vector3.new(6.4, 1.7, 0.35), cf * CFrame.new(0, 2.85, 0.95) * CFrame.Angles(math.rad(8), 0, 0), WOOD, Enum.Material.WoodPlanks, TINY)
 	for _, x in { -2.8, 2.8 } do
@@ -442,7 +445,7 @@ local function smoke(parent: BasePart)
 end
 
 -- Small cottage. Front (door) = LookVector.
-function Props.farmhouse(parent: Instance, cf: CFrame, color: Color3)
+local function farmhousePrimitive(parent: Instance, cf: CFrame, color: Color3)
 	local m = Instance.new("Model")
 	m.Name = "Farmhouse"
 	local roofColor = Color3.fromRGB(92, 70, 66)
@@ -482,7 +485,7 @@ function Props.farmhouse(parent: Instance, cf: CFrame, color: Color3)
 	m.Parent = parent
 end
 
-function Props.fountain(parent: Instance, cf: CFrame)
+local function fountainPrimitive(parent: Instance, cf: CFrame)
 	local marble = Color3.fromRGB(214, 212, 216)
 	local waterColor = Color3.fromRGB(84, 176, 236)
 	Cy(parent, "FountainStep", 28, 0.6, cf * CFrame.new(0, 0.3, 0), STONE, Enum.Material.Slate)
@@ -525,22 +528,25 @@ end
 function Props.carrotStatue(parent: Instance, cf: CFrame)
 	local orange = Color3.fromRGB(255, 138, 40)
 	local gold = Color3.fromRGB(255, 205, 60)
-	P(parent, "StatueBase", Vector3.new(9, 1.6, 9), cf * CFrame.new(0, 0.8, 0), STONE, Enum.Material.Slate)
-	Cy(parent, "StatuePlinth", 6.6, 1.4, cf * CFrame.new(0, 2.3, 0), Props.lighten(STONE, 0.25), Enum.Material.Marble)
-	local tilt = cf * CFrame.new(0, 3, 0) * CFrame.Angles(0, 0, math.rad(7))
-	for k, d in { 1.8, 3, 4, 4.6 } do
-		Cy(parent, "StatueCarrot", d, 2.5, tilt * CFrame.new(0, (k - 0.5) * 2.4, 0), if k % 2 == 0 then orange else Props.darken(orange, 0.06), nil, DECOR)
-	end
-	B(parent, "StatueCarrotTop", Vector3.one * 4.6, tilt * CFrame.new(0, 9.7, 0), orange, nil, DECOR)
-	Cy(parent, "StatueCrown", 3.6, 0.9, tilt * CFrame.new(0, 11.7, 0), gold, Enum.Material.Foil, TINY)
-	for k = 1, 5 do
-		local a = k / 5 * math.pi * 2
-		P(parent, "StatueCrownPoint", Vector3.new(0.7, 1.2, 0.7), tilt * CFrame.new(math.cos(a) * 1.45, 12.6, math.sin(a) * 1.45) * CFrame.Angles(0, -a, 0) * CFrame.Angles(0, 0, math.rad(45)), gold, Enum.Material.Foil, TINY)
-	end
-	for k = 1, 3 do
-		local a = k / 3 * math.pi * 2
-		B(parent, "StatueLeaf", Vector3.new(1.3, 4.6, 1.3), tilt * CFrame.new(math.cos(a) * 0.9, 13.6, math.sin(a) * 0.9) * CFrame.Angles(math.sin(a) * 0.35, 0, -math.cos(a) * 0.35), LEAF, Enum.Material.Grass, TINY)
-	end
+	ModelSlots.spawn("carrot_statue", cf, Vector3.new(9, 16, 9), parent, function()
+		P(parent, "StatueBase", Vector3.new(9, 1.6, 9), cf * CFrame.new(0, 0.8, 0), STONE, Enum.Material.Slate)
+		Cy(parent, "StatuePlinth", 6.6, 1.4, cf * CFrame.new(0, 2.3, 0), Props.lighten(STONE, 0.25), Enum.Material.Marble)
+		local tilt = cf * CFrame.new(0, 3, 0) * CFrame.Angles(0, 0, math.rad(7))
+		for k, d in { 1.8, 3, 4, 4.6 } do
+			Cy(parent, "StatueCarrot", d, 2.5, tilt * CFrame.new(0, (k - 0.5) * 2.4, 0), if k % 2 == 0 then orange else Props.darken(orange, 0.06), nil, DECOR)
+		end
+		B(parent, "StatueCarrotTop", Vector3.one * 4.6, tilt * CFrame.new(0, 9.7, 0), orange, nil, DECOR)
+		Cy(parent, "StatueCrown", 3.6, 0.9, tilt * CFrame.new(0, 11.7, 0), gold, Enum.Material.Foil, TINY)
+		for k = 1, 5 do
+			local a = k / 5 * math.pi * 2
+			P(parent, "StatueCrownPoint", Vector3.new(0.7, 1.2, 0.7), tilt * CFrame.new(math.cos(a) * 1.45, 12.6, math.sin(a) * 1.45) * CFrame.Angles(0, -a, 0) * CFrame.Angles(0, 0, math.rad(45)), gold, Enum.Material.Foil, TINY)
+		end
+		for k = 1, 3 do
+			local a = k / 3 * math.pi * 2
+			B(parent, "StatueLeaf", Vector3.new(1.3, 4.6, 1.3), tilt * CFrame.new(math.cos(a) * 0.9, 13.6, math.sin(a) * 0.9) * CFrame.Angles(math.sin(a) * 0.35, 0, -math.cos(a) * 0.35), LEAF, Enum.Material.Grass, TINY)
+		end
+		return nil
+	end, { collide = "solid", name = "CarrotStatue" })
 	Props.flowerPatch(parent, cf.Position, 7.5, 14)
 end
 
@@ -728,30 +734,33 @@ function Props.barn(m: Instance, cf: CFrame)
 	local w, h, d = 26, 13, 22
 	-- trodden farmyard (no tall grass hiding the animals)
 	Props.paintDisc(cf.Position + cf.LookVector * 6, 27, Enum.Material.Mud)
-	P(m, "BarnBody", Vector3.new(w, h, d), cf * CFrame.new(0, h / 2, 0), red, Enum.Material.WoodPlanks)
-	for _, x in { -w / 2, w / 2 } do
-		for _, z in { -d / 2, d / 2 } do
-			P(m, "BarnTrim", Vector3.new(1.1, h, 1.1), cf * CFrame.new(x, h / 2, z), WHITE, nil, TINY)
+	ModelSlots.spawn("barn", cf, Vector3.new(26, 21, 23), m, function()
+		P(m, "BarnBody", Vector3.new(w, h, d), cf * CFrame.new(0, h / 2, 0), red, Enum.Material.WoodPlanks)
+		for _, x in { -w / 2, w / 2 } do
+			for _, z in { -d / 2, d / 2 } do
+				P(m, "BarnTrim", Vector3.new(1.1, h, 1.1), cf * CFrame.new(x, h / 2, z), WHITE, nil, TINY)
+			end
 		end
-	end
-	-- ridge runs front to back, so the red gable faces the hub
-	local roofCF = cf * CFrame.new(0, h, 0) * CFrame.Angles(0, math.rad(90), 0)
-	Props.gableRoof(m, roofCF, d + 3, w + 3, 9, roofColor, Enum.Material.Slate)
-	Props.gableEnd(m, cf * CFrame.new(0, h, -d / 2 - 0.2), w, 8.2, 0.5, red, Enum.Material.WoodPlanks, DECOR)
-	P(m, "BarnBeam", Vector3.new(w + 0.6, 0.8, 0.6), cf * CFrame.new(0, h, -d / 2 - 0.3), WHITE, nil, TINY)
-	-- big double door with white X braces
-	local door = cf * CFrame.new(0, 5, -d / 2 - 0.15)
-	P(m, "BarnDoor", Vector3.new(9, 10, 0.4), door, Props.darken(red, 0.25), Enum.Material.WoodPlanks, TINY)
-	P(m, "BarnDoorFrame", Vector3.new(10, 0.8, 0.5), door * CFrame.new(0, 5.2, -0.05), WHITE, nil, TINY)
-	for _, x in { -4.9, 0, 4.9 } do
-		P(m, "BarnDoorFrame", Vector3.new(0.6, 10, 0.5), door * CFrame.new(x, 0, -0.05), WHITE, nil, TINY)
-	end
-	for _, x in { -2.45, 2.45 } do
-		for _, r in { 24, -24 } do
-			P(m, "BarnBrace", Vector3.new(0.5, 10.6, 0.3), door * CFrame.new(x, 0, -0.15) * CFrame.Angles(0, 0, math.rad(r)), WHITE, nil, TINY)
+		-- ridge runs front to back, so the red gable faces the hub
+		local roofCF = cf * CFrame.new(0, h, 0) * CFrame.Angles(0, math.rad(90), 0)
+		Props.gableRoof(m, roofCF, d + 3, w + 3, 9, roofColor, Enum.Material.Slate)
+		Props.gableEnd(m, cf * CFrame.new(0, h, -d / 2 - 0.2), w, 8.2, 0.5, red, Enum.Material.WoodPlanks, DECOR)
+		P(m, "BarnBeam", Vector3.new(w + 0.6, 0.8, 0.6), cf * CFrame.new(0, h, -d / 2 - 0.3), WHITE, nil, TINY)
+		-- big double door with white X braces
+		local door = cf * CFrame.new(0, 5, -d / 2 - 0.15)
+		P(m, "BarnDoor", Vector3.new(9, 10, 0.4), door, Props.darken(red, 0.25), Enum.Material.WoodPlanks, TINY)
+		P(m, "BarnDoorFrame", Vector3.new(10, 0.8, 0.5), door * CFrame.new(0, 5.2, -0.05), WHITE, nil, TINY)
+		for _, x in { -4.9, 0, 4.9 } do
+			P(m, "BarnDoorFrame", Vector3.new(0.6, 10, 0.5), door * CFrame.new(x, 0, -0.05), WHITE, nil, TINY)
 		end
-	end
-	window(m, cf * CFrame.new(0, h + 3.6, -d / 2 - 0.5), 3, 3)
+		for _, x in { -2.45, 2.45 } do
+			for _, r in { 24, -24 } do
+				P(m, "BarnBrace", Vector3.new(0.5, 10.6, 0.3), door * CFrame.new(x, 0, -0.15) * CFrame.Angles(0, 0, math.rad(r)), WHITE, nil, TINY)
+			end
+		end
+		window(m, cf * CFrame.new(0, h + 3.6, -d / 2 - 0.5), 3, 3)
+		return nil
+	end, { collide = "solid", name = "BarnBuilding" })
 	-- silo
 	local silo = cf * CFrame.new(w / 2 + 7, 0, 3)
 	Cy(m, "Silo", 9, 22, silo * CFrame.new(0, 11, 0), Color3.fromRGB(196, 200, 206), Enum.Material.Metal)
@@ -842,30 +851,33 @@ function Props.tractorYard(m: Instance, cf: CFrame)
 	local yellow = Color3.fromRGB(255, 205, 60)
 	Props.paintDisc(cf.Position, 18, Enum.Material.Mud)
 	local t = cf * CFrame.new(-4, 0, -2) * CFrame.Angles(0, math.rad(-35), 0)
-	for _, x in { -3.4, 3.4 } do
-		CyX(m, "RearWheel", 6.4, 1.8, t * CFrame.new(x, 3.2, 2.6), tire, nil, { CanQuery = false })
-		CyX(m, "RearHub", 2.8, 1.9, t * CFrame.new(x, 3.2, 2.6), yellow, nil, TINY)
-	end
-	for _, x in { -2.8, 2.8 } do
-		CyX(m, "FrontWheel", 3.4, 1.3, t * CFrame.new(x, 1.7, -4.4), tire, nil, { CanQuery = false })
-		CyX(m, "FrontHub", 1.5, 1.4, t * CFrame.new(x, 1.7, -4.4), yellow, nil, TINY)
-	end
-	P(m, "Chassis", Vector3.new(4.2, 1.4, 10), t * CFrame.new(0, 2.8, -0.8), Props.darken(greenC, 0.3), Enum.Material.Metal, { CanQuery = false })
-	P(m, "Hood", Vector3.new(3.6, 2.8, 5.6), t * CFrame.new(0, 4.8, -3), greenC, Enum.Material.Metal, { CanQuery = false })
-	P(m, "Grill", Vector3.new(3, 2, 0.3), t * CFrame.new(0, 4.6, -5.9), tire, Enum.Material.Metal, TINY)
-	for _, x in { -1.1, 1.1 } do
-		B(m, "Headlight", Vector3.one * 0.8, t * CFrame.new(x, 5.6, -5.9), Color3.fromRGB(255, 240, 170), Enum.Material.Neon, TINY)
-	end
-	Cy(m, "Exhaust", 0.5, 3.2, t * CFrame.new(1.2, 7.6, -4), tire, Enum.Material.Metal, TINY)
-	P(m, "Seat", Vector3.new(2.2, 0.6, 2), t * CFrame.new(0, 4.2, 1.8), tire, Enum.Material.Fabric, TINY)
-	P(m, "SeatBack", Vector3.new(2.2, 2, 0.5), t * CFrame.new(0, 5.4, 2.9), tire, Enum.Material.Fabric, TINY)
-	P(m, "Wheel", Vector3.new(0.3, 0.3, 1.8), t * CFrame.new(0, 6, 0) * CFrame.Angles(math.rad(-50), 0, 0), tire, Enum.Material.Metal, TINY)
-	for _, x in { -2.1, 2.1 } do
-		for _, z in { 0.2, 3.6 } do
-			P(m, "CabPost", Vector3.new(0.3, 5, 0.3), t * CFrame.new(x, 6.4, z), tire, Enum.Material.Metal, TINY)
+	ModelSlots.spawn("tractor", t, Vector3.new(8.6, 9.3, 12), m, function()
+		for _, x in { -3.4, 3.4 } do
+			CyX(m, "RearWheel", 6.4, 1.8, t * CFrame.new(x, 3.2, 2.6), tire, nil, { CanQuery = false })
+			CyX(m, "RearHub", 2.8, 1.9, t * CFrame.new(x, 3.2, 2.6), yellow, nil, TINY)
 		end
-	end
-	P(m, "CabRoof", Vector3.new(5.2, 0.4, 4.6), t * CFrame.new(0, 9.1, 1.9), greenC, Enum.Material.Metal, DECOR)
+		for _, x in { -2.8, 2.8 } do
+			CyX(m, "FrontWheel", 3.4, 1.3, t * CFrame.new(x, 1.7, -4.4), tire, nil, { CanQuery = false })
+			CyX(m, "FrontHub", 1.5, 1.4, t * CFrame.new(x, 1.7, -4.4), yellow, nil, TINY)
+		end
+		P(m, "Chassis", Vector3.new(4.2, 1.4, 10), t * CFrame.new(0, 2.8, -0.8), Props.darken(greenC, 0.3), Enum.Material.Metal, { CanQuery = false })
+		P(m, "Hood", Vector3.new(3.6, 2.8, 5.6), t * CFrame.new(0, 4.8, -3), greenC, Enum.Material.Metal, { CanQuery = false })
+		P(m, "Grill", Vector3.new(3, 2, 0.3), t * CFrame.new(0, 4.6, -5.9), tire, Enum.Material.Metal, TINY)
+		for _, x in { -1.1, 1.1 } do
+			B(m, "Headlight", Vector3.one * 0.8, t * CFrame.new(x, 5.6, -5.9), Color3.fromRGB(255, 240, 170), Enum.Material.Neon, TINY)
+		end
+		Cy(m, "Exhaust", 0.5, 3.2, t * CFrame.new(1.2, 7.6, -4), tire, Enum.Material.Metal, TINY)
+		P(m, "Seat", Vector3.new(2.2, 0.6, 2), t * CFrame.new(0, 4.2, 1.8), tire, Enum.Material.Fabric, TINY)
+		P(m, "SeatBack", Vector3.new(2.2, 2, 0.5), t * CFrame.new(0, 5.4, 2.9), tire, Enum.Material.Fabric, TINY)
+		P(m, "Wheel", Vector3.new(0.3, 0.3, 1.8), t * CFrame.new(0, 6, 0) * CFrame.Angles(math.rad(-50), 0, 0), tire, Enum.Material.Metal, TINY)
+		for _, x in { -2.1, 2.1 } do
+			for _, z in { 0.2, 3.6 } do
+				P(m, "CabPost", Vector3.new(0.3, 5, 0.3), t * CFrame.new(x, 6.4, z), tire, Enum.Material.Metal, TINY)
+			end
+		end
+		P(m, "CabRoof", Vector3.new(5.2, 0.4, 4.6), t * CFrame.new(0, 9.1, 1.9), greenC, Enum.Material.Metal, DECOR)
+		return nil
+	end, { collide = "solid", offset = Vector3.new(0, 0, -0.05), name = "Tractor" })
 	-- trailer full of crates
 	local tr = t * CFrame.new(0, 0, 10.5)
 	P(m, "TrailerBed", Vector3.new(5, 0.5, 7), tr * CFrame.new(0, 2.2, 0), WOOD, Enum.Material.WoodPlanks, { CanQuery = false })
@@ -882,7 +894,7 @@ function Props.tractorYard(m: Instance, cf: CFrame)
 end
 
 -- Hot-air balloon far above the hills.
-function Props.balloon(parent: Instance, pos: Vector3, a: Color3, b: Color3)
+local function balloonPrimitive(parent: Instance, pos: Vector3, a: Color3, b: Color3)
 	local m = Instance.new("Model")
 	m.Name = "HotAirBalloon"
 	local at = CFrame.new(pos)
@@ -905,6 +917,108 @@ function Props.balloon(parent: Instance, pos: Vector3, a: Color3, b: Color3)
 	m:SetAttribute("FloatPhase", rng:NextNumber(0, 6))
 	CollectionService:AddTag(m, "CK_Float")
 	m.Parent = parent
+end
+
+-- ===================================================================== model slots
+-- Public props: each looks for a real model in ServerStorage.ModelLibrary (assets/models/<slot>.rbxm, see
+-- docs/modelos/huerta-tycoon.md) and falls back to the primitive version above. With an empty library the primitive
+-- runs untouched (same rng stream). Models never use Props.rng: rotation/variant come from the position.
+
+function Props.tree(parent: Instance, pos: Vector3, s: number)
+	if not ModelSlots.has("tree") then
+		return treePrimitive(parent, pos, s)
+	end
+	local at = CFrame.new(pos) * CFrame.Angles(0, ModelFit.yaw(pos.X, pos.Z), 0)
+	ModelSlots.spawn("tree", at, Vector3.new(12, 15, 12) * s, parent, function()
+		treePrimitive(parent, pos, s)
+		return nil
+	end, { collide = "decor", collider = Vector3.new(0.17, 0.5, 0.17), maxParts = 80, name = "Tree" })
+end
+
+function Props.bush(parent: Instance, pos: Vector3, s: number)
+	if not ModelSlots.has("bush") then
+		return bushPrimitive(parent, pos, s)
+	end
+	local at = CFrame.new(pos) * CFrame.Angles(0, ModelFit.yaw(pos.X, pos.Z), 0)
+	ModelSlots.spawn("bush", at, Vector3.new(4.8, 2.8, 4.2) * s, parent, function()
+		bushPrimitive(parent, pos, s)
+		return nil
+	end, { collide = "decor", maxParts = 40, name = "Bush" })
+end
+
+function Props.rock(parent: Instance, pos: Vector3, s: number)
+	if not ModelSlots.has("rock") then
+		return rockPrimitive(parent, pos, s)
+	end
+	local at = CFrame.new(pos - Vector3.new(0, 0.2 * s, 0)) * CFrame.Angles(0, ModelFit.yaw(pos.X, pos.Z), 0)
+	ModelSlots.spawn("rock", at, Vector3.new(2.4, 1.65, 2) * s, parent, function()
+		rockPrimitive(parent, pos, s)
+		return nil
+	end, { collide = "solid", query = false, maxParts = 40, name = "Rock" })
+end
+
+function Props.lamp(parent: Instance, pos: Vector3, lit: boolean)
+	if not ModelSlots.has("lamp") then
+		return lampPrimitive(parent, pos, lit)
+	end
+	local used = false
+	ModelSlots.spawn("lamp", CFrame.new(pos), Vector3.new(1.9, 11, 1.9), parent, function()
+		lampPrimitive(parent, pos, lit)
+		used = true
+		return nil
+	end, { collide = "solid", query = false, maxParts = 60, name = "Lamp" })
+	if not used and lit then
+		-- the primitive lamp carries its own light; a library lamp gets an invisible one at the top
+		local glow = P(parent, "LampLight", Vector3.one * 0.2, CFrame.new(pos + Vector3.new(0, 9.9, 0)), GLOW, nil, { Transparency = 1, CanCollide = false, CanQuery = false, CanTouch = false, CastShadow = false })
+		light(glow, 20, 1.1)
+	end
+end
+
+function Props.bench(parent: Instance, cf: CFrame)
+	ModelSlots.spawn("bench", cf, Vector3.new(6.4, 3.4, 2.1), parent, function()
+		benchPrimitive(parent, cf)
+		return nil
+	end, { collide = "solid", query = false, maxParts = 60, name = "Bench" })
+end
+
+function Props.scarecrow(parent: Instance, cf: CFrame)
+	ModelSlots.spawn("scarecrow", cf, Vector3.new(5.4, 7.7, 1.8), parent, function()
+		scarecrowPrimitive(parent, cf)
+		return nil
+	end, { collide = "decor", maxParts = 100, name = "Scarecrow" })
+end
+
+function Props.farmhouse(parent: Instance, cf: CFrame, color: Color3)
+	ModelSlots.spawn("farmhouse", cf, Vector3.new(21, 17.5, 19.8), parent, function()
+		farmhousePrimitive(parent, cf, color)
+		return nil
+	end, { collide = "solid", offset = Vector3.new(0, 0, -1.1), maxParts = 300, name = "Farmhouse" })
+end
+
+function Props.fountain(parent: Instance, cf: CFrame)
+	ModelSlots.spawn("fountain", cf, Vector3.new(28, 14.5, 28), parent, function()
+		fountainPrimitive(parent, cf)
+		return nil
+	end, { collide = "solid", maxParts = 300, name = "Fountain" })
+end
+
+function Props.balloon(parent: Instance, pos: Vector3, a: Color3, b: Color3)
+	if not ModelSlots.has("balloon") then
+		return balloonPrimitive(parent, pos, a, b)
+	end
+	local placed = false
+	local m = ModelSlots.spawn("balloon", CFrame.new(pos - Vector3.new(0, 26, 0)), Vector3.new(30, 41, 30), parent, function()
+		balloonPrimitive(parent, pos, a, b)
+		placed = true
+		return nil
+	end, { collide = "decor", maxParts = 150, name = "HotAirBalloon" })
+	if m and not placed and m:IsA("Model") then
+		-- same contract as the primitive: the client bobs models tagged CK_Float around BasePivot
+		m.ModelStreamingMode = Enum.ModelStreamingMode.Atomic
+		m:SetAttribute("BasePivot", m:GetPivot())
+		m:SetAttribute("FloatPhase", (pos.X * 0.013 + pos.Z * 0.007) % 6)
+		CollectionService:AddTag(m, "CK_Float")
+	end
 end
 
 return Props
