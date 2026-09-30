@@ -13,6 +13,7 @@ local Remotes = require(script.Parent.Remotes)
 local State = {}
 
 State.passes = {} :: { [Player]: { [string]: boolean } }
+State.inArena = {} :: { [Player]: boolean } -- standing in the Meteor Arena (paid speed is off there)
 State.friends = {} :: { [Player]: number }
 State.sessionStart = {} :: { [Player]: number }
 State.giftsClaimed = {} :: { [Player]: { [number]: boolean } }
@@ -45,7 +46,7 @@ function State.init(player: Player)
 end
 
 function State.cleanup(player: Player)
-	for _, t in { State.passes, State.friends, State.sessionStart, State.giftsClaimed, State.ready, State.premium, State.restricted, State.charge, State.lastHit, State.transit, State.autoOpen, State.lastOpen, dirtyFull, dirtyCurrency, statsCache } :: { any } do
+	for _, t in { State.passes, State.inArena, State.friends, State.sessionStart, State.giftsClaimed, State.ready, State.premium, State.restricted, State.charge, State.lastHit, State.transit, State.autoOpen, State.lastOpen, dirtyFull, dirtyCurrency, statsCache } :: { any } do
 		t[player] = nil
 	end
 end
@@ -155,6 +156,22 @@ end
 -- Mining power without Overcharge (PvP, rewards, offline).
 function State.basePower(player: Player, profile: Data.Profile): number
 	return Formulas.hitDamage(State.stats(player, profile))
+end
+
+-- Power in the Meteor Arena: no paid pass counts (x2 Damage, VIP, pet slot passes) and the
+-- exclusive Robux pets are left out, so money never decides a PvP fight.
+function State.pvpPower(player: Player, profile: Data.Profile): number
+	local maxZone = State.maxZone(profile)
+	local powers = {}
+	for _, uid in profile.equipped do
+		local pet = profile.pets[uid]
+		local def = if pet then Formulas.PetById[pet.id] else nil
+		if pet and def and def.scale == nil then
+			table.insert(powers, Formulas.petPower(pet.id, pet.tier, maxZone, pet.trait))
+		end
+	end
+	local freeSlots = Formulas.maxEquip(profile.upgrades, {})
+	return Formulas.hitDamage(Formulas.pvpStats(State.stats(player, profile), Formulas.topPower(powers, freeSlots)))
 end
 
 -- Stardust per second of active mining: the yardstick for "minutes of income" rewards.

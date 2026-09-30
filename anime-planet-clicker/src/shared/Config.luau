@@ -442,11 +442,16 @@ Config.LiveEventDefs = {
 	MeteorShower = { stardustMult = 2 },
 	LuckyNebula = { luckMult = 2 },
 	CrystalWeekend = { crystalMult = 2 },
+	StarSurge = { stardustMult = 2, crystalMult = 1.5 },
 } :: { [string]: { stardustMult: number?, luckMult: number?, crystalMult: number? } }
 Config.LiveEvents = {
 	recurring = {
 		{ id = "MeteorShower", every = 3 * 3600, offset = 1800, duration = 15 * 60 },
 		{ id = "LuckyNebula", every = 3 * 3600, offset = 7200, duration = 15 * 60 },
+		-- Star Surge: a fixed weekly date, 45 min, for everybody on every server, twice a week.
+		-- The unix epoch is a Thursday 00:00 UTC, so Tue 18:00 UTC = 5 d 18 h and Sat 18:00 UTC = 2 d 18 h.
+		{ id = "StarSurge", every = 7 * 86400, offset = 5 * 86400 + 18 * 3600, duration = 45 * 60 },
+		{ id = "StarSurge", every = 7 * 86400, offset = 2 * 86400 + 18 * 3600, duration = 45 * 60 },
 	},
 	weekly = {
 		{ id = "CrystalWeekend", fromWday = 7, toWday = 1 }, -- Saturday + Sunday (UTC)
@@ -485,18 +490,20 @@ Config.Tutorial = {
 -- PolicyService says ArePaidRandomItemsRestricted (those players still earn everything by playing).
 ---------------------------------------------------------------------------
 Config.Passes = {
-	{ key = "AutoMiner", id = 0, price = 149, icon = "🤖" },
-	{ key = "DoubleDamage", id = 0, price = 199, icon = "💥" },
-	{ key = "DoubleStardust", id = 0, price = 249, icon = "✨" },
-	{ key = "VIP", id = 0, price = 249, icon = "👑" },
+	{ key = "AutoMiner", id = 0, price = 175, icon = "🤖" },
+	{ key = "DoubleDamage", id = 0, price = 349, icon = "💥" },
+	{ key = "DoubleStardust", id = 0, price = 349, icon = "✨" },
+	{ key = "VIP", id = 0, price = 299, icon = "👑" },
 	{ key = "InstantSell", id = 0, price = 199, icon = "🚀" },
 	{ key = "PetSlots", id = 0, price = 249, icon = "🐾" },
+	{ key = "PetSlots2", id = 0, price = 649, icon = "🐾" },
 	{ key = "TripleOpen", id = 0, price = 199, icon = "🧬" },
+	{ key = "OpenEight", id = 0, price = 699, icon = "🧬" },
 	{ key = "FastOpen", id = 0, price = 99, icon = "⏩" },
 	{ key = "Sprint", id = 0, price = 49, icon = "👟" },
-	{ key = "Lucky", id = 0, price = 99, icon = "🍀", random = true },
-	{ key = "SuperLucky", id = 0, price = 299, icon = "🌈", random = true },
-	{ key = "GoldenCapsules", id = 0, price = 349, icon = "🌟", random = true },
+	{ key = "Lucky", id = 0, price = 249, icon = "🍀", random = true },
+	{ key = "SuperLucky", id = 0, price = 699, icon = "🌈", random = true },
+	{ key = "GoldenCapsules", id = 0, price = 599, icon = "🌟", random = true },
 } :: { any }
 Config.PassByKey = {} :: { [string]: any }
 for _, p in Config.Passes do
@@ -507,6 +514,10 @@ Config.VipCargo = 0.5
 Config.LuckyPassLuck = 0.5
 Config.SuperLuckyPassLuck = 1.0
 Config.PetSlotsPass = 2
+Config.PetSlots2Pass = 4 -- the second tier, on top of the first (+6 in total with both)
+-- Capsules per open: 1 is free; 3 needs TripleOpen, 8 needs OpenEight (Stardust cost x count).
+Config.OpenCounts = { 1, 3, 8 }
+Config.OpenPassByCount = { [3] = "TripleOpen", [8] = "OpenEight" } :: { [number]: string }
 Config.SprintPassSpeed = 6
 
 Config.Products = {
@@ -515,6 +526,8 @@ Config.Products = {
 	{ key = "StardustLarge", id = 0, price = 599, kind = "stardustMin", amount = 720, icon = "✨", random = true },
 	{ key = "CrystalsSmall", id = 0, price = 49, kind = "crystals", amount = 100, icon = "💎" },
 	{ key = "CrystalsMedium", id = 0, price = 249, kind = "crystals", amount = 600, icon = "💎" },
+	{ key = "CrystalsLarge", id = 0, price = 499, kind = "crystals", amount = 1400, icon = "💎" },
+	{ key = "CrystalsHuge", id = 0, price = 999, kind = "crystals", amount = 3200, icon = "💎" },
 	{ key = "LuckBoost", id = 0, price = 99, kind = "luck", amount = 30, icon = "🍀", random = true },
 	{ key = "QuantumCapsule1", id = 0, price = 149, kind = "capsule", amount = 1, icon = "🔮", random = true },
 	{ key = "QuantumCapsule3", id = 0, price = 399, kind = "capsule", amount = 3, icon = "🔮", random = true },
@@ -526,7 +539,14 @@ for _, p in Config.Products do
 end
 -- Starter Pack: fixed contents (no random item and no luck, so it is not a paid random
 -- item), first 24 h only.
-Config.StarterPack = { windowSeconds = 24 * 3600, fullPrice = 399, crystals = 150, boostMinutes = 30, pet = "photonpixie" }
+-- fullPrice (the crossed-out "list price") is what the same content costs in this shop: the
+-- Crystals at the small-pack rate plus one Quantum Capsule (the only other paid way to that
+-- pet). The 30 min boost is counted as free. Computed so it can never drift from the prices.
+Config.StarterPack = { windowSeconds = 24 * 3600, fullPrice = 0, crystals = 150, boostMinutes = 30, pet = "photonpixie" }
+do
+	local small, quantum = Config.ProductByKey.CrystalsSmall, Config.ProductByKey.QuantumCapsule1
+	Config.StarterPack.fullPrice = math.ceil(Config.StarterPack.crystals * small.price / small.amount) + quantum.price
+end
 -- Rewarded video placements (dev product ids; 0 = hidden)
 Config.AdProducts = { AdBoost = 0, AdOffline = 0 }
 Config.AdDailyCap = 5

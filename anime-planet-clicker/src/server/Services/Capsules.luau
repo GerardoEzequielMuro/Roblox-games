@@ -68,11 +68,12 @@ function Capsules.open(player: Player, capsuleId: string, count: number, near: b
 	if not p or not cap or cap.exclusive then
 		return false, M("msg.unknown_capsule")
 	end
-	if count ~= 1 and count ~= 3 then
+	local needPass = Config.OpenPassByCount[count]
+	if not table.find(Config.OpenCounts, count) then
 		return false, M("msg.bad_amount")
 	end
-	if count == 3 and not State.owns(player, "TripleOpen") then
-		return false, M("msg.need_x3")
+	if needPass and not State.owns(player, needPass) then
+		return false, M(if count == 8 then "msg.need_x8" else "msg.need_x3")
 	end
 	if not State.hasZone(p, cap.zone) then
 		return false, M("msg.unlock_first", { zone = M("zone." .. Config.Zones[cap.zone].id) })
@@ -122,7 +123,9 @@ function Capsules.autoStep(player: Player, p: Data.Profile)
 		return
 	end
 	local cap = Formulas.CapsuleById[capsuleId]
-	local count = if State.owns(player, "TripleOpen") and p.stardust >= cap.price * 3 and Pets.hasRoom(p, 3) then 3 else 1
+	local count = Formulas.bestOpenCount(State.passes[player] or {}, function(n: number): boolean
+		return p.stardust >= cap.price * n and Pets.hasRoom(p, n)
+	end)
 	local ok, res = Capsules.open(player, capsuleId, count, false)
 	if ok then
 		Remotes.fire("Hatched", player, { capsule = capsuleId, results = res, auto = true })
@@ -142,7 +145,7 @@ function Capsules.init()
 		if type(payload.capsule) ~= "string" then
 			return false, M("msg.unknown_capsule")
 		end
-		return Capsules.open(player, payload.capsule, if payload.count == 3 then 3 else 1, true)
+		return Capsules.open(player, payload.capsule, if payload.count == 3 or payload.count == 8 then payload.count else 1, true)
 	end)
 
 	-- Starts Auto Open on a capsule (you must be at the machine to start it) or stops it.

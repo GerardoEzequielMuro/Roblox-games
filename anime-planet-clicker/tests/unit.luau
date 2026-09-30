@@ -223,4 +223,75 @@ check("abbrev", Format.abbrev(999) == "999" and Format.abbrev(1500) == "1.5K" an
 check("percent", Format.percent(55) == "55%" and Format.percent(2.9) == "2.9%" and Format.percent(0.099) == "0.099%" and Format.percent(0.001) == "0.001%" and Format.percent(53.4712) == "53.47%")
 check("time", Format.time(59) == "59s" and Format.time(125) == "2m 05s" and Format.time(7260) == "2h 01m")
 
+-- Round 2: pricing, paid-advantage-free PvP, batch opens, Star Surge
+do
+	local function price(key: string): number
+		return (Config.PassByKey[key] or Config.ProductByKey[key]).price
+	end
+	check("research prices: passes", price("AutoMiner") == 175 and price("DoubleDamage") == 349 and price("DoubleStardust") == 349 and price("VIP") == 299 and price("PetSlots") == 249 and price("PetSlots2") == 649 and price("OpenEight") == 699 and price("Lucky") == 249 and price("SuperLucky") == 699 and price("GoldenCapsules") == 599)
+	check("research prices: crystals ladder", price("CrystalsSmall") == 49 and price("CrystalsMedium") == 249 and price("CrystalsLarge") == 499 and price("CrystalsHuge") == 999)
+	local prevRate = 0
+	for _, key in { "CrystalsSmall", "CrystalsMedium", "CrystalsLarge", "CrystalsHuge" } do
+		local rate = Config.ProductByKey[key].amount / Config.ProductByKey[key].price
+		check("bigger crystal pack is a better rate: " .. key, rate > prevRate)
+		prevRate = rate
+	end
+	check("starter pack list price is what the same content costs here", Config.StarterPack.fullPrice == math.ceil(150 * 49 / 100) + 149 and Config.StarterPack.fullPrice > Config.ProductByKey.StarterPack.price)
+	check("max equip with both pet slot passes", F.maxEquip({}, { PetSlots = true, PetSlots2 = true }) == 3 + 2 + 4 and F.maxEquip({}, { PetSlots2 = true }) == 7)
+	-- PvP: passes never change arena power or speed
+	local base: any = { toolIndex = 3, upgrades = { Power = 10 }, petPower = 5, rebirths = 1, passes = {}, buffs = {}, mastery = { damage = 0, speed = 0, luck = 0, stardust = 0, crystals = 0 }, relics = { damage = 0, speed = 0, luck = 0, stardust = 0, crystals = 0 }, friends = 0, indexZones = 0, premium = false, eventStardust = 1, eventLuck = 1, eventCrystals = 1, charge = 0 }
+	local paid: any = table.clone(base)
+	paid.passes = { DoubleDamage = true, VIP = true, PetSlots = true, PetSlots2 = true, Sprint = true }
+	check("paid passes do raise normal damage", F.hitDamage(paid) > F.hitDamage(base) * 2.9)
+	check("PvP stats ignore every paid pass", near(F.hitDamage(F.pvpStats(paid, 5)), F.hitDamage(base)) and near(F.hitDamage(F.pvpStats(paid, 5)), F.hitDamage(F.pvpStats(base, 5))))
+	check("Sprint does not count in the arena", F.walkSpeed(paid, true) == F.walkSpeed(base, true) and F.walkSpeed(paid, false) == F.walkSpeed(base, false) + Config.SprintPassSpeed)
+	check("arena pet power keeps only the best free slots", F.topPower({ 1, 9, 3, 7, 5 }, 3) == 21 and F.topPower({ 4 }, 3) == 4 and F.topPower({}, 3) == 0)
+	-- batch opens
+	local function all(_n: number): boolean
+		return true
+	end
+	check("open count without passes is 1", F.bestOpenCount({}, all) == 1)
+	check("open count x3 with TripleOpen", F.bestOpenCount({ TripleOpen = true }, all) == 3)
+	check("open count x8 needs its own pass", F.bestOpenCount({ OpenEight = true }, all) == 8 and F.bestOpenCount({ TripleOpen = true, OpenEight = true }, all) == 8)
+	check("open count falls back when it does not fit", F.bestOpenCount({ TripleOpen = true, OpenEight = true }, function(n)
+		return n <= 3
+	end) == 3 and F.bestOpenCount({ TripleOpen = true, OpenEight = true }, function(n)
+		return n <= 1
+	end) == 1)
+	-- Star Surge: fixed weekly times, all servers, 45 min, twice a week
+	local tue = (function()
+		for t = 0, 7 * 86400 - 1, 3600 do
+			if (os.date("!*t", 1000 * 86400 + t) :: any).wday == 3 then
+				return 1000 * 86400 + t - (1000 * 86400 + t) % 86400 + 18 * 3600
+			end
+		end
+		return 0
+	end)()
+	check("Star Surge starts Tuesday 18:00 UTC", (function()
+		local on = LiveEvents.active(tue + 60, nil)
+		local off = LiveEvents.active(tue + 50 * 60, nil)
+		local function has(list: any, id: string): boolean
+			for _, a in list do
+				if a.id == id then
+					return true
+				end
+			end
+			return false
+		end
+		return has(on, "StarSurge") and not has(off, "StarSurge") and not has(LiveEvents.active(tue - 60, nil), "StarSurge")
+	end)())
+	check("Star Surge repeats the next Tuesday and on Saturday", (function()
+		local function has(t: number): boolean
+			for _, a in LiveEvents.active(t, nil) do
+				if a.id == "StarSurge" then
+					return true
+				end
+			end
+			return false
+		end
+		return has(tue + 7 * 86400 + 60) and has(tue + 4 * 86400 + 60) and not has(tue + 2 * 86400 + 60)
+	end)())
+	check("Star Surge doubles Stardust", LiveEvents.effects({ { id = "StarSurge", endsAt = 0 } }).stardustMult == 2)
+end
+
 print(string.format("UNIT: %d checks, %d failures", total, fails))

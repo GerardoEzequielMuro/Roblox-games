@@ -32,8 +32,8 @@ local WorldFx = require(script.Parent.Parent.WorldFx)
 
 local Hud = {}
 
-local EVENT_COLORS = { MeteorShower = Theme.Orange, LuckyNebula = Theme.Green, CrystalWeekend = Theme.Crystals }
-local EVENT_ICONS = { MeteorShower = "☄️", LuckyNebula = "🍀", CrystalWeekend = "💎" }
+local EVENT_COLORS = { MeteorShower = Theme.Orange, LuckyNebula = Theme.Green, CrystalWeekend = Theme.Crystals, StarSurge = Theme.Yellow }
+local EVENT_ICONS = { MeteorShower = "☄️", LuckyNebula = "🍀", CrystalWeekend = "💎", StarSurge = "🌠" }
 local BUFF_ICONS = { damage = "💥", speed = "💨", luck = "🍀", stardust = "✨" }
 local AUTO_CHIPS: { { any } } = {
 	{ "mine", "⛏️" },
@@ -364,7 +364,14 @@ function Hud.init()
 			text, progress = Hud.objective.text, Hud.objective.progress
 		else
 			local nextZone = Config.Zones[s.maxZone + 1]
-			if nextZone then
+			local nextTool = Config.Tools[(Config.ToolIndex[s.tool] or 1) + 1]
+			local toolFrac = if nextTool and nextTool.cost > 0 and table.find(s.zones, nextTool.zone) then s.stardust / nextTool.cost else 2
+			if toolFrac >= 0.25 and toolFrac < 1 then
+				-- a tool you are close to affording beats the far-away gate
+				text = "🔨 " .. Lang.t("hud.goal_tool", { tool = Lang.tool(nextTool.id), pct = math.floor(toolFrac * 100) })
+				progress = toolFrac
+				color = Theme.Orange
+			elseif nextZone then
 				local done = 1 - s.gateLeft / nextZone.gateHp
 				text = "🚀 " .. Lang.t("hud.goal_gate", { zone = Lang.zone(s.maxZone + 1), pct = math.floor(done * 100) })
 				progress = done

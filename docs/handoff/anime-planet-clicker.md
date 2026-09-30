@@ -56,3 +56,88 @@ Aviso: nada de esto se vio corriendo. Trabajé en un contenedor Linux sin Roblox
 - Subir los íconos (`tools/icons/upload_assets.py` en la raíz). Cuando `Shared/Icons.luau` tenga ids, el HUD los usa solo. Los chips de auto, los toasts y los botones con texto+emoji siguen con emoji: son strings armados, y pasarlos a imagen es otro laburo.
 - Los ids de game passes y productos siguen en 0 ("coming soon").
 - Chequear que el nombre "Planet Crackers" esté libre en Roblox.
+
+## Ronda 2
+
+Aviso: igual que en la ronda 1, nada se vio corriendo. Todo verificado con build, type checker y tests puros. Los ids de pases y productos siguen en 0 (los crea el dueño).
+
+### Precios
+
+Todo en `src/shared/Config.luau` (`Config.Passes`, `Config.Products`). Referencia: sección 4.4 y 2.3 de `docs/research/top-juegos-y-precios.md`.
+
+| Ítem | Antes | Ahora | Por qué |
+|---|---|---|---|
+| Auto Miner | 149 | 175 | PS99 Auto Farm 175 |
+| x2 Damage | 199 | 349 | 2x clicks 499-549 |
+| x2 Stardust | 249 | 349 | 2x moneda 300-450 |
+| VIP | 249 | 299 | mediana del género |
+| Lucky (random) | 99 | 249 | PS99 275 |
+| Super Lucky (random) | 299 | 699 | PS99 800 |
+| Golden Capsules (random) | 349 | 599 | ref. Magic Eggs |
+| Pet Slots (+2) | 249 | 249 | ya estaba bien |
+| **Pet Slots II (+4, pase nuevo)** | - | 649 | tier 2 recomendado; se suma al +2 |
+| **x8 Open (pase nuevo)** | - | 699 | hatch múltiple x8 699-849 |
+| Triple Open / Fast Open / Sprint / Instant Sell | 199 / 99 / 49 / 199 | igual | ya estaban bien |
+| Crystals 100 / 600 | 49 / 249 | igual | |
+| **Crystals 1.400 / 3.200 (nuevos)** | - | 499 / 999 | escalera; el pack grande rinde más por R$ (test lo chequea) |
+| Quantum x1 / x3, Luck Boost, Stardust packs | igual | igual | ya tenían odds y PolicyService |
+| Starter Pack | 99 (tachado 399 fijo) | 99 (tachado calculado: 223) | el 399 no era un precio real. Ahora `Config.StarterPack.fullPrice` = 150 cristales al precio del pack chico (74) + 1 Quantum Capsule (149), o sea lo que cuesta el mismo contenido en esta tienda. El "-75%" del Store ahora se calcula (-56%) |
+
+Pases nuevos, implementación completa:
+- **Pet Slots II** (`PetSlots2`): `Formulas.maxEquip` suma `Config.PetSlots2Pass` (4). Lo otorga el mismo flujo de pases (`Monetization.loadPasses` / `PromptGamePassPurchaseFinished`), no necesita receipt.
+- **x8 Open** (`OpenEight`): `Capsules.open` acepta 1/3/8 (`Config.OpenCounts`, `Config.OpenPassByCount`), valida el pase en el server, el Auto Open usa el mayor lote posible (`Formulas.bestOpenCount`). UI: botón Open x8 en `UI/CapsulePanel.luau` (con candado si no lo tenés, abre la compra), y la cinemática achica las cartas para 8 (`UI/CapsuleCinematic.luau`).
+- **Crystals Large/Huge**: developer products normales; el `ProcessReceipt` ya era idempotente por PurchaseId y guarda antes de confirmar.
+- Locale de todo (12 idiomas, 517/517 claves).
+
+**PvP sin ventajas pagas** (`State.pvpPower`, `Formulas.pvpStats`, `Formulas.topPower`, `Formulas.walkSpeed(s, arena)`):
+- Antes el daño en la arena usaba `basePower`, que incluía x2 Damage y VIP (x1.5). Ahora la arena usa `pvpPower`: ignora todos los pases, cuenta solo los mejores N pets de los slots gratis (sin los del pase) y excluye las mascotas exclusivas (las de Quantum Capsule).
+- Sprint no cuenta dentro de la arena: `State.inArena` lo setea `Services/Pvp.luau` al entrar/salir/KO y `Progression.applyWalkSpeed` saca el bonus.
+- El Store muestra una nota fija (`store.pvp_note`) que lo dice.
+- Lo que NO se neutraliza: los pases de suerte y de golden aceleran cómo conseguís mascotas (progresión, no daño directo), y el daño de PvP ya está clampeado a x0.6 a x1.7 (`Config.Pvp`).
+
+### Retención
+
+Casi todo ya estaba (verificado leyendo el código). Checklist:
+
+| # | Punto | Estado |
+|---|---|---|
+| 1 | Loop de segundos con feedback | Ya estaba (números flotantes, tween, FX en `WorldFx`/`ToolFx`, sonidos) |
+| 2 | Próxima meta visible y cercana | Ya estaba (barra gate / rebirth en `UI/Hud.luau`). **Agregado**: si estás entre 25% y 99% de la próxima herramienta, la barra muestra "Next tool: X %" (`hud.goal_tool`), así la meta es siempre algo cercano |
+| 3 | Metas de sesión y largas | Ya estaba (gate por galaxia, rebirth, índice de mascotas con %, mastery, Secret 0.001%, leaderboards) |
+| 4 | Razones para volver | Ya estaba: racha diaria con display (`Services/Rewards.luau`, `UI/RewardsWindow.luau`), regalos por minutos de sesión, offline (`Services/Offline.luau`), códigos, regalo de grupo (`Config.GroupId`, sigue en 0), Anomaly cada hora con reloj, Meteor Shower / Lucky Nebula cada 3 h, Crystal Weekend. **Agregado**: evento **Star Surge** (x2 Stardust, x1.5 Crystals, 45 min) fijo martes y sábado 18:00 UTC (15:00 Argentina), en todos los servers, con banner y reloj del HUD (`Config.LiveEvents`, `Config.LiveEventDefs`, `UI/Hud.luau`, 12 idiomas). Tests de horario en `tests/unit.luau`. No hay stock rotativo horario: no aplica, acá no hay tienda de semillas (el equivalente es la Anomaly) |
+| 5 | Social | Ya estaba: anuncios cross-server de hallazgos raros (`Services/Social.luau`), referidos con premio (`shared/Referral.luau`), leaderboards en el mundo (`Services/Leaderboard.luau`). Regalos entre jugadores: **no agregado** (ver Pendiente) |
+| 6 | Primer minuto | Ya estaba (tutorial guiado en `Guide.luau`, primer regalo a los 3 min, HUD mínimo hasta `tutorial >= 6`) |
+
+### Otros cambios
+
+- Política: nada de urgencia falsa. El Starter Pack tiene un reloj real (24 h desde el primer ingreso de cada jugador) y su precio tachado es real. Star Surge es un evento gratis, no una oferta de Robux.
+- Odds: la Lucky / Super Lucky siguen mostrando su efecto numérico en la descripción, y las odds del panel de cápsulas ya usaban `s.luck` en vivo. Los ítems `random` siguen pasando por `CanBuy` (PolicyService).
+- En los paneles de cápsulas de galaxia saqué el hint de teclado "[E]/[R]" de los botones (no entraban con 4 botones). Los atajos E / R / T siguen andando; no hay atajo para x8.
+- `Config.StarterPack.fullPrice` se calcula, así no se desfasa si cambian los precios.
+
+### Cómo lo verifiqué
+
+- `rojo build default.project.json -o /tmp/tools/anime-planet-clicker.rbxlx`: OK.
+- `luau-lsp analyze ... src`: sin salida (0 errores).
+- `luau tests/unit.luau`: `UNIT: 175 checks, 0 failures` (antes 156; +19 nuevos: precios, escalera de cristales, precio de lista del starter, slots, PvP sin pases, Sprint en arena, top de pets, lotes x1/x3/x8, horario de Star Surge).
+- `luau tests/locale_check.luau`: `LOCALE CHECKS PASSED` (517/517 claves, 12 idiomas).
+- `luau sim/check_config.luau`: `CONFIG OK`.
+- `luau sim/economy_sim.luau`: corre; los tiempos no cambian (zone6 ~5h48, rebirth6 6h30). La sim no usa Robux ni pases, así que no hizo falta tocarla.
+- No corrí `tests/AutoTest*.luau` (necesitan Studio).
+
+### Qué mirar en Studio
+
+1. Panel de cápsulas de galaxia: los 4 botones (x1, x3, x8, Auto) entran bien en PC y touch; el x8 con candado abre "coming soon" mientras el id sea 0.
+2. Cinemática con x8: 8 cartas en una fila, que no se salgan de la pantalla en celular.
+3. Store: ahora hay 14 pases y 10 productos de Robux (más el Starter Pack arriba), más la nota de PvP; que el scroll ande y no se corte.
+4. Arena: entrar con Sprint y confirmar que la velocidad baja al cruzar el borde y vuelve al salir; que el daño entre un jugador con x2 Damage y otro sin sea igual.
+5. Barra de meta: que el cambio entre "Next tool" y "Break the Gate" no parpadee.
+6. Star Surge: probar con `/event StarSurge 5` (admin) para ver banner, reloj y el x2.
+
+### Pendiente
+
+- Crear en Roblox los pases/productos nuevos (PetSlots2, OpenEight, CrystalsLarge, CrystalsHuge) y pegar los ids en `Config` (siguen todos en 0).
+- Verificar los precios con la API real antes de lanzar (la research los saca de fuentes secundarias).
+- Regalos entre jugadores y trading: no se hicieron (implican riesgo de estafas y de valor real entre cuentas; pensar con calma).
+- Leaderboard de poder con nametag de ranking y "robar/atacar base ajena" de la research: no se hicieron, son sistemas nuevos grandes.
+- `Config.GroupId` sigue en 0 (el regalo de grupo no se activa hasta cargarlo).

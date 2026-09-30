@@ -121,7 +121,41 @@ function Formulas.friendBoost(friends: number): number
 end
 
 function Formulas.maxEquip(upgrades: { [string]: number }, passes: { [string]: boolean }): number
-	return Config.BaseEquipSlots + (upgrades.PetSlots or 0) + (upgrades.StarSlot or 0) + (if passes.PetSlots then Config.PetSlotsPass else 0)
+	return Config.BaseEquipSlots + (upgrades.PetSlots or 0) + (upgrades.StarSlot or 0) + (if passes.PetSlots then Config.PetSlotsPass else 0) + (if passes.PetSlots2 then Config.PetSlots2Pass else 0)
+end
+
+-- Stats the Meteor Arena uses: paid passes do not count there (no pay-to-win in PvP).
+-- petPower is replaced by the caller (free slots, regular pets only).
+function Formulas.pvpStats(s: Stats, petPower: number): Stats
+	local copy = table.clone(s)
+	copy.passes = {}
+	copy.petPower = petPower
+	return copy
+end
+
+-- Sum of the best `slots` pet powers (used for the arena: free slots only).
+function Formulas.topPower(powers: { number }, slots: number): number
+	local sorted = table.clone(powers)
+	table.sort(sorted, function(a, b)
+		return a > b
+	end)
+	local sum = 0
+	for i = 1, math.min(slots, #sorted) do
+		sum += sorted[i]
+	end
+	return sum
+end
+
+-- Biggest capsule batch (1, 3 or 8) the player may open, given the passes and what fits.
+function Formulas.bestOpenCount(passes: { [string]: boolean }, affordable: (number) -> boolean): number
+	local best = 1
+	for _, n in Config.OpenCounts do
+		local pass = Config.OpenPassByCount[n]
+		if n > best and (pass == nil or passes[pass]) and affordable(n) then
+			best = n
+		end
+	end
+	return best
 end
 
 function Formulas.masteryLevel(count: number): number
@@ -278,9 +312,9 @@ function Formulas.autoRate(s: Stats): number
 	return r
 end
 
-function Formulas.walkSpeed(s: Stats): number
+function Formulas.walkSpeed(s: Stats, arena: boolean?): number
 	local w = Config.BaseWalkSpeed + Config.UpgradeById.MoveSpeed.per * lvl(s, "MoveSpeed")
-	if s.passes.Sprint then
+	if s.passes.Sprint and not arena then
 		w += Config.SprintPassSpeed
 	end
 	if s.buffs.speed then

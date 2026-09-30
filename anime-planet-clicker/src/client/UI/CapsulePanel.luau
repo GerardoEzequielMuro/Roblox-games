@@ -47,8 +47,9 @@ local function open(count: number)
 		Purchase.product(if count == 3 then "QuantumCapsule3" else "QuantumCapsule1")
 		return
 	end
-	if count == 3 and not Net.owns("TripleOpen") then
-		Purchase.pass("TripleOpen")
+	local needPass = Config.OpenPassByCount[count]
+	if needPass and not Net.owns(needPass) then
+		Purchase.pass(needPass)
 		return
 	end
 	local ok, res = Net.request("Open", { capsule = id, count = count })
@@ -115,18 +116,28 @@ local function render()
 	local kb = UserInputService.KeyboardEnabled and not Root.isTouch
 	-- the Robux capsule is a paid random item: no buy buttons where PolicyService restricts them
 	local robuxBlocked = cap.exclusive and not Purchase.allowed(Config.ProductByKey.QuantumCapsule1)
+	-- galaxy capsules: Open x1 / x3 / x8 (+ Auto); the Quantum Capsule keeps x1 / x3
+	local w1, w3, x3, wAuto = 196, 176, 204, 172
+	if not cap.exclusive then
+		w1, w3, x3, wAuto = 124, 124, 132, 164
+	end
 	if not robuxBlocked then
-		Theme.button({ Name = "Open1", Text = Lang.t("capsule.open1") .. (if kb then "  [E]" else ""), Color = Theme.Green, Size = UDim2.fromOffset(196, 54), Position = UDim2.fromOffset(0, y), TextSize = 24, Parent = content, OnClick = function()
+		Theme.button({ Name = "Open1", Text = Lang.t("capsule.open1") .. (if kb and cap.exclusive then "  [E]" else ""), Color = Theme.Green, Size = UDim2.fromOffset(w1, 54), Position = UDim2.fromOffset(0, y), TextSize = 24, Parent = content, OnClick = function()
 			open(1)
 		end })
 	end
 	if not robuxBlocked and not (cap.exclusive and not Purchase.allowed(Config.ProductByKey.QuantumCapsule3)) then
-		Theme.button({ Name = "Open3", Text = (if Net.owns("TripleOpen") or cap.exclusive then "" else "🔒 ") .. Lang.t("capsule.open3") .. (if kb then "  [R]" else ""), Color = Theme.Purple, Size = UDim2.fromOffset(176, 54), Position = UDim2.fromOffset(204, y), TextSize = 22, Parent = content, OnClick = function()
+		Theme.button({ Name = "Open3", Text = (if Net.owns("TripleOpen") or cap.exclusive then "" else "🔒 ") .. Lang.t("capsule.open3") .. (if kb and cap.exclusive then "  [R]" else ""), Color = Theme.Purple, Size = UDim2.fromOffset(w3, 54), Position = UDim2.fromOffset(x3, y), TextSize = 22, Parent = content, OnClick = function()
 			open(3)
 		end })
 	end
 	if not cap.exclusive then
-		Theme.button({ Name = "Auto", Text = Lang.t(if auto then "capsule.auto_on" else "capsule.auto_off") .. (if kb then "  [T]" else ""), Color = if auto then Theme.Orange else Theme.Blue, Size = UDim2.fromOffset(172, 54), Position = UDim2.fromOffset(388, y), TextSize = 21, Parent = content, OnClick = toggleAuto })
+		Theme.button({ Name = "Open8", Text = (if Net.owns("OpenEight") then "" else "🔒 ") .. Lang.t("capsule.open8"), Color = Theme.Pink, Size = UDim2.fromOffset(124, 54), Position = UDim2.fromOffset(264, y), TextSize = 22, Parent = content, OnClick = function()
+			open(8)
+		end })
+	end
+	if not cap.exclusive then
+		Theme.button({ Name = "Auto", Text = Lang.t(if auto then "capsule.auto_on" else "capsule.auto_off") .. (if kb then "  [T]" else ""), Color = if auto then Theme.Orange else Theme.Blue, Size = UDim2.fromOffset(wAuto, 54), Position = UDim2.fromOffset(396, y), TextSize = 21, Parent = content, OnClick = toggleAuto })
 		-- Auto Delete switches
 		Theme.text({ Key = "capsule.auto_delete", Size = UDim2.fromOffset(150, 28), Position = UDim2.fromOffset(0, y + 62), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 17, TextColor3 = Color3.fromRGB(200, 210, 235), Parent = content })
 		for i, rarity in Config.AutoDeleteRarities do

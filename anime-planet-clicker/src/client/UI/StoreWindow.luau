@@ -19,7 +19,7 @@ local StoreWindow = {}
 local PASS_COLORS = {
 	AutoMiner = Theme.Blue, DoubleDamage = Theme.Red, DoubleStardust = Theme.Yellow, VIP = Theme.Orange, InstantSell = Theme.Teal,
 	PetSlots = Theme.Pink, TripleOpen = Theme.Purple, FastOpen = Theme.Blue, Sprint = Theme.Green, Lucky = Theme.Green,
-	SuperLucky = Theme.Purple, GoldenCapsules = Theme.Yellow,
+	SuperLucky = Theme.Purple, GoldenCapsules = Theme.Yellow, PetSlots2 = Theme.Pink, OpenEight = Theme.Purple,
 }
 
 local function card(parent: Instance, order: number, icon: string, color: Color3, name: string, desc: string, priceText: string, owned: boolean, live: boolean, onClick: () -> ()): Frame
@@ -51,7 +51,7 @@ function StoreWindow.init()
 		local st = s.starter
 		if st and st.available then
 			order += 1
-			local c = card(grid, order, "🎁", Theme.Orange, Lang.t("product.StarterPack.name") .. "  -75%", Lang.t("product.StarterPack.desc", { crystals = Config.StarterPack.crystals, minutes = Config.StarterPack.boostMinutes, pet = Lang.pet(Config.StarterPack.pet) }), "R$ " .. st.price, false, true, function()
+			local c = card(grid, order, "🎁", Theme.Orange, Lang.t("product.StarterPack.name") .. "  -" .. math.floor((1 - st.price / st.fullPrice) * 100 + 0.5) .. "%", Lang.t("product.StarterPack.desc", { crystals = Config.StarterPack.crystals, minutes = Config.StarterPack.boostMinutes, pet = Lang.pet(Config.StarterPack.pet) }), "R$ " .. st.price, false, true, function()
 				Hud.onStarterClick()
 			end)
 			c.Name = "StarterCard"
@@ -75,6 +75,9 @@ function StoreWindow.init()
 				c.Name = "Product_" .. product.key
 			end
 		end
+		-- PvP is free of paid advantages (enforced on the server: State.pvpPower / walkSpeed)
+		local pvp = Theme.new("Frame", { Name = "PvpNote", BackgroundColor3 = Theme.PaperLight, LayoutOrder = 998, Parent = grid }, { Theme.corner(12), Theme.stroke(2) })
+		Theme.text({ Key = "store.pvp_note", TextWrapped = true, Size = UDim2.new(1, -20, 1, -16), Position = UDim2.fromOffset(10, 8), MaxTextSize = 18, Parent = pvp })
 		if s.restricted then
 			local note = Theme.new("Frame", { Name = "RestrictedNote", BackgroundColor3 = Theme.PaperLight, LayoutOrder = 999, Parent = grid }, { Theme.corner(12), Theme.stroke(2) })
 			Theme.text({ Key = "store.restricted_note", TextWrapped = true, Size = UDim2.new(1, -20, 1, -16), Position = UDim2.fromOffset(10, 8), MaxTextSize = 18, Parent = note })

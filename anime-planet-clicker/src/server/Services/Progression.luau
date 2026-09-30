@@ -25,7 +25,7 @@ function Progression.applyWalkSpeed(player: Player)
 	local char = player.Character
 	local hum = if char then char:FindFirstChildOfClass("Humanoid") else nil
 	if p and hum then
-		local speed = Formulas.walkSpeed(State.stats(player, p))
+		local speed = Formulas.walkSpeed(State.stats(player, p), State.inArena[player] == true)
 		if math.abs(hum.WalkSpeed - speed) > 0.01 then
 			hum.WalkSpeed = speed
 		end

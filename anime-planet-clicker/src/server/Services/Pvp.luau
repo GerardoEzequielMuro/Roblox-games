@@ -61,7 +61,7 @@ end
 local function powerOf(c: Combatant): number
 	if c.player then
 		local p = Data.get(c.player)
-		return if p then State.basePower(c.player, p) else 1
+		return if p then State.pvpPower(c.player, p) else 1
 	end
 	return c.power
 end
@@ -115,6 +115,7 @@ local function knockOut(attacker: Combatant, target: Combatant)
 		target.hp = C.maxHp
 		target.inArena = false
 		target.aggro = false
+		State.inArena[target.player] = nil
 		Remotes.fire("Pvp", target.player, { kind = "down", by = attacker.id })
 		Progression.teleportTo(target.player, Layout.arenaSpawn())
 	else
@@ -312,11 +313,15 @@ local function stepPlayers(dt: number): boolean
 			c.hp = C.maxHp
 			c.protectedUntil = now + C.spawnProtection
 			c.aggro = false
+			State.inArena[player] = true
+			Progression.applyWalkSpeed(player)
 			push(c)
 		elseif not inside and c.inArena then
 			c.inArena = false
 			c.hp = C.maxHp
 			c.aggro = false
+			State.inArena[player] = nil
+			Progression.applyWalkSpeed(player)
 			push(c)
 		elseif inside and c.hp < C.maxHp and now - c.lastDamaged > C.regenDelay then
 			c.hp = math.min(C.maxHp, c.hp + C.regenPerSecond * dt)

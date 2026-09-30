@@ -143,10 +143,10 @@ local function run(capsuleId: string, results: { any })
 	capsule.Visible = false
 	-- cards
 	local n = #results
-	local cw = math.floor((if n > 1 then 190 else 240) * unit)
+	local cw = math.floor((if n > 4 then 112 elseif n > 1 then 190 else 240) * unit)
 	local ch = math.floor(cw * 1.32)
 	local row = Theme.new("Frame", { Name = "Cards", BackgroundTransparency = 1, Size = UDim2.new(1, 0, 0, ch), Position = UDim2.fromScale(0.5, 0.46), AnchorPoint = Vector2.new(0.5, 0.5), Parent = holder }, {
-		Theme.list(Enum.FillDirection.Horizontal, math.floor(18 * unit), Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
+		Theme.list(Enum.FillDirection.Horizontal, math.floor((if n > 4 then 8 else 18) * unit), Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center),
 	})
 	for i, r in results do
 		local c = card(row, r, cw, ch)
