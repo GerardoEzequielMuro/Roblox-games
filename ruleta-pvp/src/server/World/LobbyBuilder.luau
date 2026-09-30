@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Layout = require(ReplicatedStorage.Shared.Layout)
+local ModelSlots = require(script.Parent.ModelSlots)
 
 local LobbyBuilder = {}
 
@@ -186,7 +187,9 @@ local function buildIsland(root: Instance, tableCount: number)
 			neon({ Name = "PathEdge", Size = Vector3.new(0.6, 0.12, 40), CFrame = edge, Color = theme.trim, Parent = root })
 			-- lamp post
 			local post = edge * CFrame.new(side * 1.6, 0, 0)
-			part({ Name = "Post", Size = Vector3.new(0.8, 12, 0.8), CFrame = post * CFrame.new(0, 6, 0), Color = Color3.fromRGB(52, 56, 120), Parent = root })
+			ModelSlots.spawn("lamp_post", post, Vector3.new(2.4, 12, 2.4), root, function()
+					return part({ Name = "Post", Size = Vector3.new(0.8, 12, 0.8), CFrame = post * CFrame.new(0, 6, 0), Color = Color3.fromRGB(52, 56, 120), Parent = root })
+			end, { collide = true })
 			local bulb = neon({ Name = "Bulb", Shape = Enum.PartType.Ball, Size = Vector3.new(2.4, 2.4, 2.4), CFrame = post * CFrame.new(0, 12.6, 0), Color = theme.trim, Parent = root })
 			local light = Instance.new("PointLight")
 			light.Color = theme.trim
@@ -205,8 +208,12 @@ local function buildIsland(root: Instance, tableCount: number)
 	}
 	for i, pl in planets do
 		local pos, size, color = pl[1] :: Vector3, pl[2] :: number, pl[3] :: Color3
-		part({ Name = "Planet" .. i, Shape = Enum.PartType.Ball, Size = Vector3.one * size, Position = pos, Color = color, CanCollide = false, CanQuery = false, Parent = root })
-		if i % 2 == 1 then
+		local usedModel = true
+		ModelSlots.spawn("planet", CFrame.new(pos - Vector3.new(0, size / 2, 0)), Vector3.one * size, root, function()
+			usedModel = false
+			return part({ Name = "Planet" .. i, Shape = Enum.PartType.Ball, Size = Vector3.one * size, Position = pos, Color = color, CanCollide = false, CanQuery = false, Parent = root })
+		end, { collide = false })
+		if i % 2 == 1 and not usedModel then
 			disc(root, CFrame.new(pos) * CFrame.Angles(math.rad(24), 0, math.rad(12)), size * 0.95, 1.5, color:Lerp(Color3.new(1, 1, 1), 0.45), { Name = "PlanetRing" .. i, CanCollide = false, CanQuery = false, Transparency = 0.25 })
 		end
 	end
@@ -355,8 +362,12 @@ local function buildTable(root: Instance, index: number, count: number): { origi
 
 	-- entrance arch on the lobby side, with the mode sign
 	local archZ = -(Layout.StageRadius + 1.5)
-	part({ Name = "ArchL", Size = Vector3.new(1.8, 13, 1.8), CFrame = origin * CFrame.new(-8, 6.5, archZ), Color = steel, Parent = folder })
-	part({ Name = "ArchR", Size = Vector3.new(1.8, 13, 1.8), CFrame = origin * CFrame.new(8, 6.5, archZ), Color = steel, Parent = folder })
+	for side = -1, 1, 2 do
+		local name = if side < 0 then "ArchL" else "ArchR"
+		ModelSlots.spawn("arch_pillar", origin * CFrame.new(side * 8, 0, archZ), Vector3.new(3, 13, 3), folder, function()
+			return part({ Name = name, Size = Vector3.new(1.8, 13, 1.8), CFrame = origin * CFrame.new(side * 8, 6.5, archZ), Color = steel, Parent = folder })
+		end, { collide = true })
+	end
 	neon({ Name = "ArchGlowL", Size = Vector3.new(2.1, 11, 0.5), CFrame = origin * CFrame.new(-8, 6.2, archZ - 0.8), Color = theme.trim, Parent = folder })
 	neon({ Name = "ArchGlowR", Size = Vector3.new(2.1, 11, 0.5), CFrame = origin * CFrame.new(8, 6.2, archZ - 0.8), Color = theme.trim, Parent = folder })
 	local banner = part({ Name = "Banner", Size = Vector3.new(19, 4.6, 1), CFrame = origin * CFrame.new(0, 14.6, archZ), Color = Color3.fromRGB(16, 16, 42), CanCollide = false, Parent = folder })
@@ -389,20 +400,59 @@ local function buildTable(root: Instance, index: number, count: number): { origi
 		local theta = (i + 0.5) / 7 * math.pi * 2
 		local base = at(theta, Layout.StageRadius + 4.5, 0)
 		if def.theme == "neon" then
-			part({ Name = "Pylon" .. i, Size = Vector3.new(2.2, 9 + (i % 3) * 3, 2.2), CFrame = CFrame.new(base + Vector3.new(0, (9 + (i % 3) * 3) / 2, 0)) * CFrame.Angles(0, theta, 0), Color = theme.prop, Parent = folder })
-			neon({ Name = "PylonCap" .. i, Size = Vector3.new(2.6, 0.8, 2.6), CFrame = CFrame.new(base + Vector3.new(0, 9 + (i % 3) * 3 + 0.4, 0)) * CFrame.Angles(0, theta, 0), Color = if i % 2 == 0 then theme.trim else theme.accent, Parent = folder })
+			local pylonH = 9 + (i % 3) * 3
+			ModelSlots.spawn("pylon", CFrame.new(base) * CFrame.Angles(0, theta, 0), Vector3.new(3, pylonH + 0.8, 3), folder, function()
+				part({ Name = "Pylon" .. i, Size = Vector3.new(2.2, 9 + (i % 3) * 3, 2.2), CFrame = CFrame.new(base + Vector3.new(0, (9 + (i % 3) * 3) / 2, 0)) * CFrame.Angles(0, theta, 0), Color = theme.prop, Parent = folder })
+				neon({ Name = "PylonCap" .. i, Size = Vector3.new(2.6, 0.8, 2.6), CFrame = CFrame.new(base + Vector3.new(0, 9 + (i % 3) * 3 + 0.4, 0)) * CFrame.Angles(0, theta, 0), Color = if i % 2 == 0 then theme.trim else theme.accent, Parent = folder })
+				return nil
+			end, { collide = true })
 		elseif def.theme == "slime" then
-			disc(folder, CFrame.new(base + Vector3.new(0, 3, 0)), 2.4, 6, Color3.fromRGB(190, 230, 235), { Name = "Vat" .. i, Material = Enum.Material.Glass, Transparency = 0.35 })
-			disc(folder, CFrame.new(base + Vector3.new(0, 2.4, 0)), 2.1, 4.4, theme.trim, { Name = "Goo" .. i, Material = Enum.Material.Neon, CanCollide = false })
-			disc(folder, CFrame.new(base + Vector3.new(0, 6.3, 0)), 2.7, 0.7, theme.prop, { Name = "VatLid" .. i, CanCollide = false })
-			neon({ Name = "Bubble" .. i, Shape = Enum.PartType.Ball, Size = Vector3.one * (1 + i % 3 * 0.5), Position = base + Vector3.new(0.8, 8 + i % 3, 0.4), Color = theme.accent, Parent = folder })
+			ModelSlots.spawn("vat", CFrame.new(base), Vector3.new(5.4, 10.5, 5.4), folder, function()
+				disc(folder, CFrame.new(base + Vector3.new(0, 3, 0)), 2.4, 6, Color3.fromRGB(190, 230, 235), { Name = "Vat" .. i, Material = Enum.Material.Glass, Transparency = 0.35 })
+				disc(folder, CFrame.new(base + Vector3.new(0, 2.4, 0)), 2.1, 4.4, theme.trim, { Name = "Goo" .. i, Material = Enum.Material.Neon, CanCollide = false })
+				disc(folder, CFrame.new(base + Vector3.new(0, 6.3, 0)), 2.7, 0.7, theme.prop, { Name = "VatLid" .. i, CanCollide = false })
+				neon({ Name = "Bubble" .. i, Shape = Enum.PartType.Ball, Size = Vector3.one * (1 + i % 3 * 0.5), Position = base + Vector3.new(0.8, 8 + i % 3, 0.4), Color = theme.accent, Parent = folder })
+				return nil
+			end, { collide = true })
 		else
-			part({ Name = "Crystal" .. i, Size = Vector3.new(2.4, 8 + (i % 3) * 2.5, 2.4), CFrame = CFrame.new(base + Vector3.new(0, 3.6, 0)) * CFrame.Angles(math.rad(12 + i * 5), theta, math.rad(8)), Color = theme.accent, Material = Enum.Material.Glass, Transparency = 0.15, Parent = folder })
-			neon({ Name = "Rune" .. i, Size = Vector3.one * 1.6, CFrame = CFrame.new(base + Vector3.new(0, 11 + (i % 2) * 2, 0)) * CFrame.Angles(math.rad(45), theta, math.rad(45)), Color = theme.trim, Parent = folder })
+			ModelSlots.spawn("crystal", CFrame.new(base) * CFrame.Angles(0, theta, 0), Vector3.new(4.5, 12, 4.5), folder, function()
+				part({ Name = "Crystal" .. i, Size = Vector3.new(2.4, 8 + (i % 3) * 2.5, 2.4), CFrame = CFrame.new(base + Vector3.new(0, 3.6, 0)) * CFrame.Angles(math.rad(12 + i * 5), theta, math.rad(8)), Color = theme.accent, Material = Enum.Material.Glass, Transparency = 0.15, Parent = folder })
+				neon({ Name = "Rune" .. i, Size = Vector3.one * 1.6, CFrame = CFrame.new(base + Vector3.new(0, 11 + (i % 2) * 2, 0)) * CFrame.Angles(math.rad(45), theta, math.rad(45)), Color = theme.trim, Parent = folder })
+				return nil
+			end, { collide = true })
 		end
 	end
 
 	return { origin = origin, folder = folder, prompt = prompt }
+end
+
+-- Optional dressing around the gameplay geometry: only exists when the library has the
+-- model (no primitive fallback), so an empty library builds exactly the old lobby.
+local function buildDressing(root: Instance, count: number)
+	local folder = Instance.new("Folder")
+	folder.Name = "Dressing"
+	folder.Parent = root
+	local function ring(r: number, turn: number, y: number): Vector3
+		local a = turn * math.pi * 2
+		return Vector3.new(math.sin(a) * r, y, math.cos(a) * r)
+	end
+	for k = 1, count do
+		local between = (k - 0.5) / count
+		-- statues on the ray of each spawn pad, looking at the core
+		local sp = ring(40, between, 0.2)
+		ModelSlots.spawn("statue", CFrame.lookAt(sp, Vector3.new(0, 0.2, 0)), Vector3.new(7, 13, 7), folder, nil, { collide = true })
+		for side = -1, 1, 2 do
+			local planterPos = ring(44, between + side * 0.04, 0.2)
+			ModelSlots.spawn("planter", CFrame.lookAt(planterPos, Vector3.new(0, 0.2, 0)), Vector3.new(6, 7, 6), folder, nil, { collide = true })
+			local benchPos = ring(52, (k - 1) / count + side * 0.055, 0.1)
+			ModelSlots.spawn("bench", CFrame.lookAt(benchPos, Vector3.new(0, 0.1, 0)), Vector3.new(7, 3.5, 3), folder, nil, { collide = true })
+		end
+	end
+	-- floating rocks far out, purely scenery
+	for i = 1, 8 do
+		local pos = ring(235 + (i % 3) * 25, (i - 0.5) / 8, -25 + (i % 4) * 18)
+		ModelSlots.spawn("floating_rock", CFrame.new(pos) * CFrame.Angles(0, i * 1.7, 0), Vector3.new(46, 34, 46), folder, nil, { collide = false })
+	end
 end
 
 export type World = { tables: { [string]: { origin: CFrame, folder: Folder, prompt: ProximityPrompt, index: number } }, corePos: Vector3 }
@@ -420,6 +470,7 @@ function LobbyBuilder.build(): World
 	buildCore(root)
 	buildSpawns(root)
 	buildBoards(root, count)
+	buildDressing(root, count)
 	local world: World = { tables = {}, corePos = Layout.CorePos }
 	for i, def in Config.Tables do
 		local t = buildTable(root, i, count)

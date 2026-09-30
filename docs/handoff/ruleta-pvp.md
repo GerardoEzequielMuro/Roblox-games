@@ -129,3 +129,28 @@ Tests nuevos de `unit_core.luau`: `affectsMatch == false` explícito en cada pas
 - Pass de kill sound: requiere audios propios/licenciados.
 - Subir íconos y audio (igual que en ronda 1).
 - Revisar el balance del season pass con datos reales (puntos por partida, 60 por nivel).
+
+## Ronda 3: ranuras de modelos
+
+### Qué cambié
+- Carpeta `ruleta-pvp/assets/models/` (con README en español) mapeada como `ServerStorage.ModelLibrary` en los 5 `*.project.json` (default, showcase, showcase_low, showcase_touch, test). Rojo ignora el README, la carpeta queda vacía en el build.
+- `src/server/World/ModelSlots.luau`: `ModelSlots.spawn(slot, cf, targetSize, parent, fallback, {collide, maxParts})`. Si hay modelo (o variantes `slot_1`, `slot_2`..., elegidas por posición) lo clona, borra todo script, escala con `ScaleTo` para entrar en `targetSize`, apoya la base en `cf`, ancla todo y fija `CanCollide` según la primitiva. Si no hay, corre el fallback tal cual. Tope de 300 partes por ranura y 1000 en total (si se pasa, usa la primitiva y avisa).
+- `src/shared/ModelFit.luau`: matemática pura (escala de ajuste, nombres de variantes, selector determinístico, presupuesto). Tests en `tests/model_slots.luau`.
+- `LobbyBuilder.luau` cableado a 10 ranuras: `pylon`, `vat`, `crystal`, `lamp_post`, `arch_pillar`, `planet` (con primitiva) y `statue`, `planter`, `bench`, `floating_rock` (solo decoración, sin primitiva). No se tocó ninguna instancia con tag de gameplay (`TableRoot`, `PowerCore`, `Board`, podios, pantallas, etc.). Todo es del servidor: la ruleta la arma el cliente y no usa ranuras.
+- Doc para el dueño: `docs/modelos/ruleta-pvp.md`.
+
+### Cómo lo verifiqué
+```
+rojo build (los 5 project.json)           -> OK
+luau-lsp analyze src                      -> sin salida
+luau tests/model_slots.luau               -> 23 checks, 0 failures
+luau tests/unit_core.luau                 -> 1017 checks, 0 failures
+luau tests/locale_check.luau              -> LOCALE CHECKS PASSED
+```
+Prueba del swap: un `pylon.rbxmx` temporal (Model con Part y Script) apareció en `ServerStorage.ModelLibrary.pylon` del build; después lo borré.
+
+### Qué mirar en Studio
+- Con la librería vacía el lobby debe verse idéntico (solo aparece un Folder `Dressing` vacío en `World`).
+- Con un modelo: que quede parado sobre el piso, escalado y mirando bien (estatua/banco/maceta miran al centro), que no tape los caminos ni los spawns, y que el Output avise si se borran scripts.
+- El `server part budget` del playtest (`test.project.json`) si se cargan muchos modelos.
+- Nota: el farol conserva la bola de luz primitiva arriba del modelo (a 12.6 studs).

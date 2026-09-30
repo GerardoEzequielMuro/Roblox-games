@@ -3,20 +3,30 @@
   "tree": {
     "$className": "DataModel",
     "ReplicatedStorage": {
-      "Shared": { "$path": "src/shared" }
+      "Shared": {
+        "$path": "src/shared"
+      }
     },
     "ServerScriptService": {
-      "Server": { "$path": "src/server" }
+      "Server": {
+        "$path": "src/server"
+      }
     },
     "StarterPlayer": {
       "StarterPlayerScripts": {
-        "Client": { "$path": "src/client" }
+        "Client": {
+          "$path": "src/client"
+        }
       },
       "$properties": {
         "CameraMaxZoomDistance": 60
       }
     },
-    "Players": { "$properties": { "CharacterAutoLoads": true } },
+    "Players": {
+      "$properties": {
+        "CharacterAutoLoads": true
+      }
+    },
     "Workspace": {
       "$properties": {
         "Gravity": 196.2,
@@ -27,6 +37,12 @@
       "$properties": {
         "Technology": "Future",
         "GlobalShadows": true
+      }
+    },
+    "ServerStorage": {
+      "$className": "ServerStorage",
+      "ModelLibrary": {
+        "$path": "assets/models"
       }
     }
   }
