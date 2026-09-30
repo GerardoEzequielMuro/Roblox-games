@@ -33,6 +33,9 @@ export type Profile = {
 	equippedTrail: string, -- "" = none, "rebirth" = rebirth colour
 	effects: { [string]: boolean },
 	equippedEffect: string,
+	pets: { [string]: boolean }, -- shoulder companions bought with coins (Config.Pets)
+	equippedPet: string, -- "" = none
+	shine: { [string]: number }, -- cosmetic upgrade levels 1..Config.ShineMax, key "trail:<id>" / "effect:<id>" / "pet:<id>"
 	settings: { speedCoil: boolean, gravityCoil: boolean, effects: boolean },
 	lang: string, -- "" = follow the account locale; else a Locale.LANGS code
 	bestRunMs: number, -- fastest valid climb 0 -> 100 (0 = none)
@@ -90,6 +93,9 @@ local function defaultProfile(): Profile
 		equippedTrail = "",
 		effects = {},
 		equippedEffect = "",
+		pets = {},
+		equippedPet = "",
+		shine = {},
 		-- coils start OFF: a new player meets the map with the plain classic jump
 		settings = { speedCoil = false, gravityCoil = false, effects = true },
 		lang = "",
@@ -123,6 +129,15 @@ local function reconcile(p: any): Profile
 	if type(p.settings) ~= "table" then
 		p.settings = nil
 	end
+	-- saves from before the late-game cosmetics have no pets / shine; a corrupted entry is reset
+	for _, k in { "pets", "shine" } do
+		if type(p[k]) ~= "table" then
+			p[k] = nil
+		end
+	end
+	if type(p.equippedPet) ~= "string" then
+		p.equippedPet = nil
+	end
 	for k, v in def do
 		if p[k] == nil then
 			p[k] = v
@@ -142,6 +157,10 @@ local function reconcile(p: any): Profile
 	p.stage = math.clamp(math.floor(tonumber(p.stage) or 0), 0, Layout.TOTAL)
 	p.best = math.clamp(math.max(tonumber(p.best) or 0, p.stage), 0, Layout.TOTAL)
 	p.runTop = math.clamp(math.floor(p.runTop), 0, Layout.TOTAL)
+	for k, v in p.shine do
+		local n = tonumber(v)
+		p.shine[k] = if n then math.clamp(math.floor(n), 0, Config.ShineMax) else nil
+	end
 	-- gifts are earned by the best stage: nobody who got there is left without one
 	for _, gift in Gifts.earned(p.best) do
 		p.gifts[tostring(gift.id)] = true

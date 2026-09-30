@@ -1,0 +1,7 @@
+# uipreview obby-sky-tower state=mid screen=pc (1920x1080) window=shop_shine -> ok
+# image: mid-pc-shop_shine.png  (coordinates below are in the full 1920x1080 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (0)
+
+## Runtime log (0)

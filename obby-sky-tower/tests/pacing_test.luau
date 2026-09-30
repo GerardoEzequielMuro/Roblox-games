@@ -33,6 +33,7 @@ within("first purchase", S.firstPurchase, 0, 60)
 within("3rd purchase", S.thirdPurchase, 0, 330) -- obby spends on cosmetics only: ~5 min
 check(S.purchasesFirstHour >= 6, ("purchases in the first hour = %d, expected >= 6"):format(S.purchasesFirstHour))
 within("longest stretch without anything new (first hour)", S.maxDeadStretch, 0, 600)
+within("longest stretch without anything new (first 2 hours)", S.maxDeadStretch2h, 0, 660) -- Ronda 6: ~10-11 min
 within("world 2 entrance (stage 10)", S.stageAt[10], 90, 360) -- the tutorial world: quick wins
 -- a new world every 1.5-12 min across tower 1 (first ~hour)
 local prev = 0
@@ -109,6 +110,40 @@ for i = 2, #prices do
 	check(prices[i] <= prices[i - 1] * 3, ("price wall: %d coins after %d"):format(prices[i], prices[i - 1]))
 end
 check(Economy.PlaytimeRewards[1].minutes <= 1, "the first play-time gift must open inside the first minute")
+
+-- Late game (Ronda 6): the coin sink after tower 3 -----------------------------------------------------
+-- Before: the whole catalogue (15k) was bought by ~tower 3 and ~25k coins piled up with nothing to
+-- spend them on. Now: cosmetic tiers unlocked by towers cleared (trails / effects / shoulder pets,
+-- Economy.TowerReq) + Shine upgrades. Cosmetic only: nothing here touches Layout, JumpPower, skips
+-- or any speed power-up, so the speed leaderboard stays fair.
+do
+	local tiersAt = {}
+	for key, tower in Economy.TowerReq do
+		check(tower >= 2 and tower <= Layout.TOWERS, ("%s needs tower %d (must be 2..%d)"):format(key, tower, Layout.TOWERS))
+		tiersAt[tower] = (tiersAt[tower] or 0) + 1
+		local kind, id = key:match("^(%a+):(%w+)$")
+		local price = if kind == "trail" then Economy.TrailPrice[id] elseif kind == "effect" then Economy.EffectPrice[id] elseif kind == "pet" then Economy.PetPrice[id] else nil
+		check(price ~= nil and price >= 2000, ("%s has no coin price of a late-game tier (>= 2000)"):format(key))
+	end
+	for t = 2, Layout.TOWERS do
+		check((tiersAt[t] or 0) >= 1, ("clearing tower %d unlocks nothing new to buy"):format(t))
+	end
+	check(Economy.towerCleared(200, 2) and not Economy.towerCleared(199, 2), "towerCleared must mean best stage >= tower * 100")
+	check(Economy.shineCost(0) ~= nil and Economy.shineCost(Economy.ShineMax - 1) ~= nil and Economy.shineCost(Economy.ShineMax) == nil, "Shine has ShineMax levels")
+	for i = 2, #Economy.ShineCost do
+		check(Economy.ShineCost[i] > Economy.ShineCost[i - 1], "each Shine level costs more than the last")
+	end
+	local late, runs = M.lateGame(11, 90)
+	check(late.medianWorstGap <= 95 * 60, ("median wait between purchases after tower 2 is %s (<= 1h35)"):format(mmss(late.medianWorstGap)))
+	check(late.maxWorstGap <= 135 * 60, ("the unluckiest player waits %s between purchases (<= 2h15)"):format(mmss(late.maxWorstGap)))
+	check(late.purchasesAfterTower2 >= 10, ("only %d purchases after tower 2 (>= 10)"):format(late.purchasesAfterTower2))
+	check(late.maxBank <= 12000, ("coins pile up again: %d unspent at a summit (<= 12000; it was ~25000)"):format(late.maxBank))
+	for t = 2, Layout.TOWERS do
+		check(late.unowned[t] >= 1, ("tower %d: the wishlist is already empty, nothing left to save for"):format(t))
+	end
+	check(late.coinsSpent >= 0.85 * late.coinsEarned, ("only %d%% of the coins earned get spent"):format(100 * late.coinsSpent // late.coinsEarned))
+	print(("  late game: wait between purchases median %s / worst %s, %d purchases after tower 2, max unspent %d"):format(mmss(late.medianWorstGap), mmss(late.maxWorstGap), late.purchasesAfterTower2, late.maxBank))
+end
 
 print(("pacing_test: %d checks, %d failures"):format(checks, failures))
 print(("  first reward %s, first purchase %s, 3rd purchase %s, stage 10 %s, summit 1 %s"):format(mmss(S.firstReward), mmss(S.firstPurchase), mmss(S.thirdPurchase), mmss(S.stageAt[10]), mmss(S.stageAt[100])))

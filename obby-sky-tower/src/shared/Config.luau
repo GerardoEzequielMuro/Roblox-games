@@ -123,6 +123,7 @@ Config.CoinsPerTower = Economy.CoinsPerTower -- bonus for every summit (stage 10
 Config.CoinPickupValue = Economy.CoinPickupValue
 Config.CoinsPerWin = Economy.CoinsPerWin
 Config.VIPCoinBonus = 0.5 -- +50%
+Config.ShineMax = Economy.ShineMax -- cosmetic upgrade levels (Shared/Economy)
 
 -- Rewards -------------------------------------------------------------------------------------
 Config.DailyRewards = Economy.DailyRewards -- by streak day (day 7+ repeats last)
@@ -139,7 +140,8 @@ Config.Codes = Economy.Codes
 -- Cosmetics -----------------------------------------------------------------------------------
 -- exclusive = only granted by something else ("StarterPack", "Group"); never sold for coins
 -- exclusive "Gift" = tower gifts (Shared/Gifts), "Lounge" = free in the Winner's Lounge (Shared/Perks)
-export type Trail = { id: string, name: string, price: number, colors: { Color3 }, pass: string?, exclusive: string? }
+-- tower = towers that must be cleared to buy it (Economy.TowerReq); nil = from the start
+export type Trail = { id: string, name: string, price: number, colors: { Color3 }, pass: string?, exclusive: string?, tower: number? }
 Config.Trails = {
 	{ id = "white", name = "Cloud", price = Economy.TrailPrice.white, colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 230, 255) } },
 	{ id = "mint", name = "Mint", price = Economy.TrailPrice.mint, colors = { Color3.fromRGB(120, 255, 200), Color3.fromRGB(40, 200, 160) } },
@@ -160,6 +162,13 @@ Config.Trails = {
 			Color3.fromRGB(190, 80, 255),
 		},
 	},
+	-- tower tiers: the late-game coin sink (Shared/Economy)
+	{ id = "blossom", name = "Blossom", price = Economy.TrailPrice.blossom, tower = Economy.towerReq("trail", "blossom"), colors = { Color3.fromRGB(255, 200, 225), Color3.fromRGB(255, 120, 170), Color3.fromRGB(255, 240, 245) } },
+	{ id = "tidal", name = "Tidal", price = Economy.TrailPrice.tidal, tower = Economy.towerReq("trail", "tidal"), colors = { Color3.fromRGB(230, 255, 250), Color3.fromRGB(60, 200, 210), Color3.fromRGB(20, 90, 190) } },
+	{ id = "nebula", name = "Nebula", price = Economy.TrailPrice.nebula, tower = Economy.towerReq("trail", "nebula"), colors = { Color3.fromRGB(255, 100, 200), Color3.fromRGB(120, 70, 255), Color3.fromRGB(40, 210, 255) } },
+	{ id = "sunforge", name = "Sunforge", price = Economy.TrailPrice.sunforge, tower = Economy.towerReq("trail", "sunforge"), colors = { Color3.fromRGB(255, 255, 210), Color3.fromRGB(255, 190, 50), Color3.fromRGB(230, 70, 20), Color3.fromRGB(110, 20, 10) } },
+	{ id = "twilight", name = "Twilight", price = Economy.TrailPrice.twilight, tower = Economy.towerReq("trail", "twilight"), colors = { Color3.fromRGB(255, 170, 90), Color3.fromRGB(220, 90, 150), Color3.fromRGB(90, 50, 170), Color3.fromRGB(25, 20, 70) } },
+	{ id = "celestial", name = "Celestial", price = Economy.TrailPrice.celestial, tower = Economy.towerReq("trail", "celestial"), colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 225, 120), Color3.fromRGB(130, 220, 255), Color3.fromRGB(190, 130, 255), Color3.fromRGB(255, 255, 255) } },
 	{ id = "gold", name = "VIP Gold", price = 0, pass = "VIP", colors = { Color3.fromRGB(255, 230, 120), Color3.fromRGB(230, 160, 20) } },
 	{ id = "starter", name = "Starter Star", price = 0, exclusive = "StarterPack", colors = { Color3.fromRGB(255, 250, 150), Color3.fromRGB(255, 120, 200), Color3.fromRGB(120, 200, 255) } },
 	{ id = "group", name = "Crew", price = 0, exclusive = "Group", colors = { Color3.fromRGB(120, 255, 170), Color3.fromRGB(60, 120, 255) } },
@@ -169,15 +178,31 @@ Config.Trails = {
 	{ id = "lounge_sunrise", name = "Sunrise", price = 0, exclusive = "Lounge", colors = { Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 140, 120), Color3.fromRGB(190, 110, 255) } },
 } :: { Trail }
 
-export type Effect = { id: string, name: string, price: number, kind: string, color: Color3, exclusive: string? }
+export type Effect = { id: string, name: string, price: number, kind: string, color: Color3, exclusive: string?, tower: number? }
 Config.Effects = {
 	{ id = "sparkles", name = "Sparkles", price = Economy.EffectPrice.sparkles, kind = "Sparkles", color = Color3.fromRGB(255, 240, 120) },
 	{ id = "stars", name = "Star Aura", price = Economy.EffectPrice.stars, kind = "Aura", color = Color3.fromRGB(140, 220, 255) },
 	{ id = "smoke", name = "Smoke", price = Economy.EffectPrice.smoke, kind = "Smoke", color = Color3.fromRGB(230, 230, 240) },
 	{ id = "flames", name = "Flames", price = Economy.EffectPrice.flames, kind = "Fire", color = Color3.fromRGB(255, 120, 30) },
+	{ id = "frost", name = "Frostbite", price = Economy.EffectPrice.frost, tower = Economy.towerReq("effect", "frost"), kind = "Sparkles", color = Color3.fromRGB(150, 225, 255) },
+	{ id = "embers", name = "Embers", price = Economy.EffectPrice.embers, tower = Economy.towerReq("effect", "embers"), kind = "Fire", color = Color3.fromRGB(255, 70, 110) },
+	{ id = "prism", name = "Prism Halo", price = Economy.EffectPrice.prism, tower = Economy.towerReq("effect", "prism"), kind = "Aura", color = Color3.fromRGB(190, 140, 255) },
+	{ id = "goldenhour", name = "Golden Hour", price = Economy.EffectPrice.goldenhour, tower = Economy.towerReq("effect", "goldenhour"), kind = "Aura", color = Color3.fromRGB(255, 205, 90) },
+	{ id = "voidaura", name = "Void Aura", price = Economy.EffectPrice.voidaura, tower = Economy.towerReq("effect", "voidaura"), kind = "Smoke", color = Color3.fromRGB(150, 60, 255) },
 	{ id = "aurora", name = "Aurora", price = 0, kind = "Aura", color = Color3.fromRGB(120, 255, 200), exclusive = "Gift" },
 	{ id = "lounge_stars", name = "Starlight", price = 0, kind = "Aura", color = Color3.fromRGB(255, 240, 160), exclusive = "Lounge" },
 } :: { Effect }
+
+-- Shoulder companions sold for coins (tower tiers). The one at tower 2..10 is worn on the LEFT
+-- shoulder; the cloud of tower gift 2 stays on the right one. Built from primitives in
+-- Server/Cosmetics (a small worn prop, not a world prop, so no ModelSlot).
+export type Pet = { id: string, name: string, price: number, tower: number, color: Color3, accent: Color3 }
+Config.Pets = {
+	{ id = "sprite", name = "Star Sprite", price = Economy.PetPrice.sprite, tower = Economy.towerReq("pet", "sprite"), color = Color3.fromRGB(255, 226, 90), accent = Color3.fromRGB(255, 250, 200) },
+	{ id = "bunny", name = "Moon Bunny", price = Economy.PetPrice.bunny, tower = Economy.towerReq("pet", "bunny"), color = Color3.fromRGB(225, 230, 255), accent = Color3.fromRGB(150, 160, 255) },
+	{ id = "drake", name = "Storm Drake", price = Economy.PetPrice.drake, tower = Economy.towerReq("pet", "drake"), color = Color3.fromRGB(70, 90, 190), accent = Color3.fromRGB(120, 230, 255) },
+	{ id = "phoenix", name = "Sky Phoenix", price = Economy.PetPrice.phoenix, tower = Economy.towerReq("pet", "phoenix"), color = Color3.fromRGB(255, 140, 40), accent = Color3.fromRGB(255, 230, 90) },
+} :: { Pet }
 
 -- Rebirth trails: one colour per win, cycling.
 Config.RebirthColors = {

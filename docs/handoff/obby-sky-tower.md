@@ -292,3 +292,60 @@ Como el generador comparte un solo RNG, cambiar cantidad de plataformas cambia q
 - El "algo nuevo" cuenta mundo nuevo, primer encuentro con un tipo de obstáculo, compra, regalo de tiempo y diario; no cuenta cambios de ambiente o eventos.
 
 Verificación: `rojo build default.project.json` OK, `luau-lsp analyze` sin salida, tests puros (`tests/*_test.luau`, incluido el nuevo `pacing_test`, 187 checks) pasan.
+
+## Ronda 6: contenido para el hueco
+
+**Hueco**: después de la torre 3 el catálogo de cosméticos (15k monedas) se agotaba y quedaban ~25k monedas sin destino. Solo cosmético: nada de esto hace más fácil subir (no toqué Layout, salto, skips ni power-ups), así que el ranking de velocidad sigue parejo.
+
+### Qué agregué
+
+1. **Cosméticos por torre superada** (se compran con monedas; se desbloquean cuando `best >= torre * 100`, o sea cuando ya terminaste esa torre). Tabla `Economy.TowerReq`, regla pura `Economy.towerCleared`:
+   - Torre 2: estela Blossom (2.500), mascota Star Sprite (3.500)
+   - Torre 3: efecto Frostbite (3.000), efecto Embers (4.000)
+   - Torre 4: estela Nebula (5.000)
+   - Torre 5: estela Tidal (4.500), mascota Moon Bunny (6.000)
+   - Torre 6: efecto Prism Halo (7.000)
+   - Torre 7: efecto Golden Hour (6.500), estela Sunforge (8.500)
+   - Torre 8: mascota Storm Drake (10.000)
+   - Torre 9: estela Twilight (9.000), efecto Void Aura (12.000)
+   - Torre 10: estela Celestial (15.000), mascota Sky Phoenix (20.000)
+   Total ~117k: más de lo que se gana en todo el juego, así que nunca se termina.
+2. **Mascotas de hombro** (nuevo): 4, hombro izquierdo (la nubecita del regalo 200 sigue en el derecho). Se arman con primitivas en `Cosmetics.buildCompanion` (objeto chico que se lleva puesto, no prop de mundo: por eso no usan ModelSlots; no hay props grandes nuevos). Remotes `BuyPet` / `EquipPet`.
+3. **Shine (mejora de cosméticos)**: cada estela / efecto / mascota que tengas se mejora 3 veces (1.200 / 3.000 / 6.000 monedas, `Economy.ShineCost`). Estela más larga, ancha y brillante; efecto con una capa extra de partículas; mascota con luz (y chispas desde el nivel 2). Remote `UpgradeShine`.
+4. **UI**: la tienda (`ShopPanel`) pasa a 4 pestañas: Trails / Effects / Pets / Shine. Los ítems bloqueados muestran "🔒 Tower N" y el precio; los mejorados muestran "Shine ★★☆". La pestaña Shine lista lo que tenés con botón "⬆ 💰 precio" (o MAX).
+5. **Guardado**: perfil con `pets`, `equippedPet`, `shine` (defaults en `defaultProfile`; `reconcile` los completa en saves viejos y sanea si vienen corruptos / fuera de rango). Van en el push de estado (`Session.push`). El servidor valida todo: torre superada, dueño, monedas, tope de nivel.
+6. **Locales**: 25 claves nuevas en los 12 idiomas (`locale_test` pasa).
+
+### Hitos antes / después (mediana)
+
+| Hito | Antes | Después |
+|---|---|---|
+| Primera recompensa / compra / 3ra compra | 0:02 / 0:32 / 4:33 | igual (no toqué el principio) |
+| Mayor tramo sin nada nuevo, 1ra hora | 8:59 | 9:01 |
+| Mayor tramo sin nada nuevo, 2 primeras horas (nuevo) | sin medir | 9:41 |
+| Cima torre 1 / 2 / 5 | 47:25 / 1h50 / 5h45 | igual |
+| Catálogo de monedas | 15k, agotado ~torre 3 | ~15k + ~117k en 11 ítems por torre + Shine |
+| Monedas sin gastar en cada cima (torres 2-10) | ~25k al final | máx. 5,9k (mediana de 11 jugadores) |
+| Ítems del catálogo que faltan comprar al llegar a la torre 10 | 0 | 4 (y todo el Shine) |
+| Espera entre dos compras después de la torre 2 | sin destino | mediana 1h18 / peor jugador 1h48 de juego activo |
+
+Notas del sim (`PacingModel.lateGame`, política del jugador: compra el ítem desbloqueado más caro que puede pagar; si está juntando para algo desbloqueado no gasta en Shine, pero mientras espera la próxima torre sí mejora lo que tiene). Por eso el Shine casi no se compra en el sim: siempre hay una meta más cara. Un jugador real lo va a mezclar más. Las esperas de ~1h para los más lentos son metas largas a propósito (hay mundo nuevo cada pocos minutos en el medio).
+
+### Tests
+
+`tests/pacing_test.luau` (260 checks, antes 187) ahora también falla si: el tramo sin novedades de las 2 primeras horas pasa de 11 min; alguna torre 2-10 no desbloquea nada; un ítem de torre no tiene precio de cola larga (>= 2000); los niveles de Shine no suben de precio; la espera mediana entre compras después de la torre 2 pasa de 1h35 (peor caso 2h15); hay menos de 10 compras; se acumulan más de 12k monedas sin gastar en una cima; la lista de deseos se vacía antes de la torre 10; se gasta menos del 85% de lo ganado. `sim/pacing_sim.luau` imprime la sección "Late game".
+
+### Previews
+
+`docs/previews/obby-sky-tower/mid-*-shop.*` se regeneraron con el fixture de siempre (perfil de torre 3). Las pestañas nuevas y un perfil de torre 7 (ítems comprados, mascotas, Shine) están en `docs/previews/obby-sky-tower/late/` (`mid-{pc,phone}-shop{,_effects,_pets,_shine}.png`), hechos con una copia temporal del fixture (no toqué `tools/`). PC: 0 hallazgos. Celular: solo el `core-overlap` de ventana modal ya conocido (ver Ronda 4).
+
+### Qué mirar en Studio
+
+1. Comprar una mascota (`best >= 200`, darse monedas): que quede apoyada en el hombro izquierdo sin tapar la nube del regalo 200, sin empujar ni tropezar al avatar, en R15 y R6 y con avatares altos. Que sobreviva a morir / respawn (`applyAll`).
+2. Shine nivel 1-3 en estela, efecto y mascota: que se note la diferencia y que los efectos de fuego no tapen la pantalla en celular (con "Visual effects" apagado igual se ven las partículas del servidor: decidir si hace falta atenuarlas).
+3. Que el Phoenix / Drake (alas con `Wedge`) se vean bien de lado; ajustar offsets en `buildCompanion` si se cruzan con el torso.
+4. La tienda en celular real: 4 pestañas (nombres largos en ru/de/vi), botones Equip / Upgrade >= 44 px.
+5. Un save viejo (sin `pets` / `shine`) carga sin errores y un save con `best` alto ve los ítems desbloqueados.
+6. Las mascotas no cambian el tiempo de la run: no hay que marcarla como asistida.
+
+Verificación: `rojo build default.project.json` OK, `luau-lsp analyze` sin salida, tests puros (icons, layout, locale, modelfit, p0, pacing, pricing, rules, visual) pasan.

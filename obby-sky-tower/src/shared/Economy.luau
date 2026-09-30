@@ -41,6 +41,13 @@ Economy.TrailPrice = {
 	toxic = 1200,
 	galaxy = 3000,
 	rainbow = 6000,
+	-- tower tiers (Economy.TowerReq): the late-game coin sink
+	blossom = 2500,
+	tidal = 4500,
+	nebula = 5000,
+	sunforge = 8500,
+	twilight = 9000,
+	celestial = 15000,
 } :: { [string]: number }
 
 Economy.EffectPrice = {
@@ -48,6 +55,61 @@ Economy.EffectPrice = {
 	smoke = 400,
 	stars = 900,
 	flames = 2500,
+	frost = 3000,
+	embers = 4000,
+	prism = 7000,
+	goldenhour = 6500,
+	voidaura = 12000,
 } :: { [string]: number }
+
+-- Shoulder companions (Config.Pets). One is worn at a time, on the left shoulder.
+Economy.PetPrice = {
+	sprite = 3500,
+	bunny = 6000,
+	drake = 10000,
+	phoenix = 20000,
+} :: { [string]: number }
+
+-- Late-game coin sink (cosmetic only: nothing here makes the climb easier, so the speed leaderboard
+-- stays fair). The tier items are sold for coins once you have CLEARED that many towers (best stage
+-- >= tower * StagesPerTower), so there is always a next thing to save for up to tower 10.
+Economy.StagesPerTower = 100
+Economy.TowerReq = {
+	["trail:blossom"] = 2,
+	["pet:sprite"] = 2,
+	["effect:frost"] = 3,
+	["effect:embers"] = 3,
+	["trail:nebula"] = 4,
+	["trail:tidal"] = 5,
+	["pet:bunny"] = 5,
+	["effect:prism"] = 6,
+	["effect:goldenhour"] = 7,
+	["trail:sunforge"] = 7,
+	["pet:drake"] = 8,
+	["trail:twilight"] = 9,
+	["effect:voidaura"] = 9,
+	["trail:celestial"] = 10,
+	["pet:phoenix"] = 10,
+} :: { [string]: number }
+
+-- Shine: upgrade any cosmetic you own (trail / effect / pet) up to 3 times, for coins. Purely
+-- visual: a longer and wider trail, denser particles, a glowing pet.
+Economy.ShineCost = { 1200, 3000, 6000 } :: { number }
+Economy.ShineMax = 3
+
+-- Has somebody with this best stage cleared `tower` towers?
+function Economy.towerCleared(best: number, tower: number): boolean
+	return best >= tower * Economy.StagesPerTower
+end
+
+-- Tower needed to buy `kind` ("trail" | "effect" | "pet") `id`; 0 = no requirement.
+function Economy.towerReq(kind: string, id: string): number
+	return Economy.TowerReq[kind .. ":" .. id] or 0
+end
+
+-- Next shine level's coin cost for an item now at `level` (nil = already at the maximum).
+function Economy.shineCost(level: number): number?
+	return Economy.ShineCost[math.floor(level) + 1]
+end
 
 return Economy

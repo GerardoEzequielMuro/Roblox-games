@@ -1,0 +1,16 @@
+# uipreview obby-sky-tower state=mid screen=phone (844x390, touch) window=shop_shine -> ok
+# image: mid-phone-shop_shine.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (3)
+[med] core-overlap: SkyTowerUI.Panel_shop.Window.Body.Content.ScrollingFrame.Frame.TextButton rect=[108, 299, 244, 345]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:209 < obby-sky-tower/src/client/UI/ShopPanel.luau:44 < obby-sky-tower/src/client/UI/ShopPanel.luau:188
+[low] core-overlap: SkyTowerUI.Panel_shop.Window.Body.Content.ScrollingFrame.Frame.TextLabel rect=[106, 251, 246, 275]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:120 < obby-sky-tower/src/client/UI/ShopPanel.luau:38 < obby-sky-tower/src/client/UI/ShopPanel.luau:188
+[low] core-overlap: SkyTowerUI.Panel_shop.Window.Body.Content.ScrollingFrame.Frame.TextLabel rect=[106, 275, 246, 294]
+    covered by the touch control (thumbstick/jump)
+    created at: obby-sky-tower/src/client/UI/Kit.luau:120 < obby-sky-tower/src/client/UI/ShopPanel.luau:41 < obby-sky-tower/src/client/UI/ShopPanel.luau:188
+
+## Runtime log (0)

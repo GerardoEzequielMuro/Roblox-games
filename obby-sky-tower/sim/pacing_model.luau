@@ -277,17 +277,24 @@ local RESERVE_FROM, RESERVE = 30, 0 -- no reserve: cosmetics first (what most ki
 
 export type Milestone = { t: number, what: string }
 
-export type Catalog = { { id: string, price: number, kind: string } }
+export type Catalog = { { id: string, price: number, kind: string, tower: number } }
+-- Everything sold for coins: trails, effects and the shoulder pets (tower = towers to clear first)
 function PacingModel.catalog(): Catalog
 	local out = {}
 	for id, price in Economy.TrailPrice do
-		table.insert(out, { id = "trail:" .. id, price = price, kind = "trail" })
+		table.insert(out, { id = "trail:" .. id, price = price, kind = "trail", tower = Economy.towerReq("trail", id) })
 	end
 	for id, price in Economy.EffectPrice do
-		table.insert(out, { id = "effect:" .. id, price = price, kind = "effect" })
+		table.insert(out, { id = "effect:" .. id, price = price, kind = "effect", tower = Economy.towerReq("effect", id) })
+	end
+	for id, price in Economy.PetPrice do
+		table.insert(out, { id = "pet:" .. id, price = price, kind = "pet", tower = Economy.towerReq("pet", id) })
 	end
 	table.sort(out, function(a, b)
-		return a.price < b.price
+		if a.price ~= b.price then
+			return a.price < b.price
+		end
+		return a.id < b.id
 	end)
 	return out
 end
@@ -316,6 +323,9 @@ export type Result = {
 	activeSeconds: number,
 	stageSeconds: { [number]: number },
 	novelty: { number }, -- times of "something new" events (first hour view)
+	bankAt: { [number]: number }, -- tower -> coins unspent when its summit is reached
+	unownedAt: { [number]: number }, -- tower -> catalogue items (trails / effects / pets) not owned yet at its summit
+	shineBought: number,
 }
 
 function PacingModel.play(opts: Options): Result
@@ -347,6 +357,9 @@ function PacingModel.play(opts: Options): Result
 		activeSeconds = 0,
 		stageSeconds = {},
 		novelty = {},
+		bankAt = {},
+		unownedAt = {},
+		shineBought = 0,
 	}
 	local coins, freeSkips, stage = 0, 0, 0
 	local clock = 0 -- active seconds
@@ -372,23 +385,51 @@ function PacingModel.play(opts: Options): Result
 		table.insert(res.novelty, clock)
 		log(what)
 	end
+	local shineLevel: { [string]: number } = {}
+	local function buy(id: string, price: number)
+		coins -= price
+		res.coinsSpent += price
+		table.insert(res.purchases, { t = clock, id = id, price = price })
+		novelty("buy " .. id)
+	end
 	local function shop()
-		-- cosmetics: best (most expensive) affordable one
 		local again = true
 		while again do
 			again = false
-			local best
+			-- cosmetics: the most expensive thing it can afford, among the unowned items it has
+			-- unlocked (towers cleared = best stage reached) and the Shine upgrades of what it owns
+			local best, bestPrice, shineOf
+			local saving = false -- an unlocked item it cannot pay yet: it saves for that one
 			for _, it in catalog do
-				if not owned[it.id] and it.price <= coins - (if stage >= RESERVE_FROM then RESERVE else 0) then
-					best = it
+				if not owned[it.id] and Economy.towerCleared(stage, it.tower) then
+					if it.price <= coins - (if stage >= RESERVE_FROM then RESERVE else 0) then
+						if it.price >= (bestPrice or 0) then
+							best, bestPrice, shineOf = it.id, it.price, nil
+						end
+					else
+						saving = true
+					end
 				end
 			end
-			if best then
-				owned[best.id] = true
-				coins -= best.price
-				res.coinsSpent += best.price
-				table.insert(res.purchases, { t = clock, id = best.id, price = best.price })
-				novelty("buy " .. best.id)
+			-- while it waits for the next tower to unlock something new it polishes what it owns
+			-- (cheapest level first); with a goal in sight it does not spend on Shine
+			if not best and not saving then
+				for id in owned do
+					local cost = Economy.shineCost(shineLevel[id] or 0)
+					if cost and cost <= coins and cost < (bestPrice or math.huge) then
+						best, bestPrice, shineOf = id, cost, id
+					end
+				end
+			end
+			if best and bestPrice then
+				if shineOf then
+					shineLevel[shineOf] = (shineLevel[shineOf] or 0) + 1
+					res.shineBought += 1
+					buy(("shine %s L%d"):format(shineOf, shineLevel[shineOf]), bestPrice)
+				else
+					owned[best] = true
+					buy(best, bestPrice)
+				end
 				again = true
 			end
 		end
@@ -515,6 +556,14 @@ function PacingModel.play(opts: Options): Result
 				if gift then
 					gifts[tostring(gift.id)] = true
 				end
+				res.bankAt[g // Layout.STAGES] = coins
+				local left = 0
+				for _, it in catalog do
+					if not owned[it.id] then
+						left += 1
+					end
+				end
+				res.unownedAt[g // Layout.STAGES] = left
 				novelty(("summit of tower %d"):format(g // Layout.STAGES))
 			end
 			if g % 10 == 0 and g < Layout.TOTAL then
@@ -583,6 +632,7 @@ export type Summary = {
 	thirdPurchase: number,
 	stageAt: { [number]: number }, -- stage (10, 20 .. 1000) -> median active seconds
 	maxDeadStretch: number, -- longest time without "something new" in the first hour
+	maxDeadStretch2h: number, -- same over the first two hours
 	deadAt: number,
 	dayStage: { number },
 	purchasesFirstHour: number,
@@ -616,17 +666,20 @@ function PacingModel.summary(seeds: number, days: number, sessions: { number }?)
 			return r.dayStage[d] or r.dayStage[#r.dayStage] or 0
 		end)
 	end
-	local dead, deadAt = col(function(r)
-		local prev, worst = 0, 0
-		for _, t in r.novelty do
-			if t > 3600 then
-				break
+	local function deadStretch(window: number): number
+		return col(function(r)
+			local prev, worst = 0, 0
+			for _, t in r.novelty do
+				if t > window then
+					break
+				end
+				worst = math.max(worst, t - prev)
+				prev = t
 			end
-			worst = math.max(worst, t - prev)
-			prev = t
-		end
-		return math.max(worst, math.min(3600, r.activeSeconds) - prev)
-	end), 0
+			return math.max(worst, math.min(window, r.activeSeconds) - prev)
+		end)
+	end
+	local dead, deadAt = deadStretch(3600), 0
 	return {
 		seeds = seeds,
 		firstReward = col(function(r)
@@ -643,6 +696,7 @@ function PacingModel.summary(seeds: number, days: number, sessions: { number }?)
 		end),
 		stageAt = stageAt,
 		maxDeadStretch = dead,
+		maxDeadStretch2h = deadStretch(7200),
 		deadAt = deadAt,
 		dayStage = dayStage,
 		purchasesFirstHour = col(function(r)
@@ -655,6 +709,73 @@ function PacingModel.summary(seeds: number, days: number, sessions: { number }?)
 			return n
 		end),
 		coinsPerMinuteFirstHour = 0,
+	}, runs
+end
+
+---------------------------------------------------------------------------------------------
+-- Late game (towers 2-10): is there always something to save coins for?
+---------------------------------------------------------------------------------------------
+export type LateGame = {
+	seeds: number,
+	medianWorstGap: number, -- median over players of the longest time between two purchases after tower 2 (s)
+	maxWorstGap: number, -- the same for the most unlucky player
+	purchasesAfterTower2: number, -- median
+	bank: { [number]: number }, -- tower -> median coins unspent at its summit
+	maxBank: number, -- largest of those medians
+	unowned: { [number]: number }, -- tower -> median catalogue items still to buy at its summit
+	shineBought: number, -- median
+	coinsEarned: number, -- median
+	coinsSpent: number, -- median
+}
+
+function PacingModel.lateGame(seeds: number, days: number): (LateGame, { Result })
+	local runs: { Result } = {}
+	for seed = 1, seeds do
+		table.insert(runs, PacingModel.play({ seed = seed, days = days }))
+	end
+	local worst, after, shine, earned, spent = {}, {}, {}, {}, {}
+	for _, r in runs do
+		local from = r.reached[2 * Layout.STAGES] or math.huge
+		local prev: number?, w, n = nil, 0, 0
+		for _, p in r.purchases do
+			if p.t >= from then
+				n += 1
+				if prev then
+					w = math.max(w, p.t - prev)
+				end
+				prev = p.t
+			end
+		end
+		table.insert(worst, w)
+		table.insert(after, n)
+		table.insert(shine, r.shineBought)
+		table.insert(earned, r.coinsEarned)
+		table.insert(spent, r.coinsSpent)
+	end
+	local bank, unowned = {}, {}
+	local maxBank = 0
+	for t = 2, Layout.TOWERS do
+		local b, u = {}, {}
+		for _, r in runs do
+			table.insert(b, r.bankAt[t] or 0)
+			table.insert(u, r.unownedAt[t] or 0)
+		end
+		bank[t] = median(b)
+		unowned[t] = median(u)
+		maxBank = math.max(maxBank, bank[t])
+	end
+	table.sort(worst)
+	return {
+		seeds = seeds,
+		medianWorstGap = median(worst),
+		maxWorstGap = worst[#worst],
+		purchasesAfterTower2 = median(after),
+		bank = bank,
+		maxBank = maxBank,
+		unowned = unowned,
+		shineBought = median(shine),
+		coinsEarned = median(earned),
+		coinsSpent = median(spent),
 	}, runs
 end
 

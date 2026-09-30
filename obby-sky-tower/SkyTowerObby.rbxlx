@@ -361,6 +361,7 @@ Config.CoinsPerTower = Economy.CoinsPerTower -- bonus for every summit (stage 10
 Config.CoinPickupValue = Economy.CoinPickupValue
 Config.CoinsPerWin = Economy.CoinsPerWin
 Config.VIPCoinBonus = 0.5 -- +50%
+Config.ShineMax = Economy.ShineMax -- cosmetic upgrade levels (Shared/Economy)
 
 -- Rewards -------------------------------------------------------------------------------------
 Config.DailyRewards = Economy.DailyRewards -- by streak day (day 7+ repeats last)
@@ -377,7 +378,8 @@ Config.Codes = Economy.Codes
 -- Cosmetics -----------------------------------------------------------------------------------
 -- exclusive = only granted by something else ("StarterPack", "Group"); never sold for coins
 -- exclusive "Gift" = tower gifts (Shared/Gifts), "Lounge" = free in the Winner's Lounge (Shared/Perks)
-export type Trail = { id: string, name: string, price: number, colors: { Color3 }, pass: string?, exclusive: string? }
+-- tower = towers that must be cleared to buy it (Economy.TowerReq); nil = from the start
+export type Trail = { id: string, name: string, price: number, colors: { Color3 }, pass: string?, exclusive: string?, tower: number? }
 Config.Trails = {
 	{ id = "white", name = "Cloud", price = Economy.TrailPrice.white, colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 230, 255) } },
 	{ id = "mint", name = "Mint", price = Economy.TrailPrice.mint, colors = { Color3.fromRGB(120, 255, 200), Color3.fromRGB(40, 200, 160) } },
@@ -398,6 +400,13 @@ Config.Trails = {
 			Color3.fromRGB(190, 80, 255),
 		},
 	},
+	-- tower tiers: the late-game coin sink (Shared/Economy)
+	{ id = "blossom", name = "Blossom", price = Economy.TrailPrice.blossom, tower = Economy.towerReq("trail", "blossom"), colors = { Color3.fromRGB(255, 200, 225), Color3.fromRGB(255, 120, 170), Color3.fromRGB(255, 240, 245) } },
+	{ id = "tidal", name = "Tidal", price = Economy.TrailPrice.tidal, tower = Economy.towerReq("trail", "tidal"), colors = { Color3.fromRGB(230, 255, 250), Color3.fromRGB(60, 200, 210), Color3.fromRGB(20, 90, 190) } },
+	{ id = "nebula", name = "Nebula", price = Economy.TrailPrice.nebula, tower = Economy.towerReq("trail", "nebula"), colors = { Color3.fromRGB(255, 100, 200), Color3.fromRGB(120, 70, 255), Color3.fromRGB(40, 210, 255) } },
+	{ id = "sunforge", name = "Sunforge", price = Economy.TrailPrice.sunforge, tower = Economy.towerReq("trail", "sunforge"), colors = { Color3.fromRGB(255, 255, 210), Color3.fromRGB(255, 190, 50), Color3.fromRGB(230, 70, 20), Color3.fromRGB(110, 20, 10) } },
+	{ id = "twilight", name = "Twilight", price = Economy.TrailPrice.twilight, tower = Economy.towerReq("trail", "twilight"), colors = { Color3.fromRGB(255, 170, 90), Color3.fromRGB(220, 90, 150), Color3.fromRGB(90, 50, 170), Color3.fromRGB(25, 20, 70) } },
+	{ id = "celestial", name = "Celestial", price = Economy.TrailPrice.celestial, tower = Economy.towerReq("trail", "celestial"), colors = { Color3.fromRGB(255, 255, 255), Color3.fromRGB(255, 225, 120), Color3.fromRGB(130, 220, 255), Color3.fromRGB(190, 130, 255), Color3.fromRGB(255, 255, 255) } },
 	{ id = "gold", name = "VIP Gold", price = 0, pass = "VIP", colors = { Color3.fromRGB(255, 230, 120), Color3.fromRGB(230, 160, 20) } },
 	{ id = "starter", name = "Starter Star", price = 0, exclusive = "StarterPack", colors = { Color3.fromRGB(255, 250, 150), Color3.fromRGB(255, 120, 200), Color3.fromRGB(120, 200, 255) } },
 	{ id = "group", name = "Crew", price = 0, exclusive = "Group", colors = { Color3.fromRGB(120, 255, 170), Color3.fromRGB(60, 120, 255) } },
@@ -407,15 +416,31 @@ Config.Trails = {
 	{ id = "lounge_sunrise", name = "Sunrise", price = 0, exclusive = "Lounge", colors = { Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 140, 120), Color3.fromRGB(190, 110, 255) } },
 } :: { Trail }
 
-export type Effect = { id: string, name: string, price: number, kind: string, color: Color3, exclusive: string? }
+export type Effect = { id: string, name: string, price: number, kind: string, color: Color3, exclusive: string?, tower: number? }
 Config.Effects = {
 	{ id = "sparkles", name = "Sparkles", price = Economy.EffectPrice.sparkles, kind = "Sparkles", color = Color3.fromRGB(255, 240, 120) },
 	{ id = "stars", name = "Star Aura", price = Economy.EffectPrice.stars, kind = "Aura", color = Color3.fromRGB(140, 220, 255) },
 	{ id = "smoke", name = "Smoke", price = Economy.EffectPrice.smoke, kind = "Smoke", color = Color3.fromRGB(230, 230, 240) },
 	{ id = "flames", name = "Flames", price = Economy.EffectPrice.flames, kind = "Fire", color = Color3.fromRGB(255, 120, 30) },
+	{ id = "frost", name = "Frostbite", price = Economy.EffectPrice.frost, tower = Economy.towerReq("effect", "frost"), kind = "Sparkles", color = Color3.fromRGB(150, 225, 255) },
+	{ id = "embers", name = "Embers", price = Economy.EffectPrice.embers, tower = Economy.towerReq("effect", "embers"), kind = "Fire", color = Color3.fromRGB(255, 70, 110) },
+	{ id = "prism", name = "Prism Halo", price = Economy.EffectPrice.prism, tower = Economy.towerReq("effect", "prism"), kind = "Aura", color = Color3.fromRGB(190, 140, 255) },
+	{ id = "goldenhour", name = "Golden Hour", price = Economy.EffectPrice.goldenhour, tower = Economy.towerReq("effect", "goldenhour"), kind = "Aura", color = Color3.fromRGB(255, 205, 90) },
+	{ id = "voidaura", name = "Void Aura", price = Economy.EffectPrice.voidaura, tower = Economy.towerReq("effect", "voidaura"), kind = "Smoke", color = Color3.fromRGB(150, 60, 255) },
 	{ id = "aurora", name = "Aurora", price = 0, kind = "Aura", color = Color3.fromRGB(120, 255, 200), exclusive = "Gift" },
 	{ id = "lounge_stars", name = "Starlight", price = 0, kind = "Aura", color = Color3.fromRGB(255, 240, 160), exclusive = "Lounge" },
 } :: { Effect }
+
+-- Shoulder companions sold for coins (tower tiers). The one at tower 2..10 is worn on the LEFT
+-- shoulder; the cloud of tower gift 2 stays on the right one. Built from primitives in
+-- Server/Cosmetics (a small worn prop, not a world prop, so no ModelSlot).
+export type Pet = { id: string, name: string, price: number, tower: number, color: Color3, accent: Color3 }
+Config.Pets = {
+	{ id = "sprite", name = "Star Sprite", price = Economy.PetPrice.sprite, tower = Economy.towerReq("pet", "sprite"), color = Color3.fromRGB(255, 226, 90), accent = Color3.fromRGB(255, 250, 200) },
+	{ id = "bunny", name = "Moon Bunny", price = Economy.PetPrice.bunny, tower = Economy.towerReq("pet", "bunny"), color = Color3.fromRGB(225, 230, 255), accent = Color3.fromRGB(150, 160, 255) },
+	{ id = "drake", name = "Storm Drake", price = Economy.PetPrice.drake, tower = Economy.towerReq("pet", "drake"), color = Color3.fromRGB(70, 90, 190), accent = Color3.fromRGB(120, 230, 255) },
+	{ id = "phoenix", name = "Sky Phoenix", price = Economy.PetPrice.phoenix, tower = Economy.towerReq("pet", "phoenix"), color = Color3.fromRGB(255, 140, 40), accent = Color3.fromRGB(255, 230, 90) },
+} :: { Pet }
 
 -- Rebirth trails: one colour per win, cycling.
 Config.RebirthColors = {
@@ -714,6 +739,13 @@ Economy.TrailPrice = {
 	toxic = 1200,
 	galaxy = 3000,
 	rainbow = 6000,
+	-- tower tiers (Economy.TowerReq): the late-game coin sink
+	blossom = 2500,
+	tidal = 4500,
+	nebula = 5000,
+	sunforge = 8500,
+	twilight = 9000,
+	celestial = 15000,
 } :: { [string]: number }
 
 Economy.EffectPrice = {
@@ -721,7 +753,62 @@ Economy.EffectPrice = {
 	smoke = 400,
 	stars = 900,
 	flames = 2500,
+	frost = 3000,
+	embers = 4000,
+	prism = 7000,
+	goldenhour = 6500,
+	voidaura = 12000,
 } :: { [string]: number }
+
+-- Shoulder companions (Config.Pets). One is worn at a time, on the left shoulder.
+Economy.PetPrice = {
+	sprite = 3500,
+	bunny = 6000,
+	drake = 10000,
+	phoenix = 20000,
+} :: { [string]: number }
+
+-- Late-game coin sink (cosmetic only: nothing here makes the climb easier, so the speed leaderboard
+-- stays fair). The tier items are sold for coins once you have CLEARED that many towers (best stage
+-- >= tower * StagesPerTower), so there is always a next thing to save for up to tower 10.
+Economy.StagesPerTower = 100
+Economy.TowerReq = {
+	["trail:blossom"] = 2,
+	["pet:sprite"] = 2,
+	["effect:frost"] = 3,
+	["effect:embers"] = 3,
+	["trail:nebula"] = 4,
+	["trail:tidal"] = 5,
+	["pet:bunny"] = 5,
+	["effect:prism"] = 6,
+	["effect:goldenhour"] = 7,
+	["trail:sunforge"] = 7,
+	["pet:drake"] = 8,
+	["trail:twilight"] = 9,
+	["effect:voidaura"] = 9,
+	["trail:celestial"] = 10,
+	["pet:phoenix"] = 10,
+} :: { [string]: number }
+
+-- Shine: upgrade any cosmetic you own (trail / effect / pet) up to 3 times, for coins. Purely
+-- visual: a longer and wider trail, denser particles, a glowing pet.
+Economy.ShineCost = { 1200, 3000, 6000 } :: { number }
+Economy.ShineMax = 3
+
+-- Has somebody with this best stage cleared `tower` towers?
+function Economy.towerCleared(best: number, tower: number): boolean
+	return best >= tower * Economy.StagesPerTower
+end
+
+-- Tower needed to buy `kind` ("trail" | "effect" | "pet") `id`; 0 = no requirement.
+function Economy.towerReq(kind: string, id: string): number
+	return Economy.TowerReq[kind .. ":" .. id] or 0
+end
+
+-- Next shine level's coin cost for an item now at `level` (nil = already at the maximum).
+function Economy.shineCost(level: number): number?
+	return Economy.ShineCost[math.floor(level) + 1]
+end
 
 return Economy
 ]]></string>
@@ -2645,6 +2732,33 @@ return {
 	["msg.doublejump_added"] = "Doppelsprung für {minutes} Min.!",
 	["msg.announce_summit"] = "{name} hat den Gipfel von {tower} erreicht!",
 	["msg.announce_top"] = "{name} hat alle 1.000 Stufen erobert!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Begleiter",
+	["shop.shine"] = "Glanz",
+	["shop.locked"] = "🔒 Turm {n}",
+	["shop.shine_level"] = "Glanz {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MAX",
+	["shop.shine_empty"] = "Kauf zuerst eine Spur, einen Effekt oder einen Begleiter und komm zurück, um ihn glänzen zu lassen!",
+	["trail.blossom"] = "Blüte",
+	["trail.nebula"] = "Nebel",
+	["trail.sunforge"] = "Sonnenschmiede",
+	["trail.celestial"] = "Himmlisch",
+	["effect.embers"] = "Glut",
+	["effect.prism"] = "Prismenhalo",
+	["effect.voidaura"] = "Leere-Aura",
+	["pet.sprite"] = "Sternengeist",
+	["pet.bunny"] = "Mondhase",
+	["pet.drake"] = "Sturmdrache",
+	["pet.phoenix"] = "Himmelsphönix",
+	["err.tower_locked"] = "Schließe zuerst Turm {n} ab!",
+	["err.shine_max"] = "Schon auf maximalem Glanz",
+	["msg.shine"] = "{name} glänzt heller! (Stufe {n})",
+	["trail.tidal"] = "Gezeiten",
+	["trail.twilight"] = "Dämmerung",
+	["effect.frost"] = "Frostbiss",
+	["effect.goldenhour"] = "Goldene Stunde",
 }
 ]]></string>
           </Properties>
@@ -3005,6 +3119,33 @@ return {
 	["msg.doublejump_added"] = "Double jump for {minutes} min!",
 	["msg.announce_summit"] = "{name} reached the summit of {tower}!",
 	["msg.announce_top"] = "{name} conquered all 1,000 stages!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Pets",
+	["shop.shine"] = "Shine",
+	["shop.locked"] = "🔒 Tower {n}",
+	["shop.shine_level"] = "Shine {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MAX",
+	["shop.shine_empty"] = "Buy a trail, effect or pet first, then come back to make it shine!",
+	["trail.blossom"] = "Blossom",
+	["trail.nebula"] = "Nebula",
+	["trail.sunforge"] = "Sunforge",
+	["trail.celestial"] = "Celestial",
+	["effect.embers"] = "Embers",
+	["effect.prism"] = "Prism Halo",
+	["effect.voidaura"] = "Void Aura",
+	["pet.sprite"] = "Star Sprite",
+	["pet.bunny"] = "Moon Bunny",
+	["pet.drake"] = "Storm Drake",
+	["pet.phoenix"] = "Sky Phoenix",
+	["err.tower_locked"] = "Clear tower {n} first!",
+	["err.shine_max"] = "Already at max shine",
+	["msg.shine"] = "{name} shines brighter! (level {n})",
+	["trail.tidal"] = "Tidal",
+	["trail.twilight"] = "Twilight",
+	["effect.frost"] = "Frostbite",
+	["effect.goldenhour"] = "Golden Hour",
 }
 ]]></string>
           </Properties>
@@ -3354,6 +3495,33 @@ return {
 	["msg.doublejump_added"] = "¡Doble salto por {minutes} min!",
 	["msg.announce_summit"] = "¡{name} llegó a la cima de {tower}!",
 	["msg.announce_top"] = "¡{name} conquistó los 1.000 niveles!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Mascotas",
+	["shop.shine"] = "Brillo",
+	["shop.locked"] = "🔒 Torre {n}",
+	["shop.shine_level"] = "Brillo {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MÁX",
+	["shop.shine_empty"] = "¡Compra una estela, un efecto o una mascota y vuelve para hacerlo brillar!",
+	["trail.blossom"] = "Flor de cerezo",
+	["trail.nebula"] = "Nebulosa",
+	["trail.sunforge"] = "Forja Solar",
+	["trail.celestial"] = "Celestial",
+	["effect.embers"] = "Brasas",
+	["effect.prism"] = "Halo Prisma",
+	["effect.voidaura"] = "Aura del Vacío",
+	["pet.sprite"] = "Duende Estelar",
+	["pet.bunny"] = "Conejo Lunar",
+	["pet.drake"] = "Dragón Tormenta",
+	["pet.phoenix"] = "Fénix del Cielo",
+	["err.tower_locked"] = "¡Supera la torre {n} primero!",
+	["err.shine_max"] = "Ya está al máximo brillo",
+	["msg.shine"] = "¡{name} brilla más! (nivel {n})",
+	["trail.tidal"] = "Marea",
+	["trail.twilight"] = "Crepúsculo",
+	["effect.frost"] = "Escarcha",
+	["effect.goldenhour"] = "Hora Dorada",
 }
 ]]></string>
           </Properties>
@@ -3703,6 +3871,33 @@ return {
 	["msg.doublejump_added"] = "Double saut pendant {minutes} min !",
 	["msg.announce_summit"] = "{name} a atteint le sommet de {tower} !",
 	["msg.announce_top"] = "{name} a conquis les 1 000 niveaux !",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Compagnons",
+	["shop.shine"] = "Éclat",
+	["shop.locked"] = "🔒 Tour {n}",
+	["shop.shine_level"] = "Éclat {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MAX",
+	["shop.shine_empty"] = "Achète d'abord une traînée, un effet ou un compagnon, puis reviens le faire briller !",
+	["trail.blossom"] = "Fleur",
+	["trail.nebula"] = "Nébuleuse",
+	["trail.sunforge"] = "Forge Solaire",
+	["trail.celestial"] = "Céleste",
+	["effect.embers"] = "Braises",
+	["effect.prism"] = "Halo Prisme",
+	["effect.voidaura"] = "Aura du Vide",
+	["pet.sprite"] = "Lutin Étoilé",
+	["pet.bunny"] = "Lapin Lunaire",
+	["pet.drake"] = "Drake Orageux",
+	["pet.phoenix"] = "Phénix Céleste",
+	["err.tower_locked"] = "Termine d'abord la tour {n} !",
+	["err.shine_max"] = "Éclat déjà au maximum",
+	["msg.shine"] = "{name} brille plus fort ! (niveau {n})",
+	["trail.tidal"] = "Marée",
+	["trail.twilight"] = "Crépuscule",
+	["effect.frost"] = "Givre",
+	["effect.goldenhour"] = "Heure Dorée",
 }
 ]]></string>
           </Properties>
@@ -4052,6 +4247,33 @@ return {
 	["msg.doublejump_added"] = "Lompat ganda selama {minutes} mnt!",
 	["msg.announce_summit"] = "{name} mencapai puncak {tower}!",
 	["msg.announce_top"] = "{name} menaklukkan semua 1.000 level!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Teman",
+	["shop.shine"] = "Kilau",
+	["shop.locked"] = "🔒 Menara {n}",
+	["shop.shine_level"] = "Kilau {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MAKS",
+	["shop.shine_empty"] = "Beli jejak, efek, atau teman dulu, lalu kembali untuk membuatnya berkilau!",
+	["trail.blossom"] = "Bunga",
+	["trail.nebula"] = "Nebula",
+	["trail.sunforge"] = "Tempa Surya",
+	["trail.celestial"] = "Surgawi",
+	["effect.embers"] = "Bara",
+	["effect.prism"] = "Halo Prisma",
+	["effect.voidaura"] = "Aura Hampa",
+	["pet.sprite"] = "Peri Bintang",
+	["pet.bunny"] = "Kelinci Bulan",
+	["pet.drake"] = "Naga Badai",
+	["pet.phoenix"] = "Feniks Langit",
+	["err.tower_locked"] = "Selesaikan menara {n} dulu!",
+	["err.shine_max"] = "Kilau sudah maksimal",
+	["msg.shine"] = "{name} makin berkilau! (level {n})",
+	["trail.tidal"] = "Pasang",
+	["trail.twilight"] = "Senja",
+	["effect.frost"] = "Embun Beku",
+	["effect.goldenhour"] = "Jam Emas",
 }
 ]]></string>
           </Properties>
@@ -4401,6 +4623,33 @@ return {
 	["msg.doublejump_added"] = "ダブルジャンプ{minutes}分!",
 	["msg.announce_summit"] = "{name}が{tower}の頂上に到達!",
 	["msg.announce_top"] = "{name}が全1,000ステージを制覇!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "相棒",
+	["shop.shine"] = "輝き",
+	["shop.locked"] = "🔒 タワー{n}",
+	["shop.shine_level"] = "輝き {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MAX",
+	["shop.shine_empty"] = "先にトレイル、エフェクト、相棒のどれかを買って、輝かせに戻ってこよう!",
+	["trail.blossom"] = "花吹雪",
+	["trail.nebula"] = "星雲",
+	["trail.sunforge"] = "太陽の鍛冶",
+	["trail.celestial"] = "天空",
+	["effect.embers"] = "燃えさし",
+	["effect.prism"] = "プリズムの輪",
+	["effect.voidaura"] = "虚無のオーラ",
+	["pet.sprite"] = "星の妖精",
+	["pet.bunny"] = "月ウサギ",
+	["pet.drake"] = "嵐のドレイク",
+	["pet.phoenix"] = "空の不死鳥",
+	["err.tower_locked"] = "先にタワー{n}をクリアしよう!",
+	["err.shine_max"] = "輝きは最大です",
+	["msg.shine"] = "「{name}」がもっと輝く!(レベル{n})",
+	["trail.tidal"] = "潮流",
+	["trail.twilight"] = "たそがれ",
+	["effect.frost"] = "霜",
+	["effect.goldenhour"] = "黄金の時間",
 }
 ]]></string>
           </Properties>
@@ -4750,6 +4999,33 @@ return {
 	["msg.doublejump_added"] = "{minutes}분 동안 더블 점프!",
 	["msg.announce_summit"] = "{name}님이 {tower} 정상에 도착했어요!",
 	["msg.announce_top"] = "{name}님이 1,000 스테이지를 모두 정복했어요!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "동료",
+	["shop.shine"] = "광택",
+	["shop.locked"] = "🔒 타워 {n}",
+	["shop.shine_level"] = "광택 {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MAX",
+	["shop.shine_empty"] = "먼저 트레일, 효과 또는 동료를 구매한 다음 돌아와서 빛나게 만드세요!",
+	["trail.blossom"] = "벚꽃",
+	["trail.nebula"] = "성운",
+	["trail.sunforge"] = "태양 대장간",
+	["trail.celestial"] = "천상",
+	["effect.embers"] = "불씨",
+	["effect.prism"] = "프리즘 후광",
+	["effect.voidaura"] = "공허 오라",
+	["pet.sprite"] = "별 요정",
+	["pet.bunny"] = "달토끼",
+	["pet.drake"] = "폭풍 드레이크",
+	["pet.phoenix"] = "하늘 불사조",
+	["err.tower_locked"] = "먼저 타워 {n}을(를) 클리어하세요!",
+	["err.shine_max"] = "이미 최대 광택이에요",
+	["msg.shine"] = "{name}이(가) 더 빛나요! ({n}단계)",
+	["trail.tidal"] = "조류",
+	["trail.twilight"] = "황혼",
+	["effect.frost"] = "서리",
+	["effect.goldenhour"] = "골든 아워",
 }
 ]]></string>
           </Properties>
@@ -5099,6 +5375,33 @@ return {
 	["msg.doublejump_added"] = "Pulo duplo por {minutes} min!",
 	["msg.announce_summit"] = "{name} chegou ao topo da {tower}!",
 	["msg.announce_top"] = "{name} conquistou as 1.000 fases!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Mascotes",
+	["shop.shine"] = "Brilho",
+	["shop.locked"] = "🔒 Torre {n}",
+	["shop.shine_level"] = "Brilho {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MÁX",
+	["shop.shine_empty"] = "Compre um rastro, um efeito ou um mascote e volte para fazê-lo brilhar!",
+	["trail.blossom"] = "Flor",
+	["trail.nebula"] = "Nebulosa",
+	["trail.sunforge"] = "Forja Solar",
+	["trail.celestial"] = "Celestial",
+	["effect.embers"] = "Brasas",
+	["effect.prism"] = "Halo Prisma",
+	["effect.voidaura"] = "Aura do Vazio",
+	["pet.sprite"] = "Fada Estelar",
+	["pet.bunny"] = "Coelho Lunar",
+	["pet.drake"] = "Dragão da Tempestade",
+	["pet.phoenix"] = "Fênix Celeste",
+	["err.tower_locked"] = "Complete a torre {n} primeiro!",
+	["err.shine_max"] = "Brilho já no máximo",
+	["msg.shine"] = "{name} brilha mais! (nível {n})",
+	["trail.tidal"] = "Maré",
+	["trail.twilight"] = "Crepúsculo",
+	["effect.frost"] = "Geada",
+	["effect.goldenhour"] = "Hora Dourada",
 }
 ]]></string>
           </Properties>
@@ -5448,6 +5751,33 @@ return {
 	["msg.doublejump_added"] = "Двойной прыжок на {minutes} мин!",
 	["msg.announce_summit"] = "{name} достиг вершины: {tower}!",
 	["msg.announce_top"] = "{name} покорил все 1 000 уровней!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Питомцы",
+	["shop.shine"] = "Блеск",
+	["shop.locked"] = "🔒 Башня {n}",
+	["shop.shine_level"] = "Блеск {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "МАКС",
+	["shop.shine_empty"] = "Сначала купи след, эффект или питомца, а потом возвращайся, чтобы он засиял!",
+	["trail.blossom"] = "Цветение",
+	["trail.nebula"] = "Туманность",
+	["trail.sunforge"] = "Солнечная кузня",
+	["trail.celestial"] = "Небесный",
+	["effect.embers"] = "Угли",
+	["effect.prism"] = "Призма-нимб",
+	["effect.voidaura"] = "Аура Бездны",
+	["pet.sprite"] = "Звёздный дух",
+	["pet.bunny"] = "Лунный кролик",
+	["pet.drake"] = "Грозовой дракон",
+	["pet.phoenix"] = "Небесный феникс",
+	["err.tower_locked"] = "Сначала пройди башню {n}!",
+	["err.shine_max"] = "Блеск уже максимальный",
+	["msg.shine"] = "«{name}» сияет ярче! (уровень {n})",
+	["trail.tidal"] = "Прилив",
+	["trail.twilight"] = "Сумерки",
+	["effect.frost"] = "Изморозь",
+	["effect.goldenhour"] = "Золотой час",
 }
 ]]></string>
           </Properties>
@@ -5797,6 +6127,33 @@ return {
 	["msg.doublejump_added"] = "กระโดดสองชั้น {minutes} นาที!",
 	["msg.announce_summit"] = "{name} ถึงยอด{tower}แล้ว!",
 	["msg.announce_top"] = "{name} พิชิตครบ 1,000 ด่านแล้ว!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "เพื่อนคู่ใจ",
+	["shop.shine"] = "ประกาย",
+	["shop.locked"] = "🔒 หอคอย {n}",
+	["shop.shine_level"] = "ประกาย {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "สูงสุด",
+	["shop.shine_empty"] = "ซื้อเทรล เอฟเฟกต์ หรือเพื่อนคู่ใจก่อน แล้วกลับมาทำให้มันเปล่งประกาย!",
+	["trail.blossom"] = "ดอกไม้บาน",
+	["trail.nebula"] = "เนบิวลา",
+	["trail.sunforge"] = "เตาหลอมสุริยะ",
+	["trail.celestial"] = "สวรรค์",
+	["effect.embers"] = "ถ่านไฟ",
+	["effect.prism"] = "ประกายปริซึม",
+	["effect.voidaura"] = "ออร่าความว่างเปล่า",
+	["pet.sprite"] = "ภูตดาว",
+	["pet.bunny"] = "กระต่ายจันทร์",
+	["pet.drake"] = "มังกรพายุ",
+	["pet.phoenix"] = "ฟีนิกซ์ฟ้า",
+	["err.tower_locked"] = "ผ่านหอคอย {n} ก่อน!",
+	["err.shine_max"] = "ประกายสูงสุดแล้ว",
+	["msg.shine"] = "{name} เปล่งประกายขึ้น! (เลเวล {n})",
+	["trail.tidal"] = "กระแสน้ำ",
+	["trail.twilight"] = "สนธยา",
+	["effect.frost"] = "น้ำค้างแข็ง",
+	["effect.goldenhour"] = "ชั่วโมงทอง",
 }
 ]]></string>
           </Properties>
@@ -6146,6 +6503,33 @@ return {
 	["msg.doublejump_added"] = "{minutes} dk çift zıplama!",
 	["msg.announce_summit"] = "{name}, {tower} zirvesine ulaştı!",
 	["msg.announce_top"] = "{name} 1.000 seviyenin hepsini fethetti!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Dostlar",
+	["shop.shine"] = "Parıltı",
+	["shop.locked"] = "🔒 Kule {n}",
+	["shop.shine_level"] = "Parıltı {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "MAKS",
+	["shop.shine_empty"] = "Önce bir iz, efekt ya da dost al, sonra parlatmak için geri gel!",
+	["trail.blossom"] = "Çiçek",
+	["trail.nebula"] = "Bulutsu",
+	["trail.sunforge"] = "Güneş Ocağı",
+	["trail.celestial"] = "Göksel",
+	["effect.embers"] = "Kor",
+	["effect.prism"] = "Prizma Halesi",
+	["effect.voidaura"] = "Boşluk Aurası",
+	["pet.sprite"] = "Yıldız Perisi",
+	["pet.bunny"] = "Ay Tavşanı",
+	["pet.drake"] = "Fırtına Ejderi",
+	["pet.phoenix"] = "Gök Anka Kuşu",
+	["err.tower_locked"] = "Önce kule {n}'i bitir!",
+	["err.shine_max"] = "Parıltı zaten en yüksek",
+	["msg.shine"] = "{name} daha çok parlıyor! (seviye {n})",
+	["trail.tidal"] = "Gelgit",
+	["trail.twilight"] = "Alacakaranlık",
+	["effect.frost"] = "Kırağı",
+	["effect.goldenhour"] = "Altın Saat",
 }
 ]]></string>
           </Properties>
@@ -6495,6 +6879,33 @@ return {
 	["msg.doublejump_added"] = "Nhảy đôi trong {minutes} phút!",
 	["msg.announce_summit"] = "{name} đã lên đỉnh {tower}!",
 	["msg.announce_top"] = "{name} đã chinh phục cả 1.000 màn!",
+
+	-- late-game cosmetics: tower tiers, pets, shine
+	["shop.pets"] = "Thú cưng",
+	["shop.shine"] = "Lấp lánh",
+	["shop.locked"] = "🔒 Tháp {n}",
+	["shop.shine_level"] = "Lấp lánh {stars}",
+	["shop.upgrade"] = "⬆ 💰 {price}",
+	["shop.maxed"] = "TỐI ĐA",
+	["shop.shine_empty"] = "Hãy mua một vệt sáng, hiệu ứng hoặc thú cưng trước, rồi quay lại làm nó lấp lánh!",
+	["trail.blossom"] = "Hoa Nở",
+	["trail.nebula"] = "Tinh Vân",
+	["trail.sunforge"] = "Lò Rèn Mặt Trời",
+	["trail.celestial"] = "Thiên Giới",
+	["effect.embers"] = "Than Hồng",
+	["effect.prism"] = "Vầng Lăng Kính",
+	["effect.voidaura"] = "Hào Quang Hư Không",
+	["pet.sprite"] = "Tinh Linh Sao",
+	["pet.bunny"] = "Thỏ Mặt Trăng",
+	["pet.drake"] = "Rồng Bão",
+	["pet.phoenix"] = "Phượng Hoàng Trời",
+	["err.tower_locked"] = "Hãy vượt tháp {n} trước!",
+	["err.shine_max"] = "Đã lấp lánh tối đa",
+	["msg.shine"] = "{name} sáng hơn! (cấp {n})",
+	["trail.tidal"] = "Thủy Triều",
+	["trail.twilight"] = "Hoàng Hôn",
+	["effect.frost"] = "Sương Giá",
+	["effect.goldenhour"] = "Giờ Vàng",
 }
 ]]></string>
           </Properties>
@@ -8230,6 +8641,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Economy = require(ReplicatedStorage.Shared.Economy)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Perks = require(ReplicatedStorage.Shared.Perks)
 local Data = require(script.Parent.Data)
@@ -8247,6 +8659,16 @@ end
 local effectById: { [string]: Config.Effect } = {}
 for _, e in Config.Effects do
 	effectById[e.id] = e
+end
+
+local petById: { [string]: Config.Pet } = {}
+for _, pet in Config.Pets do
+	petById[pet.id] = pet
+end
+
+-- Shine level (0..Config.ShineMax) of one of the player's cosmetics: purely visual.
+local function shineOf(p: Data.Profile, kind: string, id: string): number
+	return math.clamp(math.floor(p.shine[kind .. ":" .. id] or 0), 0, Config.ShineMax)
 end
 
 local function colorSeq(colors: { Color3 }): ColorSequence
@@ -8312,15 +8734,16 @@ function Cosmetics.applyTrail(player: Player)
 	a1.Name = "SkyTrailA1"
 	a1.Position = Vector3.new(0, -0.9, 0)
 	a1.Parent = root
+	local shine = if p.equippedTrail == "rebirth" then 0 else shineOf(p, "trail", p.equippedTrail)
 	local trail = Instance.new("Trail")
 	trail.Name = "SkyTrail"
 	trail.Attachment0 = a0
 	trail.Attachment1 = a1
 	trail.Color = colorSeq(colors)
-	trail.Lifetime = 0.6
-	trail.LightEmission = 0.6
-	trail.Transparency = NumberSequence.new(0.1, 1)
-	trail.WidthScale = NumberSequence.new(1, 0.2)
+	trail.Lifetime = 0.6 + 0.2 * shine -- shine: longer, wider, brighter
+	trail.LightEmission = math.min(1, 0.6 + 0.1 * shine)
+	trail.Transparency = NumberSequence.new(math.max(0, 0.1 - 0.03 * shine), 1)
+	trail.WidthScale = NumberSequence.new(1 + 0.3 * shine, 0.2)
 	trail.FaceCamera = true
 	trail.Parent = root
 end
@@ -8370,6 +8793,24 @@ function Cosmetics.applyEffect(player: Player)
 	end
 	inst.Name = "SkyEffect"
 	inst.Parent = root
+	-- shine: one more layer of the effect's own colour, denser with every level
+	local shine = shineOf(p, "effect", e.id)
+	if shine > 0 then
+		if inst:IsA("Fire") then
+			inst.Size += shine
+		end
+		local pe = Instance.new("ParticleEmitter")
+		pe.Name = "SkyEffect"
+		pe.Texture = SPARKLES
+		pe.Color = ColorSequence.new(e.color, e.color:Lerp(Color3.new(1, 1, 1), 0.6))
+		pe.Rate = 5 * shine
+		pe.Lifetime = NumberRange.new(0.9, 1.5)
+		pe.Speed = NumberRange.new(1, 2.5 + shine)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Size = NumberSequence.new(0.35 + 0.1 * shine, 0)
+		pe.LightEmission = 1
+		pe.Parent = root
+	end
 end
 
 -- Speed coil: WalkSpeed. Gravity coil: a VectorForce cancelling part of gravity.
@@ -8437,6 +8878,75 @@ local function bit(parent: Instance, shape: Enum.PartType, size: Vector3, cf: CF
 	return p
 end
 
+-- The coin-shop companions, on the left shoulder. Every part is welded to the torso (see weldTo).
+local function buildCompanion(pet: Config.Pet, shine: number, char: Model, torso: BasePart)
+	local model = Instance.new("Model")
+	model.Name = "SkyCompanion"
+	model.Parent = char
+	local at = torso.CFrame * CFrame.new(-1.7, 1.7, 0.2)
+	local ball, block, wedge = Enum.PartType.Ball, Enum.PartType.Block, Enum.PartType.Wedge
+	local smooth, neon = Enum.Material.SmoothPlastic, Enum.Material.Neon
+	local dark = Color3.fromRGB(40, 40, 60)
+	local core: BasePart
+	if pet.id == "sprite" then
+		core = bit(model, ball, Vector3.new(0.9, 0.9, 0.9), at, pet.color, neon, torso)
+		bit(model, block, Vector3.new(0.18, 1.5, 0.18), at, pet.accent, neon, torso)
+		bit(model, block, Vector3.new(1.5, 0.18, 0.18), at, pet.accent, neon, torso)
+		bit(model, block, Vector3.new(0.18, 1.1, 0.18), at * CFrame.Angles(0, 0, math.pi / 4), pet.accent, neon, torso)
+		bit(model, block, Vector3.new(0.18, 1.1, 0.18), at * CFrame.Angles(0, 0, -math.pi / 4), pet.accent, neon, torso)
+	elseif pet.id == "bunny" then
+		core = bit(model, ball, Vector3.new(1.1, 1.0, 1.1), at, pet.color, smooth, torso)
+		bit(model, ball, Vector3.new(0.85, 0.8, 0.85), at * CFrame.new(0, 0.75, -0.1), pet.color, smooth, torso)
+		for _, x in { -0.22, 0.22 } do
+			bit(model, block, Vector3.new(0.22, 0.8, 0.2), at * CFrame.new(x, 1.5, -0.1), pet.color, smooth, torso)
+			bit(model, block, Vector3.new(0.1, 0.55, 0.22), at * CFrame.new(x, 1.5, -0.1), pet.accent, smooth, torso)
+			bit(model, ball, Vector3.new(0.14, 0.14, 0.14), at * CFrame.new(x * 0.8, 0.85, -0.5), dark, smooth, torso)
+		end
+		bit(model, ball, Vector3.new(0.4, 0.4, 0.4), at * CFrame.new(0, -0.1, 0.6), Color3.new(1, 1, 1), smooth, torso)
+	elseif pet.id == "drake" then
+		core = bit(model, ball, Vector3.new(1.2, 1.0, 1.4), at, pet.color, smooth, torso)
+		bit(model, ball, Vector3.new(0.8, 0.75, 0.85), at * CFrame.new(0, 0.6, -0.75), pet.color, smooth, torso)
+		for _, x in { -0.25, 0.25 } do
+			bit(model, block, Vector3.new(0.12, 0.45, 0.12), at * CFrame.new(x, 1.1, -0.85) * CFrame.Angles(-0.3, 0, 0), pet.accent, neon, torso)
+			bit(model, ball, Vector3.new(0.14, 0.14, 0.14), at * CFrame.new(x * 0.9, 0.7, -1.12), pet.accent, neon, torso)
+		end
+		for _, x in { -1, 1 } do
+			bit(model, wedge, Vector3.new(0.12, 0.9, 1.1), at * CFrame.new(x * 0.75, 0.5, 0.15) * CFrame.Angles(0, 0, x * 0.5), pet.accent, neon, torso)
+		end
+		bit(model, block, Vector3.new(0.2, 0.2, 0.9), at * CFrame.new(0, -0.15, 1.0), pet.color, smooth, torso)
+	else -- phoenix
+		core = bit(model, ball, Vector3.new(1.1, 1.0, 1.3), at, pet.color, neon, torso)
+		bit(model, ball, Vector3.new(0.75, 0.75, 0.75), at * CFrame.new(0, 0.65, -0.6), pet.color, neon, torso)
+		bit(model, wedge, Vector3.new(0.12, 0.35, 0.45), at * CFrame.new(0, 0.6, -1.05) * CFrame.Angles(0, math.pi, 0), pet.accent, neon, torso)
+		for _, x in { -1, 1 } do
+			bit(model, wedge, Vector3.new(0.12, 1.1, 1.4), at * CFrame.new(x * 0.8, 0.5, 0.1) * CFrame.Angles(0, 0, x * 0.6), pet.accent, neon, torso)
+		end
+		for i, c in { Color3.fromRGB(255, 70, 30), pet.color, pet.accent } do
+			bit(model, block, Vector3.new(0.18, 0.18, 0.9 + 0.15 * i), at * CFrame.new((i - 2) * 0.22, -0.2, 0.9) * CFrame.Angles(0, (i - 2) * 0.25, 0), c, neon, torso)
+		end
+	end
+	-- shine: a soft light, then sparkles, then more of both
+	if shine > 0 then
+		local light = Instance.new("PointLight")
+		light.Color = pet.accent
+		light.Brightness = 0.6 * shine
+		light.Range = 6 + 2 * shine
+		light.Parent = core
+	end
+	if shine >= 2 then
+		local pe = Instance.new("ParticleEmitter")
+		pe.Texture = SPARKLES
+		pe.Color = ColorSequence.new(pet.accent)
+		pe.Rate = 4 * shine
+		pe.Lifetime = NumberRange.new(0.8, 1.3)
+		pe.Speed = NumberRange.new(0.5, 1.5)
+		pe.SpreadAngle = Vector2.new(180, 180)
+		pe.Size = NumberSequence.new(0.3, 0)
+		pe.LightEmission = 1
+		pe.Parent = core
+	end
+end
+
 -- Gift cosmetics worn by the character: the shoulder cloud (stage 200), the crown (stage 1000)
 -- and the body glow picked in the Winner's Lounge (or the rainbow glow of stage 700).
 function Cosmetics.applyExtras(player: Player)
@@ -8445,7 +8955,7 @@ function Cosmetics.applyExtras(player: Player)
 	if not char or not p then
 		return
 	end
-	for _, name in { "SkyPet", "SkyCrown", "SkyGlow" } do
+	for _, name in { "SkyPet", "SkyCompanion", "SkyCrown", "SkyGlow" } do
 		local old = char:FindFirstChild(name)
 		if old then
 			old:Destroy()
@@ -8465,6 +8975,10 @@ function Cosmetics.applyExtras(player: Player)
 		for _, x in { -0.2, 0.2 } do
 			bit(pet, Enum.PartType.Ball, Vector3.new(0.16, 0.16, 0.16), at * CFrame.new(x, 0.08, -0.52), Color3.fromRGB(40, 40, 60), Enum.Material.SmoothPlastic, torso)
 		end
+	end
+	local companion = petById[p.equippedPet]
+	if companion and p.pets[companion.id] and torso then
+		buildCompanion(companion, shineOf(p, "pet", companion.id), char, torso)
 	end
 	if p.gifts["10"] and head then
 		local crown = Instance.new("Model")
@@ -8515,6 +9029,9 @@ function Cosmetics.init()
 		if p.trails[t.id] then
 			return false, Remotes.M("err.already_owned")
 		end
+		if t.tower and not Economy.towerCleared(p.best, t.tower) then
+			return false, Remotes.M("err.tower_locked", { n = t.tower })
+		end
 		if p.coins < t.price then
 			return false, Remotes.M("err.not_enough_coins")
 		end
@@ -8559,6 +9076,9 @@ function Cosmetics.init()
 		if p.effects[e.id] then
 			return false, Remotes.M("err.already_owned")
 		end
+		if e.tower and not Economy.towerCleared(p.best, e.tower) then
+			return false, Remotes.M("err.tower_locked", { n = e.tower })
+		end
 		if p.coins < e.price then
 			return false, Remotes.M("err.not_enough_coins")
 		end
@@ -8582,6 +9102,82 @@ function Cosmetics.init()
 		Cosmetics.applyEffect(player)
 		Session.push(player)
 		return true
+	end)
+	Remotes.handle("BuyPet", function(player, payload)
+		local p = Data.get(player)
+		local pet = petById[tostring(payload.id)]
+		if not p or not pet then
+			return false, Remotes.M("err.not_for_sale")
+		end
+		if p.pets[pet.id] then
+			return false, Remotes.M("err.already_owned")
+		end
+		if not Economy.towerCleared(p.best, pet.tower) then
+			return false, Remotes.M("err.tower_locked", { n = pet.tower })
+		end
+		if p.coins < pet.price then
+			return false, Remotes.M("err.not_enough_coins")
+		end
+		p.coins -= pet.price
+		p.pets[pet.id] = true
+		p.equippedPet = pet.id
+		Cosmetics.applyExtras(player)
+		Session.push(player)
+		return true, Remotes.M("msg.bought", { name = Remotes.M("pet." .. pet.id) })
+	end)
+	Remotes.handle("EquipPet", function(player, payload)
+		local p = Data.get(player)
+		if not p then
+			return false
+		end
+		local id = tostring(payload.id or "")
+		if id ~= "" and not p.pets[id] then
+			return false, Remotes.M("err.not_owned")
+		end
+		p.equippedPet = if p.equippedPet == id then "" else id
+		Cosmetics.applyExtras(player)
+		Session.push(player)
+		return true
+	end)
+	-- Shine: upgrade a cosmetic you own. Coins only, purely visual.
+	Remotes.handle("UpgradeShine", function(player, payload)
+		local p = Data.get(player)
+		if not p then
+			return false
+		end
+		local kind, id = tostring(payload.kind or ""), tostring(payload.id or "")
+		local owned = false
+		if kind == "trail" then
+			local t = trailById[id]
+			owned = t ~= nil and not t.pass and p.trails[id] == true
+		elseif kind == "effect" then
+			owned = effectById[id] ~= nil and p.effects[id] == true
+		elseif kind == "pet" then
+			owned = petById[id] ~= nil and p.pets[id] == true
+		end
+		if not owned then
+			return false, Remotes.M("err.not_owned")
+		end
+		local key = kind .. ":" .. id
+		local level = shineOf(p, kind, id)
+		local cost = Economy.shineCost(level)
+		if not cost or level >= Config.ShineMax then
+			return false, Remotes.M("err.shine_max")
+		end
+		if p.coins < cost then
+			return false, Remotes.M("err.not_enough_coins")
+		end
+		p.coins -= cost
+		p.shine[key] = level + 1
+		if kind == "trail" then
+			Cosmetics.applyTrail(player)
+		elseif kind == "effect" then
+			Cosmetics.applyEffect(player)
+		else
+			Cosmetics.applyExtras(player)
+		end
+		Session.push(player)
+		return true, Remotes.M("msg.shine", { name = Remotes.M(kind .. "." .. id), n = level + 1 })
 	end)
 	Remotes.handle("SetLanguage", function(player, payload)
 		local p = Data.get(player)
@@ -8656,6 +9252,9 @@ export type Profile = {
 	equippedTrail: string, -- "" = none, "rebirth" = rebirth colour
 	effects: { [string]: boolean },
 	equippedEffect: string,
+	pets: { [string]: boolean }, -- shoulder companions bought with coins (Config.Pets)
+	equippedPet: string, -- "" = none
+	shine: { [string]: number }, -- cosmetic upgrade levels 1..Config.ShineMax, key "trail:<id>" / "effect:<id>" / "pet:<id>"
 	settings: { speedCoil: boolean, gravityCoil: boolean, effects: boolean },
 	lang: string, -- "" = follow the account locale; else a Locale.LANGS code
 	bestRunMs: number, -- fastest valid climb 0 -> 100 (0 = none)
@@ -8713,6 +9312,9 @@ local function defaultProfile(): Profile
 		equippedTrail = "",
 		effects = {},
 		equippedEffect = "",
+		pets = {},
+		equippedPet = "",
+		shine = {},
 		-- coils start OFF: a new player meets the map with the plain classic jump
 		settings = { speedCoil = false, gravityCoil = false, effects = true },
 		lang = "",
@@ -8746,6 +9348,15 @@ local function reconcile(p: any): Profile
 	if type(p.settings) ~= "table" then
 		p.settings = nil
 	end
+	-- saves from before the late-game cosmetics have no pets / shine; a corrupted entry is reset
+	for _, k in { "pets", "shine" } do
+		if type(p[k]) ~= "table" then
+			p[k] = nil
+		end
+	end
+	if type(p.equippedPet) ~= "string" then
+		p.equippedPet = nil
+	end
 	for k, v in def do
 		if p[k] == nil then
 			p[k] = v
@@ -8765,6 +9376,10 @@ local function reconcile(p: any): Profile
 	p.stage = math.clamp(math.floor(tonumber(p.stage) or 0), 0, Layout.TOTAL)
 	p.best = math.clamp(math.max(tonumber(p.best) or 0, p.stage), 0, Layout.TOTAL)
 	p.runTop = math.clamp(math.floor(p.runTop), 0, Layout.TOTAL)
+	for k, v in p.shine do
+		local n = tonumber(v)
+		p.shine[k] = if n then math.clamp(math.floor(n), 0, Config.ShineMax) else nil
+	end
 	-- gifts are earned by the best stage: nobody who got there is left without one
 	for _, gift in Gifts.earned(p.best) do
 		p.gifts[tostring(gift.id)] = true
@@ -12288,6 +12903,9 @@ function Session.push(player: Player)
 		equippedTrail = p.equippedTrail,
 		effects = p.effects,
 		equippedEffect = p.equippedEffect,
+		pets = p.pets,
+		equippedPet = p.equippedPet,
+		shine = p.shine,
 		settings = p.settings,
 		lang = p.lang,
 		passes = passes,
@@ -16657,6 +17275,7 @@ return SettingsPanel
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Economy = require(ReplicatedStorage.Shared.Economy)
 local Net = require(script.Parent.Parent.Net)
 local Kit = require(script.Parent.Kit)
 local Toast = require(script.Parent.Toast)
@@ -16680,17 +17299,28 @@ local function T(key: string, args: { [string]: any }?): Txt
 	return { key = key, args = args }
 end
 
-local function card(grid: Instance, order: number, name: Txt, colors: { Color3 }, buttonText: Txt, buttonColor: Color3, onClick: () -> ())
+-- One shop card: colour swatch, name, an optional small line (price / shine stars) and a button.
+local function card(grid: Instance, order: number, name: Txt, colors: { Color3 }, buttonText: Txt, buttonColor: Color3, onClick: () -> (), sub: Txt?)
 	local c = Kit.card(grid, order)
 	local swatch = Kit.frame(c, UDim2.new(1, -20, 0, 70), UDim2.fromOffset(10, 10), Color3.new(1, 1, 1))
 	Kit.corner(swatch, 12)
 	local g = Instance.new("UIGradient")
 	g.Color = colorSeq(colors)
 	g.Parent = swatch
-	local label = Kit.text(c, "", UDim2.new(1, -16, 0, 30), UDim2.fromOffset(8, 84), Kit.C.ink, nil, 26)
+	local label = Kit.text(c, "", UDim2.new(1, -16, 0, 28), UDim2.fromOffset(8, 82), Kit.C.ink, nil, 26)
 	Kit.setText(label, name.key, name.args)
+	if sub then
+		local line = Kit.text(c, "", UDim2.new(1, -16, 0, 22), UDim2.fromOffset(8, 110), Kit.C.ink, nil, 20)
+		Kit.setText(line, sub.key, sub.args)
+	end
 	local btn = Kit.button(c, "", UDim2.new(1, -20, 0, 54), UDim2.new(0, 10, 1, -62), buttonColor, onClick, nil, 24)
 	Kit.setText(btn, buttonText.key, buttonText.args)
+end
+
+-- "★★☆" for a shine level (only shown once the item has at least one).
+local function stars(level: number): string
+	local max = Config.ShineMax
+	return string.rep("★", level) .. string.rep("☆", max - level)
 end
 
 local function act(action: string, id: string)
@@ -16705,6 +17335,19 @@ function ShopPanel.init()
 	local tab = "trails"
 	local grid = Kit.grid(content, Vector2.new(180, 200), UDim2.new(1, 0, 1, -64), UDim2.fromOffset(0, 64))
 	local tabs: { [string]: TextButton } = {}
+	local empty = Kit.text(content, "@shop.shine_empty", UDim2.new(1, -40, 0, 80), UDim2.fromOffset(20, 120), Kit.C.ink, nil, 26)
+	empty.Visible = false
+
+	-- Button + small line of a tier item (towers cleared gate the purchase) --------------------
+	local function locked(best: number, tower: number?): boolean
+		return tower ~= nil and tower > 0 and not Economy.towerCleared(best, tower)
+	end
+	local function shineSub(level: number): Txt?
+		if level > 0 then
+			return T("shop.shine_level", { stars = stars(level) })
+		end
+		return nil
+	end
 
 	local function rebuild()
 		for _, c in grid:GetChildren() do
@@ -16713,11 +17356,18 @@ function ShopPanel.init()
 			end
 		end
 		local s = Net.state
+		local best = (s.best or 0) :: number
 		local owned = (s.trails or {}) :: { [string]: boolean }
 		local ownedFx = (s.effects or {}) :: { [string]: boolean }
+		local ownedPets = (s.pets or {}) :: { [string]: boolean }
+		local shine = (s.shine or {}) :: { [string]: number }
+		local function lvl(kind: string, id: string): number
+			return shine[kind .. ":" .. id] or 0
+		end
 		for name, b in tabs do
 			b.BackgroundColor3 = if name == tab then Kit.C.pink else Kit.C.grey
 		end
+		empty.Visible = false
 		if tab == "trails" then
 			local order = 0
 			if (s.wins or 0) > 0 then
@@ -16753,14 +17403,16 @@ function ShopPanel.init()
 				elseif owned[t.id] then
 					card(grid, order, T("trail." .. t.id), t.colors, T(if equipped then "shop.unequip" else "shop.equip"), if equipped then Kit.C.grey else Kit.C.blue, function()
 						act("EquipTrail", t.id)
-					end)
+					end, shineSub(lvl("trail", t.id)))
+				elseif locked(best, t.tower) then
+					card(grid, order, T("trail." .. t.id), t.colors, T("shop.locked", { n = t.tower }), Kit.C.grey, function() end, T("shop.price", { price = Kit.formatNumber(t.price) }))
 				else
 					card(grid, order, T("trail." .. t.id), t.colors, T("shop.price", { price = Kit.formatNumber(t.price) }), Kit.C.green, function()
 						act("BuyTrail", t.id)
 					end)
 				end
 			end
-		else
+		elseif tab == "effects" then
 			for i, e in Config.Effects do
 				local equipped = s.equippedEffect == e.id
 				local colors = { e.color, e.color:Lerp(Color3.new(1, 1, 1), 0.6) }
@@ -16770,25 +17422,83 @@ function ShopPanel.init()
 				elseif ownedFx[e.id] then
 					card(grid, i, T("effect." .. e.id), colors, T(if equipped then "shop.unequip" else "shop.equip"), if equipped then Kit.C.grey else Kit.C.blue, function()
 						act("EquipEffect", e.id)
-					end)
+					end, shineSub(lvl("effect", e.id)))
+				elseif locked(best, e.tower) then
+					card(grid, i, T("effect." .. e.id), colors, T("shop.locked", { n = e.tower }), Kit.C.grey, function() end, T("shop.price", { price = Kit.formatNumber(e.price) }))
 				else
 					card(grid, i, T("effect." .. e.id), colors, T("shop.price", { price = Kit.formatNumber(e.price) }), Kit.C.green, function()
 						act("BuyEffect", e.id)
 					end)
 				end
 			end
+		elseif tab == "pets" then
+			for i, pet in Config.Pets do
+				local equipped = s.equippedPet == pet.id
+				local colors = { pet.color, pet.accent }
+				if ownedPets[pet.id] then
+					card(grid, i, T("pet." .. pet.id), colors, T(if equipped then "shop.unequip" else "shop.equip"), if equipped then Kit.C.grey else Kit.C.blue, function()
+						act("EquipPet", pet.id)
+					end, shineSub(lvl("pet", pet.id)))
+				elseif locked(best, pet.tower) then
+					card(grid, i, T("pet." .. pet.id), colors, T("shop.locked", { n = pet.tower }), Kit.C.grey, function() end, T("shop.price", { price = Kit.formatNumber(pet.price) }))
+				else
+					card(grid, i, T("pet." .. pet.id), colors, T("shop.price", { price = Kit.formatNumber(pet.price) }), Kit.C.green, function()
+						act("BuyPet", pet.id)
+					end)
+				end
+			end
+		else
+			-- Shine: upgrade what you own (coins only, looks only)
+			local order = 0
+			local function shineCard(kind: string, id: string, colors: { Color3 })
+				order += 1
+				local level = lvl(kind, id)
+				local cost = Economy.shineCost(level)
+				local name = T(kind .. "." .. id)
+				local sub = T("shop.shine_level", { stars = stars(level) })
+				if cost then
+					card(grid, order, name, colors, T("shop.upgrade", { price = Kit.formatNumber(cost) }), Kit.C.orange, function()
+						local ok, msg = Net.request("UpgradeShine", { kind = kind, id = id })
+						if msg then
+							Toast.show(msg, if ok then "success" else "error")
+						end
+					end, sub)
+				else
+					card(grid, order, name, colors, T("shop.maxed"), Kit.C.grey, function() end, sub)
+				end
+			end
+			for _, t in Config.Trails do
+				if owned[t.id] and not t.pass then
+					shineCard("trail", t.id, t.colors)
+				end
+			end
+			for _, e in Config.Effects do
+				if ownedFx[e.id] then
+					shineCard("effect", e.id, { e.color, e.color:Lerp(Color3.new(1, 1, 1), 0.6) })
+				end
+			end
+			for _, pet in Config.Pets do
+				if ownedPets[pet.id] then
+					shineCard("pet", pet.id, { pet.color, pet.accent })
+				end
+			end
+			empty.Visible = order == 0
 		end
 	end
 
-	tabs.trails = Kit.button(content, "@shop.trails", UDim2.fromOffset(160, 54), UDim2.fromOffset(0, 0), Kit.C.pink, function()
-		tab = "trails"
-		rebuild()
-	end)
-	tabs.effects = Kit.button(content, "@shop.effects", UDim2.fromOffset(160, 54), UDim2.fromOffset(172, 0), Kit.C.grey, function()
-		tab = "effects"
-		rebuild()
-	end)
-	local coins = Kit.text(content, "", UDim2.fromOffset(250, 40), UDim2.new(1, 0, 0, 3), Kit.C.ink, Vector2.new(1, 0), 30)
+	local TAB_W, TAB_GAP = 112, 6
+	local function addTab(name: string, label: string, index: number)
+		tabs[name] = Kit.button(content, label, UDim2.fromOffset(TAB_W, 54), UDim2.fromOffset((index - 1) * (TAB_W + TAB_GAP), 0), Kit.C.grey, function()
+			tab = name
+			rebuild()
+		end, nil, 26)
+		tabs[name].Name = "Tab_" .. name
+	end
+	addTab("trails", "@shop.trails", 1)
+	addTab("effects", "@shop.effects", 2)
+	addTab("pets", "@shop.pets", 3)
+	addTab("shine", "@shop.shine", 4)
+	local coins = Kit.text(content, "", UDim2.fromOffset(150, 40), UDim2.new(1, 0, 0, 7), Kit.C.ink, Vector2.new(1, 0), 28)
 	coins.TextXAlignment = Enum.TextXAlignment.Right
 
 	Kit.onOpen("shop", rebuild)

@@ -50,6 +50,7 @@ print(("first purchase                %s"):format(fmt(summary.firstPurchase)))
 print(("3rd purchase                  %s"):format(fmt(summary.thirdPurchase)))
 print(("purchases in the first hour   %d"):format(summary.purchasesFirstHour))
 print(("longest stretch w/o anything new in the first hour: %s"):format(fmt(summary.maxDeadStretch)))
+print(("longest stretch w/o anything new in the first 2 hours: %s"):format(fmt(summary.maxDeadStretch2h)))
 print("\nworld entrances / summits")
 for g = 10, Layout.TOTAL, 10 do
 	if g <= 100 or g % 100 == 0 then
@@ -62,6 +63,17 @@ for d = 1, DAYS do
 	table.insert(row, ("d%d:%d"):format(d, summary.dayStage[d]))
 end
 print("  " .. table.concat(row, "  "))
+
+-- late game: the coin sink of towers 2-10 (tier items + pets + Shine)
+local late = M.lateGame(11, 90)
+print(("\n== Late game: coin sink after tower 2 (median of %d players, 90 days of 30 min) =="):format(late.seeds))
+print(("coins earned %d / spent %d; purchases after tower 2: %d (Shine upgrades: %d)"):format(late.coinsEarned, late.coinsSpent, late.purchasesAfterTower2, late.shineBought))
+print(("longest wait between two purchases after tower 2: median %s, worst player %s"):format(fmt(late.medianWorstGap), fmt(late.maxWorstGap)))
+local row2 = {}
+for t = 2, Layout.TOWERS do
+	table.insert(row2, ("T%d:%d coins, %d items left"):format(t, late.bank[t], late.unowned[t]))
+end
+print("unspent coins / catalogue items left at each summit: " .. table.concat(row2, " | "))
 
 -- one typical run: first purchases and stuck events
 local r = runs[math.ceil(#runs / 2)]
