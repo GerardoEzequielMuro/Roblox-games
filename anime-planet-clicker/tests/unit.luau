@@ -80,7 +80,33 @@ check("luck makes buff planets more common", (function()
 	return rares(3) > rares(1)
 end)())
 check("hardness: first tool is soft in galaxy 2, the galaxy's own tool is not", F.hardness(3, 2) == Config.SoftDamage and F.hardness(4, 2) == 1 and F.hardness(1, 1) == 1)
-check("incomeZone follows the tool", F.incomeZone(3, 6) == 1 and F.incomeZone(4, 6) == 2 and F.incomeZone(12, 6) == 6 and F.incomeZone(12, 2) == 2)
+check("incomeZone follows the tool", F.incomeZone(3, 6) == 1 and F.incomeZone(4, 6) == 2 and F.incomeZone(Config.Zones[6].hardness, 6) == 6 and F.incomeZone(Config.Zones[5].hardness, 6) == 5 and F.incomeZone(12, 2) == 2)
+
+-- Asteroid Field tools: a run of tools inside a galaxy, never the first tool sold there
+check("field tools: every galaxy's hardness tool is a headline tool, not a field", (function()
+	for i = 2, #Config.Zones do
+		local t = Config.Tools[Config.Zones[i].hardness]
+		if t.zone ~= i or t.field then
+			return false
+		end
+	end
+	return true
+end)())
+check("field tools: at least 8, all lasers with a locale name in en", (function()
+	local Locale = require("../src/shared/Locale")
+	local en = Locale.pack("en")
+	local n = 0
+	for _, t in Config.Tools do
+		if t.field then
+			n += 1
+			if t.kind ~= "laser" or not en["tool." .. t.id] then
+				return false
+			end
+		end
+	end
+	return n >= 8
+end)())
+check("field tools: FieldCrystals is a positive whole number", Config.FieldCrystals > 0 and Config.FieldCrystals % 1 == 0)
 
 -- stats
 local s = F.blankStats()

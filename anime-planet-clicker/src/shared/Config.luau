@@ -64,11 +64,12 @@ Config.Zones = {
 	{ index = 2, id = "verdant", gateHp = 230000, hp = 11000, value = 1.5, crystal = 1, hardness = 4, material = "spores" },
 	{ index = 3, id = "frost", gateHp = 2.6e+08, hp = 1.4e+07, value = 2.3, crystal = 2, hardness = 6, material = "cryo" },
 	{ index = 4, id = "ember", gateHp = 1e+12, hp = 1.1e+11, value = 3.4, crystal = 2, hardness = 8, material = "embers" },
-	{ index = 5, id = "storm", gateHp = 2.5e+16, hp = 3.3e+14, value = 5.0, crystal = 3, hardness = 10, material = "volt" },
-	{ index = 6, id = "void", gateHp = 2.5e+20, hp = 3.1e+18, value = 7.5, crystal = 4, hardness = 12, material = "essence" },
+	{ index = 5, id = "storm", gateHp = 4.5e+16, hp = 3.3e+14, value = 5.0, crystal = 3, hardness = 15, material = "volt" },
+	{ index = 6, id = "void", gateHp = 2e+20, hp = 3.1e+18, value = 7.5, crystal = 4, hardness = 23, material = "essence" },
 } :: { any }
 -- Planets on the outer ring are Dense: x DenseMult HP and ore.
 Config.DenseMult = 10
+Config.FieldCrystals = 25 -- first time the player reaches an Asteroid Field tool (field = true)
 Config.SoftDamage = 0.25 -- damage share when the tool is below the galaxy's hardness
 Config.Materials = { "spores", "cryo", "embers", "volt", "essence" }
 Config.MaterialZone = { spores = 2, cryo = 3, embers = 4, volt = 5, essence = 6 }
@@ -179,8 +180,22 @@ Config.Tools = {
 	{ id = "drill_quake", kind = "drill", zone = 3, power = 760, cost = 5e+10, color = { 200, 120, 255 } },
 	{ id = "laser_ruby", kind = "laser", zone = 4, power = 2400, cost = 3.7e+12, color = { 255, 70, 90 } },
 	{ id = "laser_ion", kind = "laser", zone = 4, power = 7600, cost = 4.1e+13, color = { 80, 235, 255 } },
+	-- Asteroid Field tools: the Ember Forge and Storm Reach are big, so each has a run of tools
+	-- between the headline ones (field = true). Each is a Stardust sink for the long wait at a
+	-- galaxy's Gate and pays FieldCrystals the first time the player reaches it.
+	{ id = "laser_slag", kind = "laser", zone = 4, power = 9500, cost = 1.3e+15, color = { 255, 130, 60 }, field = true },
+	{ id = "laser_cinder", kind = "laser", zone = 4, power = 11900, cost = 3.4e+15, color = { 240, 90, 70 }, field = true },
+	{ id = "laser_magma", kind = "laser", zone = 4, power = 14900, cost = 3.8e+15, color = { 255, 170, 40 }, field = true },
+	{ id = "laser_ashfall", kind = "laser", zone = 4, power = 18000, cost = 4.2e+15, color = { 200, 190, 185 }, field = true },
+	{ id = "laser_pyre", kind = "laser", zone = 4, power = 21500, cost = 4.6e+15, color = { 255, 210, 120 }, field = true },
 	{ id = "laser_nova", kind = "laser", zone = 5, power = 24000, cost = 1.7e+16, color = { 255, 220, 90 } },
 	{ id = "laser_quasar", kind = "laser", zone = 5, power = 78000, cost = 1.8e+17, color = { 255, 120, 230 } },
+	{ id = "laser_arc", kind = "laser", zone = 5, power = 95000, cost = 9e+18, color = { 120, 200, 255 }, field = true },
+	{ id = "laser_static", kind = "laser", zone = 5, power = 115000, cost = 1.6e+19, color = { 170, 230, 255 }, field = true },
+	{ id = "laser_thunder", kind = "laser", zone = 5, power = 135000, cost = 2.3e+19, color = { 150, 150, 255 }, field = true },
+	{ id = "laser_tempest", kind = "laser", zone = 5, power = 155000, cost = 2.8e+19, color = { 200, 250, 210 }, field = true },
+	{ id = "laser_squall", kind = "laser", zone = 5, power = 180000, cost = 3.4e+19, color = { 110, 255, 190 }, field = true },
+	{ id = "laser_zenith", kind = "laser", zone = 5, power = 210000, cost = 4e+19, color = { 255, 245, 160 }, field = true },
 	{ id = "laser_singularity", kind = "laser", zone = 6, power = 250000, cost = 2.3e+20, color = { 170, 110, 255 } },
 } :: { any }
 Config.ToolById = {} :: { [string]: any }
@@ -203,7 +218,7 @@ Config.Upgrades = {
 	{ id = "Magnet", system = "lab", currency = "crystals", base = 15, growth = 1.45, max = 20, per = 0.1, reset = false },
 	{ id = "Crit", system = "lab", currency = "crystals", base = 25, growth = 1.5, max = 10, per = 0.02, reset = false },
 	{ id = "AutoRate", system = "lab", currency = "crystals", base = 30, growth = 1.7, max = 8, per = 0.5, reset = false },
-	{ id = "PetSlots", system = "lab", currency = "crystals", base = 60, growth = 3, max = 3, per = 1, reset = false },
+	{ id = "PetSlots", system = "lab", currency = "crystals", base = 60, growth = 2.4, max = 3, per = 1, reset = false },
 	-- Frost Halo: temper the tool slot itself (+10% damage per level, survives rebirth)
 	{ id = "Temper", system = "temper", currency = "cryo", base = 10, growth = 1.16, max = 60, per = 0.1, reset = false },
 	-- Storm Reach: Overcharge. Hits build charge; full charge = damage x (OverchargeBase + per x level)

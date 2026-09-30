@@ -70,6 +70,21 @@ function Progression.buyTool(player: Player, toolId: string): (boolean, any)
 		return false, M("msg.not_enough", { item = M("currency.stardust") })
 	end
 	p.tool = toolId
+	-- Asteroid Field tools: Crystals the first time you reach each one (buying a later tool
+	-- also counts the fields you skipped, so the Auto upgrade cannot miss them)
+	local found = 0
+	for i = 1, index do
+		local t = Config.Tools[i]
+		if t.field and not p.fieldsFound[t.id] then
+			p.fieldsFound[t.id] = true
+			found += 1
+		end
+	end
+	if found > 0 then
+		local crystals = found * Config.FieldCrystals
+		State.addCrystals(player, crystals)
+		Remotes.notify(player, M("toast.field_found", { n = crystals }), "success")
+	end
 	State.dirty(player)
 	Hooks.fire("toolBought", player, toolId)
 	return true

@@ -53,6 +53,7 @@ export type Profile = {
 	referralPaid: boolean,
 	referralRewards: number,
 	starterBought: boolean,
+	fieldsFound: { [string]: boolean }, -- Asteroid Field tool id -> its first-time Crystals were paid
 	ads: { day: number, count: number },
 	notifAskedAt: number,
 	groupGiftClaimed: boolean,
@@ -135,6 +136,7 @@ local function defaultProfile(): Profile
 		referralPaid = false,
 		referralRewards = 0,
 		starterBought = false,
+		fieldsFound = {},
 		ads = { day = 0, count = 0 },
 		notifAskedAt = 0,
 		groupGiftClaimed = false,
@@ -173,6 +175,19 @@ local function reconcile(p: any): Profile
 	end
 	if not Config.ToolById[p.tool] then
 		p.tool = Config.Tools[1].id
+	end
+	if type(p.fieldsFound) ~= "table" then
+		p.fieldsFound = {}
+	end
+	-- saves from before the Asteroid Field tools: whatever the player already passed is found
+	-- (no back-pay), so only the fields ahead of them pay out
+	if p.fieldsFound and next(p.fieldsFound) == nil then
+		for i = 1, Config.ToolIndex[p.tool] or 1 do
+			local t = Config.Tools[i]
+			if t.field then
+				p.fieldsFound[t.id] = true
+			end
+		end
 	end
 	for uid, pet in p.pets do
 		if type(pet) ~= "table" or not Formulas.PetById[pet.id] then

@@ -124,8 +124,11 @@ local function toolsTab(s: { [string]: any })
 		row.Name = "Tool_" .. tool.id
 		local tile = Theme.new("Frame", { Size = UDim2.fromOffset(58, 58), Position = UDim2.fromOffset(8, 6), BackgroundColor3 = Theme.PaperDark, Parent = row }, { Theme.corner(10), Theme.stroke(2) })
 		PetIcon.tool(tool.id).Parent = tile
-		Theme.text({ Text = Lang.tool(tool.id), Size = UDim2.new(1, -300, 0, 28), Position = UDim2.fromOffset(76, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 24, Parent = row })
-		Theme.text({ Text = "💪 " .. Lang.t("tools.power", { n = Format.abbrev(tool.power) }) .. "   ·   " .. Lang.zone(tool.zone), Size = UDim2.new(1, -300, 0, 22), Position = UDim2.fromOffset(76, 38), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 18, TextColor3 = Color3.fromRGB(255, 240, 170), Parent = row })
+		-- Asteroid Field tools carry a comet and, until found, their first-time Crystals
+		local field = tool.field == true
+		local bonus = if field and not (s.fieldsFound and s.fieldsFound[tool.id]) and not owned then "   ·   💎 +" .. Config.FieldCrystals else ""
+		Theme.text({ Text = (if field then "☄️ " else "") .. Lang.tool(tool.id), Size = UDim2.new(1, -300, 0, 28), Position = UDim2.fromOffset(76, 6), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 24, Parent = row })
+		Theme.text({ Text = "💪 " .. Lang.t("tools.power", { n = Format.abbrev(tool.power) }) .. "   ·   " .. Lang.zone(tool.zone) .. bonus, Size = UDim2.new(1, -300, 0, 22), Position = UDim2.fromOffset(76, 38), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 18, TextColor3 = Color3.fromRGB(255, 240, 170), Parent = row })
 		if i == current then
 			Theme.text({ Key = "tools.equipped", Size = UDim2.fromOffset(200, 36), Position = UDim2.new(1, -212, 0.5, -18), MaxTextSize = 24, TextColor3 = Theme.Green, Parent = row })
 		elseif owned then

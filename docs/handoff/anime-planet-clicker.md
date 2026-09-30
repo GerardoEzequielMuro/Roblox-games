@@ -229,3 +229,44 @@ Armé `sim/pacing_sim.luau` (modelo en `sim/pacing_model.luau`, reusa el `Config
 - El ingreso es un promedio continuo (caminar al refinery, dron, buffs ~+10%); no modela PvP, quests, Index, Anomaly, eventos en vivo, offline, amigos ni fusiones. Esos son extras a favor del jugador real. El daily rinde mucho al principio (5 min de ingreso, ~14k Stardust a los 20 s) y por eso comparé también sin daily.
 - Después de ~50 min sólo hay rebirths y pet slots hasta Storm; es la cola larga buscada, pero es lo más flojo de la sesión 1 si alguien juega más de una hora. Rebirth 7 no se alcanza en 24 h de sim.
 - No corrí Studio: la sensación real (caminata entre planetas, tiempo de gates) está estimada.
+
+## Ronda 6: contenido para el hueco
+
+Hueco: después de ~50 min sólo había rebirths y pet slots hasta Storm (1 h 46), o sea 25-50 min sin nada nuevo.
+
+### Qué agregué: "Asteroid Fields" (herramientas de campo)
+- 11 herramientas nuevas con `field = true` en `Config.Tools`, todas lasers: 5 en Ember Forge (`laser_slag`, `cinder`, `magma`, `ashfall`, `pyre`, entre Ion y Nova) y 6 en Storm Reach (`laser_arc`, `static`, `thunder`, `tempest`, `squall`, `zenith`, entre Quasar y Singularity). Los costos están pensados como sumidero de Stardust durante la espera del gate: cada una cae unos 8-9 min después de la anterior. No hay nada con Robux.
+- Primera vez que llegás a cada una: `Config.FieldCrystals` (25) Crystals + toast "Asteroid Field found! +N Crystals" (`toast.field_found`). Si comprás una herramienta posterior (Auto Upgrade, por ejemplo), se acreditan también los campos salteados (`Progression.buyTool`).
+- Perfil: `fieldsFound: { [toolId]: true }` (`Data.luau`, default `{}`, `reconcile` lo crea en saves viejos y marca como ya encontrados los campos que el jugador ya pasó, así no hay pago retroactivo; `State.snapshot` lo manda al cliente). Las herramientas se guardan por id, así que los saves viejos siguen bien (quien ya tenía Nova ve los campos de Ember como "ya tenidos").
+- UI: en Workshop > Tools las filas de campo llevan un cometa antes del nombre y "💎 +25" mientras no los encontraste (`UpgradesWindow.luau`). Sin ventanas nuevas.
+- Locale: 11 nombres + `toast.field_found` en los 12 idiomas (534/534 claves).
+- Ajustes de números por el cambio de potencia: `hardness` de Storm 10 -> 15 y Void 12 -> 23 (son índices en `Config.Tools`, `check_config` los valida); `Zones[5].gateHp` 2.5e16 -> 4.5e16; `Zones[6].gateHp` 2.5e20 -> 2e20; `PetSlots.growth` 3 -> 2.4 (slots de 60/144/346 Crystals, el slot 2 llega antes).
+- No hizo falta ModelSlots: no hay props nuevos (los lasers usan `ToolModel` por color/índice).
+
+### Hitos antes / después (mediana, con daily)
+| Hito | Antes | Después |
+|---|---|---|
+| Espera máxima sin nada nuevo, primeras 2 h (seed mediana) | ~48 min en run 1 (rebirth 2 a 47 min -> Storm a 1 h 35), y otros 28 min después hasta el slot 2 | ~9 min (peor seed: 9-10 min en 4 de 5 seeds, 18 min en la quinta) |
+| Eventos nuevos entre 47 min y 2 h (run 1) | ~8, casi todos pegados en el cluster de Storm | ~17, con un campo cada ~8 min |
+| Galaxia 5 | 1 h 46 | 1 h 33 |
+| Galaxia 6 | 3 h 21 | 2 h 54 |
+| Rebirth 2 / 3 / 4 | 51 min / 1 h 46 / 2 h 17 | 53 min / 1 h 34 / 2 h 54 |
+| Rebirth 6 | 4 h 58 | 4 h 31 |
+Sin daily (caso pesimista): mediana de espera máxima en 2 h = 18-19 min (antes ~50, sin medir en el sim viejo); el tramo que queda es Quake -> Ember (pre-existente) y la espera de Storm cuando el ingreso es bajo.
+
+### Sim y tests
+- `sim/pacing_model.luau`: las herramientas `field` se compran apenas alcanza la plata (es el único sumidero mientras esperás el gate) y pagan sus Crystals; nueva métrica `maxTierGap2h` / `worstTierGap2h`; `pacing_sim.luau` la imprime.
+- `tests/pacing_test.luau` (ahora 27 checks): espera máxima <= 12 min (mediana) y <= 20 min (peor seed) en las primeras 2 h, los campos de Ember antes de las 2 h, al menos 7 campos en 2 h, el primero entre rebirth 2 y 75 min; sin daily <= 20 min.
+- `tests/unit.luau` (195): la herramienta de `hardness` de cada galaxia no es de campo, 8+ campos con nombre en en, `FieldCrystals` entero. Corregí el check de `incomeZone` que usaba índices fijos.
+- Verificado: `rojo build` OK, `luau-lsp analyze` sin salida, `unit`, `locale_check`, `check_config`, `pacing_test` pasan. `economy_sim.luau` corre pero es el viejo y estricto: no sabe de los campos.
+- Previews: `docs/previews/anime-planet-clicker/mid-{pc,phone}-upgrades-fields.png` (Workshop scrolleado a las filas de campo; 0 hallazgos). El fixture de la herramienta tiene al jugador en galaxia 3, así que ahí las filas salen con candado "Ember Forge"; para sacar esas fotos escrolleé temporalmente el `CanvasPosition` (ya revertido).
+
+### Qué mirar en Studio
+1. Workshop > Tools: 23 filas con scroll; que el cometa y "💎 +25" entren en la fila en celular y que al comprar desaparezca el +25.
+2. Comprar un campo: toast de tool + toast de Crystals y que los Crystals suban una sola vez (después de un rebirth, comprarlo de nuevo no paga).
+3. Modelo del laser en mano para los tintes nuevos (los índices >= 10 agregan las aletas) y `Hud` "Next tool" con los campos.
+4. Sensación real: un campo cada ~8 min depende de los números del sim, que no modela PvP, quests ni offline.
+
+### Límites
+- Un campo no tiene geografía propia (no hay sub-zonas en el mapa): es una línea de herramientas dentro de la galaxia. Sub-zonas reales y cápsulas propias son sistemas grandes (modelos, pets, locale) y quedaron fuera.
+- Después de ~2 h siguen los huecos de 20-40 min entre Void y el rebirth 6 (cola larga); Void, slot de pets 3 y rebirths son lo único ahí.

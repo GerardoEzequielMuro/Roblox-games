@@ -332,6 +332,7 @@ function State.snapshot(player: Player): { [string]: any }?
 		zones = p.zones,
 		maxZone = maxZone,
 		tool = p.tool,
+		fieldsFound = p.fieldsFound,
 		upgrades = p.upgrades,
 		mats = p.mats,
 		relics = p.relics,

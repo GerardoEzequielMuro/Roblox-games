@@ -28,6 +28,8 @@ local function report(title: string, opts: any?)
 		{ "tier events in the first hour", "tiers1h", "", true },
 		{ "longest wait for a new tier, first hour", "maxTierGap1h", "< 10 min" },
 		{ "  ...same, worst seed", "worstTierGap1h", "< 10 min" },
+		{ "longest wait for a new tier, first 2 hours", "maxTierGap2h", "<= 12 min" },
+		{ "  ...same, worst seed", "worstTierGap2h", "" },
 		{ "galaxy 2 (Verdant)", "zone2", "5-15 min" },
 		{ "galaxy 3 (Frost)", "zone3", "" },
 		{ "first rebirth", "rebirth1", "30-60 min" },

@@ -9,6 +9,8 @@
 --     every in-session gift 10 s after it is ready
 --   * buys whatever pays back fastest (tool, Power, Cargo, capsule of its top galaxy) and
 --     spends Crystals on the first pet slot, then the cheapest lab upgrade, materials on their galaxy's system
+--   * Asteroid Field tools (tool.field) are bought as soon as they are affordable: they are the
+--     only Stardust sink while waiting at a Gate, and the first time pays Config.FieldCrystals
 --   * breaks a Gate Planet when it would fall in under 4 minutes; rebirths as soon as it can
 local Config = require("../src/shared/Config")
 local F = require("../src/shared/Formulas")
@@ -195,6 +197,7 @@ function Model.run(seed: number, hours: number, opts: { daily: boolean? }?): Res
 	local dt = 0.5
 	local zoneCapsuleSeen: { [number]: boolean } = {}
 	local toolSeen: { [number]: boolean } = {}
+	local fieldFound: { [string]: boolean } = {}
 	local systemSeen: { [string]: boolean } = {}
 	local firstSaleDone = false
 	local function bump(key: string, n: number)
@@ -340,7 +343,7 @@ function Model.run(seed: number, hours: number, opts: { daily: boolean? }?): Res
 			local eta0 = if gateZone then gateEta(st.tool, st.up.Power, pp) else 0
 			local tool = Config.Tools[st.tool + 1]
 			if tool and tool.zone <= st.zone then
-				table.insert(options, { name = "tool " .. tool.id, isTool = true, cost = tool.cost, gain = best(stats(st.tool + 1, st.up.Power, pp)) - inc, limit = 300, gateSecs = if gateZone then eta0 - gateEta(st.tool + 1, st.up.Power, pp) else 0, apply = function()
+				table.insert(options, { name = "tool " .. tool.id, isTool = true, cost = tool.cost, gain = best(stats(st.tool + 1, st.up.Power, pp)) - inc, limit = if tool.field then math.huge else 300, field = tool.field, gateSecs = if gateZone then eta0 - gateEta(st.tool + 1, st.up.Power, pp) else 0, apply = function()
 					st.tool += 1
 				end })
 			end
@@ -376,6 +379,9 @@ function Model.run(seed: number, hours: number, opts: { daily: boolean? }?): Res
 				if o.cost <= st.stardust then
 					-- spare money (under 5% of the wallet) is spent even when the gain is capped
 					local payback = if o.gain > 0 then o.cost / o.gain else math.huge
+					if o.field then
+						payback = 1 -- nothing else to spend it on
+					end
 					if o.cost < st.stardust * 0.05 and not o.capsule then
 						payback = math.min(payback, 1)
 					end
@@ -403,6 +409,14 @@ function Model.run(seed: number, hours: number, opts: { daily: boolean? }?): Res
 			end
 			if pick.isTool then
 				tutorial("tool")
+				-- Asteroid Field bonus: every field tool up to this one not found yet (Progression.buyTool)
+				for i = 1, st.tool do
+					local ft = Config.Tools[i]
+					if ft.field and not fieldFound[ft.id] then
+						fieldFound[ft.id] = true
+						st.crystals += Config.FieldCrystals
+					end
+				end
 				if not toolSeen[st.tool] then
 					toolSeen[st.tool] = true
 					tier(pick.name)
@@ -435,25 +449,28 @@ function Model.run(seed: number, hours: number, opts: { daily: boolean? }?): Res
 	end
 	res.m.upgradesBy3min = n3
 	res.m.endRebirths = st.rebirths
-	-- longest stretch without a new tier event (t = 0 to the 1 h mark)
+	-- longest stretch without a new tier event from t = 0 to a horizon (1 h and 2 h)
+	local function longestGap(horizon: number): (number, number, number)
+		local prev = 0
+		local worst, worstFrom, worstTo = 0, 0, 0
+		for _, e in tierTimes do
+			local to = math.min(e.t, horizon)
+			if to - prev > worst then
+				worst, worstFrom, worstTo = to - prev, prev, to
+			end
+			prev = e.t
+			if prev >= horizon then
+				break
+			end
+		end
+		if prev < horizon and hours * 3600 >= horizon and horizon - prev > worst then
+			worst, worstFrom, worstTo = horizon - prev, prev, horizon
+		end
+		return worst, worstFrom, worstTo
+	end
 	local prev = 0
-	local worst, worstFrom, worstTo = 0, 0, 0
-	for _, e in tierTimes do
-		local to = math.min(e.t, 3600)
-		if to - prev > worst then
-			worst, worstFrom, worstTo = to - prev, prev, to
-		end
-		prev = e.t
-		if prev >= 3600 then
-			break
-		end
-	end
-	if prev < 3600 and hours >= 1 and 3600 - prev > worst then
-		worst, worstFrom, worstTo = 3600 - prev, prev, 3600
-	end
-	res.m.maxTierGap1h = worst
-	res.m.maxTierGapFrom = worstFrom
-	res.m.maxTierGapTo = worstTo
+	res.m.maxTierGap1h, res.m.maxTierGapFrom, res.m.maxTierGapTo = longestGap(3600)
+	res.m.maxTierGap2h, res.m.maxTierGap2hFrom, res.m.maxTierGap2hTo = longestGap(7200)
 	-- every tier-event gap over 10 min in the whole run (what the player waits for)
 	prev = 0
 	for _, e in tierTimes do
@@ -500,8 +517,10 @@ function Model.median(seeds: number, hours: number, opts: any?): ({ [string]: nu
 	end
 	-- the worst seed, for the "never a dead stretch" rule
 	out.worstTierGap1h = 0
+	out.worstTierGap2h = 0
 	for _, r in runs do
 		out.worstTierGap1h = math.max(out.worstTierGap1h, r.m.maxTierGap1h)
+		out.worstTierGap2h = math.max(out.worstTierGap2h, r.m.maxTierGap2h or 0)
 	end
 	return out, runs
 end
