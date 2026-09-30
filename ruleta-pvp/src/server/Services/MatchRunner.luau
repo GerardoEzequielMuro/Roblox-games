@@ -10,6 +10,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local MatchCore = require(ReplicatedStorage.Shared.MatchCore)
 local BotBrain = require(ReplicatedStorage.Shared.BotBrain)
+local MatchFlow = require(ReplicatedStorage.Shared.MatchFlow)
 local Rng = require(ReplicatedStorage.Shared.Rng)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -52,7 +53,7 @@ function Runner.new(tbl: TableRef, entrants: { MatchCore.Entrant }, humans: { [s
 	self.awaiting = nil :: string?
 	self.state = nil :: any
 	self.spin = nil :: any
-	self.idle = {} :: { [string]: number }
+	self.afk = MatchFlow.newAfk()
 	self.forfeit = {} :: { [string]: boolean }
 	self.paid = {} :: { [string]: boolean }
 	self.results = {} :: { [string]: any }
@@ -102,7 +103,7 @@ end
 -- Auto-play: the player's own toggle, or two turns in a row without touching anything.
 function Runner:isAuto(player: Player, id: string): boolean
 	local p = Data.get(player)
-	return (p ~= nil and p.settings.autoPlay) or (self.idle[id] or 0) >= 2
+	return MatchFlow.isAuto(self.afk, id, p ~= nil and p.settings.autoPlay == true)
 end
 
 function Runner:pay(id: string)
@@ -270,6 +271,11 @@ function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
 	if not id or m.phase == "ended" or self.aborted then
 		return false, "msg.not_in_match"
 	end
+	if kind == "back" then
+		-- "I'm back": the server stops playing this player's turns for them (AFK auto-play)
+		MatchFlow.active(self.afk, id)
+		return true, nil
+	end
 	if m.players[m.spinner].id ~= id then
 		return false, "msg.not_your_turn"
 	end
@@ -289,7 +295,7 @@ function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
 		if type(at) == "number" and at == at then
 			tb = math.clamp(at, math.max(now - 0.2, earliest), now)
 		end
-		self.idle[id] = 0
+		MatchFlow.active(self.afk, id)
 		return self:doBrake(id, tb)
 	end
 	if self.awaiting ~= "decide" then
@@ -303,7 +309,7 @@ function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
 		if not ok then
 			return false, ev
 		end
-		self.idle[id] = 0
+		MatchFlow.active(self.afk, id)
 		self:push(ev)
 		self:sendHands()
 		return true, nil
@@ -315,11 +321,11 @@ function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
 		if not ok then
 			return false, ev
 		end
-		self.idle[id] = 0
+		MatchFlow.active(self.afk, id)
 		self:broadcast(ev[1])
 		return true, nil
 	elseif kind == "spin" then
-		self.idle[id] = 0
+		MatchFlow.active(self.afk, id)
 		return self:beginSpin(id)
 	end
 	return false, "msg.bad_request"
@@ -405,7 +411,7 @@ function Runner:decide()
 		end
 		if now >= ts.deadline then
 			if human and not auto then
-				self.idle[p.id] = (self.idle[p.id] or 0) + 1
+				MatchFlow.timedOut(self.afk, p.id, key)
 			end
 			self:beginSpin(p.id)
 			break
@@ -445,7 +451,7 @@ function Runner:spinWait()
 		local now = serverNow()
 		if now >= brakeAt then
 			if human and not self:isAuto(human, p.id) then
-				self.idle[p.id] = (self.idle[p.id] or 0) + 1
+				MatchFlow.timedOut(self.afk, p.id, turn .. ":" .. si)
 			end
 			self:doBrake(p.id, if human then now else brakeAt)
 			break

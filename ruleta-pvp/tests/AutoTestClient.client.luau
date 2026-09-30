@@ -1073,7 +1073,7 @@ end
 -- Lite profile and budgets
 ---------------------------------------------------------------------------
 do
-	check("fx: pools stay under their caps", Fx.poolSize() <= 96 and Fx.textPoolSize() <= 8 and Fx.emitterCount() <= 1, Fx.poolSize())
+	check("fx: pools stay under their caps", Fx.poolSize() <= 96 and Fx.textPoolSize() <= 8 and Fx.emitterCount() <= 2, Fx.poolSize())
 	local emitters = 0
 	for _, name in { "SpinTables", "SpinFx" } do
 		local f = workspace:FindFirstChild(name)

@@ -66,8 +66,9 @@ function Cam.shake(amount: number)
 end
 
 -- Quick FOV kick (negative = punch in).
+-- With "screen shake" off (reduced motion) punches still read, but much smaller.
 function Cam.punch(amount: number)
-	punch += amount
+	punch += if Prefs.shake() then amount else amount * 0.3
 end
 
 function Cam.release()

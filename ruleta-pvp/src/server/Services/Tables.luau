@@ -9,6 +9,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local MatchCore = require(ReplicatedStorage.Shared.MatchCore)
+local MatchFlow = require(ReplicatedStorage.Shared.MatchFlow)
 local BotModel = require(ReplicatedStorage.Shared.BotModel)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -211,11 +212,9 @@ function Tables.sit(player: Player, tbl: Table): (boolean, Locale.Message?)
 		local count = #humans(tbl)
 		if tbl.status == "open" then
 			-- first match ever: no waiting around
-			startCountdown(tbl, if p.tutorialDone then Config.Timing.countdown else 4)
+			startCountdown(tbl, MatchFlow.countdownFor(p.tutorialDone, Config.Timing.countdown))
 		end
-		if count >= mode.maxPlayers then
-			tbl.countdownEnds = math.min(tbl.countdownEnds, now() + Config.Timing.countdownFull / Runner.timeScale)
-		end
+		tbl.countdownEnds = MatchFlow.countdownAfterSit(tbl.countdownEnds, now(), count, mode.maxPlayers, Config.Timing.countdownFull / Runner.timeScale)
 	end
 	State.dirty(player)
 	markDirty()
@@ -324,9 +323,10 @@ local function finishMatch(tbl: Table)
 		local player = seat.player
 		if player and player.Parent then
 			local p = Data.get(player)
-			if where[player] == nil or where[player].tbl ~= tbl then
+			local fate = MatchFlow.afterMatch(where[player] ~= nil and where[player].tbl == tbl, tbl.private ~= nil, tbl.duel, p ~= nil and p.settings.autoQueue == true)
+			if fate == "gone" then
 				tbl.seats[index] = nil -- no longer really here
-			elseif tbl.private or (p and p.settings.autoQueue and not tbl.duel) then
+			elseif fate == "stay" then
 				-- stays for the next match
 				staying += 1
 				placeCharacter(player, Layout.seatCFrame(tbl.origin, index, Config.Seats), true)
@@ -354,8 +354,7 @@ function Tables.startMatch(tbl: Table): boolean
 	end
 	local mode = Config.ModeById[tbl.mode]
 	local fill = not tbl.duel and (tbl.private == nil or tbl.private.fill)
-	local want = if fill then math.max(#hs, mode.fillTo) else #hs
-	want = math.clamp(math.max(want, 2), 2, mode.maxPlayers)
+	local want = MatchFlow.entrants(#hs, mode, fill)
 	if want > #hs then
 		addBots(tbl, want - #hs)
 	end
@@ -732,7 +731,24 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 					if #humans(tbl) == 0 then
 						releaseIfEmpty(tbl)
 					elseif t >= tbl.countdownEnds then
-						if not Tables.startMatch(tbl) then
+						-- one table failing to start must not kill this loop for every table
+						local ok, started = pcall(Tables.startMatch, tbl)
+						if not ok then
+							warn("[Tables] could not start a match on", tbl.id, started)
+							clearBots(tbl)
+							tbl.runner = nil
+							tbl.status = "open"
+							tbl.countdownEnds = 0
+							-- stand everyone up so the table does not sit stuck with no countdown
+							for _, seat in humans(tbl) do
+								local pl = seat.player
+								if pl then
+									Remotes.notify(pl, M("msg.error"), "error")
+									Tables.leave(pl)
+								end
+							end
+							releaseIfEmpty(tbl)
+						elseif not started then
 							releaseIfEmpty(tbl)
 						end
 					end

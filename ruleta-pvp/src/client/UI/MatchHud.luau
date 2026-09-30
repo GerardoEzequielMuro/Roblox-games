@@ -39,6 +39,8 @@ MatchHud.onPlayAgain = nil :: ((string) -> ())?
 MatchHud.refresh = function() end :: () -> ()
 
 local deadline = 0
+local lastWarnSecs = -1
+MatchHud.lastSecondBeats = 0 -- last-seconds warnings shown (playtest)
 local decideTotal = 1
 local brakeArmsAt = 0
 
@@ -71,6 +73,7 @@ Root.mount(turn, root)
 local turnText = Theme.text({ Name = "Text", Text = "", Title = true, Size = UDim2.new(1, -20, 1, -12), Position = UDim2.fromOffset(10, 3), MaxTextSize = 26, Parent = turn })
 local timerBack = Theme.new("Frame", { Name = "Timer", Size = UDim2.new(1, -28, 0, 5), Position = UDim2.new(0, 14, 1, -8), BackgroundColor3 = Theme.Ink, BorderSizePixel = 0, Parent = turn }, { Theme.corner(3) })
 local timerFill = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Yellow, BorderSizePixel = 0, Parent = timerBack }, { Theme.corner(3) }) :: Frame
+local turnStroke = turn:FindFirstChildOfClass("UIStroke")
 local seconds = Theme.text({ Name = "Seconds", Text = "", Title = true, Size = UDim2.fromOffset(60, 30), Position = UDim2.new(1, 8, 0.5, 0), AnchorPoint = Vector2.new(0, 0.5), MaxTextSize = 28, TextColor3 = Theme.Yellow, Stroke = 3, Parent = turn })
 
 -- info chip (mode, round, modifier)
@@ -493,11 +496,25 @@ emoteButton.Activated:Connect(function()
 	end
 end)
 
+-- afkAuto: the server started playing my turns because I let the timer run out twice
+-- (my own toggle is off). The button then reads ON, and pressing it hands the turns back.
+MatchHud.afkAuto = false
 local function refreshAuto()
-	local on = Net.setting("autoPlay") == true
+	local on = Net.setting("autoPlay") == true or MatchHud.afkAuto
 	Theme.setButton(autoButton, "🤖 " .. Lang.t("hud.auto_play") .. ": " .. (if on then "ON" else "OFF"), if on then Theme.Green else Theme.Grey)
+	local st = autoButton:FindFirstChildOfClass("UIStroke")
+	if st then
+		st.Color = if MatchHud.afkAuto then Theme.Yellow else Theme.Ink
+	end
 end
 autoButton.Activated:Connect(function()
+	Theme.play("click", 0.35)
+	if MatchHud.afkAuto and Net.setting("autoPlay") ~= true then
+		MatchHud.afkAuto = false
+		act("back")
+		refreshAuto()
+		return
+	end
 	local on = Net.setting("autoPlay") == true
 	task.spawn(Net.request, "SetSetting", { key = "autoPlay", value = not on })
 end)
@@ -542,6 +559,7 @@ function MatchHud.show(view: TableViews.View, spectating: boolean)
 	MatchHud.myTurn = false
 	MatchHud.pendingCard = nil
 	MatchHud.selectedTarget = nil
+	MatchHud.afkAuto = false
 	if spectating then
 		MatchHud.hand = {}
 	end
@@ -615,6 +633,13 @@ end
 function MatchHud.decide(e: { [string]: any })
 	MatchHud.phase = "decide"
 	MatchHud.myTurn = e.spinner == MatchHud.myId and not e.auto
+	if e.spinner == MatchHud.myId then
+		local was = MatchHud.afkAuto
+		MatchHud.afkAuto = e.auto == true and Net.setting("autoPlay") ~= true
+		if MatchHud.afkAuto and not was then
+			Theme.pop(autoButton, 1.3)
+		end
+	end
 	MatchHud.cardPlayed = e.snapshot.cardPlayed or e.snapshot.passed
 	deadline = e.deadline
 	decideTotal = math.max(0.1, e.duration)
@@ -837,6 +862,19 @@ function MatchHud.init()
 			local secs = math.max(0, math.ceil(deadline - Workspace:GetServerTimeNow()))
 			seconds.Text = if MatchHud.phase == "decide" and secs < 100 then tostring(secs) else ""
 			seconds.TextColor3 = if left < 0.3 then Theme.Red else Theme.Yellow
+			-- last seconds of my own decision: each second thumps (pop, tick, red rim)
+			if MatchHud.phase == "decide" and MatchHud.myTurn and secs <= 3 and secs > 0 and secs ~= lastWarnSecs then
+				lastWarnSecs = secs
+				MatchHud.lastSecondBeats += 1
+				Theme.pop(seconds, 1.6)
+				Theme.play("tick", 0.55, 1.9 - secs * 0.15)
+				if turnStroke then
+					turnStroke.Color = Theme.Red
+					TweenService:Create(turnStroke, TweenInfo.new(0.6), { Color = Theme.Yellow }):Play()
+				end
+			elseif secs > 3 then
+				lastWarnSecs = -1
+			end
 		else
 			timerBack.Visible = false
 			seconds.Text = ""

@@ -225,48 +225,93 @@ end
 ---------------------------------------------------------------------------
 -- Particle extra (skipped in lite): one shared emitter host, moved to where it is needed
 ---------------------------------------------------------------------------
+-- Built-in textures that ship with every Roblox client (no uploaded assets).
+local TEXTURES = {
+	sparks = "rbxasset://textures/particles/sparkles_main.dds",
+	smoke = "rbxasset://textures/particles/smoke_main.dds",
+}
 local emitterHost: Part? = nil
-local emitter: ParticleEmitter? = nil
-local function getEmitter(): (Part, ParticleEmitter)
-	if emitterHost and emitter then
-		return emitterHost, emitter
+local emitters: { [string]: ParticleEmitter } = {}
+local function getEmitter(kind: string): (Part, ParticleEmitter)
+	local host = emitterHost
+	if not host then
+		local h = Instance.new("Part")
+		h.Name = "EmitterHost"
+		h.Anchored = true
+		h.CanCollide = false
+		h.CanQuery = false
+		h.CanTouch = false
+		h.Transparency = 1
+		h.Size = Vector3.one
+		h.Parent = folder
+		emitterHost = h
+		host = h
 	end
-	local host = Instance.new("Part")
-	host.Name = "EmitterHost"
-	host.Anchored = true
-	host.CanCollide = false
-	host.CanQuery = false
-	host.CanTouch = false
-	host.Transparency = 1
-	host.Size = Vector3.one
-	host.Parent = folder
-	local e = Instance.new("ParticleEmitter")
-	e.Enabled = false
-	e.Rate = 0
-	e.Lifetime = NumberRange.new(0.4, 0.9)
-	e.Speed = NumberRange.new(10, 26)
-	e.SpreadAngle = Vector2.new(180, 180)
-	e.Drag = 3
-	e.LightEmission = 1
-	e.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.4), NumberSequenceKeypoint.new(1, 0) })
-	e.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
-	e.Parent = host
-	emitterHost, emitter = host, e
-	return host, e
+	local hostPart = host :: Part
+	local e = emitters[kind]
+	if e then
+		return hostPart, e
+	end
+	local created = Instance.new("ParticleEmitter")
+	created.Name = "Emitter_" .. kind
+	created.Enabled = false
+	created.Rate = 0
+	created.Texture = TEXTURES[kind] or TEXTURES.sparks
+	if kind == "smoke" then
+		-- a soft dark puff that hangs for a moment (eliminations, doom)
+		created.Lifetime = NumberRange.new(0.8, 1.4)
+		created.Speed = NumberRange.new(4, 10)
+		created.SpreadAngle = Vector2.new(180, 180)
+		created.Drag = 2.5
+		created.LightEmission = 0.2
+		created.Rotation = NumberRange.new(0, 360)
+		created.RotSpeed = NumberRange.new(-40, 40)
+		created.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 2), NumberSequenceKeypoint.new(1, 6) })
+		created.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0.35), NumberSequenceKeypoint.new(1, 1) })
+	else
+		created.Lifetime = NumberRange.new(0.4, 0.9)
+		created.Speed = NumberRange.new(10, 26)
+		created.SpreadAngle = Vector2.new(180, 180)
+		created.Drag = 3
+		created.LightEmission = 1
+		created.Size = NumberSequence.new({ NumberSequenceKeypoint.new(0, 1.4), NumberSequenceKeypoint.new(1, 0) })
+		created.Transparency = NumberSequence.new({ NumberSequenceKeypoint.new(0, 0), NumberSequenceKeypoint.new(1, 1) })
+	end
+	created.Parent = hostPart
+	emitters[kind] = created
+	return hostPart, created
 end
 
 function Fx.sparks(pos: Vector3, color: Color3, count: number)
 	if Prefs.lite() then
 		return
 	end
-	local host, e = getEmitter()
+	local host, e = getEmitter("sparks")
 	host.CFrame = CFrame.new(pos)
 	e.Color = ColorSequence.new(color)
 	e:Emit(count)
 end
 
+-- Elimination reveal: a hot spark burst plus a dark puff, both from built-in textures.
+function Fx.burst(pos: Vector3, color: Color3, count: number)
+	if Prefs.lite() then
+		return
+	end
+	local host, spark = getEmitter("sparks")
+	local _, smoke = getEmitter("smoke")
+	host.CFrame = CFrame.new(pos)
+	spark.Color = ColorSequence.new(color:Lerp(Color3.new(1, 1, 1), 0.3), color)
+	spark:Emit(count)
+	smoke.Color = ColorSequence.new(color:Lerp(Color3.new(0, 0, 0), 0.6))
+	smoke:Emit(math.max(4, count // 4))
+end
+
 function Fx.emitterCount(): number
-	return if emitter then 1 else 0
+	local n = 0
+	for _ in emitters do
+		n += 1
+	end
+	return n
 end
 
 ---------------------------------------------------------------------------

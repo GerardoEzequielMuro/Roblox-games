@@ -10,6 +10,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
+local State = require(script.Parent.State)
 
 local Leaderboard = {}
 
@@ -75,12 +76,19 @@ function Leaderboard.updateStats(player: Player)
 end
 
 local function values(p: Data.Profile): { [string]: number }
-	local weekly = if p.weekly.week == Leaderboard.week(os.time()) then p.weekly.wins else 0
-	return { wins = p.wins, season = p.trophies, weekly = weekly }
+	local now = os.time()
+	local weekly = if p.weekly.week == Leaderboard.week(now) then p.weekly.wins else 0
+	-- trophies only count on this season's board once the profile has rolled into it
+	local season = if p.season == Progression.season(now) then p.trophies else 0
+	return { wins = p.wins, season = season, weekly = weekly }
 end
 
 local function pushScores()
 	for _, player in Players:GetPlayers() do
+		if State.ready[player] then
+			-- a server that stays up across the 1st of the month rolls its players over here
+			State.checkSeason(player)
+		end
 		local p = Data.get(player)
 		if p and Data.isPersistent(player) then
 			for kind, value in values(p) do

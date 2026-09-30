@@ -1,8 +1,10 @@
 --!strict
 -- The game-show UI kit: dark navy panels, saturated neon accents, chunky buttons. Colours, a
 -- tiny instance factory and the reusable widgets.
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local TweenService = game:GetService("TweenService")
 
+local Icons = require(ReplicatedStorage.Shared.Icons)
 local Lang = require(script.Parent.Parent.Lang)
 local Audio = require(script.Parent.Parent.Audio)
 
@@ -124,13 +126,70 @@ function Theme.text(props: { [string]: any }): TextLabel
 	return t
 end
 
+---------------------------------------------------------------------------
+-- Icons: the shared image pack when uploaded, the emoji glyph otherwise
+---------------------------------------------------------------------------
+-- Which pack icon stands in for which emoji (the map lives in Shared/Icons).
+Theme.IconFor = Icons.emoji
+
+-- Image for an icon name or an emoji, or nil while the pack is not uploaded.
+function Theme.iconImage(nameOrEmoji: string): string?
+	return Icons.get(nameOrEmoji)
+end
+
+local ICON_SKIP = { Parent = true, Icon = true, IconName = true }
+
+-- An icon slot: an ImageLabel (ScaleType Fit) when the pack icon is uploaded, otherwise
+-- the emoji as a text label exactly like before. props.Icon is the emoji; props.IconName
+-- picks the pack icon (default: looked up from the emoji in Theme.IconFor).
+function Theme.icon(props: { [string]: any }): GuiObject
+	local emoji: string = props.Icon or ""
+	local image = Icons.get(props.IconName or emoji)
+	local obj: GuiObject
+	if image then
+		obj = Theme.new("ImageLabel", {
+			Name = "Icon",
+			BackgroundTransparency = 1,
+			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.fromScale(1, 1),
+		})
+		for k, v in props do
+			if not ICON_SKIP[k] then
+				(obj :: any)[k] = v
+			end
+		end
+	else
+		local tp: { [string]: any } = { Name = "Icon", Text = emoji, Stroke = false }
+		for k, v in props do
+			if not ICON_SKIP[k] then
+				tp[k] = v
+			end
+		end
+		obj = Theme.text(tp)
+	end
+	if props.Parent then
+		obj.Parent = props.Parent
+	end
+	return obj
+end
+
 local PANEL_SKIP = { Parent = true, Corner = true, StrokeThickness = true, StrokeColor = true }
 
 function Theme.panel(props: { [string]: any }): Frame
 	local f = Theme.new("Frame", {
 		BackgroundColor3 = Theme.Panel,
 		BorderSizePixel = 0,
-	}, { Theme.corner(props.Corner or 16), Theme.stroke(props.StrokeThickness or 3, props.StrokeColor) })
+	}, {
+		Theme.corner(props.Corner or 16),
+		Theme.stroke(props.StrokeThickness or 3, props.StrokeColor),
+		-- soft top-lit sheen; multiplies whatever BackgroundColor3 the panel ends up with
+		Theme.new("UIGradient", {
+			Name = "Sheen",
+			Rotation = 90,
+			Color = ColorSequence.new(Color3.new(1, 1, 1), Color3.fromRGB(196, 200, 226)),
+		}),
+	})
 	for k, v in props do
 		if not PANEL_SKIP[k] then
 			(f :: any)[k] = v
@@ -154,6 +213,7 @@ export type ButtonOpts = {
 	Key: string?, -- translation key (overrides Text, re-renders on language change)
 	Args: { [string]: any }?,
 	Prefix: string?,
+	Icon: string?, -- pack icon name: shown as an image left of the text (replacing Prefix) once uploaded
 	Color: Color3?,
 	Size: UDim2?,
 	Position: UDim2?,
@@ -236,20 +296,34 @@ function Theme.button(opts: ButtonOpts): TextButton
 		Theme.new("UIGradient", { Color = Theme.buttonFace(color), Rotation = 90 }),
 	}) :: TextButton
 	Theme.gloss(b, opts.Corner or 14)
+	local image = if opts.Icon then Icons.get(opts.Icon) else nil
 	local label = Theme.text({
 		Name = "Label",
 		Text = opts.Text or "",
-		Size = UDim2.new(1, -12, 1, -10),
-		Position = UDim2.new(0.5, 0, 0.5, -1),
+		Size = if image then UDim2.new(1, -44, 1, -10) else UDim2.new(1, -12, 1, -10),
+		Position = if image then UDim2.new(0.5, 16, 0.5, -1) else UDim2.new(0.5, 0, 0.5, -1),
 		AnchorPoint = Vector2.new(0.5, 0.5),
 		MaxTextSize = opts.TextSize or 28,
 		Key = opts.Key,
 		Args = opts.Args,
-		Prefix = opts.Prefix,
+		Prefix = if image then nil else opts.Prefix,
 		Title = opts.Title,
 		Parent = b,
 	})
 	label.ZIndex = z + 1
+	if image then
+		Theme.new("ImageLabel", {
+			Name = "Icon",
+			BackgroundTransparency = 1,
+			Image = image,
+			ScaleType = Enum.ScaleType.Fit,
+			Size = UDim2.new(0, 30, 0.7, 0),
+			Position = UDim2.new(0, 8, 0.5, 0),
+			AnchorPoint = Vector2.new(0, 0.5),
+			ZIndex = z + 1,
+			Parent = b,
+		})
+	end
 	local scale = Theme.new("UIScale", { Parent = b })
 	b.MouseButton1Down:Connect(function()
 		TweenService:Create(scale, TweenInfo.new(0.06), { Scale = 0.92 }):Play()
@@ -290,7 +364,7 @@ function Theme.setButton(b: TextButton, text: string?, color: Color3?)
 end
 
 -- Pill: icon + value, used for currencies and chips.
-function Theme.pill(props: { Name: string?, Icon: string, Color: Color3, Size: UDim2, Parent: Instance?, LayoutOrder: number? }): (Frame, TextLabel)
+function Theme.pill(props: { Name: string?, Icon: string, IconName: string?, Color: Color3, Size: UDim2, Parent: Instance?, LayoutOrder: number? }): (Frame, TextLabel)
 	local f = Theme.new("Frame", {
 		Name = props.Name or "Pill",
 		Size = props.Size,
@@ -305,7 +379,7 @@ function Theme.pill(props: { Name: string?, Icon: string, Color: Color3, Size: U
 		Parent = f,
 	}, { Theme.corner(999), Theme.new("UIAspectRatioConstraint", { AspectRatio = 1, DominantAxis = Enum.DominantAxis.Height }) })
 	iconHolder.Size = UDim2.new(1, 0, 1, -6)
-	Theme.text({ Text = props.Icon, Stroke = false, Size = UDim2.fromScale(0.72, 0.72), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = iconHolder })
+	Theme.icon({ Icon = props.Icon, IconName = props.IconName, Size = UDim2.fromScale(0.72, 0.72), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), Parent = iconHolder })
 	local value = Theme.text({
 		Name = "Value",
 		Text = "0",

@@ -137,6 +137,20 @@ local function buildLighting()
 	cc.Saturation = 0.12
 	cc.Contrast = 0.06
 	cc.Parent = Lighting
+	-- soft god rays off the dusk sun and a depth-of-field the client turns on while the
+	-- lights are down (Mood), so the wheel pops out of a blurred background
+	local rays = Instance.new("SunRaysEffect")
+	rays.Intensity = 0.04
+	rays.Spread = 0.6
+	rays.Parent = Lighting
+	local focus = Instance.new("DepthOfFieldEffect")
+	focus.Name = "Focus"
+	focus.Enabled = false
+	focus.FarIntensity = 0
+	focus.NearIntensity = 0
+	focus.FocusDistance = 26
+	focus.InFocusRadius = 22
+	focus.Parent = Lighting
 end
 
 local function buildIsland(root: Instance, tableCount: number)

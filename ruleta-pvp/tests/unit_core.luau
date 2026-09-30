@@ -12,6 +12,8 @@ local Progression = require("../src/shared/Progression")
 local Quests = require("../src/shared/Quests")
 local LiveEvents = require("../src/shared/LiveEvents")
 local Referral = require("../src/shared/Referral")
+local MatchFlow = require("../src/shared/MatchFlow")
+local Icons = require("../src/shared/Icons")
 
 local checks, fails = 0, 0
 local function check(name: string, cond: any, detail: any?)
@@ -929,6 +931,81 @@ do
 
 	check("referral round trip", Referral.parse(Referral.launchData(12345)) == 12345)
 	check("referral rejects junk", Referral.parse("ref:abc") == nil and Referral.parse("x") == nil and Referral.parse(nil) == nil and Referral.parse("ref:0") == nil)
+end
+
+---------------------------------------------------------------------------
+-- Match flow around the core: bots fill, countdowns, who stays, AFK
+---------------------------------------------------------------------------
+do
+	local classic, duel = Config.ModeById.classic, Config.ModeById.duel
+	check("flow: nobody seated, no match", MatchFlow.entrants(0, classic, true) == 0)
+	check("flow: one human on a public table gets bots up to fillTo", MatchFlow.entrants(1, classic, true) == classic.fillTo)
+	check("flow: more humans than fillTo, no extra bots", MatchFlow.entrants(7, classic, true) == 7)
+	check("flow: never past maxPlayers", MatchFlow.entrants(20, classic, true) == classic.maxPlayers)
+	check("flow: private without fill still needs 2 (a bot joins a lone host)", MatchFlow.entrants(1, classic, false) == 2)
+	check("flow: private without fill keeps its humans", MatchFlow.entrants(3, classic, false) == 3)
+	check("flow: a duel is 2", MatchFlow.entrants(2, duel, false) == 2 and MatchFlow.entrants(1, duel, false) == 2)
+	-- every mode: the table the runner gets is always a legal match size
+	for _, mode in Config.Modes do
+		for h = 1, mode.maxPlayers do
+			for _, fill in { true, false } do
+				local n = MatchFlow.entrants(h, mode, fill)
+				check("flow: legal size " .. mode.id .. " h=" .. h, n >= 2 and n >= h and n <= mode.maxPlayers and n <= Config.Seats, n)
+			end
+		end
+	end
+
+	check("flow: first match counts down 4 s", MatchFlow.countdownFor(false, 12) == 4 and MatchFlow.countdownFor(true, 12) == 12)
+	check("flow: a full table starts sooner", MatchFlow.countdownAfterSit(112, 100, 8, 8, 4) == 104)
+	check("flow: a full table never starts later", MatchFlow.countdownAfterSit(102, 100, 8, 8, 4) == 102)
+	check("flow: not full, countdown unchanged", MatchFlow.countdownAfterSit(112, 100, 3, 8, 4) == 112)
+
+	check("flow: walked off during the match", MatchFlow.afterMatch(false, true, false, true) == "gone")
+	check("flow: private tables keep everyone", MatchFlow.afterMatch(true, true, false, false) == "stay")
+	check("flow: auto-queue keeps the seat", MatchFlow.afterMatch(true, false, false, true) == "stay")
+	check("flow: no auto-queue stands up", MatchFlow.afterMatch(true, false, false, false) == "leave")
+	check("flow: a duel never auto-queues", MatchFlow.afterMatch(true, false, true, true) == "leave")
+
+	-- AFK: two idle turns in a row, counted once per turn, and "I'm back" undoes it
+	local afk = MatchFlow.newAfk()
+	check("afk: fresh player plays their own turns", not MatchFlow.isAuto(afk, "u1", false))
+	check("afk: the toggle always wins", MatchFlow.isAuto(afk, "u1", true))
+	MatchFlow.timedOut(afk, "u1", "1:1") -- decide timer ran out
+	MatchFlow.timedOut(afk, "u1", "1:1") -- and the brake timer, same turn
+	check("afk: one idle turn is one strike", not MatchFlow.isAuto(afk, "u1", false) and afk.idle.u1 == 1)
+	MatchFlow.active(afk, "u1")
+	MatchFlow.timedOut(afk, "u1", "7:1")
+	check("afk: acting in between resets the run", not MatchFlow.isAuto(afk, "u1", false))
+	MatchFlow.timedOut(afk, "u1", "13:1")
+	check("afk: two idle turns in a row turn auto-play on", MatchFlow.isAuto(afk, "u1", false))
+	check("afk: other players are unaffected", not MatchFlow.isAuto(afk, "u2", false))
+	MatchFlow.active(afk, "u1")
+	check("afk: I'm back hands the turns back", not MatchFlow.isAuto(afk, "u1", false))
+	MatchFlow.timedOut(afk, "u1", "13:1")
+	check("afk: a turn already counted before coming back counts again after", afk.idle.u1 == 1)
+end
+
+---------------------------------------------------------------------------
+-- Icon pack: nothing is uploaded yet, so every lookup falls back to the emoji
+---------------------------------------------------------------------------
+do
+	local allEmpty, mapped = true, true
+	for name, id in Icons.ids do
+		allEmpty = allEmpty and id == ""
+		allEmpty = allEmpty and Icons.get(name) == nil
+	end
+	for emoji, name in Icons.emoji do
+		mapped = mapped and Icons.ids[name] ~= nil
+		if Icons.ids[name] == nil then
+			print("  emoji " .. emoji .. " maps to a missing icon " .. name)
+		end
+	end
+	check("icons: no ids invented, every lookup is nil today", allEmpty)
+	check("icons: every emoji maps to an icon in the pack", mapped)
+	check("icons: unknown names are nil", Icons.get("nope") == nil and Icons.get("") == nil)
+	Icons.ids.coin = "123"
+	check("icons: an uploaded id resolves by name and by emoji", Icons.get("coin") == "rbxassetid://123" and Icons.get("🪙") == "rbxassetid://123")
+	Icons.ids.coin = ""
 end
 
 print(string.format("%d checks, %d failures", checks, fails))

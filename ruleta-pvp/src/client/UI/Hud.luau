@@ -91,7 +91,7 @@ for i, m in MENU do
 		Theme.new("UIGradient", { Color = Theme.buttonFace(color), Rotation = 90 }),
 	}) :: TextButton
 	Theme.gloss(b, 14)
-	Theme.text({ Text = icon, Stroke = false, Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 3), Parent = b })
+	Theme.icon({ Icon = icon, Size = UDim2.new(1, 0, 0, 34), Position = UDim2.fromOffset(0, 3), Parent = b })
 	Theme.text({ Key = "menu." .. name, Size = UDim2.new(1, -4, 0, 17), Position = UDim2.new(0, 2, 1, -24), MaxTextSize = 13, Parent = b })
 	b.Activated:Connect(function()
 		Theme.play("click", 0.35)
@@ -135,7 +135,7 @@ local seatedLine = Theme.text({ Name = "Line", Text = "", Size = UDim2.new(1, -1
 Theme.button({ Name = "LeaveTable", Key = "match.leave", Prefix = "🚪 ", Color = Theme.Red, Size = UDim2.fromOffset(140, 44), Position = UDim2.new(1, -12, 0, 10), AnchorPoint = Vector2.new(1, 0), TextSize = 19, Parent = seated, OnClick = function()
 	task.spawn(Net.request, "LeaveTable")
 end })
-Theme.button({ Name = "InviteTable", Key = "invite.friends", Prefix = "👥 ", Color = Theme.Blue, Size = UDim2.fromOffset(140, 40), Position = UDim2.new(1, -12, 0, 60), AnchorPoint = Vector2.new(1, 0), TextSize = 15, Parent = seated, OnClick = function()
+Theme.button({ Name = "InviteTable", Key = "invite.friends", Prefix = "👥 ", Icon = "group", Color = Theme.Blue, Size = UDim2.fromOffset(140, 40), Position = UDim2.new(1, -12, 0, 60), AnchorPoint = Vector2.new(1, 0), TextSize = 15, Parent = seated, OnClick = function()
 	task.spawn(function()
 		pcall(function()
 			local options = Instance.new("ExperienceInviteOptions")
@@ -191,7 +191,7 @@ Theme.text({ Key = "core.title", Prefix = "🔋 ", Title = true, Size = UDim2.ne
 local coreBack = Theme.new("Frame", { Name = "Bar", Size = UDim2.new(1, -24, 0, 16), Position = UDim2.fromOffset(12, 34), BackgroundColor3 = Theme.Ink, Parent = core }, { Theme.corner(8) })
 local coreFill = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Theme.Cyan, Parent = coreBack }, { Theme.corner(8) }) :: Frame
 local coreText = Theme.text({ Name = "Count", Text = "0/25", Size = UDim2.fromScale(1, 1), MaxTextSize = 13, ZIndex = 3, Parent = coreBack })
-local tapButton = Theme.button({ Name = "Tap", Key = "core.tap", Prefix = "⚡ ", Title = true, Color = Theme.Cyan, Size = UDim2.new(1, -24, 0, 56), Position = UDim2.fromOffset(12, 56), TextSize = 30, Corner = 16, Parent = core })
+local tapButton = Theme.button({ Name = "Tap", Key = "core.tap", Prefix = "⚡ ", Icon = "bolt", Title = true, Color = Theme.Cyan, Size = UDim2.new(1, -24, 0, 56), Position = UDim2.fromOffset(12, 56), TextSize = 30, Corner = 16, Parent = core })
 tapButton.Activated:Connect(function()
 	if Hud.onCoreTap then
 		Hud.onCoreTap()

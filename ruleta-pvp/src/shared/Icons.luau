@@ -56,9 +56,38 @@ Icons.ids = {
 	-- END GENERATED
 } :: { [string]: string }
 
+-- Which pack icon stands in for which emoji in the UI. Only the emojis listed here ever
+-- become images; everything else stays a glyph.
+Icons.emoji = {
+	["🛒"] = "shop",
+	["🎨"] = "wheel",
+	["🎡"] = "wheel",
+	["🎁"] = "gift",
+	["📜"] = "quest",
+	["🏆"] = "trophy",
+	["🤝"] = "invite",
+	["👥"] = "group",
+	["⚙️"] = "settings",
+	["🪙"] = "coin",
+	["🔒"] = "lock",
+	["🔋"] = "bolt",
+	["⚡"] = "bolt",
+	["🛡️"] = "shield",
+	["💀"] = "skull",
+	["🎯"] = "target",
+	["👑"] = "crown",
+	["⭐"] = "star",
+	["🔁"] = "auto",
+	["🤖"] = "auto",
+	["❤️"] = "heart",
+	["🔥"] = "flame",
+	["🕒"] = "clock",
+	["📅"] = "calendar",
+} :: { [string]: string }
+
 -- "rbxassetid://<id>" when the icon is uploaded, nil otherwise.
 function Icons.get(name: string): string?
-	local id = Icons.ids[name]
+	local id = Icons.ids[name] or Icons.ids[Icons.emoji[name] or ""]
 	if id and id ~= "" then
 		return "rbxassetid://" .. id
 	end

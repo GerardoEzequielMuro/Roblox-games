@@ -475,6 +475,7 @@ H.landed = function(view, e, my)
 		TableViews.screenIcon(view, if def then def.icon else nil)
 		local danger = if def then def.danger else 0
 		if danger >= 3 then
+			Mood.grade(-0.4, 0.3, Color3.fromRGB(255, 200, 200), 1.2)
 			Mood.blackout(0.16)
 			task.wait(0.16)
 			if token ~= my then
@@ -532,6 +533,7 @@ H.hit = function(view, e, _my)
 	Cam.punch(-5)
 	if e.target == myId then
 		Mood.flash(Color3.fromRGB(255, 40, 60), 0.35, 0.5)
+		Mood.grade(-0.2, 0.15, Color3.fromRGB(255, 170, 170), 0.9)
 	end
 	if e.by and e.by ~= e.target then
 		task.delay(0.5, function()
@@ -729,6 +731,10 @@ H.elim = function(view, e, _my)
 	if not cameraLocked(view) then
 		victimShot(view, p.seat)
 	end
+	-- the reveal: colour drains out of the world, a burst and a dark puff at the podium
+	Mood.grade(if me then -0.9 else -0.55, 0.22, nil, if me then 2.4 else 1.4)
+	Fx.burst(cf.Position + Vector3.new(0, 2.5, 0), p.color, 40)
+	Cam.punch(-8) -- the finisher brings its own shake on impact
 	Audio.play("doom", 0.7, 0.8)
 	Finishers.play(finisherOf(view, e.by), modelOf(view, e.player), cf, p.color)
 	if e.by and e.by ~= e.player then
@@ -819,6 +825,7 @@ H.ended = function(view, e, _my)
 		winnerName = Lang.t("match.team", { n = e.team })
 	end
 	local iWon = result ~= nil and result.won == true
+	Mood.grade(0.35, 0.1, Color3.fromRGB(255, 244, 214), 2.5)
 	MatchHud.banner("🏆 " .. (if iWon then Lang.t("result.victory") else Lang.t("match.winner", { name = winnerName })), nil, Theme.Yellow, 3.4)
 	TableViews.spotlight(view, winnerSeat, nil)
 	if winnerSeat then

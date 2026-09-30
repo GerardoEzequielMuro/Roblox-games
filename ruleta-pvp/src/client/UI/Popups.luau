@@ -35,7 +35,7 @@ local function answer(accept: boolean)
 		end
 	end)
 end
-Theme.button({ Name = "Accept", Key = "duel.accept", Prefix = "⚔️ ", Color = Theme.Green, Size = UDim2.fromOffset(190, 44), Position = UDim2.new(0, 14, 1, -54), TextSize = 20, ZIndex = 36, Parent = challenge, OnClick = function()
+Theme.button({ Name = "Accept", Key = "duel.accept", Prefix = "⚔️ ", Icon = "sword", Color = Theme.Green, Size = UDim2.fromOffset(190, 44), Position = UDim2.new(0, 14, 1, -54), TextSize = 20, ZIndex = 36, Parent = challenge, OnClick = function()
 	answer(true)
 end })
 Theme.button({ Name = "Decline", Key = "duel.decline", Color = Theme.Red, Size = UDim2.fromOffset(190, 44), Position = UDim2.new(1, -14, 1, -54), AnchorPoint = Vector2.new(1, 0), TextSize = 20, ZIndex = 36, Parent = challenge, OnClick = function()

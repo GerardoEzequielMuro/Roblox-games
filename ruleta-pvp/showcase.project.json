@@ -35,7 +35,8 @@
     },
     "Workspace": {
       "$properties": {
-        "Gravity": 196.2
+        "Gravity": 196.2,
+        "StreamingEnabled": false
       },
       "$attributes": {
         "ShowcaseSizes": 3,

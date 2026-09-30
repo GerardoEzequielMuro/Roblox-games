@@ -136,6 +136,8 @@ function State.addTrophies(player: Player, amount: number)
 	if not p or amount ~= amount or amount <= 0 then
 		return
 	end
+	-- a match that ends after the monthly rollover pays into the new season
+	State.checkSeason(player)
 	local before = Progression.league(p.trophies)
 	p.trophies += math.floor(amount)
 	p.bestTrophies = math.max(p.bestTrophies, p.trophies)

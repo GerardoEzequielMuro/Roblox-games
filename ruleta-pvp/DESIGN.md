@@ -168,7 +168,8 @@ wired (ticks, impacts); music ids are 0 until the owner adds audio he has rights
   from behind their podium.
 - Comfort toggles: **Auto-queue** (stay seated for the next match) and **Auto-play** (the
   server takes your turns with a random target and a random brake; two idle turns in a row
-  switch it on by themselves so an AFK player never stalls a table). Neither changes odds.
+  switch it on by themselves so an AFK player never stalls a table; the Auto-play button then
+  reads ON and pressing it hands the turns back, `MatchFlow`). Neither changes odds.
 
 ## 5. Lobby activity: the Power Core
 
@@ -226,7 +227,7 @@ Prices follow the party-game ladder in `ROBLOX-HUD-GUIA.md` (impulse 25–99, co
 
 - Server parts ≤ 2,600. Client-made parts ≤ 900 (≤ 520 in the lite profile).
 - One loop per system: all wheels in one RenderStepped, all effects in one Heartbeat.
-- Effects are pooled (96 parts, 40 in lite; 8 floating texts; 1 particle emitter).
+- Effects are pooled (96 parts, 40 in lite; 8 floating texts; 2 particle emitters, sparks and smoke, built-in textures).
 - Lite profile (phones, graphics 1–3, or the setting): half the wheel parts, no particles,
   no Lighting tweens.
 

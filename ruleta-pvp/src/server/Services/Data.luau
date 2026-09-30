@@ -158,6 +158,16 @@ local function reconcile(p: any): Profile
 end
 Data.reconcile = reconcile
 
+-- Errors that will not go away by retrying: Studio without "Enable Studio Access to API
+-- Services", or an unpublished place. Retrying them only makes the player wait ~12 s.
+local function isPermanent(err: any): boolean
+	local msg = tostring(err)
+	return string.find(msg, "StudioAccessToApisNotAllowed", 1, true) ~= nil
+		or string.find(msg, "403", 1, true) ~= nil
+		or string.find(msg, "must publish", 1, true) ~= nil
+		or string.find(msg, "not allowed to access", 1, true) ~= nil
+end
+
 local function key(player: Player): string
 	return "u_" .. player.UserId
 end
@@ -191,8 +201,17 @@ function Data.load(player: Player): Profile
 		end
 		if not ok then
 			warn("[Data] load failed for", player.Name, err)
+			if isPermanent(err) then
+				-- no DataStore in this session at all: stop trying for everyone
+				storeOk = false
+				result = nil
+				break
+			end
 		end
 		result = nil
+		if attempt == 6 then
+			break
+		end
 		task.wait(if lockedByOther then 5 else 2)
 		if not player.Parent then
 			break

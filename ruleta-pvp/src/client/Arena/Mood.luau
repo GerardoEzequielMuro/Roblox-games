@@ -69,6 +69,9 @@ local beatClock = 0
 local pulse = 0
 
 local lastLit = -1
+-- colour-grade kick (elimination drains the colour, a hit on you tints red); decays to 0
+local kickSat, kickContrast, kickTint, kickLeft, kickTotal = 0, 0, Color3.new(1, 1, 1), 0, 1
+local gradeDirty = false
 local baseAmbient: Color3? = nil
 local baseOutdoor: Color3? = nil
 local baseBrightness: number? = nil
@@ -110,6 +113,20 @@ function Mood.flash(color: Color3, alpha: number, seconds: number)
 	flashFrame.BackgroundColor3 = color
 	flashFrame.BackgroundTransparency = 1 - a
 	TweenService:Create(flashFrame, TweenInfo.new(seconds, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { BackgroundTransparency = 1 }):Play()
+end
+
+-- A short colour-grade pulse on top of the mood: saturation / contrast offsets and a tint,
+-- fading out over `seconds`. Skipped in lite; softened when the player turned flashes off.
+Mood.kicks = 0
+function Mood.grade(saturation: number, contrast: number, tint: Color3?, seconds: number)
+	if Prefs.lite() then
+		return
+	end
+	Mood.kicks += 1
+	local k = if Prefs.flashes() then 1 else 0.35
+	kickSat, kickContrast = saturation * k, contrast * k
+	kickTint = Color3.new(1, 1, 1):Lerp(tint or Color3.new(1, 1, 1), k)
+	kickLeft, kickTotal = seconds, math.max(0.05, seconds)
 end
 
 function Mood.reset()
@@ -159,9 +176,14 @@ RunService.RenderStepped:Connect(function(dt)
 			f.BackgroundTransparency = 1 - e
 		end
 	end
-	-- extras for devices that can show them (only touched while the level moves)
-	if level ~= lastLit and not Prefs.lite() then
+	-- extras for devices that can show them (only touched while something moves)
+	local kicking = kickLeft > 0
+	if kicking then
+		kickLeft = math.max(0, kickLeft - dt)
+	end
+	if (level ~= lastLit or kicking or pulse > 0 or gradeDirty) and not Prefs.lite() then
 		lastLit = level
+		gradeDirty = kicking or pulse > 0
 		if not baseAmbient then
 			baseAmbient, baseOutdoor, baseBrightness = Lighting.Ambient, Lighting.OutdoorAmbient, Lighting.Brightness
 		end
@@ -172,9 +194,28 @@ RunService.RenderStepped:Connect(function(dt)
 			Lighting.Brightness = baseBrightness * (1 - level * 0.5)
 			local grade = Lighting:FindFirstChild("Grade") :: ColorCorrectionEffect?
 			if grade then
-				grade.Contrast = 0.06 + level * 0.14
-				grade.Saturation = 0.12 + level * 0.1
+				local kf = kickLeft / kickTotal
+				kf = kf * kf
+				-- the heartbeat thumps the contrast a little as well as the vignette
+				grade.Contrast = 0.06 + level * 0.14 + pulse * 0.05 * level + kickContrast * kf
+				grade.Saturation = 0.12 + level * 0.1 + kickSat * kf
+				grade.TintColor = Color3.new(1, 1, 1):Lerp(kickTint, kf)
 			end
+			local focus = Lighting:FindFirstChild("Focus") :: DepthOfFieldEffect?
+			if focus then
+				focus.Enabled = level > 0.3
+				focus.FarIntensity = math.clamp((level - 0.3) * 0.6, 0, 0.4)
+			end
+		end
+	elseif Prefs.lite() and lastLit ~= -1 then
+		-- switched to lite mid-mood: hand Lighting back as it was
+		lastLit = -1
+		if baseAmbient and baseOutdoor and baseBrightness then
+			Lighting.Ambient, Lighting.OutdoorAmbient, Lighting.Brightness = baseAmbient, baseOutdoor, baseBrightness
+		end
+		local focus = Lighting:FindFirstChild("Focus") :: DepthOfFieldEffect?
+		if focus then
+			focus.Enabled = false
 		end
 	end
 end)
