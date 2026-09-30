@@ -189,3 +189,43 @@ Usé `tools/uipreview` (phone 844x390, pc, laptop, tablet). Antes: 10-15 hallazg
 - Que con `DisplayOrder = 1` la ventana quede sobre el joystick y los toques en la ventana no muevan al personaje.
 - Buffs activos (fila sobre los chips) y ofertas (Starter Pack + Ad boost + regalo juntos) sin tapar la columna derecha; Rewards/Pets con scroll al dedo.
 - Idiomas largos (de, ru, th) en el menú y los chips.
+
+## Ronda 5: ritmo de progresión
+
+Armé `sim/pacing_sim.luau` (modelo en `sim/pacing_model.luau`, reusa el `Config` y `Formulas` reales). Juega un jugador gratis: tutorial con sus premios, daily a los 20 s, regalos de sesión 10 s después de que estén listos, 5 hits/s a mano + Auto Mine gratis desde el segundo 45, dron que vende, compra lo que más rápido se repaga (más Power si acorta el gate), ahorra cristales para el primer slot de pet, rompe el gate cuando le falta menos de 4 min y rebirthea apenas puede. Corre con `luau sim/pacing_sim.luau -a 6 3` (horas, seeds; agregar `tiers`, `events` o `trace` para ver la corrida 1, `nodaily` para la variante sin daily). Test: `luau tests/pacing_test.luau` (21 checks, ~10 s, seeds fijas) falla si un hito se sale de su ventana.
+
+**Hitos (mediana de 3 seeds, con daily, 6 h de sim)**
+
+| Hito | Objetivo | Antes | Después |
+|---|---|---|---|
+| Primer premio (tutorial) | < 10 s | 2 s | 2 s |
+| Primer Stardust vendido | - | 12 s | 12 s |
+| Primera compra | < 60 s | 9 s | 9 s |
+| Upgrades a los 3 min | >= 3 | 28 | 28 |
+| Tiers nuevos en la 1ª hora | 1 cada 5-15 min | 15 | 21 |
+| Espera más larga sin tier nuevo (1ª hora) | < 10 min | 31 min (peor seed 34) | ~9 min (peor seed 13) |
+| Galaxia 2 | 5-15 min | 4 min 18 | 4 min 18 |
+| Galaxia 3 | - | 18 min 32 | 18 min 53 |
+| Galaxia 4 | - | 1 h 49 | 36 min |
+| Primer rebirth | 30-60 min | 51 min | 39 min |
+| Rebirth 2 | - | 1 h 54 | 51 min |
+| Galaxia 5 | horas | 2 h 16 | 1 h 46 |
+| Galaxia 6 | horas | 2 h 57 | 3 h 21 |
+| Rebirth 6 | horas | 3 h 42 | 4 h 58 |
+
+"Antes" es la config vieja corrida en el mismo sim nuevo. El problema de fondo no era el primer minuto (ya cumplía: premio a los 2 s, compra a los 9 s, 28 upgrades a los 3 min por el daily + tutorial) sino los huecos: tras comprar las herramientas de cada galaxia pasaban 25-30 min sin nada nuevo hasta el rebirth/la galaxia siguiente, y todo el tramo galaxias 4-6 quedaba comprimido en ~1 h. El `economy_sim` viejo es más estricto (no modela tutorial, daily ni regalos: galaxia 3 a la 1 h, rebirth 1 a 1 h 52); lo dejé con una nota en el encabezado. Sin daily (caso pesimista): primera compra 9 s, galaxia 3 ~20 min, rebirth 1 ~46 min, espera máxima ~16 min.
+
+**Qué números cambié en `Config.luau` y por qué**
+- `Zones[3].gateHp` 4.1e8 -> 2.6e8: ajuste fino (Frost sigue a ~19 min, pero baja la espera de la 1ª hora de ~11 a ~9 min con las otras piezas).
+- `Zones[4].gateHp` 5.5e12 -> 1e12: Ember pasa de ~1 h 49 a ~36 min y llena el hueco entre Quake y el primer rebirth (antes: 25-30 min sin nada nuevo).
+- `Zones[5].gateHp` 3e16 -> 2.5e16 y `Zones[6].gateHp` 1.5e20 -> 2.5e20: con Ember antes, Storm queda a ~1 h 45 y Void a ~3 h 20 en lugar de amontonarse (antes Storm-Void-rebirth 3 a 5 caían en 40 min); la cola larga queda en horas.
+- `RebirthBaseCost` 4e11 -> 1e12 (x400 por rebirth igual que antes): primer rebirth a ~39 min, después de Ember, y el segundo a ~51 min.
+- `drill_twin.cost` 1.8e6 -> 1.8e7 y `drill_quake.cost` 3.5e9 -> 5e10: antes se compraban un minuto después de llegar a cada galaxia y dejaban la espera vacía; ahora caen a ~15 y ~26 min y reparten los hitos.
+- No toqué precios en Robux, pets, Formulas ni nada de locale.
+
+**Límites del sim**
+- Un solo arquetipo de jugador; una partida real varía mucho con la suerte de las cápsulas (el peor seed de 8 tiene huecos de ~25 min; con 5 seeds, 13 min). Los tests usan seeds fijas, así que son deterministas pero no prueban "todas las suertes".
+- "Tier nuevo" = primera vez que tiene una herramienta, galaxia, primera cápsula de la galaxia, sistema de galaxia (Relics, Temper, Traits...), slot de pet o rebirth. Comprar Power y abrir cápsulas pasa todo el tiempo y no cuenta.
+- El ingreso es un promedio continuo (caminar al refinery, dron, buffs ~+10%); no modela PvP, quests, Index, Anomaly, eventos en vivo, offline, amigos ni fusiones. Esos son extras a favor del jugador real. El daily rinde mucho al principio (5 min de ingreso, ~14k Stardust a los 20 s) y por eso comparé también sin daily.
+- Después de ~50 min sólo hay rebirths y pet slots hasta Storm; es la cola larga buscada, pero es lo más flojo de la sesión 1 si alguien juega más de una hora. Rebirth 7 no se alcanza en 24 h de sim.
+- No corrí Studio: la sensación real (caminata entre planetas, tiempo de gates) está estimada.

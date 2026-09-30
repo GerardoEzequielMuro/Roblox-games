@@ -1,4 +1,7 @@
--- Economy simulation (run from the repo root):
+-- Economy simulation (run from the repo root). For the pacing of a session (first minutes,
+-- tier timeline, dead stretches) use sim/pacing_sim.luau; this one is the stricter long-run view
+-- (no tutorial, daily or gift rewards, a Gate only when it falls in under 2.5 min), so its
+-- galaxy times are later than the pacing sim's.
 --   ../huerta-tycoon/tools/luau.exe sim/economy_sim.luau -a <hours> <seeds>
 --   ../huerta-tycoon/tools/luau.exe sim/economy_sim.luau -a tune      (fits gates, prices, rebirth)
 -- An average free player: 5 manual hits/s + free Auto Mine, no passes, the Cargo Drone sells,

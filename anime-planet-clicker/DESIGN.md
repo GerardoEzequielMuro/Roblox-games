@@ -128,18 +128,25 @@ window has all of them with one line each.
 
 ## Economy (simulation)
 
-`sim/economy_sim.luau` plays a free player (5 manual hits/s + free Auto Mine, no passes, drone
-selling, buys whatever pays back fastest, attacks a Gate when it would fall in under 2.5 min).
-Median of 6 runs:
+`sim/pacing_sim.luau` (`luau sim/pacing_sim.luau -a 6 3`) plays a free player: tutorial rewards,
+daily reward and in-session gifts, 5 manual hits/s + free Auto Mine, drone selling, buys whatever
+pays back fastest, attacks a Gate when it would fall in under 4 min, rebirths as soon as it can.
+It prints the first-minute beats, the tier timeline and the dead stretches; `tests/pacing_test.luau`
+fails when a milestone leaves its window. Median of 3 seeds:
 
 | Milestone | Time |
 |---|---|
-| Galaxy 2 (Verdant Nebula) | 5 min |
-| Galaxy 3 (Frost Halo) | 34 min |
-| First rebirth | 1 h 05 |
-| Galaxy 4 (Ember Forge) | 1 h 55 |
-| Galaxy 5 (Storm Reach) | ~3 h |
-| Galaxy 6 (Void Crown) | ~5 h |
+| First reward / first purchase | 2 s / 9 s |
+| Galaxy 2 (Verdant Nebula) | ~4 min |
+| Galaxy 3 (Frost Halo) | ~19 min |
+| Galaxy 4 (Ember Forge) | ~36 min |
+| First rebirth | ~40 min |
+| Galaxy 5 (Storm Reach) | ~1 h 45 |
+| Galaxy 6 (Void Crown) | ~3 h 20 |
+| Rebirth 6 | ~5 h (rebirth 7 is days away) |
+
+`sim/economy_sim.luau` is the stricter long-run view (no tutorial, daily or gifts): its galaxy
+times are later.
 
 `../huerta-tycoon/tools/luau.exe sim/economy_sim.luau -a tune` re-fits planet HP, gate HP, tool
 and capsule prices after changing pets or multipliers (prices are "planets' worth": capsule = 4,

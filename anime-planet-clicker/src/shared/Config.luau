@@ -57,13 +57,15 @@ Config.ArenaLobbyRadius = 84 -- platform edge; the ring outside the arena is saf
 -- end of the previous one; damage = your mining power, progress is saved). hardness = index
 -- of the first tool that mines here at full strength (weaker tools do Config.SoftDamage).
 -- material = this galaxy's own drop, spent on the system that unlocks here (Config.Systems).
+-- Gates, tool prices and the rebirth cost are timed with sim/pacing_sim.luau (free player);
+-- tests/pacing_test.luau fails when a milestone leaves its window.
 Config.Zones = {
 	{ index = 1, id = "dawn", gateHp = 0, hp = 60, value = 1.0, crystal = 1, hardness = 1 },
 	{ index = 2, id = "verdant", gateHp = 230000, hp = 11000, value = 1.5, crystal = 1, hardness = 4, material = "spores" },
-	{ index = 3, id = "frost", gateHp = 4.1e+08, hp = 1.4e+07, value = 2.3, crystal = 2, hardness = 6, material = "cryo" },
-	{ index = 4, id = "ember", gateHp = 5.5e+12, hp = 1.1e+11, value = 3.4, crystal = 2, hardness = 8, material = "embers" },
-	{ index = 5, id = "storm", gateHp = 3e+16, hp = 3.3e+14, value = 5.0, crystal = 3, hardness = 10, material = "volt" },
-	{ index = 6, id = "void", gateHp = 1.5e+20, hp = 3.1e+18, value = 7.5, crystal = 4, hardness = 12, material = "essence" },
+	{ index = 3, id = "frost", gateHp = 2.6e+08, hp = 1.4e+07, value = 2.3, crystal = 2, hardness = 6, material = "cryo" },
+	{ index = 4, id = "ember", gateHp = 1e+12, hp = 1.1e+11, value = 3.4, crystal = 2, hardness = 8, material = "embers" },
+	{ index = 5, id = "storm", gateHp = 2.5e+16, hp = 3.3e+14, value = 5.0, crystal = 3, hardness = 10, material = "volt" },
+	{ index = 6, id = "void", gateHp = 2.5e+20, hp = 3.1e+18, value = 7.5, crystal = 4, hardness = 12, material = "essence" },
 } :: { any }
 -- Planets on the outer ring are Dense: x DenseMult HP and ore.
 Config.DenseMult = 10
@@ -172,9 +174,9 @@ Config.Tools = {
 	{ id = "pick_iron", kind = "pick", zone = 1, power = 3, cost = 220, color = { 190, 200, 215 } },
 	{ id = "pick_titanium", kind = "pick", zone = 1, power = 9, cost = 2600, color = { 110, 200, 255 } },
 	{ id = "drill_spark", kind = "drill", zone = 2, power = 26, cost = 170000, color = { 255, 190, 60 } },
-	{ id = "drill_twin", kind = "drill", zone = 2, power = 80, cost = 1.8e+06, color = { 110, 230, 140 } },
+	{ id = "drill_twin", kind = "drill", zone = 2, power = 80, cost = 1.8e+07, color = { 110, 230, 140 } },
 	{ id = "drill_plasma", kind = "drill", zone = 3, power = 240, cost = 3.2e+08, color = { 90, 170, 255 } },
-	{ id = "drill_quake", kind = "drill", zone = 3, power = 760, cost = 3.5e+09, color = { 200, 120, 255 } },
+	{ id = "drill_quake", kind = "drill", zone = 3, power = 760, cost = 5e+10, color = { 200, 120, 255 } },
 	{ id = "laser_ruby", kind = "laser", zone = 4, power = 2400, cost = 3.7e+12, color = { 255, 70, 90 } },
 	{ id = "laser_ion", kind = "laser", zone = 4, power = 7600, cost = 4.1e+13, color = { 80, 235, 255 } },
 	{ id = "laser_nova", kind = "laser", zone = 5, power = 24000, cost = 1.7e+16, color = { 255, 220, 90 } },
@@ -276,7 +278,7 @@ Config.OverchargeDropPerSecond = 40
 
 -- Rebirth: resets Stardust, the cargo, the tool and the Power upgrade; keeps galaxies, pets,
 -- Crystals, materials, every other upgrade and Mastery.
-Config.RebirthBaseCost = 4e11
+Config.RebirthBaseCost = 1e12
 Config.RebirthCostGrowth = 400
 Config.RebirthMult = 0.5 -- +50% damage and Stardust per rebirth
 Config.RebirthCrystalsBase = 40
