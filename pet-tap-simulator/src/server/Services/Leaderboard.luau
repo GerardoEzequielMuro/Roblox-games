@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Data = require(script.Parent.Data)
+local Guard = require(script.Parent.Guard)
 
 local Leaderboard = {}
 
@@ -26,7 +27,31 @@ do
 end
 
 local function encodeTaps(n: number): number
+	if not Guard.num(n) then
+		return 0 -- NaN / inf never reach the board
+	end
 	return math.floor(math.log10(math.max(1, n) + 1) * SCALE)
+end
+
+-- Last value written per player (leaderboards only go up; unchanged scores cost no request).
+local lastPushed: { [number]: { taps: number, rebirths: number } } = {}
+
+-- OrderedDataStore write that keeps the BEST value: a stale or reset session can never lower a score.
+local function pushMax(store: OrderedDataStore, key: string, value: number)
+	store:UpdateAsync(key, function(old: any): any
+		if type(old) == "number" and old >= value then
+			return nil :: any
+		end
+		return value :: any
+	end)
+end
+
+local function budgetLeft(): boolean
+	local n = 1
+	pcall(function()
+		n = DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+	end)
+	return n > 20 -- leave room for profile saves
 end
 local function decodeTaps(v: number): number
 	return 10 ^ (v / SCALE) - 1
@@ -77,17 +102,21 @@ end
 local function pushScores()
 	for _, player in Players:GetPlayers() do
 		local p = Data.get(player)
-		if p and Data.isPersistent(player) then
+		if p and Data.isPersistent(player) and budgetLeft() then
 			local key = tostring(player.UserId)
-			if tapsStore then
-				pcall(function()
-					(tapsStore :: OrderedDataStore):SetAsync(key, encodeTaps(p.totalTaps))
-				end)
+			local last: { taps: number, rebirths: number } = lastPushed[player.UserId] or { taps = -1, rebirths = -1 }
+			lastPushed[player.UserId] = last
+			local taps = encodeTaps(p.totalTaps)
+			if tapsStore and taps > last.taps then
+				if pcall(pushMax, tapsStore :: OrderedDataStore, key, taps) then
+					last.taps = taps
+				end
 			end
-			if rebirthStore and p.rebirths > 0 then
-				pcall(function()
-					(rebirthStore :: OrderedDataStore):SetAsync(key, p.rebirths)
-				end)
+			local rb = if Guard.int(p.rebirths, 0, 1e9) then p.rebirths else 0
+			if rebirthStore and rb > 0 and rb > last.rebirths then
+				if pcall(pushMax, rebirthStore :: OrderedDataStore, key, rb) then
+					last.rebirths = rb
+				end
 			end
 		end
 	end
@@ -144,6 +173,9 @@ local function fetch(store: OrderedDataStore?, decode: (number) -> string): { { 
 end
 
 function Leaderboard.init(boards: { [string]: BasePart })
+	Players.PlayerRemoving:Connect(function(player)
+		lastPushed[player.UserId] = nil
+	end)
 	task.spawn(function()
 		while true do
 			for _, player in Players:GetPlayers() do

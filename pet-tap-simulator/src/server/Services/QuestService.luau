@@ -13,6 +13,7 @@ local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local M = Locale.m
 
 local QuestService = {}
@@ -112,7 +113,7 @@ function QuestService.init()
 	Remotes.handle("ClaimQuest", function(player, payload)
 		local p = QuestService.ensure(player)
 		local i = payload.i
-		if not p or type(i) ~= "number" or not p.quests.list[i] then
+		if not p or not Guard.int(i, 1, 16) or not p.quests.list[i] then
 			return false, M("msg.unknown_quest")
 		end
 		local q = p.quests.list[i]

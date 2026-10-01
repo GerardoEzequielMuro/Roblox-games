@@ -376,3 +376,36 @@ Los tiempos de las zonas, rebirths y todo lo anterior no cambiaron (el jugador d
 3. Los 32 pets nuevos en 3D (sobre todo Borealis Stag, Geode Golem, Singularity Dragon, Solar Phoenix): usan el rig genérico por familia; los que no tienen familia explícita salen como dog/cat/bear según las orejas.
 4. Página Cosmic Void del Index: scroll con el dedo en celular y que el botón de reclamar no tape la grilla.
 5. Que un jugador de 0 rebirths que toca el prompt de un huevo trabado vea el panel con el botón gris y no pueda abrirlo (ni por auto hatch).
+
+## Ronda 7: seguridad
+
+Auditoría de todo lo que un cliente puede mandar (cada `Request` y el evento `Tap`) más guardado, recibos y memoria. Helper nuevo, puro y testeado: `src/server/Services/Guard.luau` (validadores `num/int/str/uid/oneOf/array/smallTable`, token bucket, `scrub` de NaN/inf, `migrate`, `backoff`). Tests: `tests/security_test.luau` (68 checks, `luau tests/security_test.luau`).
+
+| Sev. | Archivo:línea (aprox.) | Cómo se explotaba | Cómo se arregló |
+|---|---|---|---|
+| Alta | `Monetization.luau` processReceipt (~164) | Si el perfil no cargó (DataStore caído, sesión "no se guarda"), la compra se otorgaba y se devolvía `PurchaseGranted` sin guardar: Robux cobrados y premio perdido al salir | Con store disponible y perfil no persistente devuelve `NotProcessedYet` (Roblox reintenta al próximo join); `Data.canPersist()` mantiene el comportamiento en Studio sin API |
+| Alta | `Monetization.luau` grantReceipt (~111) | Si el primer guardado fallaba, el reintento del mismo recibo veía el marcador en memoria y devolvía `PurchaseGranted` sin haber guardado nada (el comentario decía lo contrario) | Con marcador existente guarda de nuevo y solo confirma si el guardado salió bien. Guard de recibo en vuelo (`receiptBusy`) contra dos hilos con el mismo PurchaseId |
+| Alta | `Data.luau` save (~270) | Un solo intento sin reintentos: una falla transitoria al salir perdía la sesión entera. Dos escrituras del mismo jugador (autosave + release + recibo) se pisaban y mutaban `p.lock` a la vez | `UpdateAsync` serializado por jugador (`saving`), 3 intentos (5 al salir) con backoff 1/2/4/8 s, espera de presupuesto, tope de 25 s en BindToClose; se mantiene el chequeo de lock de otro server y el fast-fail de Studio |
+| Alta | `Main.server.luau` onPlayerAdded (~150) | Si el jugador se iba mientras corría `loadPasses` (web call), después se ponía `State.ready` y `Plots.assign`: el plot quedaba ocupado para siempre por un jugador ausente y se filtraban tablas | Chequeo `player.Parent` tras el yield: release + cleanup y return |
+| Media | `Data.luau` reconcile/save | NaN/inf o negativos en el perfil (bug o dato corrupto) viajaban a DataStore y a la economía; campos con tipo equivocado rompían todo al cargar | `Guard.scrub` y `clampNonNegative` en carga y antes de cada guardado; `fixTypes` contra los defaults; zonas/upgrades/equipados validados; `Data.VERSION` + `Guard.migrate` listo para migraciones (hoy vacío, versión 1) |
+| Media | `Remotes.luau` (~100) | Sin límite por acción: `RedeemCode` se podía fuerza-bruta a 12/s, `ClaimGroupGift`/`ShareLink`/`WatchAd` spameaban web calls, `GetState` armaba snapshots a 12/s; payload con 100k claves se recorría entero; llamadas tardías recreaban el bucket del jugador (fuga) | `Remotes.limit(acción, /s, burst)` configurado en `Main.server.luau` para 22 acciones; payload máx. 256 claves; `action` máx. 32 bytes; tabla `departed` (weak) evita recrear estado de quien ya salió |
+| Media | `Tapping.luau` onTap (~85) | Miles de eventos `Tap` por segundo: cada uno pasaba por el bucket (CPU) aunque se aceptaran pocos taps; `count` sin tope previo | Limiter de eventos 8/s (burst 16; el cliente manda 4/s) y `count` acotado a 10000; el tope de taps (12/s + 6) queda igual |
+| Media | `Monetization.luau` WatchAd (~210) | `ShowRewardedVideoAdAsync` cede: varias llamadas en paralelo pasaban el chequeo del cupo diario antes de sumar | Una sola llamada en vuelo por jugador (`adInFlight`), cupo re-chequeado al terminar |
+| Media | `Leaderboard.luau` pushScores (~80) | `SetAsync` ciego sobre el OrderedDataStore: una sesión sin cargar/vieja o un valor NaN pisaba el puntaje; sin chequear presupuesto; un request por jugador cada ciclo | `UpdateAsync` que solo sube (mantiene el máximo), `encodeTaps` rechaza NaN/inf, solo escribe si el valor subió, deja 20 de presupuesto para los perfiles |
+| Baja | `Pets.luau` Delete (~142) | `uids` con millones de entradas se recorría completo (solo cortaba al borrar 200); uids de cualquier largo | `Guard.array(<=400)` y `Guard.uid` (`^p%d+$`, <=12) en Equip/Unequip/Lock/Delete/RollTrait/Craft |
+| Baja | `Rewards/Progression/Eggs/Auto/QuestService` | Índices fraccionarios o NaN, strings enormes en `egg`/`id`/`key`/`code` | `Guard.int` con rangos (zona, gift, quest) y `Guard.str` con topes (egg 24, code 30, id 24, key 12) |
+| Baja | `Rewards.luau` friendCache (~60) | Crecía con cada par de jugadores durante toda la vida del server | Se vacía al pasar de 3000 entradas |
+| Baja | `Social.luau` inbox MessagingService | Strings sin tope guardados y reenviados a todos los clientes | Se copian solo `n/p/t/o` truncados (40/40/0-2/24) |
+| Baja | `Monetization.luau` PromptGamePassPurchaseFinished | Sin validar tipos ni que la sesión esté lista | Exige `purchased == true`, id entero y `State.ready`; sigue siendo un evento del servidor (el cliente no lo puede disparar) |
+
+Conteo: 4 altas, 5 medias, 5 bajas (14). Lo que ya estaba bien y quedó igual: taps limitados en servidor (12/s + 6 de burst), distancia/cooldown/precio de huevos, zonas, anti-trespass, lock de sesión por JobId, autosave escalonado con presupuesto, `ProcessReceipt` con PurchaseId guardado antes de confirmar, comando `/event` solo admin. Un jugador legítimo no nota nada: los límites por acción están por encima de lo que se puede clickear.
+
+### Qué queda
+- `ClaimDaily` sigue guardando en línea (una escritura por reclamo, acotada a 1/s).
+- Referidos: el tope vitalicio limita el abuso, pero un granjero con cuentas alt sigue pudiendo cobrar el regalo; hace falta una señal externa (edad de cuenta) que no hay en Studio.
+- La posición del personaje sigue siendo del cliente (distancia al huevo, zonas): un teleport exploit solo llega a lo que ya tiene desbloqueado, y el anti-trespass lo devuelve cada segundo.
+- Los pase de juego se cachean al entrar; uno comprado por la web a mitad de sesión se ve al reentrar (la compra dentro del juego sí se refleja al instante).
+- Probar en Studio publicado: BindToClose con varios jugadores, un recibo con el DataStore caído y que el aviso "no se guarda" aparezca.
+
+### Verificación
+`rojo build` OK, `luau-lsp analyze` sin salida, `security_test` 68/68 y el resto de los tests puros y sims en verde (locale, model_slots, passes_pricing, policy_hud, unit_p0 60, pacing_targets 34, check_config, format_check). Preview `--state mid --screen pc`: 0 hallazgos, 0 errores de runtime.

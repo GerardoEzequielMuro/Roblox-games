@@ -12,6 +12,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local WorldBuilder = require(script.Parent.Parent.World.WorldBuilder)
 
 local Progression = {}
@@ -102,7 +103,7 @@ function Progression.init(spawns: { [number]: CFrame }, gates: { [number]: BaseP
 	end
 
 	Remotes.handle("BuyZone", function(player, payload)
-		if type(payload.zone) ~= "number" then
+		if not Guard.int(payload.zone, 1, #Config.Zones) then
 			return false, M("msg.unknown_zone")
 		end
 		return Progression.buyZone(player, payload.zone)
@@ -110,7 +111,7 @@ function Progression.init(spawns: { [number]: CFrame }, gates: { [number]: BaseP
 
 	Remotes.handle("Teleport", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.zone) ~= "number" or not State.hasZone(p, payload.zone) then
+		if not p or not Guard.int(payload.zone, 1, #Config.Zones) or not State.hasZone(p, payload.zone) then
 			return false, M("msg.zone_locked")
 		end
 		Progression.teleport(player, payload.zone)
@@ -123,7 +124,7 @@ function Progression.init(spawns: { [number]: CFrame }, gates: { [number]: BaseP
 
 	Remotes.handle("Upgrade", function(player, payload)
 		local p = Data.get(player)
-		local u = if type(payload.id) == "string" then Config.UpgradeById[payload.id] else nil
+		local u = if Guard.str(payload.id, 24) then Config.UpgradeById[payload.id] else nil
 		if not p or not u then
 			return false, M("msg.unknown_upgrade")
 		end

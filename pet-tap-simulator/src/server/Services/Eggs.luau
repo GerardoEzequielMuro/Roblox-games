@@ -13,6 +13,7 @@ local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Pets = require(script.Parent.Pets)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 
 local Eggs = {}
 
@@ -108,7 +109,7 @@ function Eggs.init(positions: { [string]: Vector3 })
 	eggPositions = positions
 
 	Remotes.handle("Hatch", function(player, payload)
-		if type(payload.egg) ~= "string" then
+		if not Guard.str(payload.egg, 24) then
 			return false, M("msg.unknown_egg")
 		end
 		-- anything that is not a known hatch size is rejected by Eggs.hatch
@@ -122,7 +123,7 @@ function Eggs.init(positions: { [string]: Vector3 })
 			State.dirty(player)
 			return true
 		end
-		local egg = if type(payload.egg) == "string" then Formulas.EggById[payload.egg] else nil
+		local egg = if Guard.str(payload.egg, 24) then Formulas.EggById[payload.egg] else nil
 		if not egg or egg.exclusive then
 			return false, M("msg.unknown_egg")
 		end

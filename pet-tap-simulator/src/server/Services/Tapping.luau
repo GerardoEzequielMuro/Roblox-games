@@ -13,6 +13,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 
 local Tapping = {}
 
@@ -20,6 +21,9 @@ type Bucket = { tokens: number, t: number }
 local buckets: { [Player]: Bucket } = {}
 local lastManual: { [Player]: number } = {} -- os.clock() of the last accepted manual tap
 local tapValueCache: { [Player]: { v: number, t: number } } = {}
+-- Tap EVENTS per second (the client sends one batch every Config.TapSendInterval): extra
+-- batches beyond this are dropped before any work is done.
+local eventLimiter = Guard.limiter(8, 16)
 
 local function tapValue(player: Player, p: Data.Profile): number
 	local c = tapValueCache[player]
@@ -40,6 +44,18 @@ function Tapping.forget(player: Player)
 	buckets[player] = nil
 	tapValueCache[player] = nil
 	lastManual[player] = nil
+	Guard.forget(eventLimiter, player)
+end
+
+-- Bookkeeping entries still held for this player (leak check).
+function Tapping.tracked(player: Player): number
+	local n = 0
+	for _, t in { buckets, tapValueCache, lastManual, eventLimiter.buckets } :: { { [Player]: any } } do
+		if t[player] ~= nil then
+			n += 1
+		end
+	end
+	return n
 end
 
 -- Auto taps per second right now (0 when the switch is off).
@@ -53,10 +69,10 @@ end
 
 local function onTap(player: Player, count: any)
 	Remotes.stats.tapIn += 1
-	if type(count) ~= "number" or count ~= count then
+	if not Guard.num(count) or not player.Parent then
 		return
 	end
-	count = math.floor(count)
+	count = math.floor(math.min(count, 10000))
 	if count <= 0 then
 		return
 	end
@@ -65,6 +81,9 @@ local function onTap(player: Player, count: any)
 		return
 	end
 	local now = os.clock()
+	if not Guard.allow(eventLimiter, player, now) then
+		return
+	end
 	local b = buckets[player]
 	local cap = Config.MaxTapsPerSecond + Config.TapBurst
 	if not b then

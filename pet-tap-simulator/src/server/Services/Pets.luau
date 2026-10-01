@@ -10,6 +10,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 
 local Pets = {}
 Pets.giveDice = function(_player: Player, _n: number) end
@@ -97,7 +98,7 @@ function Pets.init()
 	Remotes.handle("Equip", function(player, payload)
 		local p = Data.get(player)
 		local uid = payload.uid
-		if not p or type(uid) ~= "string" or not p.pets[uid] then
+		if not p or not Guard.uid(uid) or not p.pets[uid] then
 			return false, M("msg.unknown_pet")
 		end
 		if table.find(p.equipped, uid) then
@@ -113,7 +114,7 @@ function Pets.init()
 
 	Remotes.handle("Unequip", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uid) ~= "string" then
+		if not p or not Guard.uid(payload.uid) then
 			return false, M("msg.unknown_pet")
 		end
 		local i = table.find(p.equipped, payload.uid)
@@ -131,7 +132,7 @@ function Pets.init()
 
 	Remotes.handle("Lock", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uid) ~= "string" or not p.pets[payload.uid] then
+		if not p or not Guard.uid(payload.uid) or not p.pets[payload.uid] then
 			return false, M("msg.unknown_pet")
 		end
 		p.pets[payload.uid].locked = payload.locked == true
@@ -141,7 +142,7 @@ function Pets.init()
 
 	Remotes.handle("Delete", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uids) ~= "table" then
+		if not p or not Guard.array(payload.uids, 400) then
 			return false, M("msg.bad_request")
 		end
 		local n = 0
@@ -149,7 +150,7 @@ function Pets.init()
 			if n >= 200 then
 				break
 			end
-			if type(uid) == "string" then
+			if Guard.uid(uid) then
 				local pet = p.pets[uid]
 				if pet and not pet.locked then
 					removePet(p, uid)
@@ -167,7 +168,7 @@ function Pets.init()
 	-- Trait roll: spends Trait Dice, always gives a grade (it replaces the old one).
 	Remotes.handle("RollTrait", function(player, payload)
 		local p = Data.get(player)
-		local pet = if p and type(payload.uid) == "string" then p.pets[payload.uid] else nil
+		local pet = if p and Guard.uid(payload.uid) then p.pets[payload.uid] else nil
 		if not p or not pet then
 			return false, M("msg.unknown_pet")
 		end
@@ -205,7 +206,7 @@ function Pets.init()
 	-- Craft: consumes CraftCost unlocked pets with the same id+tier as payload.uid.
 	Remotes.handle("Craft", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uid) ~= "string" then
+		if not p or not Guard.uid(payload.uid) then
 			return false, M("msg.unknown_pet")
 		end
 		local base = p.pets[payload.uid]

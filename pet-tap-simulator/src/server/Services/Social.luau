@@ -21,6 +21,7 @@ local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
 local Pets = require(script.Parent.Pets)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local M = Locale.m
 
 local Social = {}
@@ -235,10 +236,10 @@ function Social.init()
 			pcall(function()
 				MessagingService:SubscribeAsync(RARE_TOPIC, function(message)
 					local d = message.Data
-					if type(d) ~= "table" or d.j == game.JobId or type(d.p) ~= "string" or not Formulas.PetById[d.p] then
+					if type(d) ~= "table" or d.j == game.JobId or not Guard.str(d.p, 40) or not Formulas.PetById[d.p] then
 						return
 					end
-					table.insert(inbox, d)
+					table.insert(inbox, { n = string.sub(tostring(d.n), 1, 40), p = d.p, t = if Guard.int(d.t, 0, 2) then d.t else 0, o = string.sub(tostring(d.o), 1, 24) })
 					while #inbox > 5 do
 						table.remove(inbox, 1)
 					end

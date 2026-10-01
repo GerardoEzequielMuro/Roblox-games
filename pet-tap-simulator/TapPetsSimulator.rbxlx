@@ -8169,6 +8169,36 @@ Auto.init()
 Plots.init(world.plots)
 Data.startAutosave()
 
+-- Extra per-player limits (requests/second sustained, burst) on top of the global 12/s.
+-- Legit use is a few clicks; these stop brute force (codes), web-call spam (group, share, ads)
+-- and CPU abuse (state snapshots, delete/craft loops).
+for action, lim in {
+	GetState = { 3, 10 },
+	SetLanguage = { 2, 4 },
+	RedeemCode = { 0.5, 3 },
+	WatchAd = { 0.2, 2 },
+	ShareLink = { 0.2, 2 },
+	ClaimGroupGift = { 0.3, 2 },
+	ClaimOffline = { 1, 3 },
+	ClaimDaily = { 1, 2 },
+	ClaimGift = { 2, 6 },
+	ClaimQuest = { 3, 6 },
+	ClaimQuestBonus = { 1, 2 },
+	ClaimIndex = { 2, 4 },
+	Teleport = { 1, 3 },
+	GoPark = { 1, 3 },
+	Rebirth = { 2, 4 },
+	BuyZone = { 2, 4 },
+	Upgrade = { 6, 12 },
+	Delete = { 3, 6 },
+	Craft = { 5, 10 },
+	RollTrait = { 8, 16 },
+	EquipBest = { 3, 6 },
+	Hatch = { 5, 10 },
+} :: { [string]: { number } } do
+	Remotes.limit(action, lim[1], lim[2])
+end
+
 Remotes.handle("GetState", function(player)
 	if not State.ready[player] then
 		return false, "loading"
@@ -8254,6 +8284,13 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 	Monetization.loadPasses(player)
+	if not player.Parent then
+		-- left while the pass check was in flight: PlayerRemoving already ran, so nothing may be
+		-- (re)created for this player now (State.ready, plot owner...) or it would leak forever
+		Data.release(player)
+		State.cleanup(player)
+		return
+	end
 	Pets.clampEquipped(player)
 	Offline.compute(player) -- needs passes + equipped pets for the tap value
 	QuestService.ensure(player)
@@ -8322,6 +8359,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local Pets = require(script.Parent.Pets)
 local Progression = require(script.Parent.Progression)
 
@@ -8354,7 +8392,7 @@ end
 
 function Auto.init()
 	Remotes.handle("SetAuto", function(player, payload)
-		if type(payload.key) ~= "string" then
+		if not Guard.str(payload.key, 12) then
 			return false, M("msg.bad_request")
 		end
 		return Auto.set(player, payload.key, payload.on == true)
@@ -8407,6 +8445,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local Guard = require(script.Parent.Guard)
 
 local Data = {}
 
@@ -8467,7 +8506,43 @@ end
 Data.profiles = {} :: { [Player]: Profile }
 local loadedOk: { [Player]: boolean } = {}
 local nextSave: { [Player]: number } = {}
+local saving: { [Player]: boolean } = {} -- a write is in flight (writes per player never overlap)
 local LOCK_TTL = 150
+local SAVE_ATTEMPTS = 3 -- normal saves (autosave, receipts)
+local RELEASE_ATTEMPTS = 5 -- leaving / server shutdown: worth trying harder
+local shutdownDeadline = math.huge -- os.clock() by which BindToClose must be done
+
+-- Profile schema version. Add a step { [oldVersion] = function(profile) ... end } below when a
+-- release changes the shape of saved data; reconcile() runs them in order on load.
+Data.VERSION = 1
+local MIGRATIONS: { [number]: (any) -> () } = {}
+local CURRENCY_KEYS = { "taps", "gems", "dice", "totalTaps", "rebirths", "nextUid", "luckBoostLeft", "tapBoostLeft", "offlinePending", "offlineSeconds", "referralRewards", "totalHatched", "playTime" }
+
+-- True when saving is possible at all (false in Studio without API access, or if the store failed).
+function Data.canPersist(): boolean
+	return storeOk
+end
+
+-- DataStore budget left for UpdateAsync (1 when it cannot be read).
+local function updateBudget(): number
+	local n = 1
+	pcall(function()
+		n = DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+	end)
+	return n
+end
+
+-- Waits (bounded) until the write budget has room. Returns false when it never did.
+local function waitBudget(maxWait: number): boolean
+	local t0 = os.clock()
+	while updateBudget() <= 0 do
+		if os.clock() - t0 >= maxWait or os.clock() > shutdownDeadline then
+			return false
+		end
+		task.wait(0.5)
+	end
+	return true
+end
 
 local function defaultProfile(): Profile
 	local upgrades = {}
@@ -8475,7 +8550,7 @@ local function defaultProfile(): Profile
 		upgrades[u.id] = 0
 	end
 	local p: Profile = {
-		version = 1,
+		version = Data.VERSION,
 		taps = 0,
 		gems = 0,
 		dice = Config.TraitDice.start,
@@ -8522,16 +8597,33 @@ Data.defaultProfile = defaultProfile
 -- Fill keys added in later versions and drop content that no longer exists in Config.
 local function reconcile(p: any): Profile
 	local def = defaultProfile() :: any
+	if type(p) ~= "table" then
+		return def :: Profile
+	end
+	Guard.scrub(p) -- NaN / inf from an old bug or a corrupt write never enter the session
 	for k, v in def do
 		if p[k] == nil then
 			p[k] = v
 		end
 	end
+	Guard.fixTypes(p, def, Guard.deepCopy) -- wrong-typed fields fall back to the default
+	Guard.migrate(p, MIGRATIONS, Data.VERSION)
+	Guard.clampNonNegative(p, CURRENCY_KEYS)
 	for _, u in Config.Upgrades do
-		if p.upgrades[u.id] == nil then
-			p.upgrades[u.id] = 0
+		local lv = p.upgrades[u.id]
+		p.upgrades[u.id] = if Guard.int(lv, 0, u.maxLevel) then lv else math.clamp(math.floor(tonumber(lv) or 0), 0, u.maxLevel)
+	end
+	local zones, seenZone = {}, {}
+	for _, z in p.zones do
+		if Guard.int(z, 1, #Config.Zones) and not seenZone[z] then
+			seenZone[z] = true
+			table.insert(zones, z)
 		end
 	end
+	if not seenZone[1] then
+		table.insert(zones, 1, 1)
+	end
+	p.zones = zones
 	for uid, pet in p.pets do
 		if type(pet) ~= "table" or not Formulas.PetById[pet.id] then
 			p.pets[uid] = nil
@@ -8542,9 +8634,10 @@ local function reconcile(p: any): Profile
 			pet.trait = if trait and Config.TraitGrades[trait] then trait else nil
 		end
 	end
-	local eq = {}
+	local eq, seenEq = {}, {}
 	for _, uid in p.equipped do
-		if p.pets[uid] then
+		if type(uid) == "string" and p.pets[uid] and not seenEq[uid] then
+			seenEq[uid] = true
 			table.insert(eq, uid)
 		end
 	end
@@ -8577,14 +8670,15 @@ function Data.load(player: Player): Profile
 	local result: any = nil
 	for attempt = 1, 6 do
 		local lockedByOther = false
+		waitBudget(10)
 		local ok, err = pcall(function()
 			ds:UpdateAsync(key(player), function(old: any)
 				local now = os.time()
-				if old and old.lock and old.lock.job ~= game.JobId and now - old.lock.t < LOCK_TTL and attempt < 6 then
+				if type(old) == "table" and type(old.lock) == "table" and old.lock.job ~= game.JobId and now - (tonumber(old.lock.t) or 0) < LOCK_TTL and attempt < 6 then
 					lockedByOther = true
 					return nil -- abort write, another server still owns the session
 				end
-				local p = if old then reconcile(old) else defaultProfile()
+				local p = if type(old) == "table" then reconcile(old) else defaultProfile()
 				p.lock = { job = game.JobId, t = now }
 				result = p
 				return p
@@ -8597,7 +8691,10 @@ function Data.load(player: Player): Profile
 			warn("[Data] load failed for", player.Name, err)
 		end
 		result = nil
-		task.wait(if lockedByOther then 5 else 2)
+		if RunService:IsStudio() and not ok then
+			break -- Studio without API access: fail fast, play unsaved
+		end
+		task.wait(if lockedByOther then 5 else Guard.backoff(attempt, 2, 10))
 		if not player.Parent then
 			break
 		end
@@ -8614,28 +8711,63 @@ function Data.load(player: Player): Profile
 	return result
 end
 
+-- Writes the profile with UpdateAsync (never a blind overwrite): it aborts if another server
+-- holds a fresh session lock, retries with exponential backoff, waits for write budget, and
+-- never lets two writes for the same player overlap. Returns true when the data was written.
 function Data.save(player: Player, release: boolean?): boolean
 	local p = Data.profiles[player]
 	if not p or not loadedOk[player] or not store then
 		return false
 	end
-	local ds = store :: DataStore
-	p.savedAt = os.time()
-	p.lock = if release then nil else { job = game.JobId, t = os.time() }
-	local wrote = false
-	local ok, err = pcall(function()
-		ds:UpdateAsync(key(player), function(old: any)
-			if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
-				return nil -- another server owns it now; don't clobber
-			end
-			wrote = true
-			return p
-		end)
-	end)
-	if not ok then
-		warn("[Data] save failed for", player.Name, err)
-		return false
+	if saving[player] then
+		local t0 = os.clock()
+		while saving[player] and os.clock() - t0 < 20 do
+			task.wait(0.1)
+		end
+		if saving[player] or Data.profiles[player] ~= p then
+			return false
+		end
 	end
+	saving[player] = true
+	local ds = store :: DataStore
+	local attempts = if RunService:IsStudio() then 1 elseif release then RELEASE_ATTEMPTS else SAVE_ATTEMPTS
+	local wrote = false
+	for attempt = 1, attempts do
+		if attempt > 1 and os.clock() > shutdownDeadline then
+			break
+		end
+		if not waitBudget(if release then 10 else 5) and attempt > 1 then
+			break
+		end
+		local fixed = Guard.scrub(p) -- never save NaN / inf
+		Guard.clampNonNegative(p :: any, CURRENCY_KEYS)
+		if fixed > 0 then
+			warn("[Data] scrubbed", fixed, "non-finite values before saving", player.Name)
+		end
+		p.savedAt = os.time()
+		p.lock = if release then nil else { job = game.JobId, t = os.time() }
+		local aborted = false
+		local ok, err = pcall(function()
+			ds:UpdateAsync(key(player), function(old: any)
+				if type(old) == "table" and type(old.lock) == "table" and old.lock.job ~= game.JobId and os.time() - (tonumber(old.lock.t) or 0) < LOCK_TTL then
+					aborted = true
+					return nil -- another server owns it now; don't clobber
+				end
+				wrote = true
+				return p
+			end)
+		end)
+		if ok then
+			break -- written, or deliberately aborted by the lock check (retrying cannot help)
+		end
+		wrote = false
+		warn("[Data] save failed for", player.Name, "attempt", attempt, err)
+		if aborted or attempt >= attempts then
+			break
+		end
+		task.wait(Guard.backoff(attempt, 1, 8))
+	end
+	saving[player] = nil
 	return wrote
 end
 
@@ -8644,12 +8776,13 @@ function Data.release(player: Player)
 	Data.profiles[player] = nil
 	loadedOk[player] = nil
 	nextSave[player] = nil
+	saving[player] = nil
 end
 
 -- Per-player bookkeeping tables still holding this player (leak check in the playtest).
 function Data.tracked(player: Player): number
 	local n = 0
-	for _, t in { Data.profiles, loadedOk, nextSave } :: { { [Player]: any } } do
+	for _, t in { Data.profiles, loadedOk, nextSave, saving } :: { { [Player]: any } } do
 		if t[player] ~= nil then
 			n += 1
 		end
@@ -8677,12 +8810,8 @@ function Data.startAutosave()
 				local due = nextSave[player]
 				if not due then
 					nextSave[player] = now + Config.AutosaveInterval
-				elseif now >= due and Data.profiles[player] then
-					local budget = 1
-					pcall(function()
-						budget = DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
-					end)
-					if budget > 0 then
+				elseif now >= due and Data.profiles[player] and not saving[player] then
+					if updateBudget() > 0 then
 						nextSave[player] = now + Config.AutosaveInterval
 						task.spawn(Data.save, player)
 						break -- at most one save per second
@@ -8695,6 +8824,7 @@ function Data.startAutosave()
 		if RunService:IsStudio() and not storeOk then
 			return
 		end
+		shutdownDeadline = os.clock() + 25
 		local pending = 0
 		for _, player in Players:GetPlayers() do
 			pending += 1
@@ -8732,6 +8862,7 @@ local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Pets = require(script.Parent.Pets)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 
 local Eggs = {}
 
@@ -8827,7 +8958,7 @@ function Eggs.init(positions: { [string]: Vector3 })
 	eggPositions = positions
 
 	Remotes.handle("Hatch", function(player, payload)
-		if type(payload.egg) ~= "string" then
+		if not Guard.str(payload.egg, 24) then
 			return false, M("msg.unknown_egg")
 		end
 		-- anything that is not a known hatch size is rejected by Eggs.hatch
@@ -8841,7 +8972,7 @@ function Eggs.init(positions: { [string]: Vector3 })
 			State.dirty(player)
 			return true
 		end
-		local egg = if type(payload.egg) == "string" then Formulas.EggById[payload.egg] else nil
+		local egg = if Guard.str(payload.egg, 24) then Formulas.EggById[payload.egg] else nil
 		if not egg or egg.exclusive then
 			return false, M("msg.unknown_egg")
 		end
@@ -8897,6 +9028,219 @@ return Eggs
         </Item>
         <Item class="ModuleScript" referent="35">
           <Properties>
+            <string name="Name">Guard</string>
+            <string name="Source"><![CDATA[--!strict
+-- Pure validation / rate-limit helpers for everything a client can send (no Roblox APIs, so
+-- tests/security_test.luau runs it with plain luau). Every remote handler goes through these:
+-- assume the caller can send any type, NaN, inf, negatives, huge strings and huge tables.
+local Guard = {}
+
+-- Finite number (rejects NaN, +-inf and non-numbers).
+function Guard.num(x: any): boolean
+	return type(x) == "number" and x == x and x ~= math.huge and x ~= -math.huge
+end
+
+-- Integer in [min, max] (rejects fractions, NaN, inf, non-numbers).
+function Guard.int(x: any, min: number, max: number): boolean
+	return Guard.num(x) and x == math.floor(x) and x >= min and x <= max
+end
+
+-- String of 1..maxLen bytes (empty allowed with allowEmpty).
+function Guard.str(x: any, maxLen: number, allowEmpty: boolean?): boolean
+	if type(x) ~= "string" then
+		return false
+	end
+	local n = #x
+	return n <= maxLen and (n > 0 or allowEmpty == true)
+end
+
+-- Inventory ids look like "p123": short, no control characters.
+function Guard.uid(x: any): boolean
+	return type(x) == "string" and #x >= 2 and #x <= 12 and string.find(x, "^p%d+$") ~= nil
+end
+
+-- Member of a whitelist set { [value] = true }.
+function Guard.oneOf(x: any, set: { [any]: any }): boolean
+	return (type(x) == "string" or type(x) == "number") and x == x and set[x] ~= nil
+end
+
+-- Table with at most maxKeys entries (stops counting early, so a huge table costs O(maxKeys)).
+function Guard.smallTable(t: any, maxKeys: number): boolean
+	if type(t) ~= "table" then
+		return false
+	end
+	local n = 0
+	for _ in t do
+		n += 1
+		if n > maxKeys then
+			return false
+		end
+	end
+	return true
+end
+
+-- Array (1..n, no holes, no other keys) with at most maxLen entries.
+function Guard.array(t: any, maxLen: number): boolean
+	if type(t) ~= "table" then
+		return false
+	end
+	local n = 0
+	for k in t do
+		n += 1
+		if n > maxLen or type(k) ~= "number" or k ~= n then
+			return false
+		end
+	end
+	return true
+end
+
+---------------------------------------------------------------------------
+-- Token bucket: rate tokens per second, burst capacity. One bucket per key (player).
+---------------------------------------------------------------------------
+export type Limiter = {
+	rate: number,
+	burst: number,
+	buckets: { [any]: { tokens: number, t: number } },
+}
+
+function Guard.limiter(rate: number, burst: number): Limiter
+	return { rate = rate, burst = burst, buckets = {} }
+end
+
+-- Takes up to `want` tokens (default 1, whole numbers only); returns how many were granted.
+function Guard.take(l: Limiter, key: any, now: number, want: number?): number
+	local b = l.buckets[key]
+	if not b then
+		b = { tokens = l.burst, t = now }
+		l.buckets[key] = b
+	end
+	local dt = now - b.t
+	if dt < 0 then
+		dt = 0 -- clock never runs backwards for us
+	end
+	b.tokens = math.min(l.burst, b.tokens + dt * l.rate)
+	b.t = now
+	local w = want or 1
+	if not Guard.num(w) or w < 1 then
+		return 0
+	end
+	local granted = math.min(math.floor(w), math.floor(b.tokens))
+	if granted <= 0 then
+		return 0
+	end
+	b.tokens -= granted
+	return granted
+end
+
+function Guard.allow(l: Limiter, key: any, now: number): boolean
+	return Guard.take(l, key, now, 1) >= 1
+end
+
+function Guard.forget(l: Limiter, key: any)
+	l.buckets[key] = nil
+end
+
+function Guard.count(l: Limiter): number
+	local n = 0
+	for _ in l.buckets do
+		n += 1
+	end
+	return n
+end
+
+---------------------------------------------------------------------------
+-- Save safety
+---------------------------------------------------------------------------
+-- Replaces NaN / +-inf anywhere in a (cycle-safe, depth-capped) table by 0. Returns how many were fixed.
+function Guard.scrub(t: any, depth: number?, seen: { [any]: boolean }?): number
+	local d = depth or 0
+	local s = seen or {}
+	if type(t) ~= "table" or d > 12 or s[t] then
+		return 0
+	end
+	s[t] = true
+	local fixed = 0
+	for k, v in t do
+		if type(v) == "number" then
+			if v ~= v or v == math.huge or v == -math.huge then
+				t[k] = 0
+				fixed += 1
+			end
+		elseif type(v) == "table" then
+			fixed += Guard.scrub(v, d + 1, s)
+		end
+	end
+	return fixed
+end
+
+-- Currency-like top-level numbers can never be negative.
+function Guard.clampNonNegative(t: { [string]: any }, keys: { string }): number
+	local fixed = 0
+	for _, k in keys do
+		local v = t[k]
+		if type(v) == "number" and v < 0 then
+			t[k] = 0
+			fixed += 1
+		end
+	end
+	return fixed
+end
+
+-- Makes every key of `def` have the same type in `p` (wrong type -> the default's value, via copy()).
+function Guard.fixTypes(p: { [string]: any }, def: { [string]: any }, copy: (any) -> any): number
+	local fixed = 0
+	for k, v in def do
+		if p[k] ~= nil and type(p[k]) ~= type(v) then
+			p[k] = copy(v)
+			fixed += 1
+		end
+	end
+	return fixed
+end
+
+function Guard.deepCopy(v: any, depth: number?): any
+	if type(v) ~= "table" or (depth or 0) > 12 then
+		return v
+	end
+	local out = {}
+	for k, x in v do
+		out[k] = Guard.deepCopy(x, (depth or 0) + 1)
+	end
+	return out
+end
+
+-- Runs migration steps { [fromVersion] = function(profile) } until `current`. A profile from a
+-- NEWER version (rolled-back server) is left alone. Returns the version it ends at.
+function Guard.migrate(p: { [string]: any }, steps: { [number]: (any) -> () }, current: number): number
+	local v = p.version
+	if not Guard.int(v, 0, 1e6) then
+		v = 1
+	end
+	while v < current do
+		local step = steps[v]
+		if step then
+			step(p)
+		end
+		v += 1
+	end
+	if v > current then
+		return v
+	end
+	p.version = current
+	return current
+end
+
+-- Backoff delay for retry number `attempt` (1-based): base * 2^(attempt-1), capped.
+function Guard.backoff(attempt: number, base: number, cap: number): number
+	return math.min(cap, base * 2 ^ (attempt - 1))
+end
+
+return Guard
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="36">
+          <Properties>
             <string name="Name">Hooks</string>
             <string name="Source"><![CDATA[--!strict
 -- Tiny in-process event bus so gameplay services can report what happened (hatched, taps,
@@ -8932,7 +9276,7 @@ return Hooks
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -8946,6 +9290,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Data = require(script.Parent.Data)
+local Guard = require(script.Parent.Guard)
 
 local Leaderboard = {}
 
@@ -8963,7 +9308,31 @@ do
 end
 
 local function encodeTaps(n: number): number
+	if not Guard.num(n) then
+		return 0 -- NaN / inf never reach the board
+	end
 	return math.floor(math.log10(math.max(1, n) + 1) * SCALE)
+end
+
+-- Last value written per player (leaderboards only go up; unchanged scores cost no request).
+local lastPushed: { [number]: { taps: number, rebirths: number } } = {}
+
+-- OrderedDataStore write that keeps the BEST value: a stale or reset session can never lower a score.
+local function pushMax(store: OrderedDataStore, key: string, value: number)
+	store:UpdateAsync(key, function(old: any): any
+		if type(old) == "number" and old >= value then
+			return nil :: any
+		end
+		return value :: any
+	end)
+end
+
+local function budgetLeft(): boolean
+	local n = 1
+	pcall(function()
+		n = DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+	end)
+	return n > 20 -- leave room for profile saves
 end
 local function decodeTaps(v: number): number
 	return 10 ^ (v / SCALE) - 1
@@ -9014,17 +9383,21 @@ end
 local function pushScores()
 	for _, player in Players:GetPlayers() do
 		local p = Data.get(player)
-		if p and Data.isPersistent(player) then
+		if p and Data.isPersistent(player) and budgetLeft() then
 			local key = tostring(player.UserId)
-			if tapsStore then
-				pcall(function()
-					(tapsStore :: OrderedDataStore):SetAsync(key, encodeTaps(p.totalTaps))
-				end)
+			local last: { taps: number, rebirths: number } = lastPushed[player.UserId] or { taps = -1, rebirths = -1 }
+			lastPushed[player.UserId] = last
+			local taps = encodeTaps(p.totalTaps)
+			if tapsStore and taps > last.taps then
+				if pcall(pushMax, tapsStore :: OrderedDataStore, key, taps) then
+					last.taps = taps
+				end
 			end
-			if rebirthStore and p.rebirths > 0 then
-				pcall(function()
-					(rebirthStore :: OrderedDataStore):SetAsync(key, p.rebirths)
-				end)
+			local rb = if Guard.int(p.rebirths, 0, 1e9) then p.rebirths else 0
+			if rebirthStore and rb > 0 and rb > last.rebirths then
+				if pcall(pushMax, rebirthStore :: OrderedDataStore, key, rb) then
+					last.rebirths = rb
+				end
 			end
 		end
 	end
@@ -9081,6 +9454,9 @@ local function fetch(store: OrderedDataStore?, decode: (number) -> string): { { 
 end
 
 function Leaderboard.init(boards: { [string]: BasePart })
+	Players.PlayerRemoving:Connect(function(player)
+		lastPushed[player.UserId] = nil
+	end)
 	task.spawn(function()
 		while true do
 			for _, player in Players:GetPlayers() do
@@ -9117,7 +9493,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">LiveEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -9260,7 +9636,7 @@ return LiveEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Monetization</string>
             <string name="Source"><![CDATA[--!strict
@@ -9277,6 +9653,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local M = Locale.m
 local Data = require(script.Parent.Data)
+local Guard = require(script.Parent.Guard)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
@@ -9289,6 +9666,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Monetization = {}
 
 local MAX_RECEIPTS = 60
+local adInFlight: { [Player]: boolean } = {}
 
 local passByGamepassId: { [number]: typeof(Config.Passes[1]) } = {}
 for _, pass in Config.Passes do
@@ -9371,18 +9749,14 @@ function Monetization.loadPasses(player: Player)
 	Formulas.applyIncluded(owned) -- x8 Hatch includes x3 Hatch
 end
 
-local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
-	local player = Players:GetPlayerByUserId(receipt.PlayerId)
-	if not player then
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-	local p = Data.get(player)
-	if not p or not State.ready[player] then
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-	local purchaseId = tostring(receipt.PurchaseId)
+local function grantReceipt(player: Player, p: Data.Profile, receipt: any, purchaseId: string): Enum.ProductPurchaseDecision
 	if table.find(p.purchases, purchaseId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- already granted earlier
+		-- Granted earlier in this session. Acknowledge only once it is really on disk (the first
+		-- attempt's save may have failed; the marker lives in memory until a save succeeds).
+		if Data.isPersistent(player) and not Data.save(player) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 	local product = productById[receipt.ProductId]
 	local adPlacement = adPlacementById[receipt.ProductId]
@@ -9414,6 +9788,7 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 	end
 	-- Persist before acknowledging, so a crash can't grant twice or lose the purchase.
 	if Data.isPersistent(player) and not Data.save(player) then
+		-- (a lock abort or a failed write both land here)
 		-- Keep the marker in memory: when Roblox retries, the marker short-circuits to
 		-- PurchaseGranted once a later save succeeds; if the server dies first, both the
 		-- grant and the marker are lost together and the retry grants it again.
@@ -9423,6 +9798,41 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
 	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
+end
+
+local receiptBusy: { [string]: boolean } = {} -- PurchaseIds being granted right now
+
+local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
+	if type(receipt) ~= "table" or not Guard.int(receipt.PlayerId, 1, 2 ^ 52) or not Guard.int(receipt.ProductId, 1, 2 ^ 52) or receipt.PurchaseId == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local player = Players:GetPlayerByUserId(receipt.PlayerId)
+	if not player then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local p = Data.get(player)
+	if not p or not State.ready[player] then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	-- The profile failed to load (DataStore down): granting now would be lost on leave, yet
+	-- acknowledged. Roblox retries the receipt on the next join / next call.
+	if Data.canPersist() and not Data.isPersistent(player) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local purchaseId = tostring(receipt.PurchaseId)
+	if receiptBusy[purchaseId] then
+		return Enum.ProductPurchaseDecision.NotProcessedYet -- same receipt already in flight (yielding save)
+	end
+	receiptBusy[purchaseId] = true
+	local decision = Enum.ProductPurchaseDecision.NotProcessedYet
+	local okCall, res = pcall(function()
+		decision = grantReceipt(player, p, receipt, purchaseId)
+	end)
+	receiptBusy[purchaseId] = nil
+	if not okCall then
+		warn("[Monetization] receipt error", res)
+	end
+	return decision
 end
 
 function Monetization.init()
@@ -9445,7 +9855,7 @@ function Monetization.init()
 	Remotes.handle("WatchAd", function(player, payload)
 		local p = Data.get(player)
 		local placement = payload.placement
-		local id = if type(placement) == "string" then (Config.AdProducts :: any)[placement] else nil
+		local id = if Guard.str(placement, 24) then (Config.AdProducts :: any)[placement] else nil
 		if not p or type(id) ~= "number" then
 			return false, M("msg.ad_unavailable")
 		end
@@ -9455,24 +9865,37 @@ function Monetization.init()
 		if adsLeft(p) <= 0 then
 			return false, M("msg.ad_cap")
 		end
+		if adInFlight[player] then
+			return false, M("msg.slow_down") -- one ad at a time (the call yields; no parallel cap bypass)
+		end
 		if p.ads.day ~= adDay() then
 			p.ads = { day = adDay(), count = 0 }
 		end
+		adInFlight[player] = true
 		local ok, result = pcall(function()
 			local reward = (AdService :: any):CreateAdRewardFromDevProductId(id)
 			return (AdService :: any):ShowRewardedVideoAdAsync(player, reward)
 		end)
+		adInFlight[player] = nil
 		if not ok then
 			warn("[Monetization] ad failed", result)
 			return false, M("msg.ad_unavailable")
+		end
+		if p.ads.day ~= adDay() then
+			p.ads = { day = adDay(), count = 0 }
 		end
 		p.ads.count += 1
 		State.dirty(player)
 		return true, tostring(if typeof(result) == "EnumItem" then (result :: any).Name else result)
 	end)
 
+	Players.PlayerRemoving:Connect(function(player: Player)
+		adInFlight[player] = nil
+	end)
+
+	-- Server-side event (a client cannot fire it); only known pass ids of a loaded session count.
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, gamePassId: number, purchased: boolean)
-		if not purchased then
+		if purchased ~= true or not Guard.int(gamePassId, 1, 2 ^ 52) or not State.ready[player] then
 			return
 		end
 		local pass = passByGamepassId[gamePassId]
@@ -9490,7 +9913,7 @@ return Monetization
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Offline</string>
             <string name="Source"><![CDATA[--!strict
@@ -9565,7 +9988,7 @@ return Offline
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Pets</string>
             <string name="Source"><![CDATA[--!strict
@@ -9580,6 +10003,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 
 local Pets = {}
 Pets.giveDice = function(_player: Player, _n: number) end
@@ -9667,7 +10091,7 @@ function Pets.init()
 	Remotes.handle("Equip", function(player, payload)
 		local p = Data.get(player)
 		local uid = payload.uid
-		if not p or type(uid) ~= "string" or not p.pets[uid] then
+		if not p or not Guard.uid(uid) or not p.pets[uid] then
 			return false, M("msg.unknown_pet")
 		end
 		if table.find(p.equipped, uid) then
@@ -9683,7 +10107,7 @@ function Pets.init()
 
 	Remotes.handle("Unequip", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uid) ~= "string" then
+		if not p or not Guard.uid(payload.uid) then
 			return false, M("msg.unknown_pet")
 		end
 		local i = table.find(p.equipped, payload.uid)
@@ -9701,7 +10125,7 @@ function Pets.init()
 
 	Remotes.handle("Lock", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uid) ~= "string" or not p.pets[payload.uid] then
+		if not p or not Guard.uid(payload.uid) or not p.pets[payload.uid] then
 			return false, M("msg.unknown_pet")
 		end
 		p.pets[payload.uid].locked = payload.locked == true
@@ -9711,7 +10135,7 @@ function Pets.init()
 
 	Remotes.handle("Delete", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uids) ~= "table" then
+		if not p or not Guard.array(payload.uids, 400) then
 			return false, M("msg.bad_request")
 		end
 		local n = 0
@@ -9719,7 +10143,7 @@ function Pets.init()
 			if n >= 200 then
 				break
 			end
-			if type(uid) == "string" then
+			if Guard.uid(uid) then
 				local pet = p.pets[uid]
 				if pet and not pet.locked then
 					removePet(p, uid)
@@ -9737,7 +10161,7 @@ function Pets.init()
 	-- Trait roll: spends Trait Dice, always gives a grade (it replaces the old one).
 	Remotes.handle("RollTrait", function(player, payload)
 		local p = Data.get(player)
-		local pet = if p and type(payload.uid) == "string" then p.pets[payload.uid] else nil
+		local pet = if p and Guard.uid(payload.uid) then p.pets[payload.uid] else nil
 		if not p or not pet then
 			return false, M("msg.unknown_pet")
 		end
@@ -9775,7 +10199,7 @@ function Pets.init()
 	-- Craft: consumes CraftCost unlocked pets with the same id+tier as payload.uid.
 	Remotes.handle("Craft", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uid) ~= "string" then
+		if not p or not Guard.uid(payload.uid) then
 			return false, M("msg.unknown_pet")
 		end
 		local base = p.pets[payload.uid]
@@ -9833,7 +10257,7 @@ return Pets
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Plots</string>
             <string name="Source"><![CDATA[--!strict
@@ -9946,7 +10370,7 @@ return Plots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Progression</string>
             <string name="Source"><![CDATA[--!strict
@@ -9963,6 +10387,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local WorldBuilder = require(script.Parent.Parent.World.WorldBuilder)
 
 local Progression = {}
@@ -10053,7 +10478,7 @@ function Progression.init(spawns: { [number]: CFrame }, gates: { [number]: BaseP
 	end
 
 	Remotes.handle("BuyZone", function(player, payload)
-		if type(payload.zone) ~= "number" then
+		if not Guard.int(payload.zone, 1, #Config.Zones) then
 			return false, M("msg.unknown_zone")
 		end
 		return Progression.buyZone(player, payload.zone)
@@ -10061,7 +10486,7 @@ function Progression.init(spawns: { [number]: CFrame }, gates: { [number]: BaseP
 
 	Remotes.handle("Teleport", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.zone) ~= "number" or not State.hasZone(p, payload.zone) then
+		if not p or not Guard.int(payload.zone, 1, #Config.Zones) or not State.hasZone(p, payload.zone) then
 			return false, M("msg.zone_locked")
 		end
 		Progression.teleport(player, payload.zone)
@@ -10074,7 +10499,7 @@ function Progression.init(spawns: { [number]: CFrame }, gates: { [number]: BaseP
 
 	Remotes.handle("Upgrade", function(player, payload)
 		local p = Data.get(player)
-		local u = if type(payload.id) == "string" then Config.UpgradeById[payload.id] else nil
+		local u = if Guard.str(payload.id, 24) then Config.UpgradeById[payload.id] else nil
 		if not p or not u then
 			return false, M("msg.unknown_upgrade")
 		end
@@ -10120,7 +10545,7 @@ return Progression
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">QuestService</string>
             <string name="Source"><![CDATA[--!strict
@@ -10138,6 +10563,7 @@ local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local M = Locale.m
 
 local QuestService = {}
@@ -10237,7 +10663,7 @@ function QuestService.init()
 	Remotes.handle("ClaimQuest", function(player, payload)
 		local p = QuestService.ensure(player)
 		local i = payload.i
-		if not p or type(i) ~= "number" or not p.quests.list[i] then
+		if not p or not Guard.int(i, 1, 16) or not p.quests.list[i] then
 			return false, M("msg.unknown_quest")
 		end
 		local q = p.quests.list[i]
@@ -10309,7 +10735,7 @@ return QuestService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -10318,6 +10744,7 @@ return QuestService
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local Guard = require(script.Parent.Guard)
 local M = Locale.m
 
 local Remotes = {}
@@ -10346,12 +10773,25 @@ request.Parent = folder
 
 type Handler = (player: Player, payload: any) -> (boolean, any?)
 local handlers: { [string]: Handler } = {}
-local budget: { [Player]: { tokens: number, t: number } } = {}
-local RATE = 12 -- requests per second sustained
-local BURST = 30
+local actionLimiters: { [string]: Guard.Limiter } = {}
+local globalLimiter = Guard.limiter(12, 30) -- requests per second sustained / burst, all actions
+local MAX_ACTION_LEN = 32
+local MAX_PAYLOAD_KEYS = 256
+-- Players that already left: a late call must not re-create their bookkeeping (leak).
+local departed: { [Player]: boolean } = setmetatable({}, { __mode = "k" }) :: any
 
-function Remotes.handle(action: string, fn: Handler)
+-- perSecond / burst: optional extra per-player limit for this action alone (expensive or
+-- brute-forceable ones: codes, ads, group check, craft, delete...). The global limit still applies.
+function Remotes.handle(action: string, fn: Handler, perSecond: number?, burst: number?)
 	handlers[action] = fn
+	if perSecond then
+		actionLimiters[action] = Guard.limiter(perSecond, burst or math.max(1, perSecond * 2))
+	end
+end
+
+-- Sets (or replaces) the per-player limit of an already registered action.
+function Remotes.limit(action: string, perSecond: number, burst: number)
+	actionLimiters[action] = Guard.limiter(perSecond, burst)
 end
 
 -- Traffic counters (remote calls since the server started); the playtest reads them.
@@ -10374,31 +10814,45 @@ function Remotes.notify(player: Player, message: Locale.Message, kind: string?)
 end
 
 function Remotes.forget(player: Player)
-	budget[player] = nil
+	departed[player] = true
+	Guard.forget(globalLimiter, player)
+	for _, l in actionLimiters do
+		Guard.forget(l, player)
+	end
+end
+
+-- Limiter entries still held for this player (leak check).
+function Remotes.tracked(player: Player): number
+	local n = if globalLimiter.buckets[player] then 1 else 0
+	for _, l in actionLimiters do
+		if l.buckets[player] then
+			n += 1
+		end
+	end
+	return n
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any)
 	Remotes.stats.requestIn += 1
-	if type(action) ~= "string" then
+	if departed[player] or not player.Parent then
+		return false, M("msg.error")
+	end
+	if not Guard.str(action, MAX_ACTION_LEN) then
 		return false, M("msg.bad_request")
 	end
-	local b = budget[player]
 	local now = os.clock()
-	if not b then
-		b = { tokens = BURST, t = now }
-		budget[player] = b
-	end
-	b.tokens = math.min(BURST, b.tokens + (now - b.t) * RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not Guard.allow(globalLimiter, player, now) then
 		return false, M("msg.slow_down")
 	end
-	b.tokens -= 1
-	local fn = handlers[action]
+	local fn = handlers[action :: string]
 	if not fn then
 		return false, M("msg.unknown_action")
 	end
-	if payload ~= nil and type(payload) ~= "table" then
+	local limiter = actionLimiters[action :: string]
+	if limiter and not Guard.allow(limiter, player, now) then
+		return false, M("msg.slow_down")
+	end
+	if payload ~= nil and not Guard.smallTable(payload, MAX_PAYLOAD_KEYS) then
 		return false, M("msg.bad_request")
 	end
 	local ok, a, b2 = pcall(fn, player, payload or {})
@@ -10415,7 +10869,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Rewards</string>
             <string name="Source"><![CDATA[--!strict
@@ -10433,6 +10887,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local Eggs = require(script.Parent.Eggs)
 
 local Rewards = {}
@@ -10479,10 +10934,16 @@ end
 
 -- Friendship is looked up once per pair (web call) and cached for the server's lifetime.
 local friendCache: { [string]: boolean } = {}
+local friendCount = 0
 local function areFriends(a: Player, b: Player): boolean
 	local lo, hi = math.min(a.UserId, b.UserId), math.max(a.UserId, b.UserId)
 	local key = lo .. ":" .. hi
 	local cached = friendCache[key]
+	friendCount += if cached == nil then 1 else 0
+	if friendCount > 3000 then
+		table.clear(friendCache) -- bounded: pairs of everyone who ever shared this server
+		friendCount = 0
+	end
 	if cached ~= nil then
 		return cached
 	end
@@ -10542,7 +11003,7 @@ function Rewards.init()
 
 	Remotes.handle("ClaimGift", function(player, payload)
 		local i = payload.index
-		local gift = if type(i) == "number" then Config.Gifts[i] else nil
+		local gift = if Guard.int(i, 1, #Config.Gifts) then Config.Gifts[i] else nil
 		local claimed = State.giftsClaimed[player]
 		if not gift or not claimed then
 			return false, M("msg.unknown_gift")
@@ -10562,7 +11023,7 @@ function Rewards.init()
 
 	Remotes.handle("RedeemCode", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.code) ~= "string" or #payload.code > 30 then
+		if not p or not Guard.str(payload.code, 30) then
 			return false, M("msg.invalid_code")
 		end
 		local code = payload.code:upper():gsub("%s", "")
@@ -10582,7 +11043,7 @@ function Rewards.init()
 	Remotes.handle("ClaimIndex", function(player, payload)
 		local p = Data.get(player)
 		local zone = payload.zone
-		if not p or type(zone) ~= "number" or not Config.Zones[zone] then
+		if not p or not Guard.int(zone, 1, #Config.Zones) or not Config.Zones[zone] then
 			return false, M("msg.unknown_zone")
 		end
 		local key = tostring(zone)
@@ -10614,7 +11075,7 @@ return Rewards
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">Social</string>
             <string name="Source"><![CDATA[--!strict
@@ -10640,6 +11101,7 @@ local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
 local Pets = require(script.Parent.Pets)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local M = Locale.m
 
 local Social = {}
@@ -10854,10 +11316,10 @@ function Social.init()
 			pcall(function()
 				MessagingService:SubscribeAsync(RARE_TOPIC, function(message)
 					local d = message.Data
-					if type(d) ~= "table" or d.j == game.JobId or type(d.p) ~= "string" or not Formulas.PetById[d.p] then
+					if type(d) ~= "table" or d.j == game.JobId or not Guard.str(d.p, 40) or not Formulas.PetById[d.p] then
 						return
 					end
-					table.insert(inbox, d)
+					table.insert(inbox, { n = string.sub(tostring(d.n), 1, 40), p = d.p, t = if Guard.int(d.t, 0, 2) then d.t else 0, o = string.sub(tostring(d.o), 1, 24) })
 					while #inbox > 5 do
 						table.remove(inbox, 1)
 					end
@@ -10913,7 +11375,7 @@ return Social
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -11230,7 +11692,7 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Tapping</string>
             <string name="Source"><![CDATA[--!strict
@@ -11248,6 +11710,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 
 local Tapping = {}
 
@@ -11255,6 +11718,9 @@ type Bucket = { tokens: number, t: number }
 local buckets: { [Player]: Bucket } = {}
 local lastManual: { [Player]: number } = {} -- os.clock() of the last accepted manual tap
 local tapValueCache: { [Player]: { v: number, t: number } } = {}
+-- Tap EVENTS per second (the client sends one batch every Config.TapSendInterval): extra
+-- batches beyond this are dropped before any work is done.
+local eventLimiter = Guard.limiter(8, 16)
 
 local function tapValue(player: Player, p: Data.Profile): number
 	local c = tapValueCache[player]
@@ -11275,6 +11741,18 @@ function Tapping.forget(player: Player)
 	buckets[player] = nil
 	tapValueCache[player] = nil
 	lastManual[player] = nil
+	Guard.forget(eventLimiter, player)
+end
+
+-- Bookkeeping entries still held for this player (leak check).
+function Tapping.tracked(player: Player): number
+	local n = 0
+	for _, t in { buckets, tapValueCache, lastManual, eventLimiter.buckets } :: { { [Player]: any } } do
+		if t[player] ~= nil then
+			n += 1
+		end
+	end
+	return n
 end
 
 -- Auto taps per second right now (0 when the switch is off).
@@ -11288,10 +11766,10 @@ end
 
 local function onTap(player: Player, count: any)
 	Remotes.stats.tapIn += 1
-	if type(count) ~= "number" or count ~= count then
+	if not Guard.num(count) or not player.Parent then
 		return
 	end
-	count = math.floor(count)
+	count = math.floor(math.min(count, 10000))
 	if count <= 0 then
 		return
 	end
@@ -11300,6 +11778,9 @@ local function onTap(player: Player, count: any)
 		return
 	end
 	local now = os.clock()
+	if not Guard.allow(eventLimiter, player, now) then
+		return
+	end
 	local b = buckets[player]
 	local cap = Config.MaxTapsPerSecond + Config.TapBurst
 	if not b then
@@ -11378,11 +11859,11 @@ return Tapping
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="49">
+      <Item class="Folder" referent="50">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">ModelSlots</string>
             <string name="Source"><![CDATA[--!strict
@@ -11554,7 +12035,7 @@ return ModelSlots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">ModelSlotsMath</string>
             <string name="Source"><![CDATA[--!strict
@@ -11617,7 +12098,7 @@ return M
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">WorldBuilder</string>
             <string name="Source"><![CDATA[--!strict
@@ -13319,30 +13800,30 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="ServerStorage" referent="53">
+  <Item class="ServerStorage" referent="54">
     <Properties>
       <string name="Name">ServerStorage</string>
     </Properties>
-    <Item class="Folder" referent="54">
+    <Item class="Folder" referent="55">
       <Properties>
         <string name="Name">ModelLibrary</string>
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="55">
+  <Item class="StarterPlayer" referent="56">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">90</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="56">
+    <Item class="StarterPlayerScripts" referent="57">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="57">
+      <Item class="Folder" referent="58">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">Ads</string>
             <string name="Source"><![CDATA[--!strict
@@ -13414,7 +13895,7 @@ return Ads
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">Guide</string>
             <string name="Source"><![CDATA[--!strict
@@ -13550,7 +14031,7 @@ return Guide
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -13668,7 +14149,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="62">
           <Properties>
             <string name="Name">LiveEventClient</string>
             <string name="Source"><![CDATA[--!strict
@@ -13716,7 +14197,7 @@ return LiveEventClient
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="62">
+        <Item class="LocalScript" referent="63">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -13784,7 +14265,7 @@ end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="63">
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -13876,7 +14357,7 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="64">
+        <Item class="ModuleScript" referent="65">
           <Properties>
             <string name="Name">ParkFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -14047,7 +14528,7 @@ return ParkFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="65">
+        <Item class="ModuleScript" referent="66">
           <Properties>
             <string name="Name">PetFollow</string>
             <string name="Source"><![CDATA[--!strict
@@ -14413,7 +14894,7 @@ return PetFollow
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="66">
+        <Item class="ModuleScript" referent="67">
           <Properties>
             <string name="Name">Purchase</string>
             <string name="Source"><![CDATA[--!strict
@@ -14555,7 +15036,7 @@ return Purchase
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="67">
+        <Item class="ModuleScript" referent="68">
           <Properties>
             <string name="Name">Quality</string>
             <string name="Source"><![CDATA[--!strict
@@ -14646,7 +15127,7 @@ return Quality
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="68">
+        <Item class="ModuleScript" referent="69">
           <Properties>
             <string name="Name">Tapper</string>
             <string name="Source"><![CDATA[--!strict
@@ -15093,11 +15574,11 @@ return Tapper
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="69">
+        <Item class="Folder" referent="70">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="70">
+          <Item class="ModuleScript" referent="71">
             <Properties>
               <string name="Name">EggPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -15466,7 +15947,7 @@ return EggPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="72">
             <Properties>
               <string name="Name">HatchCinematic</string>
               <string name="Source"><![CDATA[--!strict
@@ -16024,7 +16505,7 @@ return HatchCinematic
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="73">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -16799,7 +17280,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="74">
             <Properties>
               <string name="Name">IndexWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -16975,7 +17456,7 @@ return IndexWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="74">
+          <Item class="ModuleScript" referent="75">
             <Properties>
               <string name="Name">InviteWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -17080,7 +17561,7 @@ return InviteWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="76">
             <Properties>
               <string name="Name">PetIcon</string>
               <string name="Source"><![CDATA[--!strict
@@ -17127,7 +17608,7 @@ return PetIcon
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="77">
             <Properties>
               <string name="Name">PetsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -17596,7 +18077,7 @@ return PetsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="78">
             <Properties>
               <string name="Name">Popups</string>
               <string name="Source"><![CDATA[--!strict
@@ -17827,7 +18308,7 @@ return Popups
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">ProgressWindows</string>
               <string name="Source"><![CDATA[--!strict
@@ -18157,7 +18638,7 @@ return ProgressWindows
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">QuestsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18288,7 +18769,7 @@ return QuestsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">RewardsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18431,7 +18912,7 @@ return RewardsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">Root</string>
               <string name="Source"><![CDATA[--!strict
@@ -18552,7 +19033,7 @@ return Root
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">StoreWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18734,7 +19215,7 @@ return StoreWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -19211,7 +19692,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">Toasts</string>
               <string name="Source"><![CDATA[--!strict
@@ -19364,7 +19845,7 @@ return Toasts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Windows</string>
               <string name="Source"><![CDATA[--!strict
@@ -19623,7 +20104,7 @@ return Windows
             </Properties>
           </Item>
         </Item>
-        <Item class="ModuleScript" referent="86">
+        <Item class="ModuleScript" referent="87">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -20126,7 +20607,7 @@ return WorldFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="87">
+        <Item class="ModuleScript" referent="88">
           <Properties>
             <string name="Name">WorldText</string>
             <string name="Source"><![CDATA[--!strict
@@ -20220,7 +20701,7 @@ return WorldText
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="88">
+  <Item class="Workspace" referent="89">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

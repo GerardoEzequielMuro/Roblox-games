@@ -13,6 +13,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local Eggs = require(script.Parent.Eggs)
 
 local Rewards = {}
@@ -59,10 +60,16 @@ end
 
 -- Friendship is looked up once per pair (web call) and cached for the server's lifetime.
 local friendCache: { [string]: boolean } = {}
+local friendCount = 0
 local function areFriends(a: Player, b: Player): boolean
 	local lo, hi = math.min(a.UserId, b.UserId), math.max(a.UserId, b.UserId)
 	local key = lo .. ":" .. hi
 	local cached = friendCache[key]
+	friendCount += if cached == nil then 1 else 0
+	if friendCount > 3000 then
+		table.clear(friendCache) -- bounded: pairs of everyone who ever shared this server
+		friendCount = 0
+	end
 	if cached ~= nil then
 		return cached
 	end
@@ -122,7 +129,7 @@ function Rewards.init()
 
 	Remotes.handle("ClaimGift", function(player, payload)
 		local i = payload.index
-		local gift = if type(i) == "number" then Config.Gifts[i] else nil
+		local gift = if Guard.int(i, 1, #Config.Gifts) then Config.Gifts[i] else nil
 		local claimed = State.giftsClaimed[player]
 		if not gift or not claimed then
 			return false, M("msg.unknown_gift")
@@ -142,7 +149,7 @@ function Rewards.init()
 
 	Remotes.handle("RedeemCode", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.code) ~= "string" or #payload.code > 30 then
+		if not p or not Guard.str(payload.code, 30) then
 			return false, M("msg.invalid_code")
 		end
 		local code = payload.code:upper():gsub("%s", "")
@@ -162,7 +169,7 @@ function Rewards.init()
 	Remotes.handle("ClaimIndex", function(player, payload)
 		local p = Data.get(player)
 		local zone = payload.zone
-		if not p or type(zone) ~= "number" or not Config.Zones[zone] then
+		if not p or not Guard.int(zone, 1, #Config.Zones) or not Config.Zones[zone] then
 			return false, M("msg.unknown_zone")
 		end
 		local key = tostring(zone)

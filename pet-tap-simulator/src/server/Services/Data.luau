@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local Guard = require(script.Parent.Guard)
 
 local Data = {}
 
@@ -68,7 +69,43 @@ end
 Data.profiles = {} :: { [Player]: Profile }
 local loadedOk: { [Player]: boolean } = {}
 local nextSave: { [Player]: number } = {}
+local saving: { [Player]: boolean } = {} -- a write is in flight (writes per player never overlap)
 local LOCK_TTL = 150
+local SAVE_ATTEMPTS = 3 -- normal saves (autosave, receipts)
+local RELEASE_ATTEMPTS = 5 -- leaving / server shutdown: worth trying harder
+local shutdownDeadline = math.huge -- os.clock() by which BindToClose must be done
+
+-- Profile schema version. Add a step { [oldVersion] = function(profile) ... end } below when a
+-- release changes the shape of saved data; reconcile() runs them in order on load.
+Data.VERSION = 1
+local MIGRATIONS: { [number]: (any) -> () } = {}
+local CURRENCY_KEYS = { "taps", "gems", "dice", "totalTaps", "rebirths", "nextUid", "luckBoostLeft", "tapBoostLeft", "offlinePending", "offlineSeconds", "referralRewards", "totalHatched", "playTime" }
+
+-- True when saving is possible at all (false in Studio without API access, or if the store failed).
+function Data.canPersist(): boolean
+	return storeOk
+end
+
+-- DataStore budget left for UpdateAsync (1 when it cannot be read).
+local function updateBudget(): number
+	local n = 1
+	pcall(function()
+		n = DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+	end)
+	return n
+end
+
+-- Waits (bounded) until the write budget has room. Returns false when it never did.
+local function waitBudget(maxWait: number): boolean
+	local t0 = os.clock()
+	while updateBudget() <= 0 do
+		if os.clock() - t0 >= maxWait or os.clock() > shutdownDeadline then
+			return false
+		end
+		task.wait(0.5)
+	end
+	return true
+end
 
 local function defaultProfile(): Profile
 	local upgrades = {}
@@ -76,7 +113,7 @@ local function defaultProfile(): Profile
 		upgrades[u.id] = 0
 	end
 	local p: Profile = {
-		version = 1,
+		version = Data.VERSION,
 		taps = 0,
 		gems = 0,
 		dice = Config.TraitDice.start,
@@ -123,16 +160,33 @@ Data.defaultProfile = defaultProfile
 -- Fill keys added in later versions and drop content that no longer exists in Config.
 local function reconcile(p: any): Profile
 	local def = defaultProfile() :: any
+	if type(p) ~= "table" then
+		return def :: Profile
+	end
+	Guard.scrub(p) -- NaN / inf from an old bug or a corrupt write never enter the session
 	for k, v in def do
 		if p[k] == nil then
 			p[k] = v
 		end
 	end
+	Guard.fixTypes(p, def, Guard.deepCopy) -- wrong-typed fields fall back to the default
+	Guard.migrate(p, MIGRATIONS, Data.VERSION)
+	Guard.clampNonNegative(p, CURRENCY_KEYS)
 	for _, u in Config.Upgrades do
-		if p.upgrades[u.id] == nil then
-			p.upgrades[u.id] = 0
+		local lv = p.upgrades[u.id]
+		p.upgrades[u.id] = if Guard.int(lv, 0, u.maxLevel) then lv else math.clamp(math.floor(tonumber(lv) or 0), 0, u.maxLevel)
+	end
+	local zones, seenZone = {}, {}
+	for _, z in p.zones do
+		if Guard.int(z, 1, #Config.Zones) and not seenZone[z] then
+			seenZone[z] = true
+			table.insert(zones, z)
 		end
 	end
+	if not seenZone[1] then
+		table.insert(zones, 1, 1)
+	end
+	p.zones = zones
 	for uid, pet in p.pets do
 		if type(pet) ~= "table" or not Formulas.PetById[pet.id] then
 			p.pets[uid] = nil
@@ -143,9 +197,10 @@ local function reconcile(p: any): Profile
 			pet.trait = if trait and Config.TraitGrades[trait] then trait else nil
 		end
 	end
-	local eq = {}
+	local eq, seenEq = {}, {}
 	for _, uid in p.equipped do
-		if p.pets[uid] then
+		if type(uid) == "string" and p.pets[uid] and not seenEq[uid] then
+			seenEq[uid] = true
 			table.insert(eq, uid)
 		end
 	end
@@ -178,14 +233,15 @@ function Data.load(player: Player): Profile
 	local result: any = nil
 	for attempt = 1, 6 do
 		local lockedByOther = false
+		waitBudget(10)
 		local ok, err = pcall(function()
 			ds:UpdateAsync(key(player), function(old: any)
 				local now = os.time()
-				if old and old.lock and old.lock.job ~= game.JobId and now - old.lock.t < LOCK_TTL and attempt < 6 then
+				if type(old) == "table" and type(old.lock) == "table" and old.lock.job ~= game.JobId and now - (tonumber(old.lock.t) or 0) < LOCK_TTL and attempt < 6 then
 					lockedByOther = true
 					return nil -- abort write, another server still owns the session
 				end
-				local p = if old then reconcile(old) else defaultProfile()
+				local p = if type(old) == "table" then reconcile(old) else defaultProfile()
 				p.lock = { job = game.JobId, t = now }
 				result = p
 				return p
@@ -198,7 +254,10 @@ function Data.load(player: Player): Profile
 			warn("[Data] load failed for", player.Name, err)
 		end
 		result = nil
-		task.wait(if lockedByOther then 5 else 2)
+		if RunService:IsStudio() and not ok then
+			break -- Studio without API access: fail fast, play unsaved
+		end
+		task.wait(if lockedByOther then 5 else Guard.backoff(attempt, 2, 10))
 		if not player.Parent then
 			break
 		end
@@ -215,28 +274,63 @@ function Data.load(player: Player): Profile
 	return result
 end
 
+-- Writes the profile with UpdateAsync (never a blind overwrite): it aborts if another server
+-- holds a fresh session lock, retries with exponential backoff, waits for write budget, and
+-- never lets two writes for the same player overlap. Returns true when the data was written.
 function Data.save(player: Player, release: boolean?): boolean
 	local p = Data.profiles[player]
 	if not p or not loadedOk[player] or not store then
 		return false
 	end
-	local ds = store :: DataStore
-	p.savedAt = os.time()
-	p.lock = if release then nil else { job = game.JobId, t = os.time() }
-	local wrote = false
-	local ok, err = pcall(function()
-		ds:UpdateAsync(key(player), function(old: any)
-			if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
-				return nil -- another server owns it now; don't clobber
-			end
-			wrote = true
-			return p
-		end)
-	end)
-	if not ok then
-		warn("[Data] save failed for", player.Name, err)
-		return false
+	if saving[player] then
+		local t0 = os.clock()
+		while saving[player] and os.clock() - t0 < 20 do
+			task.wait(0.1)
+		end
+		if saving[player] or Data.profiles[player] ~= p then
+			return false
+		end
 	end
+	saving[player] = true
+	local ds = store :: DataStore
+	local attempts = if RunService:IsStudio() then 1 elseif release then RELEASE_ATTEMPTS else SAVE_ATTEMPTS
+	local wrote = false
+	for attempt = 1, attempts do
+		if attempt > 1 and os.clock() > shutdownDeadline then
+			break
+		end
+		if not waitBudget(if release then 10 else 5) and attempt > 1 then
+			break
+		end
+		local fixed = Guard.scrub(p) -- never save NaN / inf
+		Guard.clampNonNegative(p :: any, CURRENCY_KEYS)
+		if fixed > 0 then
+			warn("[Data] scrubbed", fixed, "non-finite values before saving", player.Name)
+		end
+		p.savedAt = os.time()
+		p.lock = if release then nil else { job = game.JobId, t = os.time() }
+		local aborted = false
+		local ok, err = pcall(function()
+			ds:UpdateAsync(key(player), function(old: any)
+				if type(old) == "table" and type(old.lock) == "table" and old.lock.job ~= game.JobId and os.time() - (tonumber(old.lock.t) or 0) < LOCK_TTL then
+					aborted = true
+					return nil -- another server owns it now; don't clobber
+				end
+				wrote = true
+				return p
+			end)
+		end)
+		if ok then
+			break -- written, or deliberately aborted by the lock check (retrying cannot help)
+		end
+		wrote = false
+		warn("[Data] save failed for", player.Name, "attempt", attempt, err)
+		if aborted or attempt >= attempts then
+			break
+		end
+		task.wait(Guard.backoff(attempt, 1, 8))
+	end
+	saving[player] = nil
 	return wrote
 end
 
@@ -245,12 +339,13 @@ function Data.release(player: Player)
 	Data.profiles[player] = nil
 	loadedOk[player] = nil
 	nextSave[player] = nil
+	saving[player] = nil
 end
 
 -- Per-player bookkeeping tables still holding this player (leak check in the playtest).
 function Data.tracked(player: Player): number
 	local n = 0
-	for _, t in { Data.profiles, loadedOk, nextSave } :: { { [Player]: any } } do
+	for _, t in { Data.profiles, loadedOk, nextSave, saving } :: { { [Player]: any } } do
 		if t[player] ~= nil then
 			n += 1
 		end
@@ -278,12 +373,8 @@ function Data.startAutosave()
 				local due = nextSave[player]
 				if not due then
 					nextSave[player] = now + Config.AutosaveInterval
-				elseif now >= due and Data.profiles[player] then
-					local budget = 1
-					pcall(function()
-						budget = DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
-					end)
-					if budget > 0 then
+				elseif now >= due and Data.profiles[player] and not saving[player] then
+					if updateBudget() > 0 then
 						nextSave[player] = now + Config.AutosaveInterval
 						task.spawn(Data.save, player)
 						break -- at most one save per second
@@ -296,6 +387,7 @@ function Data.startAutosave()
 		if RunService:IsStudio() and not storeOk then
 			return
 		end
+		shutdownDeadline = os.clock() + 25
 		local pending = 0
 		for _, player in Players:GetPlayers() do
 			pending += 1

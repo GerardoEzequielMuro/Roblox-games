@@ -43,6 +43,36 @@ Auto.init()
 Plots.init(world.plots)
 Data.startAutosave()
 
+-- Extra per-player limits (requests/second sustained, burst) on top of the global 12/s.
+-- Legit use is a few clicks; these stop brute force (codes), web-call spam (group, share, ads)
+-- and CPU abuse (state snapshots, delete/craft loops).
+for action, lim in {
+	GetState = { 3, 10 },
+	SetLanguage = { 2, 4 },
+	RedeemCode = { 0.5, 3 },
+	WatchAd = { 0.2, 2 },
+	ShareLink = { 0.2, 2 },
+	ClaimGroupGift = { 0.3, 2 },
+	ClaimOffline = { 1, 3 },
+	ClaimDaily = { 1, 2 },
+	ClaimGift = { 2, 6 },
+	ClaimQuest = { 3, 6 },
+	ClaimQuestBonus = { 1, 2 },
+	ClaimIndex = { 2, 4 },
+	Teleport = { 1, 3 },
+	GoPark = { 1, 3 },
+	Rebirth = { 2, 4 },
+	BuyZone = { 2, 4 },
+	Upgrade = { 6, 12 },
+	Delete = { 3, 6 },
+	Craft = { 5, 10 },
+	RollTrait = { 8, 16 },
+	EquipBest = { 3, 6 },
+	Hatch = { 5, 10 },
+} :: { [string]: { number } } do
+	Remotes.limit(action, lim[1], lim[2])
+end
+
 Remotes.handle("GetState", function(player)
 	if not State.ready[player] then
 		return false, "loading"
@@ -128,6 +158,13 @@ local function onPlayerAdded(player: Player)
 		return
 	end
 	Monetization.loadPasses(player)
+	if not player.Parent then
+		-- left while the pass check was in flight: PlayerRemoving already ran, so nothing may be
+		-- (re)created for this player now (State.ready, plot owner...) or it would leak forever
+		Data.release(player)
+		State.cleanup(player)
+		return
+	end
 	Pets.clampEquipped(player)
 	Offline.compute(player) -- needs passes + equipped pets for the tap value
 	QuestService.ensure(player)

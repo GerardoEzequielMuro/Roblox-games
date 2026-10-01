@@ -20,6 +20,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Guard = require(script.Parent.Guard)
 local Pets = require(script.Parent.Pets)
 local Progression = require(script.Parent.Progression)
 
@@ -52,7 +53,7 @@ end
 
 function Auto.init()
 	Remotes.handle("SetAuto", function(player, payload)
-		if type(payload.key) ~= "string" then
+		if not Guard.str(payload.key, 12) then
 			return false, M("msg.bad_request")
 		end
 		return Auto.set(player, payload.key, payload.on == true)

@@ -12,6 +12,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local M = Locale.m
 local Data = require(script.Parent.Data)
+local Guard = require(script.Parent.Guard)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
@@ -24,6 +25,7 @@ local Format = require(ReplicatedStorage.Shared.Format)
 local Monetization = {}
 
 local MAX_RECEIPTS = 60
+local adInFlight: { [Player]: boolean } = {}
 
 local passByGamepassId: { [number]: typeof(Config.Passes[1]) } = {}
 for _, pass in Config.Passes do
@@ -106,18 +108,14 @@ function Monetization.loadPasses(player: Player)
 	Formulas.applyIncluded(owned) -- x8 Hatch includes x3 Hatch
 end
 
-local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
-	local player = Players:GetPlayerByUserId(receipt.PlayerId)
-	if not player then
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-	local p = Data.get(player)
-	if not p or not State.ready[player] then
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-	local purchaseId = tostring(receipt.PurchaseId)
+local function grantReceipt(player: Player, p: Data.Profile, receipt: any, purchaseId: string): Enum.ProductPurchaseDecision
 	if table.find(p.purchases, purchaseId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- already granted earlier
+		-- Granted earlier in this session. Acknowledge only once it is really on disk (the first
+		-- attempt's save may have failed; the marker lives in memory until a save succeeds).
+		if Data.isPersistent(player) and not Data.save(player) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 	local product = productById[receipt.ProductId]
 	local adPlacement = adPlacementById[receipt.ProductId]
@@ -149,6 +147,7 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 	end
 	-- Persist before acknowledging, so a crash can't grant twice or lose the purchase.
 	if Data.isPersistent(player) and not Data.save(player) then
+		-- (a lock abort or a failed write both land here)
 		-- Keep the marker in memory: when Roblox retries, the marker short-circuits to
 		-- PurchaseGranted once a later save succeeds; if the server dies first, both the
 		-- grant and the marker are lost together and the retry grants it again.
@@ -158,6 +157,41 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
 	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
+end
+
+local receiptBusy: { [string]: boolean } = {} -- PurchaseIds being granted right now
+
+local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
+	if type(receipt) ~= "table" or not Guard.int(receipt.PlayerId, 1, 2 ^ 52) or not Guard.int(receipt.ProductId, 1, 2 ^ 52) or receipt.PurchaseId == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local player = Players:GetPlayerByUserId(receipt.PlayerId)
+	if not player then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local p = Data.get(player)
+	if not p or not State.ready[player] then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	-- The profile failed to load (DataStore down): granting now would be lost on leave, yet
+	-- acknowledged. Roblox retries the receipt on the next join / next call.
+	if Data.canPersist() and not Data.isPersistent(player) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	local purchaseId = tostring(receipt.PurchaseId)
+	if receiptBusy[purchaseId] then
+		return Enum.ProductPurchaseDecision.NotProcessedYet -- same receipt already in flight (yielding save)
+	end
+	receiptBusy[purchaseId] = true
+	local decision = Enum.ProductPurchaseDecision.NotProcessedYet
+	local okCall, res = pcall(function()
+		decision = grantReceipt(player, p, receipt, purchaseId)
+	end)
+	receiptBusy[purchaseId] = nil
+	if not okCall then
+		warn("[Monetization] receipt error", res)
+	end
+	return decision
 end
 
 function Monetization.init()
@@ -180,7 +214,7 @@ function Monetization.init()
 	Remotes.handle("WatchAd", function(player, payload)
 		local p = Data.get(player)
 		local placement = payload.placement
-		local id = if type(placement) == "string" then (Config.AdProducts :: any)[placement] else nil
+		local id = if Guard.str(placement, 24) then (Config.AdProducts :: any)[placement] else nil
 		if not p or type(id) ~= "number" then
 			return false, M("msg.ad_unavailable")
 		end
@@ -190,24 +224,37 @@ function Monetization.init()
 		if adsLeft(p) <= 0 then
 			return false, M("msg.ad_cap")
 		end
+		if adInFlight[player] then
+			return false, M("msg.slow_down") -- one ad at a time (the call yields; no parallel cap bypass)
+		end
 		if p.ads.day ~= adDay() then
 			p.ads = { day = adDay(), count = 0 }
 		end
+		adInFlight[player] = true
 		local ok, result = pcall(function()
 			local reward = (AdService :: any):CreateAdRewardFromDevProductId(id)
 			return (AdService :: any):ShowRewardedVideoAdAsync(player, reward)
 		end)
+		adInFlight[player] = nil
 		if not ok then
 			warn("[Monetization] ad failed", result)
 			return false, M("msg.ad_unavailable")
+		end
+		if p.ads.day ~= adDay() then
+			p.ads = { day = adDay(), count = 0 }
 		end
 		p.ads.count += 1
 		State.dirty(player)
 		return true, tostring(if typeof(result) == "EnumItem" then (result :: any).Name else result)
 	end)
 
+	Players.PlayerRemoving:Connect(function(player: Player)
+		adInFlight[player] = nil
+	end)
+
+	-- Server-side event (a client cannot fire it); only known pass ids of a loaded session count.
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, gamePassId: number, purchased: boolean)
-		if not purchased then
+		if purchased ~= true or not Guard.int(gamePassId, 1, 2 ^ 52) or not State.ready[player] then
 			return
 		end
 		local pass = passByGamepassId[gamePassId]
