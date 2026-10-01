@@ -26,6 +26,7 @@ Auto.ticks = 0
 
 local function second(player: Player, p: Data.Profile)
 	p.playTime += 1
+	State.giftElapsed(player, p) -- keeps today's played time in the profile
 	-- timed buffs
 	local ended = false
 	for id, left in p.buffs do

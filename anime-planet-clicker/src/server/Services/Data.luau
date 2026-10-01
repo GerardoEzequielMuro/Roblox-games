@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local Security = require(ReplicatedStorage.Shared.Security)
 
 local Data = {}
@@ -64,6 +65,7 @@ export type Profile = {
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
+	gifts: GiftClock.Gifts, -- session gifts: UTC day, seconds played that day, claimed indexes
 	lock: { job: string, t: number }?,
 }
 
@@ -155,6 +157,7 @@ local function defaultProfile(): Profile
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
+		gifts = GiftClock.default(),
 	}
 	p.pets.p1 = { id = Config.StartingPet, tier = 0, locked = false }
 	p.equipped = { "p1" }
@@ -172,6 +175,7 @@ local function reconcile(p: any): Profile
 			p[k] = v
 		end
 	end
+	p.gifts = GiftClock.sanitize(p.gifts)
 	for _, key in { "upgrades", "mats", "relics", "auto", "settings", "cargo" } do
 		if type(p[key]) ~= "table" then
 			p[key] = def[key]

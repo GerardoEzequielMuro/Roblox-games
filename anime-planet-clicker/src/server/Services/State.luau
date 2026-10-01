@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 
@@ -16,7 +17,8 @@ State.passes = {} :: { [Player]: { [string]: boolean } }
 State.inArena = {} :: { [Player]: boolean } -- standing in the Meteor Arena (paid speed is off there)
 State.friends = {} :: { [Player]: number }
 State.sessionStart = {} :: { [Player]: number }
-State.giftsClaimed = {} :: { [Player]: { [number]: boolean } }
+-- Seconds played today at the moment this session started (profile.gifts.played at load).
+State.giftBase = {} :: { [Player]: number }
 State.ready = {} :: { [Player]: boolean }
 State.premium = {} :: { [Player]: boolean }
 -- PolicyService: true = paid random items (and chance modifiers) must not be sold to this player
@@ -39,14 +41,37 @@ function State.init(player: Player)
 	State.passes[player] = State.passes[player] or {}
 	State.friends[player] = 0
 	State.sessionStart[player] = os.clock()
-	State.giftsClaimed[player] = {}
 	State.charge[player] = 0
 	State.lastHit[player] = 0
 	State.lastOpen[player] = 0
 end
 
+-- Gifts ("minutes since joining"): claims and time played today live in profile.gifts, so a
+-- rejoin the same day keeps both. The session clock only adds the time since joining.
+function State.gifts(player: Player, profile: Data.Profile): GiftClock.Gifts
+	local g = profile.gifts
+	if State.giftBase[player] == nil then
+		GiftClock.roll(g, os.time())
+		State.giftBase[player] = g.played
+	end
+	return g
+end
+
+-- Seconds played today (persisted part + this session). A new UTC day starts the count over.
+function State.giftElapsed(player: Player, profile: Data.Profile): number
+	local g = State.gifts(player, profile)
+	if GiftClock.roll(g, os.time()) then
+		State.giftBase[player] = 0
+		State.sessionStart[player] = os.clock()
+		State.dirty(player)
+	end
+	local elapsed = (State.giftBase[player] or 0) + os.clock() - (State.sessionStart[player] or os.clock())
+	g.played = math.max(g.played, elapsed)
+	return elapsed
+end
+
 function State.cleanup(player: Player)
-	for _, t in { State.passes, State.inArena, State.friends, State.sessionStart, State.giftsClaimed, State.ready, State.premium, State.restricted, State.charge, State.lastHit, State.transit, State.autoOpen, State.lastOpen, dirtyFull, dirtyCurrency, statsCache } :: { any } do
+	for _, t in { State.passes, State.inArena, State.friends, State.sessionStart, State.giftBase, State.ready, State.premium, State.restricted, State.charge, State.lastHit, State.transit, State.autoOpen, State.lastOpen, dirtyFull, dirtyCurrency, statsCache } :: { any } do
 		t[player] = nil
 	end
 end
@@ -314,13 +339,8 @@ function State.snapshot(player: Player): { [string]: any }?
 	if not p then
 		return nil
 	end
-	local gifts = {}
-	local claimed = State.giftsClaimed[player]
-	if claimed then
-		for i in claimed do
-			table.insert(gifts, i)
-		end
-	end
+	local elapsed = State.giftElapsed(player, p)
+	local gifts = GiftClock.claimedList(p.gifts)
 	local s = State.stats(player, p)
 	local maxZone = State.maxZone(p)
 	local nextZone = Config.Zones[maxZone + 1]
@@ -367,7 +387,7 @@ function State.snapshot(player: Player): { [string]: any }?
 		daily = { streak = p.daily.streak, last = p.daily.last },
 		serverTime = os.time(),
 		giftsClaimed = gifts,
-		sessionElapsed = os.clock() - (State.sessionStart[player] or os.clock()),
+		sessionElapsed = elapsed, -- seconds played today (name kept for the client)
 		friends = State.friends[player] or 0,
 		persistent = Data.isPersistent(player),
 		lang = p.lang,

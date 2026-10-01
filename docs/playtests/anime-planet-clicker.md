@@ -1,23 +1,23 @@
 # Playtest de anime-planet-clicker
 
 - Comando: `python3 tools/uipreview/preview.py anime-planet-clicker --playtest --minutes 10 --seed 1`
-- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 10.2 min | reales: 29 s | rejoins del bot: 1
+- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 10.2 min | reales: 26 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)
 
-**Veredicto: ERRORES**
+**Veredicto: OK**
 
 - Errores de Luau unicos (del juego): **0**
 - Warnings unicos: **0**
 - Remotes rechazados por el servidor sin que el bot lo esperara: **1** llamadas en 1 acciones
-- Invariantes violados / problemas de guardado / recibos / DataStore: **1**
+- Invariantes violados / problemas de guardado / recibos / DataStore: **0**
 - Estados trabados > 60 s virtuales: **0**
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
 - Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **0**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 6060 (t=0:39) -> 5975 (t=10:09); partes 2980 -> 2926; GUI 599 -> 609
-- Acciones del bot: capsules=20, clicks=942, hatchedNew=3, planetsBroken=0, rebirths=0, sellWalks=13, sells=13, tools=2, upgrades=25, walks=34, windows=12, zonesMoved=0
+- Instancias vivas en el DataModel: 6061 (t=0:39) -> 6036 (t=10:09); partes 2980 -> 2960; GUI 599 -> 607
+- Acciones del bot: capsules=21, clicks=908, hatchedNew=3, planetsBroken=0, rebirths=0, sellWalks=13, sells=13, tools=2, upgrades=24, walks=34, windows=12, zonesMoved=0
 
 ## Analisis del revisor (a mano)
 
@@ -45,11 +45,11 @@
 | 5:09 | 24 | 909 | 115828 | 12 | 70 | 0 | 13858750 | pick_titanium | 7 | 1 |
 | 6:09 | 5 | 976 | 133134 | 13 | 88 | 0 | 13875436 | pick_titanium | 7 | 1 |
 | 6:46 | 5 | 1004 | 148512 | 14 | 94 | 0 | 13889132 | pick_titanium | 7 | 1 |
-| 7:46 | 24 | 1081 | 202512 | 16 | 114 | 0 | 13940221 | pick_titanium | 7 | 1 |
-| 8:16 | 20 | 1114 | 234599 | 17 | 124 | 0 | 13970688 | pick_titanium | 7 | 1 |
-| 9:16 | 26 | 1209 | 259802 | 19 | 147 | 0 | 13991029 | pick_titanium | 7 | 1 |
-| 9:46 | 28 | 1238 | 315475 | 21 | 157 | 0 | 14038282 | pick_titanium | 7 | 1 |
-| 10:09 (end) | 8 | 1280 | 315475 | 21 | 169 | 0 | 14082778 | pick_titanium | 7 | 1 |
+| 7:46 | 34 | 1081 | 202512 | 16 | 114 | 0 | 13940221 | pick_titanium | 7 | 1 |
+| 8:16 | 29 | 1111 | 230057 | 17 | 123 | 0 | 13966146 | pick_titanium | 7 | 1 |
+| 9:16 | 35 | 1184 | 259332 | 20 | 142 | 0 | 13990439 | pick_titanium | 7 | 1 |
+| 9:46 | 7 | 1217 | 312065 | 21 | 151 | 0 | 14043052 | pick_titanium | 7 | 1 |
+| 10:09 (end) | 17 | 1248 | 312065 | 22 | 160 | 0 | 14039552 | pick_titanium | 7 | 1 |
 
 Hitos:
 
@@ -60,7 +60,7 @@ Hitos:
 - 6:31 rejoin (save + reload)
 - 6:31 rejoin: leaves (mid)
 - 6:46 rejoin ok: profile reloaded identical
-- 10:12 bot script finished
+- 10:10 bot script finished
 - 10:19 late receipt for a player that left -> NotProcessedYet
 
 ## Errores de Luau
@@ -79,14 +79,14 @@ Ninguno.
 
 | remote:accion | llamadas | ok | rechazos | motivos |
 |---|---|---|---|---|
-| Request:Open | 21 | 20 | 1 | msg.unknown_capsule x1 |
+| Request:Upgrade | 25 | 24 | 1 | msg.unknown_upgrade x1 |
 
-Ejemplos de `Request:Open`: `t=609 Open(capsule=dawn,count=1) -> msg.unknown_capsule`
+Ejemplos de `Request:Upgrade`: `t=610 Upgrade(id=Range) -> msg.unknown_upgrade`
 
 
 ## Invariantes, trabas, guardado, recibos
 
-- **Posible bug del juego (detectado por el bot)** t=6:46: the session gifts (Config.Gifts, 'minutes since joining') are not saved: after rejoining the 1 claimed gifts are claimable again (State.giftsClaimed is per session, never in the profile) (`anime-planet-clicker/src/server/Services/State.luau:42 < anime-planet-clicker/src/server/Services/Rewards.luau:121`)
+Ninguno.
 
 ## Trafico de remotes
 
@@ -100,16 +100,16 @@ Ejemplos de `Request:Open`: `t=609 Open(capsule=dawn,count=1) -> msg.unknown_cap
 | Request:EquipBest | 12 | 12 | 0 | 0 | 0 |
 | Request:GetNodes | 5 | 5 | 0 | 0 | 0 |
 | Request:GetState | 2 | 2 | 0 | 0 | 0 |
-| Request:Open | 21 | 20 | 1 | 0 | 0 |
+| Request:Open | 21 | 21 | 0 | 0 | 0 |
 | Request:SetAuto | 18 | 18 | 0 | 0 | 0 |
 | Request:SetLanguage | 3 | 3 | 0 | 0 | 0 |
-| Request:Upgrade | 25 | 25 | 0 | 0 | 0 |
+| Request:Upgrade | 25 | 24 | 1 | 0 | 0 |
 
-RemoteEvents: Currency (srv->cli 319, cli->srv 0), Hit (srv->cli 0, cli->srv 587), LiveEventUpdate (srv->cli 2, cli->srv 0), Mine (srv->cli 931, cli->srv 0), Node (srv->cli 165, cli->srv 0), Notify (srv->cli 20, cli->srv 0), Quests (srv->cli 220, cli->srv 0), Reward (srv->cli 45, cli->srv 0), State (srv->cli 197, cli->srv 0), Tutorial (srv->cli 6, cli->srv 0)
+RemoteEvents: Currency (srv->cli 305, cli->srv 0), Hit (srv->cli 0, cli->srv 563), LiveEventUpdate (srv->cli 2, cli->srv 0), Mine (srv->cli 909, cli->srv 0), Node (srv->cli 154, cli->srv 0), Notify (srv->cli 21, cli->srv 0), Quests (srv->cli 217, cli->srv 0), Reward (srv->cli 43, cli->srv 0), State (srv->cli 189, cli->srv 0), Tutorial (srv->cli 6, cli->srv 0)
 
-Avisos del servidor al jugador (Notify/Toast): msg.mastery_up [success] x9, msg.buff_ended [info] x7, msg.thanks [success] x3, msg.pass_unlocked [success] x1
+Avisos del servidor al jugador (Notify/Toast): msg.mastery_up [success] x9, msg.buff_ended [info] x8, msg.thanks [success] x3, msg.pass_unlocked [success] x1
 
-DataStore: PC_LB_Mined_v1/90000001 (lecturas 10, escrituras 10), PlanetCrackers_Referrals_v1/90000001 (lecturas 7, escrituras 0), PlanetCrackers_v1/u_90000001 (lecturas 17, escrituras 17)
+DataStore: PC_LB_Mined_v1/90000001 (lecturas 10, escrituras 10), PlanetCrackers_Referrals_v1/90000001 (lecturas 7, escrituras 0), PlanetCrackers_v1/u_90000001 (lecturas 19, escrituras 19)
 
 Compras simuladas: prompt producto 8001 (grant); recibo producto 8001 -> PurchaseGranted; prompt producto 8002 (grant); recibo producto 8002 -> PurchaseGranted; prompt producto 8003 (grant); recibo producto 8003 -> PurchaseGranted; prompt pase 7001 (grant); prompt producto 8011 (cancel)
 

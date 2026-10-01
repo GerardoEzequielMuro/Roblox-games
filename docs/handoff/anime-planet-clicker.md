@@ -330,3 +330,12 @@ Hits: posición del personaje del server, zona desbloqueada, rango, bucket por `
 - Shake de cámara con rompe-planetas seguidos (debe verse suave, no marear) y con Calm mode ON (cero shake). Chispas en gama baja/lite.
 - No se probó nada en Studio real: el preview no dibuja partículas, cámara ni la flecha 3D.
 - Pendiente de diseño: `Skip tutorial` en Ajustes se superpone con el joystick en celular (ya estaba así).
+
+## Ronda 10: arreglos del playtest
+
+- **Bug**: los regalos "minutos desde que entras" (`Config.Gifts`) se guardaban solo en la sesion (`State.giftsClaimed`), asi que salir y volver a entrar los dejaba reclamables otra vez (farmeable).
+- **Arreglo**: nuevo modulo puro `src/shared/GiftClock.luau` y campo de perfil `gifts = { day, played, claimed }` (dia UTC, segundos jugados ese dia, indices reclamados). Se reinicia al cambiar el dia UTC; el temporizador continua entre rejoins del mismo dia (`played` se actualiza cada segundo y se guarda con el perfil).
+- `State.giftElapsed/gifts` reemplazan a `giftsClaimed`; `ClaimGift` (Rewards) valida contra el perfil y guarda al reclamar. El snapshot sigue enviando `giftsClaimed` (lista) y `sessionElapsed` (ahora = segundos jugados hoy), asi que el cliente no cambia.
+- Saves viejos: `Data.reconcile` completa/sanea `gifts` (valores seguros por defecto, NaN/tipos invalidos).
+- Test puro nuevo: `tests/gift_clock.luau` (19 checks: rejoin el mismo dia no reclama de nuevo, el tiempo continua, nuevo dia reinicia, medianoche en sesion, saves viejos).
+- Verificacion: `rojo build` OK, `luau-lsp analyze` sin salida, tests puros y sims pasan, playtest `new` y `mid` con veredicto OK (el hallazgo desaparecio).
