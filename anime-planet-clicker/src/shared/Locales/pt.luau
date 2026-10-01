@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "Sim!",
 	["notif.no"] = "Não, obrigado",
 
+	-- round 8: first session
+	["settings.calm"] = "Modo calmo (sem tremor)",
+	["tutorial.hint_ore"] = "Minere um pouco primeiro",
+	["tutorial.hint_dust"] = "Junte mais Poeira estelar primeiro",
+	["tutorial.skip"] = "Pular tutorial",
+	["loading.tip1"] = "Clique nos planetas para quebrá-los",
+	["loading.tip2"] = "Venda minério na Refinaria para ganhar Poeira estelar",
+	["loading.tip3"] = "Abra cápsulas para chocar pets",
+	["loading.tip4"] = "Quebre o Portal para ir à próxima galáxia",
 	-- tutorial
 	["tutorial.mine"] = "Clique em um planeta para minerar!",
 	["tutorial.core"] = "Quebre as 3 camadas para chegar ao núcleo",

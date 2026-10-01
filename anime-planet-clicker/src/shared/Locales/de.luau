@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "Ja!",
 	["notif.no"] = "Nein danke",
 
+	-- round 8: first session
+	["settings.calm"] = "Ruhemodus (kein Wackeln)",
+	["tutorial.hint_ore"] = "Baue zuerst etwas Erz ab",
+	["tutorial.hint_dust"] = "Sammle zuerst mehr Sternenstaub",
+	["tutorial.skip"] = "Tutorial überspringen",
+	["loading.tip1"] = "Klicke Planeten an, um sie zu knacken",
+	["loading.tip2"] = "Verkaufe Erz an der Raffinerie für Sternenstaub",
+	["loading.tip3"] = "Öffne Kapseln für Haustiere",
+	["loading.tip4"] = "Zerstöre das Tor zur nächsten Galaxie",
 	-- tutorial
 	["tutorial.mine"] = "Klick auf einen Planeten, um ihn abzubauen!",
 	["tutorial.core"] = "Brich alle 3 Schichten bis zum Kern",

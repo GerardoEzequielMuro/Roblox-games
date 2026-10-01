@@ -307,3 +307,26 @@ Hits: posición del personaje del server, zona desbloqueada, rango, bucket por `
 
 ### Verificación
 `rojo build` OK, `luau-lsp analyze` sin salida, `unit` (195), `locale_check`, `check_config`, `pacing_test` (27) y `security_test` (70) pasan, preview `--state mid --screen pc` sin errores de runtime.
+
+## Ronda 8: primera sesión y game feel
+
+### Recorrido de los primeros 2 minutos
+**Antes:** spawn -> HUD mínimo (ya era progresivo) -> pill "Click a planet to mine it! (1/6)" con flecha y beam hacia el planeta -> 6 pasos con recompensa (mine, core, sell, capsule, tool, auto). Sin pantalla de carga (el jugador veía el mundo armándose), sin salida del tutorial salvo Ajustes, y casos donde el paso era imposible de hacer en el momento (vender con cargo vacío, comprar herramienta/cápsula sin Stardust) pero la flecha igual apuntaba a la plataforma. Además `Layout.capsulePosition` podía devolver nil y romper la flecha.
+**Después:** pantalla de carga de marca (PLANET CRACKERS + tip + barra) -> mismo HUD mínimo -> pill de objetivo; si el paso no se puede hacer todavía, el pill dice qué falta ("Mine some ore first" / "Mine more Stardust first") y la flecha manda a los planetas -> a los 10 s sin avanzar la flecha rebota más grande y rápido -> a los 25 s aparece el botón "Skip tutorial" debajo del pill (táctil: 56 de alto en diseño) -> cada paso completado tira chispas + micro-temblor, y el último un temblor grande + milestone.
+
+### Qué agregué
+- `src/shared/TutorialFlow.luau` (puro): `hint` decide a dónde apunta la flecha según paso/cargo/Stardust/target existente, `skip`/`loud` por tiempo en el paso, `progress`, reloj por paso (se reinicia al cambiar de paso y tras rejoin). El paso sigue guardado en el perfil: al reentrar continúa donde estaba.
+- `src/shared/Juice.luau` (puro): easings, roll-up de contadores, amplitud/decay de shake, merge de shakes, presupuesto de partículas, progreso/cierre de la carga.
+- `src/client/Feel.luau`: micro-shake de cámara (BindToRenderStep después de la cámara, un solo shake activo, tope de frecuencia) y ráfaga de chispas con UN emisor pooleado (`rbxasset://textures/particles/sparkles_main.dds`, tope 40 vivas, mitad en lite). Se dispara al romper planeta (propio, no Auto Mine), crit, romper el Portal (shake grande + chispas moradas) y pasos del tutorial.
+- Ajuste nuevo **Calm mode** (`settings.calm`, toggle en Settings, los 12 idiomas): apaga el shake. Default false; los perfiles viejos lo reciben por `reconcile`.
+- `src/client/Loading.luau`: pantalla de carga independiente de todo lo demás (usa solo Shared/Locale, todo en pcall/xpcall). Mínimo 1 s, tope 6 s, destruida a la fuerza a los 9 s; si el resto del cliente falla igual se cierra. Probe desde Main.client: remotes / estado recibido / mundo cargado.
+- Textos de tutorial más cortos en en/es; claves nuevas `tutorial.skip`, `tutorial.hint_ore`, `tutorial.hint_dust`, `loading.tip1-4`, `settings.calm`.
+- Ya existían y no los toqué: roll-up de contadores del HUD, pops en pills, números flotantes con crit, squash en botones (UIScale), cinemática de cápsula con tarjetas por rareza.
+- Tests: +31 checks en `tests/unit.luau` (226 en total). Previews: `docs/previews/anime-planet-clicker/new-{pc,phone}.png` (después), `new-{pc,phone}-loading.png`, y antes en /tmp (mismo HUD sin chip).
+
+### Qué mirar en Studio
+- La pantalla de carga: que no tape el spawn más de ~1-2 s y que se desvanezca limpia en celular real.
+- Flecha/beam de la guía: que el cambio a "planet" cuando falta cargo/Stardust se sienta natural, y el chip Skip (aparece a los 25 s).
+- Shake de cámara con rompe-planetas seguidos (debe verse suave, no marear) y con Calm mode ON (cero shake). Chispas en gama baja/lite.
+- No se probó nada en Studio real: el preview no dibuja partículas, cámara ni la flecha 3D.
+- Pendiente de diseño: `Skip tutorial` en Ajustes se superpone con el joystick en celular (ya estaba así).

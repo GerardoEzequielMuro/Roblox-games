@@ -3,7 +3,12 @@
 local ProximityPromptService = game:GetService("ProximityPromptService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- the loading screen goes first and never depends on the rest of the client
+local Loading = require(script.Parent.Loading)
+Loading.start()
+
 ReplicatedStorage:WaitForChild("Remotes")
+Loading.flags.remotes = true
 
 local Net = require(script.Parent.Net)
 local Lang = require(script.Parent.Lang)
@@ -33,6 +38,7 @@ local IndexWindow = require(UI.IndexWindow)
 local SocialWindows = require(UI.SocialWindows)
 local PvpClient = require(script.Parent.PvpClient)
 local Guide = require(script.Parent.Guide)
+local Feel = require(script.Parent.Feel)
 
 Purchase.setNotifier(Toasts.show)
 Ads.setNotifier(Toasts.show)
@@ -55,6 +61,11 @@ ToolFx.init()
 WorldText.init()
 PvpClient.init()
 Guide.init()
+Feel.init()
+
+Loading.setProbe(function()
+	return { remotes = true, state = Net.state ~= nil, world = PlanetField.zone ~= nil and not PlanetField.loading }
+end)
 
 CapsuleCinematic.setBusyCallback(function(busy)
 	Miner.setEnabled(not busy)
@@ -89,14 +100,24 @@ Net.event("Mine").OnClientEvent:Connect(function(msg)
 		lastSoft = now
 		Toasts.show("🛠️ " .. Lang.t("toast.too_hard"), "error", 2.6)
 	end
+	local mine = not msg.a -- Auto Mine results do not shake the camera
 	if msg.drops then
 		Theme.play("boom", 0.3, 1.2)
 		if msg.drops.gate then
 			Toasts.milestone(Lang.t("toast.gate_broken"), Lang.zone(msg.drops.gate), Theme.Purple)
 			WorldFx.flash(Theme.Purple)
+			Feel.shake("big")
+			Feel.sparkleSelf(Theme.Purple, 30)
+		elseif mine then
+			Feel.shake("break")
 		end
 	elseif msg.b and msg.b > 0 then
 		Theme.play("hit", 0.25, 1.1)
+		if mine then
+			Feel.shake("hit")
+		end
+	elseif mine and (msg.c or 0) > 0 then
+		Feel.shake("crit")
 	end
 end)
 

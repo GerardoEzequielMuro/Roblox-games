@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "Oui !",
 	["notif.no"] = "Non merci",
 
+	-- round 8: first session
+	["settings.calm"] = "Mode calme (sans secousses)",
+	["tutorial.hint_ore"] = "Mine d'abord du minerai",
+	["tutorial.hint_dust"] = "Récolte d'abord plus de Poussière d'étoile",
+	["tutorial.skip"] = "Passer le tutoriel",
+	["loading.tip1"] = "Clique sur les planètes pour les briser",
+	["loading.tip2"] = "Vends le minerai à la Raffinerie pour gagner de la Poussière d'étoile",
+	["loading.tip3"] = "Ouvre des capsules pour obtenir des familiers",
+	["loading.tip4"] = "Brise le Portail pour atteindre la galaxie suivante",
 	-- tutorial
 	["tutorial.mine"] = "Clique sur une planète pour la miner !",
 	["tutorial.core"] = "Brise les 3 couches pour atteindre le noyau",

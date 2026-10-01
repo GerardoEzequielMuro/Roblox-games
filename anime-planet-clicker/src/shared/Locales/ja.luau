@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "うん！",
 	["notif.no"] = "いらない",
 
+	-- round 8: first session
+	["settings.calm"] = "落ち着きモード(揺れなし)",
+	["tutorial.hint_ore"] = "まず鉱石を掘ろう",
+	["tutorial.hint_dust"] = "まずスターダストを貯めよう",
+	["tutorial.skip"] = "チュートリアルをスキップ",
+	["loading.tip1"] = "惑星をクリックして割ろう",
+	["loading.tip2"] = "精製所で鉱石を売ってスターダストを稼ごう",
+	["loading.tip3"] = "カプセルを開けてペットをゲット",
+	["loading.tip4"] = "ゲートを壊して次の銀河へ",
 	-- tutorial
 	["tutorial.mine"] = "惑星をクリックして掘ろう！",
 	["tutorial.core"] = "3つの層を全部壊してコアまで行こう",

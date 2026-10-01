@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "เอา!",
 	["notif.no"] = "ไม่ล่ะ",
 
+	-- round 8: first session
+	["settings.calm"] = "โหมดสงบ (ไม่สั่น)",
+	["tutorial.hint_ore"] = "ขุดแร่ก่อนนะ",
+	["tutorial.hint_dust"] = "เก็บฝุ่นดาวเพิ่มก่อนนะ",
+	["tutorial.skip"] = "ข้ามบทสอน",
+	["loading.tip1"] = "คลิกดาวเคราะห์เพื่อทุบให้แตก",
+	["loading.tip2"] = "ขายแร่ที่โรงกลั่นเพื่อรับฝุ่นดาว",
+	["loading.tip3"] = "เปิดแคปซูลเพื่อรับสัตว์เลี้ยง",
+	["loading.tip4"] = "ทุบประตูเพื่อไปกาแล็กซีถัดไป",
 	-- tutorial
 	["tutorial.mine"] = "คลิกที่ดาวเพื่อขุด!",
 	["tutorial.core"] = "ทุบให้ครบ 3 ชั้นเพื่อถึงแกนกลาง",

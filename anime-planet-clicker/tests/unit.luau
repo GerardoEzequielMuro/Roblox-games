@@ -8,6 +8,8 @@ local Quests = require("../src/shared/Quests")
 local Referral = require("../src/shared/Referral")
 local Format = require("../src/shared/Format")
 local ModelFit = require("../src/shared/ModelFit")
+local TutorialFlow = require("../src/shared/TutorialFlow")
+local Juice = require("../src/shared/Juice")
 
 local total, fails = 0, 0
 local function check(name: string, cond: boolean, detail: any?)
@@ -352,6 +354,79 @@ do
 	check("singular falls back to the plain text (ja)", Locale.t("ja", "toast.deleted", { n = 1 }) == "ペットを1体削除した")
 	check("fractional stays plural", Locale.t("en", "upgrade.HitSpeed.desc", { n = 0.5 }) == "+0.5 hits per second")
 	check("1 hit per second", Locale.t("en", "upgrade.HitSpeed.desc", { n = 1 }) == "+1 hit per second")
+end
+
+-- tutorial helper (round 8)
+do
+	local function ctx(over: any): any
+		local c = { step = "mine", elapsed = 0, cargo = 5, stardust = 1000, needDust = nil, targetFound = true }
+		for k, v in over do
+			c[k] = v
+		end
+		return c
+	end
+	check("tutorial: every Config step has a target", (function()
+		for _, st in Config.Tutorial do
+			if TutorialFlow.hint(ctx({ step = st.id })).target == "fallback" then
+				return false
+			end
+		end
+		return true
+	end)())
+	check("tutorial: sell with empty cargo points at the planets", TutorialFlow.hint(ctx({ step = "sell", cargo = 0 })).target == "planet")
+	check("tutorial: sell with ore points at the refinery", TutorialFlow.hint(ctx({ step = "sell", cargo = 3 })).target == "refinery")
+	check("tutorial: tool without Stardust detours", TutorialFlow.hint(ctx({ step = "tool", stardust = 5, needDust = 400 })).reasonKey == "tutorial.hint_dust")
+	check("tutorial: tool with Stardust goes to the workshop", TutorialFlow.hint(ctx({ step = "tool", stardust = 500, needDust = 400 })).target == "workshop")
+	check("tutorial: missing planet falls back", TutorialFlow.hint(ctx({ targetFound = false })).target == "fallback")
+	check("tutorial: unknown step falls back", TutorialFlow.hint(ctx({ step = "zzz" })).target == "fallback")
+	check("tutorial: no skip at first", not TutorialFlow.hint(ctx({ elapsed = 3 })).skip)
+	check("tutorial: skip after a while", TutorialFlow.hint(ctx({ elapsed = TutorialFlow.SKIP_AFTER })).skip)
+	check("tutorial: loud before skip", TutorialFlow.hint(ctx({ elapsed = TutorialFlow.NUDGE_AFTER })).loud and TutorialFlow.NUDGE_AFTER < TutorialFlow.SKIP_AFTER)
+	check("tutorial: progress", TutorialFlow.progress(1, 6) == 0 and near(TutorialFlow.progress(4, 6), 0.5) and TutorialFlow.progress(7, 6) == 1 and TutorialFlow.progress(1, 0) == 0)
+	local clock = TutorialFlow.newClock()
+	check("tutorial: clock starts at 0", clock.tick("mine", 100) == 0)
+	check("tutorial: clock counts", near(clock.tick("mine", 112), 12))
+	check("tutorial: clock restarts on a new step", clock.tick("core", 113) == 0)
+	check("tutorial: clock restarts after rejoin (nil step)", clock.tick(nil, 200) == 0 and clock.tick("core", 201) == 0)
+end
+
+-- game feel + loading (round 8)
+do
+	check("ease bounds", Juice.easeOutCubic(0) == 0 and Juice.easeOutCubic(1) == 1 and Juice.easeOutCubic(5) == 1 and near(Juice.easeOutBack(1), 1) and Juice.easeOutBack(0.7) > 1)
+	local shown = 0
+	for _ = 1, 400 do
+		shown = Juice.rollStep(shown, 1234, 1 / 60)
+	end
+	check("roll-up reaches the target and snaps", shown == 1234)
+	check("roll-up never overshoots", Juice.rollStep(0, 100, 10) <= 100)
+	check("calm mode: no shake", Juice.shakeAmplitude("break", true, false) == 0)
+	check("shake lite is weaker", Juice.shakeAmplitude("break", false, true) < Juice.shakeAmplitude("break", false, false))
+	check("shake unknown kind is 0", Juice.shakeAmplitude("zzz", false, false) == 0)
+	local x0, y0 = Juice.shakeOffset(0.5, 0.05, 0.3)
+	local xe, ye = Juice.shakeOffset(0.5, 0.3, 0.3)
+	check("shake decays to exactly 0", xe == 0 and ye == 0 and (x0 ~= 0 or y0 ~= 0))
+	local a, l = Juice.mergeShake(0.6, 0.3, 0.1, 0.1)
+	check("merge keeps the stronger shake", a == 0.6 and l == 0.3)
+	a, l = Juice.mergeShake(0.1, 0.05, 0.6, 0.3)
+	check("merge takes a bigger shake", a == 0.6 and l == 0.3)
+	check("budget caps concurrent effects", Juice.budget(10, 45, 48, false) == 3 and Juice.budget(10, 48, 48, false) == 0 and Juice.budget(10, 0, 48, true) == 5)
+	local none = { remotes = false, state = false, world = false }
+	local all = { remotes = true, state = true, world = true }
+	check("loading never finishes instantly", not Juice.loadDone(0.2, all))
+	check("loading finishes when ready after the minimum", Juice.loadDone(Juice.LOAD_MIN, all))
+	check("loading waits for state+world", not Juice.loadDone(3, { remotes = true, state = true, world = false }))
+	check("loading gives up at the cap whatever fails", Juice.loadDone(Juice.LOAD_MAX, none))
+	local prev = 0
+	local mono = true
+	for i = 0, 60 do
+		local p = Juice.loadProgress(i / 10, none)
+		if p < prev or p > 1 then
+			mono = false
+		end
+		prev = p
+	end
+	check("loading progress is monotonic and bounded", mono and Juice.loadProgress(0, all) == 1)
+	check("tip index wraps", Juice.tipIndex(0, 3) == 1 and Juice.tipIndex(4, 3) == 2 and Juice.tipIndex(7.9, 0) == 1)
 end
 
 print(string.format("UNIT: %d checks, %d failures", total, fails))

@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "좋아요!",
 	["notif.no"] = "괜찮아요",
 
+	-- round 8: first session
+	["settings.calm"] = "차분 모드(흔들림 없음)",
+	["tutorial.hint_ore"] = "먼저 광석을 캐세요",
+	["tutorial.hint_dust"] = "먼저 스타더스트를 모으세요",
+	["tutorial.skip"] = "튜토리얼 건너뛰기",
+	["loading.tip1"] = "행성을 클릭해서 부수세요",
+	["loading.tip2"] = "정제소에서 광석을 팔아 스타더스트를 얻으세요",
+	["loading.tip3"] = "캡슐을 열어 펫을 얻으세요",
+	["loading.tip4"] = "게이트를 부수고 다음 은하로 가세요",
 	-- tutorial
 	["tutorial.mine"] = "행성을 클릭해서 캐 보세요!",
 	["tutorial.core"] = "3개 층을 모두 부숴서 코어에 도달하세요",

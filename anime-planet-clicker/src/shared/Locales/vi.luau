@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "Có!",
 	["notif.no"] = "Không, cảm ơn",
 
+	-- round 8: first session
+	["settings.calm"] = "Chế độ êm (không rung)",
+	["tutorial.hint_ore"] = "Hãy đào ít quặng trước",
+	["tutorial.hint_dust"] = "Hãy gom thêm Bụi sao trước",
+	["tutorial.skip"] = "Bỏ qua hướng dẫn",
+	["loading.tip1"] = "Nhấp vào hành tinh để đập vỡ",
+	["loading.tip2"] = "Bán quặng ở Nhà máy lọc để nhận Bụi sao",
+	["loading.tip3"] = "Mở capsule để nở thú cưng",
+	["loading.tip4"] = "Phá Cổng để tới thiên hà tiếp theo",
 	-- tutorial
 	["tutorial.mine"] = "Bấm vào hành tinh để đào!",
 	["tutorial.core"] = "Phá cả 3 lớp để chạm tới lõi",

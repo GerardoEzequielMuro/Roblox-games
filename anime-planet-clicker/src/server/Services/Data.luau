@@ -46,7 +46,7 @@ export type Profile = {
 	arenaPoints: number,
 	arenaKos: number,
 	tutorial: number, -- index of the current step in Config.Tutorial (#steps + 1 = done)
-	settings: { sfx: boolean, lite: boolean, hidePets: boolean },
+	settings: { sfx: boolean, lite: boolean, hidePets: boolean, calm: boolean },
 	lang: string,
 	offlinePending: number,
 	offlineSeconds: number,
@@ -137,7 +137,7 @@ local function defaultProfile(): Profile
 		arenaPoints = 0,
 		arenaKos = 0,
 		tutorial = 1,
-		settings = { sfx = true, lite = false, hidePets = false },
+		settings = { sfx = true, lite = false, hidePets = false, calm = false },
 		lang = "",
 		offlinePending = 0,
 		offlineSeconds = 0,

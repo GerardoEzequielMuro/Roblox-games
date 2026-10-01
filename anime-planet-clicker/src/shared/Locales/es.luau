@@ -450,11 +450,20 @@ return {
 	["notif.yes"] = "¡Sí!",
 	["notif.no"] = "No, gracias",
 
+	-- round 8: first session
+	["settings.calm"] = "Modo calmo (sin temblor)",
+	["tutorial.hint_ore"] = "Primero mina algo de mineral",
+	["tutorial.hint_dust"] = "Primero junta más Polvo estelar",
+	["tutorial.skip"] = "Saltar tutorial",
+	["loading.tip1"] = "Haz clic en planetas para romperlos",
+	["loading.tip2"] = "Vende mineral en la Refinería para ganar Polvo estelar",
+	["loading.tip3"] = "Abre cápsulas para sacar mascotas",
+	["loading.tip4"] = "Rompe el Portal para ir a la siguiente galaxia",
 	-- tutorial
 	["tutorial.mine"] = "¡Haz clic en un planeta para minarlo!",
-	["tutorial.core"] = "Rompe las 3 capas para llegar al núcleo",
-	["tutorial.sell"] = "Camina hasta la plataforma de la Refinería para vender tu mineral",
-	["tutorial.capsule"] = "Abre una cápsula para conseguir una mascota",
+	["tutorial.core"] = "Rompe 3 capas: abre el núcleo",
+	["tutorial.sell"] = "Ve a la Refinería: vende mineral",
+	["tutorial.capsule"] = "Abre una cápsula: gana mascota",
 	["tutorial.tool"] = "Compra una mejor herramienta en el Taller",
 	["tutorial.auto"] = "Activa Auto Minar (ON)",
 	["tutorial.done_mine"] = "¡Primera capa rota!",

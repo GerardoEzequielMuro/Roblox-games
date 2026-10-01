@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "Evet!",
 	["notif.no"] = "Hayır, sağ ol",
 
+	-- round 8: first session
+	["settings.calm"] = "Sakin mod (sarsıntı yok)",
+	["tutorial.hint_ore"] = "Önce biraz cevher kaz",
+	["tutorial.hint_dust"] = "Önce daha fazla Yıldız Tozu topla",
+	["tutorial.skip"] = "Eğitimi atla",
+	["loading.tip1"] = "Gezegenleri kırmak için tıkla",
+	["loading.tip2"] = "Yıldız Tozu kazanmak için cevheri Rafineri'de sat",
+	["loading.tip3"] = "Evcil hayvan için kapsül aç",
+	["loading.tip4"] = "Sonraki galaksi için Kapıyı kır",
 	-- tutorial
 	["tutorial.mine"] = "Kazmak için bir gezegene tıkla!",
 	["tutorial.core"] = "Çekirdeğe ulaşmak için 3 katmanı da kır",

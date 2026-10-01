@@ -450,6 +450,15 @@ return {
 	["notif.yes"] = "Mau!",
 	["notif.no"] = "Tidak, makasih",
 
+	-- round 8: first session
+	["settings.calm"] = "Mode tenang (tanpa getar)",
+	["tutorial.hint_ore"] = "Tambang bijih dulu",
+	["tutorial.hint_dust"] = "Kumpulkan lebih banyak Debu Bintang dulu",
+	["tutorial.skip"] = "Lewati tutorial",
+	["loading.tip1"] = "Klik planet untuk memecahkannya",
+	["loading.tip2"] = "Jual bijih di Kilang untuk dapat Debu Bintang",
+	["loading.tip3"] = "Buka kapsul untuk menetaskan hewan",
+	["loading.tip4"] = "Hancurkan Gerbang ke galaksi berikutnya",
 	-- tutorial
 	["tutorial.mine"] = "Klik planet untuk menambangnya!",
 	["tutorial.core"] = "Hancurkan 3 lapisan untuk sampai ke inti",

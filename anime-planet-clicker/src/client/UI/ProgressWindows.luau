@@ -234,7 +234,7 @@ local function settingsWindow()
 	-- toggles
 	local toggles = Theme.new("Frame", { Name = "Toggles", BackgroundTransparency = 1, Size = UDim2.fromOffset(300, 204), Position = if touch then UDim2.fromOffset(252, 0) else UDim2.fromOffset(0, 84), Parent = body }, { Theme.list(Enum.FillDirection.Vertical, 6, Enum.HorizontalAlignment.Left) })
 	local paints: { () -> () } = {}
-	for i, key in { "sfx", "lite", "hidePets" } do
+	for i, key in { "sfx", "lite", "hidePets", "calm" } do
 		local _, paint = Kit.toggle(toggles, "settings." .. key, i, function()
 			local s = Net.state
 			return s ~= nil and s.settings[key] == true
