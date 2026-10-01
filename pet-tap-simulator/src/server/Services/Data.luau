@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local Guard = require(script.Parent.Guard)
 
 local Data = {}
@@ -49,6 +50,7 @@ export type Profile = {
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
+	gifts: GiftClock.Gifts, -- session gifts: UTC day, seconds played that day, claimed indexes
 	lock: { job: string, t: number }?,
 }
 
@@ -147,6 +149,7 @@ local function defaultProfile(): Profile
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
+		gifts = GiftClock.default(),
 	}
 	-- starter pet, equipped
 	p.pets.p1 = { id = Config.StartingPet, tier = 0, locked = false }
@@ -171,6 +174,7 @@ local function reconcile(p: any): Profile
 	end
 	Guard.fixTypes(p, def, Guard.deepCopy) -- wrong-typed fields fall back to the default
 	Guard.migrate(p, MIGRATIONS, Data.VERSION)
+	p.gifts = GiftClock.sanitize(p.gifts)
 	Guard.clampNonNegative(p, CURRENCY_KEYS)
 	for _, u in Config.Upgrades do
 		local lv = p.upgrades[u.id]

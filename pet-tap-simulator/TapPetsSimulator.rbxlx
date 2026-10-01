@@ -1284,6 +1284,87 @@ return Formulas
       </Item>
       <Item class="ModuleScript" referent="10">
         <Properties>
+          <string name="Name">GiftClock</string>
+          <string name="Source"><![CDATA[--!strict
+-- Pure rules for the "minutes since joining" gifts. The claims and the time played today are
+-- persisted in the profile (profile.gifts) and reset on a new UTC day, so leaving and rejoining
+-- the same day can neither re-claim a gift nor restart its timer.
+local GiftClock = {}
+
+export type Gifts = { day: number, played: number, claimed: { [string]: boolean } }
+
+GiftClock.DAY_SECONDS = 86400
+
+function GiftClock.dayKey(now: number): number
+	return math.floor(now / GiftClock.DAY_SECONDS)
+end
+
+function GiftClock.default(): Gifts
+	return { day = 0, played = 0, claimed = {} }
+end
+
+-- Safe values for old saves (no field) or corrupt ones. Mutates and returns a valid table.
+function GiftClock.sanitize(g: any): Gifts
+	if type(g) ~= "table" then
+		return GiftClock.default()
+	end
+	local day = tonumber(g.day)
+	local played = tonumber(g.played)
+	g.day = if day and day == day and day >= 0 and day < math.huge then math.floor(day) else 0
+	g.played = if played and played == played and played >= 0 and played < math.huge then played else 0
+	local claimed: { [string]: boolean } = {}
+	if type(g.claimed) == "table" then
+		for k, v in g.claimed do
+			if v == true and tonumber(k) then
+				claimed[tostring(math.floor(tonumber(k) :: number))] = true
+			end
+		end
+	end
+	g.claimed = claimed
+	return g :: Gifts
+end
+
+-- Starts a new day when the UTC day changed. Returns true when it reset.
+function GiftClock.roll(g: Gifts, now: number): boolean
+	local key = GiftClock.dayKey(now)
+	if g.day ~= key then
+		g.day = key
+		g.played = 0
+		g.claimed = {}
+		return true
+	end
+	return false
+end
+
+function GiftClock.isClaimed(g: Gifts, index: number): boolean
+	return g.claimed[tostring(index)] == true
+end
+
+function GiftClock.markClaimed(g: Gifts, index: number)
+	g.claimed[tostring(index)] = true
+end
+
+-- Gift indexes claimed today, ascending (what the snapshot sends to the client).
+function GiftClock.claimedList(g: Gifts): { number }
+	local list = {}
+	for k in g.claimed do
+		table.insert(list, tonumber(k) :: number)
+	end
+	table.sort(list)
+	return list
+end
+
+-- True when a gift of `minutes` is available after `elapsed` seconds played today (1 s of slack).
+function GiftClock.ready(elapsed: number, minutes: number): boolean
+	return elapsed + 1 >= minutes * 60
+end
+
+return GiftClock
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="11">
+        <Properties>
           <string name="Name">HudUnlock</string>
           <string name="Source"><![CDATA[--!strict
 -- Which HUD buttons a player sees. Top simulators open with 2-4 buttons and add the rest as
@@ -1344,7 +1425,7 @@ return HudUnlock
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="11">
+      <Item class="ModuleScript" referent="12">
         <Properties>
           <string name="Name">Icons</string>
           <string name="Source"><![CDATA[--!strict
@@ -1418,7 +1499,7 @@ return Icons
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="12">
+      <Item class="ModuleScript" referent="13">
         <Properties>
           <string name="Name">Juice</string>
           <string name="Source"><![CDATA[--!strict
@@ -1488,7 +1569,7 @@ return Juice
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="13">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">LiveEvents</string>
           <string name="Source"><![CDATA[--!strict
@@ -1579,7 +1660,7 @@ return LiveEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="14">
+      <Item class="ModuleScript" referent="15">
         <Properties>
           <string name="Name">Locale</string>
           <string name="Source"><![CDATA[--!strict
@@ -1689,11 +1770,11 @@ return Locale
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="15">
+      <Item class="Folder" referent="16">
         <Properties>
           <string name="Name">Locales</string>
         </Properties>
-        <Item class="ModuleScript" referent="16">
+        <Item class="ModuleScript" referent="17">
           <Properties>
             <string name="Name">de</string>
             <string name="Source"><![CDATA[-- German (de). Keys must match en.luau; keep {placeholders}.
@@ -2179,7 +2260,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="17">
+        <Item class="ModuleScript" referent="18">
           <Properties>
             <string name="Name">en</string>
             <string name="Source"><![CDATA[-- English (default). Keys are stable; {name} placeholders must survive translation.
@@ -2665,7 +2746,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="18">
+        <Item class="ModuleScript" referent="19">
           <Properties>
             <string name="Name">es</string>
             <string name="Source"><![CDATA[-- Spanish (es). Keys must match en.luau; keep {placeholders}.
@@ -3151,7 +3232,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="19">
+        <Item class="ModuleScript" referent="20">
           <Properties>
             <string name="Name">fr</string>
             <string name="Source"><![CDATA[-- French (fr). Keys must match en.luau; keep {placeholders}.
@@ -3637,7 +3718,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="20">
+        <Item class="ModuleScript" referent="21">
           <Properties>
             <string name="Name">id</string>
             <string name="Source"><![CDATA[-- Indonesian (id). Keys must match en.luau; keep {placeholders}.
@@ -4123,7 +4204,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="22">
           <Properties>
             <string name="Name">ja</string>
             <string name="Source"><![CDATA[-- Japanese (ja). Keys must match en.luau; keep {placeholders}.
@@ -4609,7 +4690,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="22">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">ko</string>
             <string name="Source"><![CDATA[-- Korean (ko). Keys must match en.luau; keep {placeholders}.
@@ -5095,7 +5176,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="23">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">pt</string>
             <string name="Source"><![CDATA[-- Brazilian Portuguese (pt). Keys must match en.luau; keep {placeholders}.
@@ -5581,7 +5662,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="24">
+        <Item class="ModuleScript" referent="25">
           <Properties>
             <string name="Name">ru</string>
             <string name="Source"><![CDATA[-- Russian (ru). Keys must match en.luau; keep {placeholders}.
@@ -6067,7 +6148,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="25">
+        <Item class="ModuleScript" referent="26">
           <Properties>
             <string name="Name">th</string>
             <string name="Source"><![CDATA[-- Thai (th). Keys must match en.luau; keep {placeholders}.
@@ -6553,7 +6634,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="26">
+        <Item class="ModuleScript" referent="27">
           <Properties>
             <string name="Name">tr</string>
             <string name="Source"><![CDATA[-- Turkish (tr). Keys must match en.luau; keep {placeholders}.
@@ -7039,7 +7120,7 @@ return {
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="27">
+        <Item class="ModuleScript" referent="28">
           <Properties>
             <string name="Name">vi</string>
             <string name="Source"><![CDATA[-- Vietnamese (vi). Keys must match en.luau; keep {placeholders}.
@@ -7526,7 +7607,7 @@ return {
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="28">
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">Onboarding</string>
           <string name="Source"><![CDATA[--!strict
@@ -7666,7 +7747,7 @@ return Onboarding
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="29">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">Palette</string>
           <string name="Source"><![CDATA[--!strict
@@ -7710,7 +7791,7 @@ return Palette
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">PetModel</string>
           <string name="Source"><![CDATA[--!strict
@@ -8540,7 +8621,7 @@ return PetModel
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">Quests</string>
           <string name="Source"><![CDATA[--!strict
@@ -8590,7 +8671,7 @@ return Quests
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="32">
+      <Item class="ModuleScript" referent="33">
         <Properties>
           <string name="Name">Referral</string>
           <string name="Source"><![CDATA[--!strict
@@ -8620,15 +8701,15 @@ return Referral
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="33">
+  <Item class="ServerScriptService" referent="34">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="34">
+    <Item class="Folder" referent="35">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="Script" referent="35">
+      <Item class="Script" referent="36">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -8838,11 +8919,11 @@ end
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="36">
+      <Item class="Folder" referent="37">
         <Properties>
           <string name="Name">Services</string>
         </Properties>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">Auto</string>
             <string name="Source"><![CDATA[--!strict
@@ -8940,7 +9021,7 @@ return Auto
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Data</string>
             <string name="Source"><![CDATA[--!strict
@@ -8953,6 +9034,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local Guard = require(script.Parent.Guard)
 
 local Data = {}
@@ -8994,6 +9076,7 @@ export type Profile = {
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
+	gifts: GiftClock.Gifts, -- session gifts: UTC day, seconds played that day, claimed indexes
 	lock: { job: string, t: number }?,
 }
 
@@ -9092,6 +9175,7 @@ local function defaultProfile(): Profile
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
+		gifts = GiftClock.default(),
 	}
 	-- starter pet, equipped
 	p.pets.p1 = { id = Config.StartingPet, tier = 0, locked = false }
@@ -9116,6 +9200,7 @@ local function reconcile(p: any): Profile
 	end
 	Guard.fixTypes(p, def, Guard.deepCopy) -- wrong-typed fields fall back to the default
 	Guard.migrate(p, MIGRATIONS, Data.VERSION)
+	p.gifts = GiftClock.sanitize(p.gifts)
 	Guard.clampNonNegative(p, CURRENCY_KEYS)
 	for _, u in Config.Upgrades do
 		local lv = p.upgrades[u.id]
@@ -9352,7 +9437,7 @@ return Data
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Eggs</string>
             <string name="Source"><![CDATA[--!strict
@@ -9534,7 +9619,7 @@ return Eggs
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Guard</string>
             <string name="Source"><![CDATA[--!strict
@@ -9747,7 +9832,7 @@ return Guard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Hooks</string>
             <string name="Source"><![CDATA[--!strict
@@ -9784,7 +9869,7 @@ return Hooks
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -10001,7 +10086,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">LiveEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -10144,7 +10229,7 @@ return LiveEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Monetization</string>
             <string name="Source"><![CDATA[--!strict
@@ -10421,7 +10506,7 @@ return Monetization
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Offline</string>
             <string name="Source"><![CDATA[--!strict
@@ -10496,7 +10581,7 @@ return Offline
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">Pets</string>
             <string name="Source"><![CDATA[--!strict
@@ -10765,7 +10850,7 @@ return Pets
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Plots</string>
             <string name="Source"><![CDATA[--!strict
@@ -10878,7 +10963,7 @@ return Plots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Progression</string>
             <string name="Source"><![CDATA[--!strict
@@ -11053,7 +11138,7 @@ return Progression
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">QuestService</string>
             <string name="Source"><![CDATA[--!strict
@@ -11243,7 +11328,7 @@ return QuestService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -11377,7 +11462,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">Rewards</string>
             <string name="Source"><![CDATA[--!strict
@@ -11388,6 +11473,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local M = Locale.m
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -11512,20 +11598,21 @@ function Rewards.init()
 	Remotes.handle("ClaimGift", function(player, payload)
 		local i = payload.index
 		local gift = if Guard.int(i, 1, #Config.Gifts) then Config.Gifts[i] else nil
-		local claimed = State.giftsClaimed[player]
-		if not gift or not claimed then
+		local p = Data.get(player)
+		if not gift or not p then
 			return false, M("msg.unknown_gift")
 		end
-		if claimed[i] then
+		local elapsed = State.giftElapsed(player, p)
+		if GiftClock.isClaimed(p.gifts, i) then
 			return false, M("msg.already_claimed")
 		end
-		local elapsed = os.clock() - (State.sessionStart[player] or os.clock())
-		if elapsed + 1 < gift.minutes * 60 then
+		if not GiftClock.ready(elapsed, gift.minutes) then
 			return false, M("msg.not_ready")
 		end
-		claimed[i] = true
+		GiftClock.markClaimed(p.gifts, i)
 		local text = Rewards.grant(player, gift.reward)
 		State.dirty(player)
+		Data.save(player)
 		return true, text
 	end)
 
@@ -11583,7 +11670,7 @@ return Rewards
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">Social</string>
             <string name="Source"><![CDATA[--!strict
@@ -11883,7 +11970,7 @@ return Social
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -11894,6 +11981,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 
@@ -11902,7 +11990,8 @@ local State = {}
 State.passes = {} :: { [Player]: { [string]: boolean } }
 State.friends = {} :: { [Player]: number }
 State.sessionStart = {} :: { [Player]: number }
-State.giftsClaimed = {} :: { [Player]: { [number]: boolean } }
+-- Seconds played today at the moment this session started (profile.gifts.played at load).
+State.giftBase = {} :: { [Player]: number }
 State.autoHatch = {} :: { [Player]: string? }
 State.lastHatch = {} :: { [Player]: number }
 State.ready = {} :: { [Player]: boolean }
@@ -11924,15 +12013,38 @@ function State.init(player: Player)
 	State.passes[player] = State.passes[player] or {}
 	State.friends[player] = 0
 	State.sessionStart[player] = os.clock()
-	State.giftsClaimed[player] = {}
 	State.lastHatch[player] = 0
+end
+
+-- Gifts ("minutes since joining"): claims and time played today live in profile.gifts, so a
+-- rejoin the same day keeps both. The session clock only adds the time since joining.
+function State.gifts(player: Player, profile: Data.Profile): GiftClock.Gifts
+	local g = profile.gifts
+	if State.giftBase[player] == nil then
+		GiftClock.roll(g, os.time())
+		State.giftBase[player] = g.played
+	end
+	return g
+end
+
+-- Seconds played today (persisted part + this session). A new UTC day starts the count over.
+function State.giftElapsed(player: Player, profile: Data.Profile): number
+	local g = State.gifts(player, profile)
+	if GiftClock.roll(g, os.time()) then
+		State.giftBase[player] = 0
+		State.sessionStart[player] = os.clock()
+		State.dirty(player)
+	end
+	local elapsed = (State.giftBase[player] or 0) + os.clock() - (State.sessionStart[player] or os.clock())
+	g.played = math.max(g.played, elapsed)
+	return elapsed
 end
 
 function State.cleanup(player: Player)
 	State.passes[player] = nil
 	State.friends[player] = nil
 	State.sessionStart[player] = nil
-	State.giftsClaimed[player] = nil
+	State.giftBase[player] = nil
 	State.autoHatch[player] = nil
 	State.lastHatch[player] = nil
 	State.ready[player] = nil
@@ -11945,7 +12057,7 @@ end
 -- Per-player bookkeeping tables still holding this player (leak check in the playtest).
 function State.tracked(player: Player): number
 	local n = 0
-	for _, t in { State.passes, State.friends, State.sessionStart, State.giftsClaimed, State.autoHatch, State.lastHatch, State.ready, State.paidRandomRestricted, dirtyFull, dirtyCurrency, lastCurrency } :: { { [Player]: any } } do
+	for _, t in { State.passes, State.friends, State.sessionStart, State.giftBase, State.autoHatch, State.lastHatch, State.ready, State.paidRandomRestricted, dirtyFull, dirtyCurrency, lastCurrency } :: { { [Player]: any } } do
 		if t[player] ~= nil then
 			n += 1
 		end
@@ -12101,13 +12213,8 @@ function State.snapshot(player: Player): { [string]: any }?
 	if not p then
 		return nil
 	end
-	local gifts = {}
-	local claimed = State.giftsClaimed[player]
-	if claimed then
-		for i in claimed do
-			table.insert(gifts, i)
-		end
-	end
+	local elapsed = State.giftElapsed(player, p)
+	local gifts = GiftClock.claimedList(p.gifts)
 	local snap: { [string]: any } = {
 		taps = p.taps,
 		gems = p.gems,
@@ -12131,7 +12238,7 @@ function State.snapshot(player: Player): { [string]: any }?
 		daily = { streak = p.daily.streak, last = p.daily.last },
 		serverTime = os.time(),
 		giftsClaimed = gifts,
-		sessionElapsed = os.clock() - (State.sessionStart[player] or os.clock()),
+		sessionElapsed = elapsed, -- seconds played today (name kept for the client)
 		autoTap = p.settings.autoTap,
 		autoHatch = State.autoHatch[player],
 		friends = State.friends[player] or 0,
@@ -12200,7 +12307,7 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="55">
           <Properties>
             <string name="Name">Tapping</string>
             <string name="Source"><![CDATA[--!strict
@@ -12340,6 +12447,7 @@ function Tapping.init()
 					end
 					if wholeSecond then
 						p.playTime += 1
+						State.giftElapsed(player, p) -- keeps today's played time in the profile
 						Hooks.fire("second", player, p)
 						if p.tapBoostLeft > 0 then
 							p.tapBoostLeft = math.max(0, p.tapBoostLeft - 1)
@@ -12367,11 +12475,11 @@ return Tapping
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="55">
+      <Item class="Folder" referent="56">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">ModelSlots</string>
             <string name="Source"><![CDATA[--!strict
@@ -12543,7 +12651,7 @@ return ModelSlots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">ModelSlotsMath</string>
             <string name="Source"><![CDATA[--!strict
@@ -12606,7 +12714,7 @@ return M
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">WorldBuilder</string>
             <string name="Source"><![CDATA[--!strict
@@ -14308,30 +14416,30 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="ServerStorage" referent="59">
+  <Item class="ServerStorage" referent="60">
     <Properties>
       <string name="Name">ServerStorage</string>
     </Properties>
-    <Item class="Folder" referent="60">
+    <Item class="Folder" referent="61">
       <Properties>
         <string name="Name">ModelLibrary</string>
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="61">
+  <Item class="StarterPlayer" referent="62">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">90</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="62">
+    <Item class="StarterPlayerScripts" referent="63">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="63">
+      <Item class="Folder" referent="64">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="64">
+        <Item class="ModuleScript" referent="65">
           <Properties>
             <string name="Name">Ads</string>
             <string name="Source"><![CDATA[--!strict
@@ -14403,7 +14511,7 @@ return Ads
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="65">
+        <Item class="ModuleScript" referent="66">
           <Properties>
             <string name="Name">Celebrate</string>
             <string name="Source"><![CDATA[--!strict
@@ -14510,7 +14618,7 @@ return Celebrate
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="66">
+        <Item class="ModuleScript" referent="67">
           <Properties>
             <string name="Name">Guide</string>
             <string name="Source"><![CDATA[--!strict
@@ -14651,7 +14759,7 @@ return Guide
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="67">
+        <Item class="ModuleScript" referent="68">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -14769,7 +14877,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="68">
+        <Item class="ModuleScript" referent="69">
           <Properties>
             <string name="Name">LiveEventClient</string>
             <string name="Source"><![CDATA[--!strict
@@ -14817,7 +14925,7 @@ return LiveEventClient
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="69">
+        <Item class="LocalScript" referent="70">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -14900,7 +15008,7 @@ end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="70">
+        <Item class="ModuleScript" referent="71">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -14992,7 +15100,7 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="71">
+        <Item class="ModuleScript" referent="72">
           <Properties>
             <string name="Name">Onboarding</string>
             <string name="Source"><![CDATA[--!strict
@@ -15185,7 +15293,7 @@ return Onboarding
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="72">
+        <Item class="ModuleScript" referent="73">
           <Properties>
             <string name="Name">ParkFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -15356,7 +15464,7 @@ return ParkFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="73">
+        <Item class="ModuleScript" referent="74">
           <Properties>
             <string name="Name">PetFollow</string>
             <string name="Source"><![CDATA[--!strict
@@ -15722,7 +15830,7 @@ return PetFollow
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="74">
+        <Item class="ModuleScript" referent="75">
           <Properties>
             <string name="Name">Purchase</string>
             <string name="Source"><![CDATA[--!strict
@@ -15864,7 +15972,7 @@ return Purchase
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="75">
+        <Item class="ModuleScript" referent="76">
           <Properties>
             <string name="Name">Quality</string>
             <string name="Source"><![CDATA[--!strict
@@ -15955,7 +16063,7 @@ return Quality
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="76">
+        <Item class="ModuleScript" referent="77">
           <Properties>
             <string name="Name">Shake</string>
             <string name="Source"><![CDATA[--!strict
@@ -16037,7 +16145,7 @@ return Shake
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="77">
+        <Item class="ModuleScript" referent="78">
           <Properties>
             <string name="Name">Tapper</string>
             <string name="Source"><![CDATA[--!strict
@@ -16496,11 +16604,11 @@ return Tapper
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="78">
+        <Item class="Folder" referent="79">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">EggPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -16869,7 +16977,7 @@ return EggPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">HatchCinematic</string>
               <string name="Source"><![CDATA[--!strict
@@ -17431,7 +17539,7 @@ return HatchCinematic
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -18221,7 +18329,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">IndexWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18397,7 +18505,7 @@ return IndexWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">InviteWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18502,7 +18610,7 @@ return InviteWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">PetIcon</string>
               <string name="Source"><![CDATA[--!strict
@@ -18549,7 +18657,7 @@ return PetIcon
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">PetsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -19018,7 +19126,7 @@ return PetsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">Popups</string>
               <string name="Source"><![CDATA[--!strict
@@ -19249,7 +19357,7 @@ return Popups
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="87">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">ProgressWindows</string>
               <string name="Source"><![CDATA[--!strict
@@ -19579,7 +19687,7 @@ return ProgressWindows
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="88">
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">QuestsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -19710,7 +19818,7 @@ return QuestsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="89">
+          <Item class="ModuleScript" referent="90">
             <Properties>
               <string name="Name">RewardsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -19853,7 +19961,7 @@ return RewardsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="90">
+          <Item class="ModuleScript" referent="91">
             <Properties>
               <string name="Name">Root</string>
               <string name="Source"><![CDATA[--!strict
@@ -19974,7 +20082,7 @@ return Root
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="91">
+          <Item class="ModuleScript" referent="92">
             <Properties>
               <string name="Name">StoreWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -20156,7 +20264,7 @@ return StoreWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="92">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -20633,7 +20741,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="93">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Toasts</string>
               <string name="Source"><![CDATA[--!strict
@@ -20786,7 +20894,7 @@ return Toasts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="94">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">Windows</string>
               <string name="Source"><![CDATA[--!strict
@@ -21045,7 +21153,7 @@ return Windows
             </Properties>
           </Item>
         </Item>
-        <Item class="ModuleScript" referent="95">
+        <Item class="ModuleScript" referent="96">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -21548,7 +21656,7 @@ return WorldFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="96">
+        <Item class="ModuleScript" referent="97">
           <Properties>
             <string name="Name">WorldText</string>
             <string name="Source"><![CDATA[--!strict
@@ -21642,7 +21750,7 @@ return WorldText
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="97">
+  <Item class="Workspace" referent="98">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 
@@ -14,7 +15,8 @@ local State = {}
 State.passes = {} :: { [Player]: { [string]: boolean } }
 State.friends = {} :: { [Player]: number }
 State.sessionStart = {} :: { [Player]: number }
-State.giftsClaimed = {} :: { [Player]: { [number]: boolean } }
+-- Seconds played today at the moment this session started (profile.gifts.played at load).
+State.giftBase = {} :: { [Player]: number }
 State.autoHatch = {} :: { [Player]: string? }
 State.lastHatch = {} :: { [Player]: number }
 State.ready = {} :: { [Player]: boolean }
@@ -36,15 +38,38 @@ function State.init(player: Player)
 	State.passes[player] = State.passes[player] or {}
 	State.friends[player] = 0
 	State.sessionStart[player] = os.clock()
-	State.giftsClaimed[player] = {}
 	State.lastHatch[player] = 0
+end
+
+-- Gifts ("minutes since joining"): claims and time played today live in profile.gifts, so a
+-- rejoin the same day keeps both. The session clock only adds the time since joining.
+function State.gifts(player: Player, profile: Data.Profile): GiftClock.Gifts
+	local g = profile.gifts
+	if State.giftBase[player] == nil then
+		GiftClock.roll(g, os.time())
+		State.giftBase[player] = g.played
+	end
+	return g
+end
+
+-- Seconds played today (persisted part + this session). A new UTC day starts the count over.
+function State.giftElapsed(player: Player, profile: Data.Profile): number
+	local g = State.gifts(player, profile)
+	if GiftClock.roll(g, os.time()) then
+		State.giftBase[player] = 0
+		State.sessionStart[player] = os.clock()
+		State.dirty(player)
+	end
+	local elapsed = (State.giftBase[player] or 0) + os.clock() - (State.sessionStart[player] or os.clock())
+	g.played = math.max(g.played, elapsed)
+	return elapsed
 end
 
 function State.cleanup(player: Player)
 	State.passes[player] = nil
 	State.friends[player] = nil
 	State.sessionStart[player] = nil
-	State.giftsClaimed[player] = nil
+	State.giftBase[player] = nil
 	State.autoHatch[player] = nil
 	State.lastHatch[player] = nil
 	State.ready[player] = nil
@@ -57,7 +82,7 @@ end
 -- Per-player bookkeeping tables still holding this player (leak check in the playtest).
 function State.tracked(player: Player): number
 	local n = 0
-	for _, t in { State.passes, State.friends, State.sessionStart, State.giftsClaimed, State.autoHatch, State.lastHatch, State.ready, State.paidRandomRestricted, dirtyFull, dirtyCurrency, lastCurrency } :: { { [Player]: any } } do
+	for _, t in { State.passes, State.friends, State.sessionStart, State.giftBase, State.autoHatch, State.lastHatch, State.ready, State.paidRandomRestricted, dirtyFull, dirtyCurrency, lastCurrency } :: { { [Player]: any } } do
 		if t[player] ~= nil then
 			n += 1
 		end
@@ -213,13 +238,8 @@ function State.snapshot(player: Player): { [string]: any }?
 	if not p then
 		return nil
 	end
-	local gifts = {}
-	local claimed = State.giftsClaimed[player]
-	if claimed then
-		for i in claimed do
-			table.insert(gifts, i)
-		end
-	end
+	local elapsed = State.giftElapsed(player, p)
+	local gifts = GiftClock.claimedList(p.gifts)
 	local snap: { [string]: any } = {
 		taps = p.taps,
 		gems = p.gems,
@@ -243,7 +263,7 @@ function State.snapshot(player: Player): { [string]: any }?
 		daily = { streak = p.daily.streak, last = p.daily.last },
 		serverTime = os.time(),
 		giftsClaimed = gifts,
-		sessionElapsed = os.clock() - (State.sessionStart[player] or os.clock()),
+		sessionElapsed = elapsed, -- seconds played today (name kept for the client)
 		autoTap = p.settings.autoTap,
 		autoHatch = State.autoHatch[player],
 		friends = State.friends[player] or 0,

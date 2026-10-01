@@ -1,22 +1,22 @@
 # Playtest de pet-tap-simulator
 
 - Comando: `python3 tools/uipreview/preview.py pet-tap-simulator --playtest --minutes 10 --seed 1 --state mid`
-- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 10.2 min | reales: 54 s | rejoins del bot: 1
+- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 10.2 min | reales: 48 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)
 
-**Veredicto: ERRORES**
+**Veredicto: OK**
 
 - Errores de Luau unicos (del juego): **0**
 - Warnings unicos: **0**
 - Remotes rechazados por el servidor sin que el bot lo esperara: **3** llamadas en 2 acciones
-- Invariantes violados / problemas de guardado / recibos / DataStore: **1**
+- Invariantes violados / problemas de guardado / recibos / DataStore: **0**
 - Estados trabados > 60 s virtuales: **0**
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
 - Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **0**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 7699 (t=0:39) -> 7584 (t=10:09); partes 3650 -> 3621; GUI 1150 -> 1137
+- Instancias vivas en el DataModel: 7700 (t=0:39) -> 7585 (t=10:09); partes 3650 -> 3621; GUI 1150 -> 1137
 - Acciones del bot: hatches=88, langs=3, purchases=3, quests=2, rebirths=0, taps=3056, upgrades=10, windows=11, zones=1
 
 ## Analisis del revisor (a mano)
@@ -36,19 +36,19 @@
 |---|---|---|---|---|---|---|---|---|
 | 0:09 (start) | 260 | 75 | 16 | 2 | 1841264 | 26001264 | 13 | 3 |
 | 0:39 | 275 | 76 | 17 | 2 | 1598068 | 26758068 | 16 | 3 |
-| 1:39 | 5 | 87 | 28 | 2 | 9407557 | 34535021 | 19 | 3 |
-| 2:09 | 26 | 90 | 31 | 2 | 15575179 | 43702643 | 20 | 3 |
-| 3:09 | 51 | 100 | 37 | 2 | 27593658 | 65721122 | 21 | 3 |
-| 3:39 | 55 | 102 | 39 | 2 | 1754611 | 79882075 | 22 | 4 |
-| 4:39 | 72 | 112 | 49 | 2 | 6862158266 | 127354450 | 23 | 4 |
-| 5:09 | 72 | 117 | 54 | 2 | 6176205134 | 191401318 | 23 | 4 |
-| 6:09 | 72 | 123 | 60 | 2 | 5392708948 | 307905132 | 23 | 4 |
-| 6:39 | 72 | 127 | 64 | 2 | 4877651285 | 392847469 | 23 | 4 |
-| 7:39 | 72 | 137 | 74 | 2 | 4419768290 | 707906098 | 23 | 4 |
-| 8:09 | 107 | 143 | 80 | 2 | 3682986765 | 871124573 | 23 | 4 |
-| 9:09 | 107 | 154 | 91 | 2 | 2293199078 | 1131336886 | 23 | 4 |
-| 9:39 | 107 | 160 | 97 | 2 | 1520711382 | 1258849190 | 23 | 4 |
-| 10:09 (end) | 107 | 166 | 103 | 2 | 748223685 | 1386361493 | 23 | 4 |
+| 1:39 | 5 | 87 | 28 | 2 | 9448857 | 34576321 | 19 | 3 |
+| 2:09 | 40 | 90 | 31 | 2 | 15616479 | 43743943 | 19 | 3 |
+| 3:09 | 51 | 100 | 37 | 2 | 28001939 | 66129403 | 21 | 3 |
+| 3:39 | 55 | 102 | 39 | 2 | 2400244 | 80527708 | 22 | 4 |
+| 4:39 | 72 | 112 | 49 | 2 | 6862803899 | 128000083 | 23 | 4 |
+| 5:09 | 72 | 117 | 54 | 2 | 6176850767 | 192046951 | 23 | 4 |
+| 6:09 | 72 | 123 | 60 | 2 | 5393354581 | 308550765 | 23 | 4 |
+| 6:39 | 72 | 127 | 64 | 2 | 4876277311 | 391473495 | 23 | 4 |
+| 7:39 | 72 | 137 | 74 | 2 | 3691335941 | 706532125 | 23 | 4 |
+| 8:09 | 72 | 143 | 80 | 2 | 2956574023 | 871770207 | 23 | 4 |
+| 9:09 | 72 | 154 | 91 | 2 | 1566786335 | 1131982519 | 23 | 4 |
+| 9:39 | 72 | 160 | 97 | 2 | 794298639 | 1259494823 | 23 | 4 |
+| 10:09 (end) | 72 | 166 | 103 | 2 | 27354956 | 1392551140 | 23 | 4 |
 
 Hitos:
 
@@ -63,8 +63,6 @@ Hitos:
 - 5:41 rejoin: leaves (midgame)
 - 5:55 rejoin ok: profile reloaded identical
 - 5:55 back after rejoin
-- 6:51 claimed gift 1
-- 8:01 claimed gift 2
 - 10:09 bot script finished
 - 10:19 late receipt for a player that left -> NotProcessedYet
 
@@ -94,7 +92,7 @@ Ejemplos de `Request:Lock`: `t=161 Lock(locked=true,uid=p17) -> msg.unknown_pet`
 
 ## Invariantes, trabas, guardado, recibos
 
-- **Posible bug del juego (detectado por el bot)** t=5:55: the session gifts (Config.Gifts, 'minutes since joining') are not saved: after rejoining all 2 claimed gifts are claimable again, so gems/taps can be farmed by leaving and joining (State.giftsClaimed is per session, never in the profile) (`pet-tap-simulator/src/server/Services/State.luau:39 < pet-tap-simulator/src/server/Services/Rewards.luau:130`)
+Ninguno.
 
 ## Trafico de remotes
 
@@ -102,7 +100,7 @@ Ejemplos de `Request:Lock`: `t=161 Lock(locked=true,uid=p17) -> msg.unknown_pet`
 |---|---|---|---|---|---|
 | Request:BuyZone | 1 | 1 | 0 | 0 | 0 |
 | Request:ClaimDaily | 1 | 1 | 0 | 0 | 0.07 |
-| Request:ClaimGift | 4 | 4 | 0 | 0 | 0 |
+| Request:ClaimGift | 2 | 2 | 0 | 0 | 0.07 |
 | Request:ClaimIndex | 1 | 1 | 0 | 0 | 0 |
 | Request:ClaimOffline | 10 | 1 | 0 | 9 | 0 |
 | Request:ClaimQuest | 2 | 2 | 0 | 0 | 0 |
@@ -121,11 +119,11 @@ Ejemplos de `Request:Lock`: `t=161 Lock(locked=true,uid=p17) -> msg.unknown_pet`
 | Request:Teleport | 3 | 3 | 0 | 0 | 0 |
 | Request:Upgrade | 10 | 10 | 0 | 0 | 0 |
 
-RemoteEvents: Currency (srv->cli 482, cli->srv 0), Hatched (srv->cli 3, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Notify (srv->cli 8, cli->srv 0), Quests (srv->cli 15, cli->srv 0), Reward (srv->cli 10, cli->srv 0), State (srv->cli 143, cli->srv 0), Tap (srv->cli 0, cli->srv 514)
+RemoteEvents: Currency (srv->cli 483, cli->srv 0), Hatched (srv->cli 3, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Notify (srv->cli 8, cli->srv 0), Quests (srv->cli 15, cli->srv 0), Reward (srv->cli 8, cli->srv 0), State (srv->cli 138, cli->srv 0), Tap (srv->cli 0, cli->srv 502)
 
 Avisos del servidor al jugador (Notify/Toast): msg.got_dice [success] x3, msg.thanks [success] x2, msg.pass_unlocked [success] x1, msg.unlocked_zone [success] x1, msg.crafted [success] x1
 
-DataStore: TapPets_Profiles_v1/u_90000001 (lecturas 14, escrituras 14), TapPets_Rebirths_v1/90000001 (lecturas 2, escrituras 1), TapPets_Referrals_v1/90000001 (lecturas 7, escrituras 0), TapPets_TotalTaps_v1/90000001 (lecturas 10, escrituras 10)
+DataStore: TapPets_Profiles_v1/u_90000001 (lecturas 16, escrituras 16), TapPets_Rebirths_v1/90000001 (lecturas 2, escrituras 1), TapPets_Referrals_v1/90000001 (lecturas 7, escrituras 0), TapPets_TotalTaps_v1/90000001 (lecturas 10, escrituras 10)
 
 Compras simuladas: prompt producto 8004 (grant); recibo producto 8004 -> PurchaseGranted; prompt pase 7001 (grant); prompt producto 8001 (grant); recibo producto 8001 -> PurchaseGranted; prompt producto 8005 (cancel)
 
@@ -144,8 +142,8 @@ Recibos concedidos: 2; reenviados con el mismo PurchaseId: 2.
 ## Log crudo (extracto)
 
 ```
-[info] t=4:10 MarketplaceService:PromptProductPurchase(8004) mode=grant
-[info] t=4:13 MarketplaceService:PromptGamePassPurchase(7001) mode=grant
-[info] t=4:16 MarketplaceService:PromptProductPurchase(8001) mode=grant
-[info] t=4:19 MarketplaceService:PromptProductPurchase(8005) mode=cancel
+[info] t=4:11 MarketplaceService:PromptProductPurchase(8004) mode=grant
+[info] t=4:14 MarketplaceService:PromptGamePassPurchase(7001) mode=grant
+[info] t=4:17 MarketplaceService:PromptProductPurchase(8001) mode=grant
+[info] t=4:20 MarketplaceService:PromptProductPurchase(8005) mode=cancel
 ```

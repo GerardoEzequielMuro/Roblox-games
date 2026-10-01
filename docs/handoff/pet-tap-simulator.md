@@ -439,3 +439,12 @@ Conteo: 4 altas, 5 medias, 5 bajas (14). Lo que ya estaba bien y quedó igual: t
 
 ### Verificación
 `rojo build default.project.json` OK, `luau-lsp analyze` sin salida, todos los tests/sims puros en verde (onboarding 55, locale, model_slots, pacing 34, passes 117, policy_hud 192, security 68, unit_p0 60, check_config, format_check). Previews `new` pc y phone: 0 hallazgos, 0 errores de runtime (antes/después en `docs/previews/pet-tap-simulator/new-*-before-r8.png` vs `new-*.png`; la carga y los efectos animados no se ven en el preview estático).
+
+## Ronda 10: arreglos del playtest
+
+- **Bug**: los regalos "minutos desde que entras" (`Config.Gifts`) se guardaban solo en la sesion (`State.giftsClaimed`), asi que salir y volver a entrar los dejaba reclamables otra vez (farmeable).
+- **Arreglo**: nuevo modulo puro `src/shared/GiftClock.luau` y campo de perfil `gifts = { day, played, claimed }` (dia UTC, segundos jugados ese dia, indices reclamados). Se reinicia al cambiar el dia UTC; el temporizador continua entre rejoins del mismo dia (`played` se actualiza cada segundo y se guarda con el perfil).
+- `State.giftElapsed/gifts` reemplazan a `giftsClaimed`; `ClaimGift` (Rewards) valida contra el perfil y guarda al reclamar. El snapshot sigue enviando `giftsClaimed` (lista) y `sessionElapsed` (ahora = segundos jugados hoy), asi que el cliente no cambia.
+- Saves viejos: `Data.reconcile` completa/sanea `gifts` (valores seguros por defecto, NaN/tipos invalidos).
+- Test puro nuevo: `tests/gift_clock.luau` (19 checks: rejoin el mismo dia no reclama de nuevo, el tiempo continua, nuevo dia reinicia, medianoche en sesion, saves viejos).
+- Verificacion: `rojo build` OK, `luau-lsp analyze` sin salida, tests puros y sims pasan, playtest `new` y `mid` con veredicto OK (el hallazgo desaparecio).

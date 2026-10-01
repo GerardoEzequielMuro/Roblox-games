@@ -6,18 +6,18 @@
 
 ## Resumen (espanol)
 
-**Veredicto: ERRORES**
+**Veredicto: OK**
 
 - Errores de Luau unicos (del juego): **0**
 - Warnings unicos: **0**
 - Remotes rechazados por el servidor sin que el bot lo esperara: **0** llamadas en 0 acciones
-- Invariantes violados / problemas de guardado / recibos / DataStore: **1**
+- Invariantes violados / problemas de guardado / recibos / DataStore: **0**
 - Estados trabados > 60 s virtuales: **0**
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
 - Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **0**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 7598 (t=0:39) -> 7513 (t=10:09); partes 3564 -> 3564; GUI 1201 -> 1166
-- Acciones del bot: hatches=88, langs=3, purchases=3, quests=2, rebirths=0, taps=3000, upgrades=11, windows=11, zones=1
+- Instancias vivas en el DataModel: 7599 (t=0:39) -> 7562 (t=10:09); partes 3564 -> 3572; GUI 1201 -> 1174
+- Acciones del bot: hatches=86, langs=3, purchases=3, quests=3, rebirths=0, taps=2968, upgrades=11, windows=11, zones=1
 
 ## Analisis del revisor (a mano)
 
@@ -36,35 +36,33 @@
 |---|---|---|---|---|---|---|---|---|
 | 0:09 (start) | 0 | 0 | 1 | 0 | 12 | 12 | 0 | 1 |
 | 0:39 | 0 | 4 | 5 | 0 | 456 | 456 | 0 | 1 |
-| 1:39 | 0 | 16 | 17 | 0 | 2023 | 1543 | 0 | 1 |
-| 2:09 | 0 | 19 | 20 | 0 | 1877 | 1997 | 0 | 1 |
-| 3:09 | 8 | 30 | 26 | 0 | 1961 | 4281 | 6 | 1 |
-| 3:39 | 14 | 33 | 29 | 0 | 777 | 6497 | 7 | 1 |
-| 4:39 | 5 | 42 | 38 | 0 | 362053 | 10873 | 10 | 2 |
-| 5:09 | 5 | 47 | 43 | 0 | 43268 | 42088 | 10 | 2 |
-| 6:09 | 5 | 51 | 47 | 0 | 9893 | 64713 | 10 | 2 |
-| 6:39 | 5 | 56 | 52 | 0 | 29283 | 99103 | 10 | 2 |
-| 7:39 | 5 | 64 | 60 | 0 | 21726 | 153646 | 10 | 2 |
-| 8:09 | 40 | 69 | 65 | 0 | 52926 | 199846 | 10 | 2 |
-| 9:09 | 9 | 78 | 74 | 0 | 25238 | 243158 | 11 | 2 |
-| 9:39 | 9 | 85 | 81 | 0 | 29648 | 268568 | 11 | 2 |
-| 10:09 (end) | 9 | 91 | 87 | 0 | 38213 | 295133 | 11 | 2 |
+| 1:39 | 0 | 16 | 17 | 0 | 2028 | 1548 | 0 | 1 |
+| 2:09 | 25 | 19 | 20 | 0 | 1882 | 2002 | 1 | 1 |
+| 3:09 | 8 | 30 | 26 | 0 | 2099 | 4419 | 6 | 1 |
+| 3:39 | 14 | 33 | 29 | 0 | 897 | 6617 | 7 | 1 |
+| 4:39 | 5 | 41 | 37 | 0 | 363914 | 12534 | 10 | 2 |
+| 5:09 | 5 | 46 | 42 | 0 | 55022 | 53642 | 10 | 2 |
+| 6:09 | 5 | 53 | 49 | 0 | 27559 | 91179 | 10 | 2 |
+| 6:39 | 5 | 57 | 53 | 0 | 4477 | 124097 | 10 | 2 |
+| 7:39 | 5 | 65 | 61 | 0 | 2312 | 189932 | 10 | 2 |
+| 8:09 | 5 | 68 | 64 | 0 | 26229 | 222849 | 10 | 2 |
+| 9:09 | 5 | 76 | 72 | 0 | 12802 | 274622 | 10 | 2 |
+| 9:39 | 5 | 83 | 79 | 0 | 15502 | 298322 | 10 | 2 |
+| 10:09 (end) | 4 | 90 | 86 | 0 | 24757 | 325577 | 11 | 2 |
 
 Hitos:
 
 - 0:09 session started
 - 0:10 claimed daily
 - 0:54 claimed gift 1
-- 2:12 claimed gift 2
+- 2:07 claimed gift 2
 - 2:41 crafted a golden cat:0
 - 4:26 bought zone 2
-- 5:45 rejoin (save + reload)
-- 5:45 rejoin: leaves (midgame)
-- 5:59 rejoin ok: profile reloaded identical
-- 5:59 back after rejoin
-- 6:52 claimed gift 1
-- 8:07 claimed gift 2
-- 10:10 bot script finished
+- 5:41 rejoin (save + reload)
+- 5:41 rejoin: leaves (midgame)
+- 5:55 rejoin ok: profile reloaded identical
+- 5:55 back after rejoin
+- 10:09 bot script finished
 - 10:19 late receipt for a player that left -> NotProcessedYet
 
 ## Errores de Luau
@@ -85,7 +83,7 @@ Ninguno (los rechazos que el bot provoco a proposito no cuentan).
 
 ## Invariantes, trabas, guardado, recibos
 
-- **Posible bug del juego (detectado por el bot)** t=5:59: the session gifts (Config.Gifts, 'minutes since joining') are not saved: after rejoining all 2 claimed gifts are claimable again, so gems/taps can be farmed by leaving and joining (State.giftsClaimed is per session, never in the profile) (`pet-tap-simulator/src/server/Services/State.luau:39 < pet-tap-simulator/src/server/Services/Rewards.luau:130`)
+Ninguno.
 
 ## Trafico de remotes
 
@@ -93,15 +91,16 @@ Ninguno (los rechazos que el bot provoco a proposito no cuentan).
 |---|---|---|---|---|---|
 | Request:BuyZone | 1 | 1 | 0 | 0 | 0 |
 | Request:ClaimDaily | 1 | 1 | 0 | 0 | 0.07 |
-| Request:ClaimGift | 4 | 4 | 0 | 0 | 0 |
+| Request:ClaimGift | 2 | 2 | 0 | 0 | 0.07 |
 | Request:ClaimOffline | 10 | 0 | 0 | 10 | 0 |
-| Request:ClaimQuest | 2 | 2 | 0 | 0 | 0 |
+| Request:ClaimQuest | 3 | 3 | 0 | 0 | 0 |
+| Request:ClaimQuestBonus | 1 | 1 | 0 | 0 | 0 |
 | Request:Craft | 1 | 1 | 0 | 0 | 0 |
 | Request:Delete | 2 | 1 | 0 | 1 | 0 |
-| Request:EquipBest | 22 | 22 | 0 | 0 | 0 |
+| Request:EquipBest | 21 | 21 | 0 | 0 | 0 |
 | Request:GetState | 2 | 2 | 0 | 0 | 0 |
 | Request:GoPark | 1 | 1 | 0 | 0 | 0 |
-| Request:Hatch | 88 | 88 | 0 | 0 | 0 |
+| Request:Hatch | 86 | 86 | 0 | 0 | 0 |
 | Request:Lock | 2 | 2 | 0 | 0 | 0 |
 | Request:RedeemCode | 2 | 1 | 0 | 1 | 0 |
 | Request:RollTrait | 1 | 1 | 0 | 0 | 0 |
@@ -111,11 +110,11 @@ Ninguno (los rechazos que el bot provoco a proposito no cuentan).
 | Request:Teleport | 3 | 3 | 0 | 0 | 0 |
 | Request:Upgrade | 11 | 11 | 0 | 0 | 0 |
 
-RemoteEvents: Currency (srv->cli 440, cli->srv 0), Hatched (srv->cli 3, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Notify (srv->cli 7, cli->srv 0), Quests (srv->cli 14, cli->srv 0), Reward (srv->cli 10, cli->srv 0), State (srv->cli 143, cli->srv 0), Tap (srv->cli 0, cli->srv 475)
+RemoteEvents: AskNotifications (srv->cli 1, cli->srv 0), Currency (srv->cli 441, cli->srv 0), Hatched (srv->cli 4, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Notify (srv->cli 9, cli->srv 0), Quests (srv->cli 15, cli->srv 0), Reward (srv->cli 9, cli->srv 0), State (srv->cli 144, cli->srv 0), Tap (srv->cli 0, cli->srv 473), Toast (srv->cli 1, cli->srv 0)
 
-Avisos del servidor al jugador (Notify/Toast): msg.got_dice [success] x2, msg.thanks [success] x2, msg.unlocked_zone [success] x1, msg.pass_unlocked [success] x1, msg.crafted [success] x1
+Avisos del servidor al jugador (Notify/Toast): msg.got_dice [success] x4, msg.thanks [success] x2, msg.pass_unlocked [success] x1, table [info] x1, msg.unlocked_zone [success] x1, msg.crafted [success] x1
 
-DataStore: TapPets_Profiles_v1/u_90000001 (lecturas 14, escrituras 14), TapPets_Referrals_v1/90000001 (lecturas 7, escrituras 0), TapPets_TotalTaps_v1/90000001 (lecturas 10, escrituras 10)
+DataStore: TapPets_Profiles_v1/u_90000001 (lecturas 16, escrituras 16), TapPets_Referrals_v1/90000001 (lecturas 7, escrituras 0), TapPets_TotalTaps_v1/90000001 (lecturas 10, escrituras 10)
 
 Compras simuladas: prompt producto 8004 (grant); recibo producto 8004 -> PurchaseGranted; prompt pase 7001 (grant); prompt producto 8001 (grant); recibo producto 8001 -> PurchaseGranted; prompt producto 8005 (cancel)
 
@@ -134,8 +133,8 @@ Recibos concedidos: 2; reenviados con el mismo PurchaseId: 2.
 ## Log crudo (extracto)
 
 ```
-[info] t=4:11 MarketplaceService:PromptProductPurchase(8004) mode=grant
-[info] t=4:14 MarketplaceService:PromptGamePassPurchase(7001) mode=grant
-[info] t=4:17 MarketplaceService:PromptProductPurchase(8001) mode=grant
-[info] t=4:20 MarketplaceService:PromptProductPurchase(8005) mode=cancel
+[info] t=4:10 MarketplaceService:PromptProductPurchase(8004) mode=grant
+[info] t=4:13 MarketplaceService:PromptGamePassPurchase(7001) mode=grant
+[info] t=4:16 MarketplaceService:PromptProductPurchase(8001) mode=grant
+[info] t=4:19 MarketplaceService:PromptProductPurchase(8005) mode=cancel
 ```

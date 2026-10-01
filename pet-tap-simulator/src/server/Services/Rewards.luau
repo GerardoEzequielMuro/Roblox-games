@@ -6,6 +6,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local GiftClock = require(ReplicatedStorage.Shared.GiftClock)
 local M = Locale.m
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Format = require(ReplicatedStorage.Shared.Format)
@@ -130,20 +131,21 @@ function Rewards.init()
 	Remotes.handle("ClaimGift", function(player, payload)
 		local i = payload.index
 		local gift = if Guard.int(i, 1, #Config.Gifts) then Config.Gifts[i] else nil
-		local claimed = State.giftsClaimed[player]
-		if not gift or not claimed then
+		local p = Data.get(player)
+		if not gift or not p then
 			return false, M("msg.unknown_gift")
 		end
-		if claimed[i] then
+		local elapsed = State.giftElapsed(player, p)
+		if GiftClock.isClaimed(p.gifts, i) then
 			return false, M("msg.already_claimed")
 		end
-		local elapsed = os.clock() - (State.sessionStart[player] or os.clock())
-		if elapsed + 1 < gift.minutes * 60 then
+		if not GiftClock.ready(elapsed, gift.minutes) then
 			return false, M("msg.not_ready")
 		end
-		claimed[i] = true
+		GiftClock.markClaimed(p.gifts, i)
 		local text = Rewards.grant(player, gift.reward)
 		State.dirty(player)
+		Data.save(player)
 		return true, text
 	end)
 

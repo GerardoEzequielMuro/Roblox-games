@@ -135,6 +135,7 @@ function Tapping.init()
 					end
 					if wholeSecond then
 						p.playTime += 1
+						State.giftElapsed(player, p) -- keeps today's played time in the profile
 						Hooks.fire("second", player, p)
 						if p.tapBoostLeft > 0 then
 							p.tapBoostLeft = math.max(0, p.tapBoostLeft - 1)
