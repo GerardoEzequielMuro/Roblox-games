@@ -10,6 +10,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Goals = require(ReplicatedStorage.Shared.Goals)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Toasts = require(script.Parent.Toasts)
@@ -114,6 +115,60 @@ QuestTracker.guideTarget = function(): Vector3?
 	return if guidePart then guidePart.Position else nil
 end
 
+-- HUD pointer: pulsing ring + bobbing arrow on the button the tutorial step asks for. It
+-- follows the real GuiObject every frame and hides itself if that button is missing / hidden,
+-- so a layout change can never leave a dangling arrow.
+local pointer: Frame
+local pointerArrow: TextLabel
+local pointerStroke: UIStroke
+local pointerName: string? = nil
+local stuck = 0 -- Onboarding.stuckLevel of the current step
+local tracker: Onboarding.Tracker? = nil
+local skipBtn: TextButton
+
+local cached: GuiObject? = nil
+local cachedName: string? = nil
+local cachedAt = 0
+local function findTarget(name: string): GuiObject?
+	local now = os.clock()
+	-- the recursive search runs at most once a second (the HUD can be rebuilt by a language switch)
+	if cachedName ~= name or not cached or not cached:IsDescendantOf(Root.gui) or now - cachedAt > 1 then
+		cachedName, cachedAt = name, now
+		local found = Root.gui:FindFirstChild(name, true)
+		cached = if found and found:IsA("GuiObject") then found else nil
+	end
+	local c = cached
+	if c and c.Visible and c.AbsoluteSize.X > 4 then
+		return c
+	end
+	return nil
+end
+
+local function updatePointer()
+	local target = if pointerName then findTarget(pointerName) else nil
+	if not target then
+		pointer.Visible = false
+		return
+	end
+	local origin = Root.gui.AbsolutePosition
+	local pos = target.AbsolutePosition - origin
+	local size = target.AbsoluteSize
+	local pad = 8
+	pointer.Position = UDim2.fromOffset(pos.X - pad, pos.Y - pad)
+	pointer.Size = UDim2.fromOffset(size.X + pad * 2, size.Y + pad * 2)
+	pointer.Visible = true
+	local t = os.clock()
+	local loud = stuck >= 1
+	pointerStroke.Thickness = if loud then 5 else 3.5
+	pointerStroke.Transparency = 0.1 + (math.sin(t * 6) * 0.5 + 0.5) * 0.4
+	-- arrow above the button (below it when the button hugs the top of the screen)
+	local below = pos.Y < 70
+	pointerArrow.Text = if below then "▲" else "▼"
+	local bob = math.sin(t * 7) * 5
+	pointerArrow.Position = if below then UDim2.new(0.5, 0, 1, 2 + bob) else UDim2.new(0.5, 0, 0, -2 - bob)
+	pointerArrow.AnchorPoint = if below then Vector2.new(0.5, 0) else Vector2.new(0.5, 1)
+end
+
 local function refresh()
 	local s = Net.state
 	if not s or not s.story then
@@ -129,6 +184,8 @@ local function refresh()
 		setBar(goal.frac, Format.abbrev(goal.have) .. " / " .. Format.abbrev(goal.need))
 		reward.Text = ""
 		hint.Visible = false
+		pointerName = nil
+		skipBtn.Visible = false
 		clearGuide()
 		return
 	end
@@ -146,6 +203,17 @@ local function refresh()
 	local h = if s.story.step <= Config.TutorialSteps + 3 then StoryText.hint(step, touch) else nil
 	hint.Text = h or ""
 	hint.Visible = h ~= nil
+	pointerName = if h ~= nil then Onboarding.pointerName(step.kind, touch) else nil
+	-- idle clock: resets on any progress, so only a really stuck player sees the Skip button
+	local idle
+	tracker, idle = Onboarding.track(tracker, s.story.step, s.story.progress, os.clock())
+	stuck = Onboarding.stuckLevel(idle)
+	skipBtn.Visible = stuck >= 2 and Onboarding.canSkip(s.story.step, step.kind, Config.TutorialSteps)
+	if stuck >= 1 and h ~= nil then
+		hint.TextColor3 = Color3.fromRGB(255, 255, 255)
+	else
+		hint.TextColor3 = Theme.Yellow
+	end
 	setGuide(StoryText.target(step))
 end
 
@@ -177,6 +245,19 @@ function QuestTracker.init()
 		_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.new(1, -20, 0, 12), Position = UDim2.new(0, 10, 1, -16), Color = Theme.Yellow, TextSize = 10, Stroke = 1.5, Corner = 5, Parent = panel })
 		hint = Theme.text({ Name = "Hint", Text = "", Size = UDim2.fromOffset(560, 30), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 22, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = Enum.TextXAlignment.Center, Parent = panel })
 	end
+	-- pointer ring over the HUD button the step wants (starts hidden)
+	pointer = new("Frame", { Name = "TutorialPointer", BackgroundTransparency = 1, Visible = false, ZIndex = 40, Parent = Root.gui }, { Theme.corner(14) })
+	pointerStroke = new("UIStroke", { Color = Theme.Yellow, Thickness = 3.5, Parent = pointer })
+	pointerArrow = Theme.text({ Name = "Arrow", Text = "▼", Size = UDim2.fromOffset(40, 30), Position = UDim2.new(0.5, 0, 0, -2), AnchorPoint = Vector2.new(0.5, 1), MaxTextSize = 30, Stroke = 3, TextColor3 = Theme.Yellow, ZIndex = 41, Parent = pointer })
+	-- "Skip": only appears after a while without progress on a first-minute step
+	skipBtn = Theme.button({ Name = "SkipStep", Key = "tut.skip", Color = Theme.Grey, Size = if touch then UDim2.fromOffset(110, 44) else UDim2.fromOffset(100, 32), Position = if touch then UDim2.new(1, 0, 1, 36) else UDim2.new(0.5, 0, 1, 40), AnchorPoint = if touch then Vector2.new(1, 0) else Vector2.new(0.5, 0), TextSize = 16, ZIndex = 45, Parent = panel, OnClick = function()
+		skipBtn.Visible = false
+		local ok = Net.request("SkipStep")
+		if not ok then
+			tracker = nil -- try again later
+		end
+	end })
+	skipBtn.Visible = false
 	local click = new("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 5, Parent = panel })
 	click.Activated:Connect(function()
 		Windows.toggle("Quests")
@@ -215,6 +296,9 @@ function QuestTracker.init()
 			if d.gems > 0 then
 				table.insert(parts, "+" .. d.gems .. " 💎")
 			end
+			if d.skipped then
+				tracker = nil
+			end
 			Toasts.banner("✔ " .. (if step then StoryText.text(step) else "") .. "   " .. table.concat(parts, "  "), Theme.Green)
 			Theme.pop(panel, 1.15)
 			local char = player.Character
@@ -231,8 +315,9 @@ function QuestTracker.init()
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
 		if hint.Visible then
-			hint.Rotation = math.sin(os.clock() * 3) * 1.5
+			hint.Rotation = math.sin(os.clock() * 3) * (if stuck >= 1 then 3 else 1.5)
 		end
+		updatePointer()
 		if acc > 1 then
 			acc = 0
 			refresh()

@@ -13,6 +13,7 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 local Fx = require(script.Parent.Fx)
 local CombatFx = require(script.Parent.CombatFx)
 local Lang = require(script.Parent.Lang)
@@ -814,8 +815,37 @@ local function rigOf(d): Rig?
 end
 CharFx.rigOf = rigOf
 
--- Big transformation moment.
-local function transformBurst(rig: Rig, form: number)
+-- Own transformation wind-up: ki gets sucked in (shrinking shells + streaks + a closing ring)
+-- while the camera dollies in, then the burst fires. Budgeted: skipped if many effects are live.
+local function transformWindup(rig: Rig, form: number, plan: any)
+	local pos = rig.root.Position
+	local c1, c2 = Fx.formColors(form)
+	local ground = Vector3.new(pos.X, pos.Y - 2.8, pos.Z)
+	rig.surge = math.max(rig.surge, 0.8)
+	Fx.zoom(plan.zoom, plan.windup)
+	Fx.sound("charge", 0.5, 0.8)
+	if Fx.alive > 120 then
+		return
+	end
+	Fx.ring(ground, 26, 3, c2, plan.windup, 0.5)
+	for i = 1, plan.shells do
+		task.delay((i - 1) * plan.windup * 0.2, function()
+			if rig.root.Parent then
+				Fx.shell(rig.root.Position, 19 - i, 3, if i % 2 == 0 then c2 else c1, plan.windup * 0.8, 0.45)
+			end
+		end)
+	end
+	for i = 1, (if Fx.lite then 6 else 12) do
+		local a = i / 12 * math.pi * 2 + math.random() * 0.5
+		local dir = Vector3.new(math.cos(a), (math.random() - 0.3) * 0.6, math.sin(a)).Unit
+		local from = pos + dir * (13 + math.random() * 4)
+		local to = pos + dir * 2.5
+		Fx.flash("block", CFrame.lookAt(from, pos), Vector3.new(0.3, 0.3, 4), c2, plan.windup * 0.85, { CFrame = CFrame.lookAt(to, pos), Size = Vector3.new(0.08, 0.08, 1), Transparency = 1 }, 0.2)
+	end
+end
+
+-- Big transformation moment. plan (own transformation only) tunes the camera + flash.
+local function transformBurst(rig: Rig, form: number, plan: any?)
 	local pos = rig.root.Position
 	local c1, c2 = Fx.formColors(form)
 	local ground = Vector3.new(pos.X, pos.Y - 2.8, pos.Z)
@@ -854,11 +884,19 @@ local function transformBurst(rig: Rig, form: number)
 	end
 	local cam = workspace.CurrentCamera
 	local dist = if cam then (cam.CFrame.Position - pos).Magnitude else 0
-	Fx.shake(math.clamp(1.6 - dist / 100, 0, 1.6))
-	if rig.char == player.Character then
-		Fx.kick(16)
+	local own = rig.char == player.Character
+	Fx.shake(if plan and own then plan.shake else math.clamp(1.6 - dist / 100, 0, 1.6))
+	if own then
+		Fx.kick(if plan then plan.kick else 16)
+		Fx.hitStop(if plan and plan.bars then 0.14 else 0.08)
+		if plan and plan.bars then
+			-- first transformation: one more, wider shockwave
+			Fx.ring(ground, 4, 60, c2, 0.8, 1.2)
+			Fx.shell(pos, 5, 36, WHITE, 0.45, 0.35)
+		end
 	end
 	Fx.sound("boom", 0.6, 0.55)
+	Fx.sound("levelup", 0.6, 1) -- hook: silent until an id is added to the audio list
 end
 
 CharFx.transformBurst = transformBurst
@@ -949,7 +987,15 @@ function CharFx.init()
 		local rig = rigOf(d)
 		if rig then
 			applyForm(rig, d.f)
-			if d.f > 0 then
+			if d.f > 0 and rig.char == player.Character then
+				local plan = Onboarding.transformPlan(Fx.lite, Fx.reduced(), Fx.firstForm == true)
+				transformWindup(rig, d.f, plan)
+				task.delay(plan.windup, function()
+					if rig.root.Parent then
+						transformBurst(rig, d.f, plan)
+					end
+				end)
+			elseif d.f > 0 then
 				transformBurst(rig, d.f)
 			else
 				Fx.shell(rig.root.Position, 5, 3, Color3.fromRGB(200, 220, 255), 0.25, 0.4)

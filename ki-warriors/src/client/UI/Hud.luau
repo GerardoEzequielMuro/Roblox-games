@@ -15,6 +15,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Net = require(script.Parent.Parent.Net)
@@ -325,6 +326,57 @@ end
 -- Top-centre: zone pill, boss bar. Centre: combo, beam meter, form title. Overlays.
 ---------------------------------------------------------------------------
 local comboAt = 0
+local punchButton: GuiObject? = nil
+local comboCallout, comboFinisher
+local comboCallGen = 0
+local comboFirstSeen = false
+comboCallout = function(text: string, color: Color3, big: boolean)
+	local label = refs.comboCall
+	comboCallGen += 1
+	local gen = comboCallGen
+	label.Text = text
+	label.TextColor3 = color
+	label.TextTransparency = 0
+	label.Visible = true
+	local stroke = label:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Transparency = 0
+	end
+	local sc = label:FindFirstChildOfClass("UIScale")
+	-- the first callout of the session is bigger: it is the "you are doing it right" moment
+	local pop = if not comboFirstSeen then 1.7 elseif big then 1.45 else 1.2
+	comboFirstSeen = true
+	sc.Scale = pop
+	TweenService:Create(sc, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	task.delay(0.7, function()
+		if gen ~= comboCallGen then
+			return
+		end
+		TweenService:Create(label, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()
+		if stroke then
+			TweenService:Create(stroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
+		end
+		task.wait(0.26)
+		if gen == comboCallGen then
+			label.Visible = false
+		end
+	end)
+end
+
+-- Combo finisher: camera micro-shake + FOV kick (both off with reduced motion), a gold ring at
+-- the feet and a few sparks. Capped by the shared effect budget.
+comboFinisher = function(tier)
+	Fx.shake(tier.shake)
+	Fx.kick(3 + tier.tier * 2)
+	Theme.play("combo", 0.5, 1 + tier.tier * 0.1)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if root and Fx.alive < 100 then
+		Fx.ring(root.Position - Vector3.new(0, 2.6, 0), 2, 9 + tier.tier * 4, Color3.fromRGB(255, 226, 90), 0.35, 0.5)
+		Fx.sparks(root.Position + Vector3.new(0, 1, 0), Color3.fromRGB(255, 200, 80), 6 + tier.tier * 3, 32, 0.5)
+	end
+end
+
 local function buildCombat()
 	-- touch: the training dock owns the top centre, so these sit lower / to the right
 	local zone = new("Frame", {
@@ -365,6 +417,17 @@ local function buildCombat()
 	Root.mount(title)
 	refs.formTitle = title
 
+	refs.formSub = Theme.text({ Name = "FormSub", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(500, 44), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 40, Stroke = 4, Visible = false, Parent = Root.gui })
+	refs.formSub.Position = UDim2.new(0.5, 0, 0.3, 70)
+	new("UIScale", { Parent = refs.formSub })
+	Root.mount(refs.formSub)
+	-- tier callout under the combo counter ("NICE!", "GREAT!"...)
+	refs.comboCall = Theme.text({ Name = "ComboCall", Text = "", Font = Theme.Comic, Size = UDim2.fromOffset(220, 34), Position = UDim2.fromOffset(0, 98), MaxTextSize = 32, Stroke = 3, Rotation = -6, Visible = false, Parent = combo })
+	new("UIScale", { Parent = refs.comboCall })
+	-- cinematic letterbox for the first transformation
+	refs.barTop = new("Frame", { Name = "BarTop", Size = UDim2.new(1, 0, 0.11, 0), Position = UDim2.new(0, 0, -0.11, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Visible = false, Parent = Root.overlay })
+	refs.barBottom = new("Frame", { Name = "BarBottom", Size = UDim2.new(1, 0, 0.11, 0), Position = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Visible = false, Parent = Root.overlay })
+
 	-- full-screen overlays (no input)
 	refs.flash = new("Frame", { Name = "Flash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.White, BackgroundTransparency = 1, BorderSizePixel = 0, Parent = Root.overlay })
 	refs.hurt = new("Frame", { Name = "Hurt", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Red, BackgroundTransparency = 1, BorderSizePixel = 0, Parent = Root.overlay }, {
@@ -378,12 +441,36 @@ end
 function Hud.flash(color: Color3, strength: number?)
 	local f = refs.flash
 	f.BackgroundColor3 = color
-	f.BackgroundTransparency = 1 - (strength or 0.7)
+	local power = strength or 0.7
+	if Fx.reduced() then
+		power *= 0.35 -- reduced motion: no full-screen white-out
+	end
+	f.BackgroundTransparency = 1 - power
 	TweenService:Create(f, TweenInfo.new(0.45), { BackgroundTransparency = 1 }):Play()
 end
 
-local function formTitle(text: string, color: Color3)
+local function formTitle(text: string, color: Color3, hold: number?, sub: string?)
 	local t = refs.formTitle
+	local gen = (t:GetAttribute("Gen") or 0) + 1
+	t:SetAttribute("Gen", gen)
+	local subLabel = refs.formSub
+	if sub and subLabel then
+		subLabel.Text = sub
+		subLabel.TextColor3 = Theme.White
+		subLabel.TextTransparency = 1
+		subLabel.Visible = true
+		local ss = subLabel:FindFirstChildOfClass("UIStroke")
+		if ss then
+			ss.Transparency = 1
+		end
+		local sc2 = subLabel:FindFirstChildOfClass("UIScale")
+		sc2.Scale = 0.6
+		TweenService:Create(subLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { TextTransparency = 0 }):Play()
+		if ss then
+			TweenService:Create(ss, TweenInfo.new(0.3), { Transparency = 0 }):Play()
+		end
+		TweenService:Create(sc2, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	end
 	t.Text = text
 	t.TextColor3 = Theme.lighten(color, 0.35)
 	t.TextTransparency = 0
@@ -395,15 +482,56 @@ local function formTitle(text: string, color: Color3)
 	local sc = t:FindFirstChildOfClass("UIScale")
 	sc.Scale = 2.2
 	TweenService:Create(sc, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-	task.delay(0.9, function()
+	task.delay(hold or 0.9, function()
+		if t:GetAttribute("Gen") ~= gen then
+			return -- a newer title took over
+		end
 		TweenService:Create(t, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
 		if st then
 			TweenService:Create(st, TweenInfo.new(0.35), { Transparency = 1 }):Play()
 		end
-		task.wait(0.36)
-		if t.TextTransparency >= 0.99 then
-			t.Visible = false
+		if subLabel and sub then
+			TweenService:Create(subLabel, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+			local ss = subLabel:FindFirstChildOfClass("UIStroke")
+			if ss then
+				TweenService:Create(ss, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+			end
 		end
+		task.wait(0.36)
+		if t:GetAttribute("Gen") == gen then
+			t.Visible = false
+			if subLabel then
+				subLabel.Visible = false
+			end
+		end
+	end)
+end
+
+-- Own transformation: letterbox + wind-up (CharFx pulls the ki in), then flash + giant title at
+-- the burst. Same timeline as CharFx (Onboarding.transformPlan). Reduced motion: no bars.
+local function transformShow(name: string, mult: number, c1: Color3, plan: any)
+	if plan.bars and not Fx.reduced() then
+		refs.barTop.Visible = true
+		refs.barBottom.Visible = true
+		TweenService:Create(refs.barTop, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Position = UDim2.new(0, 0, 0, 0) }):Play()
+		TweenService:Create(refs.barBottom, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Position = UDim2.new(0, 0, 0.89, 0) }):Play()
+		task.delay(plan.windup + plan.titleHold + 0.2, function()
+			TweenService:Create(refs.barTop, TweenInfo.new(0.4), { Position = UDim2.new(0, 0, -0.11, 0) }):Play()
+			TweenService:Create(refs.barBottom, TweenInfo.new(0.4), { Position = UDim2.new(0, 0, 1, 0) }):Play()
+			task.delay(0.45, function()
+				refs.barTop.Visible = false
+				refs.barBottom.Visible = false
+			end)
+		end)
+	end
+	task.delay(plan.windup, function()
+		Hud.flash(Theme.lighten(c1, 0.5), plan.flash)
+		formTitle(Lang.upper(name) .. "!", c1, plan.titleHold, Lang.t("form.surge", { n = Format.abbrev(mult) }))
+		Theme.play("levelup", 0.6)
+	end)
+	-- the very first one gets the long version once; later ones the short one
+	task.delay(plan.windup + plan.titleHold + 2, function()
+		Fx.firstForm = false
 	end)
 end
 
@@ -412,6 +540,49 @@ end
 ---------------------------------------------------------------------------
 local lastPower = -1
 local lastSparks, lastGems = -1, -1
+
+-- First-ever transformation = the long cinematic. Latched when the first state arrives: if the
+-- story step "Transform" is still pending then, this player has never transformed.
+local formStepIndex = 0
+for i, step in Config.Story do
+	if step.kind == "form" then
+		formStepIndex = i
+		break
+	end
+end
+local firstFormLatched = false
+local function latchFirstForm()
+	local s = Net.state
+	if firstFormLatched or not s or not s.story then
+		return
+	end
+	firstFormLatched = true
+	Fx.firstForm = formStepIndex > 0 and s.story.step <= formStepIndex and (s.forms or 0) == 0
+end
+
+-- Counters roll up to the new value (ease out) instead of jumping; reduced motion snaps.
+local rolling: { [TextLabel]: { from: number, to: number, t: number } } = {}
+local function rollTo(label: TextLabel, from: number, to: number)
+	if to <= from or Fx.reduced() or to - from < 2 then
+		rolling[label] = nil
+		label.Text = Format.abbrev(to)
+		return
+	end
+	-- continue from what is on screen, so quick successive gains do not restart from the old value
+	local cur = rolling[label]
+	rolling[label] = { from = if cur then Onboarding.rollValue(cur.from, cur.to, cur.t) else from, to = to, t = 0 }
+end
+local function rollStep(dt: number)
+	for label, r in rolling do
+		r.t += dt
+		if r.t >= 0.5 then
+			rolling[label] = nil
+			label.Text = Format.abbrev(r.to)
+		else
+			label.Text = Format.abbrev(math.floor(Onboarding.rollValue(r.from, r.to, r.t)))
+		end
+	end
+end
 
 local function refreshNumbers()
 	local s = Net.state
@@ -422,22 +593,22 @@ local function refreshNumbers()
 		if lastPower >= 0 and s.power > lastPower then
 			Theme.pop(refs.powerBox, 1.05)
 		end
+		rollTo(refs.power, math.max(lastPower, 0), s.power)
 		lastPower = s.power
-		refs.power.Text = Format.abbrev(s.power)
 	end
 	if s.sparks ~= lastSparks then
 		if lastSparks >= 0 and s.sparks > lastSparks then
 			Theme.pop(refs.SparksPill, 1.1)
 		end
+		rollTo(refs.sparks, math.max(lastSparks, 0), s.sparks)
 		lastSparks = s.sparks
-		refs.sparks.Text = Format.abbrev(s.sparks)
 	end
 	if s.gems ~= lastGems then
 		if lastGems >= 0 and s.gems > lastGems then
 			Theme.pop(refs.GemsPill, 1.1)
 		end
+		rollTo(refs.gems, math.max(lastGems, 0), s.gems)
 		lastGems = s.gems
-		refs.gems.Text = Format.abbrev(s.gems)
 	end
 	for stat, slot in statSlots do
 		slot.value.Text = Format.abbrev(s.stats[stat] or 0)
@@ -453,6 +624,7 @@ local function refreshFull()
 	if not s then
 		return
 	end
+	latchFirstForm()
 	refreshNumbers()
 	local selected = s.settings.stat
 	for stat, slot in statSlots do
@@ -570,8 +742,7 @@ local function tick()
 			refs.form.TextColor3 = Theme.lighten(c1, 0.5)
 			Theme.setBarColor(refs.kiBar, c1)
 			if not first then
-				Hud.flash(Theme.lighten(c1, 0.5), 0.75)
-				formTitle(Lang.upper(name) .. "!", c1)
+				transformShow(name, Config.Forms[form].mult, c1, Onboarding.transformPlan(Fx.lite, Fx.reduced(), Fx.firstForm == true))
 			end
 		else
 			refs.form.Text = ""
@@ -643,10 +814,17 @@ function Hud.init()
 		if kind == "combo" then
 			comboAt = os.clock()
 			if a >= 2 then
+				local tier = Onboarding.comboTier(a, C.comboFinisher)
 				refs.combo.Visible = true
 				refs.comboN.Text = "x" .. a
-				refs.comboN.TextColor3 = if a % C.comboFinisher == 0 then Theme.Red else Theme.Yellow
-				Theme.pop(refs.combo, if a % C.comboFinisher == 0 then 1.5 else 1.22)
+				refs.comboN.TextColor3 = if tier.finisher then Theme.Red elseif tier.tier >= 2 then Theme.Orange else Theme.Yellow
+				Theme.pop(refs.combo, tier.scale)
+				if tier.key then
+					comboCallout(Lang.t(tier.key), refs.comboN.TextColor3, tier.finisher)
+				end
+				if tier.finisher then
+					comboFinisher(tier)
+				end
 			end
 		elseif kind == "kill" then
 			if Hud.notify and a.b then
@@ -674,6 +852,13 @@ function Hud.init()
 				local stat = s.settings.stat
 				local gain = s.perRep[stat] or 1
 				CombatFx.damageNumber(head.Position + Vector3.new(0, 1, 0), "+" .. Format.abbrev(math.max(1, gain)) .. " " .. Config.StatInfo[stat].icon, Theme.rgb(Config.StatInfo[stat].color):Lerp(Theme.White, 0.25), true)
+				-- squash the punch button (then overshoot back): the press feels physical
+				if not punchButton or not punchButton:IsDescendantOf(Root.gui) then
+					punchButton = Root.gui:FindFirstChild(if touch then "Touch_punch" else "Slot_melee", true) :: GuiObject?
+				end
+				if punchButton then
+					Theme.pop(punchButton, 0.86)
+				end
 				local slot = statSlots[stat]
 				if slot then
 					slot.scale.Scale = 1.26
@@ -690,6 +875,7 @@ function Hud.init()
 
 	local acc = 0
 	RunService.RenderStepped:Connect(function(dt)
+		rollStep(dt)
 		cooldowns()
 		acc += dt
 		if acc >= 0.066 then

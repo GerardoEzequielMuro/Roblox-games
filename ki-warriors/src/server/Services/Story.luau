@@ -10,6 +10,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 
 local Story = {}
 
@@ -19,7 +20,7 @@ local function current(p: Data.Profile): any
 	return Config.Story[p.story.step]
 end
 
-local complete: (Player, Data.Profile) -> ()
+local complete: (Player, Data.Profile, boolean?) -> ()
 
 -- Steps that are "reach a value" are checked against the current state.
 local function evaluate(player: Player, p: Data.Profile)
@@ -55,21 +56,26 @@ local function evaluate(player: Player, p: Data.Profile)
 	end
 end
 
-complete = function(player: Player, p: Data.Profile)
+complete = function(player: Player, p: Data.Profile, skipped: boolean?)
 	local step = current(p)
 	if not step then
 		return
 	end
 	local index = p.story.step
-	if step.sparks and step.sparks > 0 then
-		State.addSparks(player, step.sparks, false)
+	local sparks, gems = step.sparks or 0, step.gems or 0
+	if skipped then
+		-- a skipped tutorial step pays nothing: rewards stay tied to doing the thing
+		sparks, gems = 0, 0
 	end
-	if step.gems and step.gems > 0 then
-		State.addGems(player, step.gems)
+	if sparks > 0 then
+		State.addSparks(player, sparks, false)
+	end
+	if gems > 0 then
+		State.addGems(player, gems)
 	end
 	p.story.step = index + 1
 	p.story.progress = 0
-	Remotes.fire("Quests", player, { storyDone = index, sparks = step.sparks or 0, gems = step.gems or 0 })
+	Remotes.fire("Quests", player, { storyDone = index, sparks = sparks, gems = gems, skipped = skipped == true })
 	Hooks.fire("storyStep", player, index)
 	State.dirty(player)
 	-- the next step may already be satisfied (e.g. "reach 150 power")
@@ -100,7 +106,21 @@ function Story.onJoin(player: Player)
 	end
 end
 
+-- Tutorial escape hatch: lets a stuck player move on (first steps only, no reward).
+function Story.skip(player: Player): boolean
+	local p = Data.get(player)
+	local step = p and current(p)
+	if not p or not step or not Onboarding.canSkip(p.story.step, step.kind, Config.TutorialSteps) then
+		return false
+	end
+	complete(player, p, true)
+	return true
+end
+
 function Story.init()
+	Remotes.handle("SkipStep", function(player: Player, _payload: any)
+		return Story.skip(player), nil
+	end)
 	Hooks.on("reps", function(player: Player, n: number, _stat: string, zone: string)
 		add(player, "reps", n)
 		add(player, "zone", n, function(step)

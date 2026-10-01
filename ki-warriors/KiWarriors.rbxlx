@@ -2382,6 +2382,17 @@ return {
 	["goal.rebirth"] = "Aufstieg Nr. {n} bei {power} Kraft",
 	["rewards.streak"] = "Serie: {n} Tage in Folge",
 	["toast.form_rare"] = "{player} hat die Form {form} erreicht!",
+	["tut.skip"] = "Überspringen",
+	["combo.start"] = "KOMBO!",
+	["combo.t1"] = "GUT!",
+	["combo.t2"] = "SUPER!",
+	["combo.t3"] = "UNAUFHALTSAM!",
+	["form.surge"] = "x{n} KRAFT",
+	["load.loading"] = "Lädt...",
+	["load.tip1"] = "Schlag zu, um zu trainieren: jeder Treffer macht dich stärker.",
+	["load.tip2"] = "Lade dein Ki auf, um stärkere Attacken zu entfesseln.",
+	["load.tip3"] = "Deine erste Verwandlung ist näher, als du denkst.",
+	["load.tip4"] = "Gewichte vervielfachen jeden Schlag.",
 }
 ]]></string>
           </Properties>
@@ -2876,6 +2887,17 @@ return {
 	["goal.rebirth"] = "Ascension #{n} at {power} power",
 	["rewards.streak"] = "Streak: {n} days in a row",
 	["toast.form_rare"] = "{player} reached the {form} form!",
+	["tut.skip"] = "Skip",
+	["combo.start"] = "COMBO!",
+	["combo.t1"] = "NICE!",
+	["combo.t2"] = "GREAT!",
+	["combo.t3"] = "UNSTOPPABLE!",
+	["form.surge"] = "x{n} POWER",
+	["load.loading"] = "Loading...",
+	["load.tip1"] = "Punch to train: every hit makes you stronger.",
+	["load.tip2"] = "Charge your ki to unleash stronger moves.",
+	["load.tip3"] = "Your first transformation is closer than you think.",
+	["load.tip4"] = "Weights multiply every punch.",
 }
 ]]></string>
           </Properties>
@@ -3369,6 +3391,17 @@ return {
 	["goal.rebirth"] = "Ascensión #{n} a {power} de poder",
 	["rewards.streak"] = "Racha: {n} días seguidos",
 	["toast.form_rare"] = "¡{player} alcanzó la forma {form}!",
+	["tut.skip"] = "Saltar",
+	["combo.start"] = "¡COMBO!",
+	["combo.t1"] = "¡BIEN!",
+	["combo.t2"] = "¡GENIAL!",
+	["combo.t3"] = "¡IMPARABLE!",
+	["form.surge"] = "PODER x{n}",
+	["load.loading"] = "Cargando...",
+	["load.tip1"] = "Golpea para entrenar: cada golpe te hace más fuerte.",
+	["load.tip2"] = "Cargá tu ki para lanzar técnicas más fuertes.",
+	["load.tip3"] = "Tu primera transformación está más cerca de lo que creés.",
+	["load.tip4"] = "Las pesas multiplican cada golpe.",
 }
 ]]></string>
           </Properties>
@@ -3862,6 +3895,17 @@ return {
 	["goal.rebirth"] = "Ascension n°{n} à {power} de puissance",
 	["rewards.streak"] = "Série : {n} jours d'affilée",
 	["toast.form_rare"] = "{player} a atteint la forme {form} !",
+	["tut.skip"] = "Passer",
+	["combo.start"] = "COMBO !",
+	["combo.t1"] = "BIEN !",
+	["combo.t2"] = "SUPER !",
+	["combo.t3"] = "IMPARABLE !",
+	["form.surge"] = "PUISSANCE x{n}",
+	["load.loading"] = "Chargement...",
+	["load.tip1"] = "Frappe pour t'entraîner : chaque coup te rend plus fort.",
+	["load.tip2"] = "Charge ton ki pour lancer des techniques plus fortes.",
+	["load.tip3"] = "Ta première transformation est plus proche que tu ne crois.",
+	["load.tip4"] = "Les poids multiplient chaque coup.",
 }
 ]]></string>
           </Properties>
@@ -4355,6 +4399,17 @@ return {
 	["goal.rebirth"] = "Ascension #{n} di {power} kekuatan",
 	["rewards.streak"] = "Beruntun: {n} hari berturut-turut",
 	["toast.form_rare"] = "{player} mencapai wujud {form}!",
+	["tut.skip"] = "Lewati",
+	["combo.start"] = "KOMBO!",
+	["combo.t1"] = "BAGUS!",
+	["combo.t2"] = "KEREN!",
+	["combo.t3"] = "TAK TERHENTIKAN!",
+	["form.surge"] = "KEKUATAN x{n}",
+	["load.loading"] = "Memuat...",
+	["load.tip1"] = "Pukul untuk berlatih: tiap pukulan membuatmu lebih kuat.",
+	["load.tip2"] = "Isi ki-mu untuk jurus yang lebih kuat.",
+	["load.tip3"] = "Transformasi pertamamu lebih dekat dari dugaanmu.",
+	["load.tip4"] = "Beban melipatgandakan setiap pukulan.",
 }
 ]]></string>
           </Properties>
@@ -4848,6 +4903,17 @@ return {
 	["goal.rebirth"] = "昇天 #{n}（パワー {power}）",
 	["rewards.streak"] = "連続ログイン：{n}日",
 	["toast.form_rare"] = "{player}が{form}形態に到達！",
+	["tut.skip"] = "スキップ",
+	["combo.start"] = "コンボ!",
+	["combo.t1"] = "いいね!",
+	["combo.t2"] = "すごい!",
+	["combo.t3"] = "止まらない!",
+	["form.surge"] = "パワー x{n}",
+	["load.loading"] = "読み込み中...",
+	["load.tip1"] = "パンチで修行: 一発ごとに強くなる。",
+	["load.tip2"] = "気をためて、より強い技を放とう。",
+	["load.tip3"] = "最初の変身はもうすぐ。",
+	["load.tip4"] = "おもりでパンチが何倍にも。",
 }
 ]]></string>
           </Properties>
@@ -5341,6 +5407,17 @@ return {
 	["goal.rebirth"] = "승천 #{n} ({power} 전투력)",
 	["rewards.streak"] = "연속 접속: {n}일",
 	["toast.form_rare"] = "{player}님이 {form} 폼에 도달!",
+	["tut.skip"] = "건너뛰기",
+	["combo.start"] = "콤보!",
+	["combo.t1"] = "좋아요!",
+	["combo.t2"] = "대단해요!",
+	["combo.t3"] = "멈출 수 없다!",
+	["form.surge"] = "파워 x{n}",
+	["load.loading"] = "불러오는 중...",
+	["load.tip1"] = "펀치로 수련하세요: 한 대마다 강해집니다.",
+	["load.tip2"] = "기를 모아 더 강한 기술을 쓰세요.",
+	["load.tip3"] = "첫 변신이 생각보다 가까워요.",
+	["load.tip4"] = "웨이트는 모든 펀치를 배로 만듭니다.",
 }
 ]]></string>
           </Properties>
@@ -5834,6 +5911,17 @@ return {
 	["goal.rebirth"] = "Ascensão #{n} com {power} de poder",
 	["rewards.streak"] = "Sequência: {n} dias seguidos",
 	["toast.form_rare"] = "{player} alcançou a forma {form}!",
+	["tut.skip"] = "Pular",
+	["combo.start"] = "COMBO!",
+	["combo.t1"] = "BOA!",
+	["combo.t2"] = "ÓTIMO!",
+	["combo.t3"] = "IMPARÁVEL!",
+	["form.surge"] = "PODER x{n}",
+	["load.loading"] = "Carregando...",
+	["load.tip1"] = "Soque para treinar: cada golpe te deixa mais forte.",
+	["load.tip2"] = "Carregue seu ki para liberar golpes mais fortes.",
+	["load.tip3"] = "Sua primeira transformação está mais perto do que você pensa.",
+	["load.tip4"] = "Os pesos multiplicam cada soco.",
 }
 ]]></string>
           </Properties>
@@ -6327,6 +6415,17 @@ return {
 	["goal.rebirth"] = "Вознесение №{n} на {power} силы",
 	["rewards.streak"] = "Серия: {n} дней подряд",
 	["toast.form_rare"] = "{player} достиг формы {form}!",
+	["tut.skip"] = "Пропустить",
+	["combo.start"] = "КОМБО!",
+	["combo.t1"] = "ХОРОШО!",
+	["combo.t2"] = "ОТЛИЧНО!",
+	["combo.t3"] = "НЕУДЕРЖИМ!",
+	["form.surge"] = "МОЩЬ x{n}",
+	["load.loading"] = "Загрузка...",
+	["load.tip1"] = "Бей, чтобы тренироваться: каждый удар делает сильнее.",
+	["load.tip2"] = "Заряжай ки, чтобы применять сильные приёмы.",
+	["load.tip3"] = "Первое превращение ближе, чем кажется.",
+	["load.tip4"] = "Утяжелители умножают каждый удар.",
 }
 ]]></string>
           </Properties>
@@ -6820,6 +6919,17 @@ return {
 	["goal.rebirth"] = "การก้าวข้ามครั้งที่ {n} ที่พลัง {power}",
 	["rewards.streak"] = "เข้าเกมต่อเนื่อง {n} วัน",
 	["toast.form_rare"] = "{player} ปลดล็อกร่าง {form}!",
+	["tut.skip"] = "ข้าม",
+	["combo.start"] = "คอมโบ!",
+	["combo.t1"] = "ดี!",
+	["combo.t2"] = "เยี่ยม!",
+	["combo.t3"] = "หยุดไม่อยู่!",
+	["form.surge"] = "พลัง x{n}",
+	["load.loading"] = "กำลังโหลด...",
+	["load.tip1"] = "ต่อยเพื่อฝึก ทุกหมัดทำให้แกร่งขึ้น",
+	["load.tip2"] = "ชาร์จคิเพื่อปล่อยท่าที่แรงขึ้น",
+	["load.tip3"] = "การแปลงร่างครั้งแรกอยู่ใกล้กว่าที่คิด",
+	["load.tip4"] = "ตุ้มน้ำหนักเพิ่มพลังทุกหมัด",
 }
 ]]></string>
           </Properties>
@@ -7313,6 +7423,17 @@ return {
 	["goal.rebirth"] = "{n}. yükselme: {power} güçte",
 	["rewards.streak"] = "Seri: üst üste {n} gün",
 	["toast.form_rare"] = "{player} {form} formuna ulaştı!",
+	["tut.skip"] = "Atla",
+	["combo.start"] = "KOMBO!",
+	["combo.t1"] = "İYİ!",
+	["combo.t2"] = "HARİKA!",
+	["combo.t3"] = "DURDURULAMAZ!",
+	["form.surge"] = "x{n} GÜÇ",
+	["load.loading"] = "Yükleniyor...",
+	["load.tip1"] = "Antrenman için yumruk at: her vuruş seni güçlendirir.",
+	["load.tip2"] = "Daha güçlü hareketler için ki'ni şarj et.",
+	["load.tip3"] = "İlk dönüşümün sandığından yakın.",
+	["load.tip4"] = "Ağırlıklar her yumruğu katlar.",
 }
 ]]></string>
           </Properties>
@@ -7806,6 +7927,17 @@ return {
 	["goal.rebirth"] = "Thăng thiên #{n} ở {power} sức mạnh",
 	["rewards.streak"] = "Chuỗi: {n} ngày liên tiếp",
 	["toast.form_rare"] = "{player} đạt dạng {form}!",
+	["tut.skip"] = "Bỏ qua",
+	["combo.start"] = "COMBO!",
+	["combo.t1"] = "TỐT!",
+	["combo.t2"] = "TUYỆT!",
+	["combo.t3"] = "KHÔNG THỂ CẢN!",
+	["form.surge"] = "SỨC MẠNH x{n}",
+	["load.loading"] = "Đang tải...",
+	["load.tip1"] = "Đấm để luyện tập: mỗi cú đấm làm bạn mạnh hơn.",
+	["load.tip2"] = "Nạp ki để tung chiêu mạnh hơn.",
+	["load.tip3"] = "Lần biến hình đầu tiên gần hơn bạn nghĩ.",
+	["load.tip4"] = "Tạ nhân lên mỗi cú đấm.",
 }
 ]]></string>
           </Properties>
@@ -8079,6 +8211,153 @@ return {
       </Item>
       <Item class="ModuleScript" referent="29">
         <Properties>
+          <string name="Name">Onboarding</string>
+          <string name="Source"><![CDATA[--!strict
+-- First-session logic that needs no Roblox APIs (so tests/onboarding_check.luau can run it):
+-- tutorial skip rules + "stuck" detection, loading-screen progress, counter roll-up easing,
+-- combo tiers and the transformation timeline.
+local Onboarding = {}
+
+---------------------------------------------------------------------------
+-- Tutorial: skippable, never a soft-lock
+---------------------------------------------------------------------------
+-- Steps that can be skipped (no reward). Rewards stay tied to doing the thing, so skipping can
+-- not be farmed: it only exists to get a stuck / confused player moving.
+local SKIPPABLE: { [string]: boolean } = { reps = true, charge = true, blasts = true, fly = true, defeat = true, gear = true, power = true, zone = true }
+Onboarding.SKIP_EXTRA = 3 -- steps after Config.TutorialSteps that still show a "how" hint
+Onboarding.STUCK_HINT = 20 -- seconds without progress: make the hint louder
+Onboarding.STUCK_SKIP = 45 -- seconds without progress: offer "Skip"
+
+function Onboarding.canSkip(index: number, kind: string, tutorialSteps: number): boolean
+	return index >= 1 and index <= tutorialSteps + Onboarding.SKIP_EXTRA and SKIPPABLE[kind] == true
+end
+
+-- 0 = fine, 1 = loud hint, 2 = loud hint + Skip button.
+function Onboarding.stuckLevel(idle: number): number
+	if idle >= Onboarding.STUCK_SKIP then
+		return 2
+	elseif idle >= Onboarding.STUCK_HINT then
+		return 1
+	end
+	return 0
+end
+
+-- Name of the HUD button the tutorial step points at (pulsing ring + arrow). nil = nothing to
+-- point at (the world is the target: the guide beam handles it).
+local POINTERS: { [string]: { string? } } = {
+	-- kind = { pc, touch }
+	reps = { "Slot_melee", "Touch_punch" },
+	charge = { "Slot_charge", "Touch_charge" },
+	blasts = { "Slot_blast", "Touch_blast" },
+	fly = { "Slot_fly", "Touch_fly" },
+	gear = { "Gear", "Gear" },
+	power = { "Slot_melee", "Touch_punch" }, -- keep punching
+	form = { "Slot_form", "Touch_form" },
+	beam = { "Slot_beam", "Touch_beam" },
+}
+function Onboarding.pointerName(kind: string, touch: boolean): string?
+	local p = POINTERS[kind]
+	return if p then p[if touch then 2 else 1] else nil
+end
+
+export type Tracker = { step: number, progress: number, since: number }
+-- Idle clock of the current step: resets whenever the step or its progress changes (so a
+-- player who is punching is never "stuck", and a rejoin starts fresh at the saved step).
+function Onboarding.track(t: Tracker?, step: number, progress: number, now: number): (Tracker, number)
+	if not t or t.step ~= step or t.progress ~= progress then
+		local fresh: Tracker = { step = step, progress = progress, since = now }
+		return fresh, 0
+	end
+	return t, math.max(0, now - t.since)
+end
+
+---------------------------------------------------------------------------
+-- Loading screen: never blocks for more than maxSeconds
+---------------------------------------------------------------------------
+Onboarding.LOAD_MIN = 0.7 -- shortest time on screen (so it does not flicker)
+Onboarding.LOAD_MAX = 4 -- hard cap, whatever failed to load
+
+-- stages: list of booleans (remotes ready, state received, character spawned...).
+-- Returns the bar fraction (always moves forward with time) and whether to close.
+function Onboarding.loadingProgress(elapsed: number, stages: { boolean }, maxSeconds: number?): (number, boolean)
+	local cap = maxSeconds or Onboarding.LOAD_MAX
+	local done = 0
+	for _, ok in stages do
+		if ok then
+			done += 1
+		end
+	end
+	local real = if #stages == 0 then 1 else done / #stages
+	local timed = math.clamp(elapsed / cap, 0, 1)
+	-- the bar mixes real stages and a slow clock, but only reaches 1 when we are really closing
+	local frac = math.max(real * 0.92, timed * 0.8)
+	local close = elapsed >= cap or (real >= 1 and elapsed >= Onboarding.LOAD_MIN)
+	if close then
+		frac = 1
+	end
+	return math.clamp(frac, 0, 1), close
+end
+
+---------------------------------------------------------------------------
+-- Juice
+---------------------------------------------------------------------------
+-- Rolling counter: value shown t seconds after the target changed (ease out cubic).
+function Onboarding.rollValue(from: number, to: number, t: number, duration: number?): number
+	local d = duration or 0.5
+	if t >= d or from == to then
+		return to
+	end
+	local a = math.clamp(t / d, 0, 1)
+	local e = 1 - (1 - a) ^ 3
+	return from + (to - from) * e
+end
+
+export type ComboTier = { tier: number, finisher: boolean, scale: number, shake: number, key: string? }
+-- n = hits in the chain, finisher = Config.Combat.comboFinisher (every Nth hit is the big one).
+function Onboarding.comboTier(n: number, finisher: number): ComboTier
+	local isFinisher = n >= finisher and n % finisher == 0
+	local tier = if n >= finisher * 3 then 3 elseif n >= finisher * 2 then 2 elseif n >= 3 then 1 else 0
+	local out: ComboTier = { tier = tier, finisher = isFinisher, scale = 1.15 + tier * 0.1, shake = 0, key = nil }
+	if isFinisher then
+		out.scale = 1.5 + tier * 0.1
+		out.shake = 0.5 + tier * 0.15
+		out.key = if tier >= 3 then "combo.t3" elseif tier == 2 then "combo.t2" else "combo.t1"
+	elseif n == 3 then
+		out.key = "combo.start"
+	end
+	return out
+end
+
+export type TransformPlan = { windup: number, zoom: number, kick: number, shake: number, bars: boolean, flash: number, shells: number, titleHold: number }
+-- Timeline of the player's own transformation. reduced = shake setting off: no camera motion
+-- and a softer flash. lite = phones: fewer shells, no letterbox motion cost.
+function Onboarding.transformPlan(lite: boolean, reduced: boolean, first: boolean): TransformPlan
+	local plan: TransformPlan = {
+		windup = if first then 0.55 else 0.3,
+		zoom = if first then -9 else -5,
+		kick = if first then 24 else 16,
+		shake = if first then 1.5 else 1.1,
+		bars = first,
+		flash = if first then 0.85 else 0.65,
+		shells = if lite then 2 else 4,
+		titleHold = if first then 1.5 else 0.9,
+	}
+	if reduced then
+		plan.zoom = 0
+		plan.kick = 0
+		plan.shake = 0
+		plan.flash = plan.flash * 0.4
+		plan.windup = math.min(plan.windup, 0.3)
+	end
+	return plan
+end
+
+return Onboarding
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="30">
+        <Properties>
           <string name="Name">Quests</string>
           <string name="Source"><![CDATA[--!strict
 -- Daily quests (pure; unit-tested with luau.exe). Everyone gets the same quest kinds on a
@@ -8127,7 +8406,7 @@ return Quests
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="30">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">Referral</string>
           <string name="Source"><![CDATA[--!strict
@@ -8155,7 +8434,7 @@ return Referral
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="31">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">Seeds</string>
           <string name="Source"><![CDATA[--!strict
@@ -8243,15 +8522,15 @@ return Seeds
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="32">
+  <Item class="ServerScriptService" referent="33">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="33">
+    <Item class="Folder" referent="34">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="Script" referent="34">
+      <Item class="Script" referent="35">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -8386,11 +8665,11 @@ end
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="35">
+      <Item class="Folder" referent="36">
         <Properties>
           <string name="Name">Services</string>
         </Properties>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">Arena</string>
             <string name="Source"><![CDATA[--!strict
@@ -8655,7 +8934,7 @@ return Arena
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">Auras</string>
             <string name="Source"><![CDATA[--!strict
@@ -8789,7 +9068,7 @@ return Auras
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Auto</string>
             <string name="Source"><![CDATA[--!strict
@@ -8934,7 +9213,7 @@ return Auto
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Combat</string>
             <string name="Source"><![CDATA[--!strict
@@ -9674,7 +9953,7 @@ return Combat
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Cosmetics</string>
             <string name="Source"><![CDATA[--!strict
@@ -9793,7 +10072,7 @@ return Cosmetics
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Data</string>
             <string name="Source"><![CDATA[--!strict
@@ -10324,7 +10603,7 @@ return Data
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">Fighters</string>
             <string name="Source"><![CDATA[--!strict
@@ -10791,7 +11070,7 @@ return Fighters
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Guard</string>
             <string name="Source"><![CDATA[--!strict
@@ -10885,7 +11164,7 @@ return Guard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Hooks</string>
             <string name="Source"><![CDATA[--!strict
@@ -10922,7 +11201,7 @@ return Hooks
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Items</string>
             <string name="Source"><![CDATA[--!strict
@@ -11068,7 +11347,7 @@ return Items
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -11307,7 +11586,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">LiveEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -11450,7 +11729,7 @@ return LiveEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">Monetization</string>
             <string name="Source"><![CDATA[--!strict
@@ -11776,7 +12055,7 @@ return Monetization
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">Npcs</string>
             <string name="Source"><![CDATA[--!strict
@@ -12381,7 +12660,7 @@ return Npcs
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="50">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">Offline</string>
             <string name="Source"><![CDATA[--!strict
@@ -12486,7 +12765,7 @@ return Offline
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">Progression</string>
             <string name="Source"><![CDATA[--!strict
@@ -12696,7 +12975,7 @@ return Progression
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">QuestService</string>
             <string name="Source"><![CDATA[--!strict
@@ -12892,7 +13171,7 @@ return QuestService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">Relics</string>
             <string name="Source"><![CDATA[--!strict
@@ -13081,7 +13360,7 @@ return Relics
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="54">
+        <Item class="ModuleScript" referent="55">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -13144,6 +13423,7 @@ local ACTION_COOLDOWN: { [string]: number } = {
 	EquipSkin = 0.25,
 	EquipMount = 0.25,
 	UseSeed = 0.2,
+	SkipStep = 1,
 }
 local lastCall: { [Player]: { [string]: number } } = {}
 
@@ -13218,7 +13498,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="55">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">Rewards</string>
             <string name="Source"><![CDATA[--!strict
@@ -13426,7 +13706,7 @@ return Rewards
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="56">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">Season</string>
             <string name="Source"><![CDATA[--!strict
@@ -13688,7 +13968,7 @@ return Season
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="57">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">Social</string>
             <string name="Source"><![CDATA[--!strict
@@ -13926,7 +14206,7 @@ return Social
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="58">
+        <Item class="ModuleScript" referent="59">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -14253,7 +14533,7 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="60">
           <Properties>
             <string name="Name">Story</string>
             <string name="Source"><![CDATA[--!strict
@@ -14268,6 +14548,7 @@ local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 
 local Story = {}
 
@@ -14277,7 +14558,7 @@ local function current(p: Data.Profile): any
 	return Config.Story[p.story.step]
 end
 
-local complete: (Player, Data.Profile) -> ()
+local complete: (Player, Data.Profile, boolean?) -> ()
 
 -- Steps that are "reach a value" are checked against the current state.
 local function evaluate(player: Player, p: Data.Profile)
@@ -14313,21 +14594,26 @@ local function evaluate(player: Player, p: Data.Profile)
 	end
 end
 
-complete = function(player: Player, p: Data.Profile)
+complete = function(player: Player, p: Data.Profile, skipped: boolean?)
 	local step = current(p)
 	if not step then
 		return
 	end
 	local index = p.story.step
-	if step.sparks and step.sparks > 0 then
-		State.addSparks(player, step.sparks, false)
+	local sparks, gems = step.sparks or 0, step.gems or 0
+	if skipped then
+		-- a skipped tutorial step pays nothing: rewards stay tied to doing the thing
+		sparks, gems = 0, 0
 	end
-	if step.gems and step.gems > 0 then
-		State.addGems(player, step.gems)
+	if sparks > 0 then
+		State.addSparks(player, sparks, false)
+	end
+	if gems > 0 then
+		State.addGems(player, gems)
 	end
 	p.story.step = index + 1
 	p.story.progress = 0
-	Remotes.fire("Quests", player, { storyDone = index, sparks = step.sparks or 0, gems = step.gems or 0 })
+	Remotes.fire("Quests", player, { storyDone = index, sparks = sparks, gems = gems, skipped = skipped == true })
 	Hooks.fire("storyStep", player, index)
 	State.dirty(player)
 	-- the next step may already be satisfied (e.g. "reach 150 power")
@@ -14358,7 +14644,21 @@ function Story.onJoin(player: Player)
 	end
 end
 
+-- Tutorial escape hatch: lets a stuck player move on (first steps only, no reward).
+function Story.skip(player: Player): boolean
+	local p = Data.get(player)
+	local step = p and current(p)
+	if not p or not step or not Onboarding.canSkip(p.story.step, step.kind, Config.TutorialSteps) then
+		return false
+	end
+	complete(player, p, true)
+	return true
+end
+
 function Story.init()
+	Remotes.handle("SkipStep", function(player: Player, _payload: any)
+		return Story.skip(player), nil
+	end)
 	Hooks.on("reps", function(player: Player, n: number, _stat: string, zone: string)
 		add(player, "reps", n)
 		add(player, "zone", n, function(step)
@@ -14428,7 +14728,7 @@ return Story
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="61">
           <Properties>
             <string name="Name">Training</string>
             <string name="Source"><![CDATA[--!strict
@@ -14640,7 +14940,7 @@ return Training
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="62">
           <Properties>
             <string name="Name">Validate</string>
             <string name="Source"><![CDATA[--!strict
@@ -14833,7 +15133,7 @@ return Validate
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="62">
+        <Item class="ModuleScript" referent="63">
           <Properties>
             <string name="Name">WorldBoss</string>
             <string name="Source"><![CDATA[--!strict
@@ -15008,11 +15308,11 @@ return WorldBoss
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="63">
+      <Item class="Folder" referent="64">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="64">
+        <Item class="ModuleScript" referent="65">
           <Properties>
             <string name="Name">ModelSlots</string>
             <string name="Source"><![CDATA[--!strict
@@ -15167,7 +15467,7 @@ return ModelSlots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="65">
+        <Item class="ModuleScript" referent="66">
           <Properties>
             <string name="Name">WorldBuilder</string>
             <string name="Source"><![CDATA[--!strict
@@ -16928,31 +17228,31 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="ServerStorage" referent="66">
+  <Item class="ServerStorage" referent="67">
     <Properties>
       <string name="Name">ServerStorage</string>
     </Properties>
-    <Item class="Folder" referent="67">
+    <Item class="Folder" referent="68">
       <Properties>
         <string name="Name">ModelLibrary</string>
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="68">
+  <Item class="StarterPlayer" referent="69">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">60</float>
       <float name="CameraMinZoomDistance">6</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="69">
+    <Item class="StarterPlayerScripts" referent="70">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="70">
+      <Item class="Folder" referent="71">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="71">
+        <Item class="ModuleScript" referent="72">
           <Properties>
             <string name="Name">Ads</string>
             <string name="Source"><![CDATA[--!strict
@@ -17024,7 +17324,7 @@ return Ads
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="72">
+        <Item class="ModuleScript" referent="73">
           <Properties>
             <string name="Name">CharFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -17042,6 +17342,7 @@ local RunService = game:GetService("RunService")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 local Fx = require(script.Parent.Fx)
 local CombatFx = require(script.Parent.CombatFx)
 local Lang = require(script.Parent.Lang)
@@ -17843,8 +18144,37 @@ local function rigOf(d): Rig?
 end
 CharFx.rigOf = rigOf
 
--- Big transformation moment.
-local function transformBurst(rig: Rig, form: number)
+-- Own transformation wind-up: ki gets sucked in (shrinking shells + streaks + a closing ring)
+-- while the camera dollies in, then the burst fires. Budgeted: skipped if many effects are live.
+local function transformWindup(rig: Rig, form: number, plan: any)
+	local pos = rig.root.Position
+	local c1, c2 = Fx.formColors(form)
+	local ground = Vector3.new(pos.X, pos.Y - 2.8, pos.Z)
+	rig.surge = math.max(rig.surge, 0.8)
+	Fx.zoom(plan.zoom, plan.windup)
+	Fx.sound("charge", 0.5, 0.8)
+	if Fx.alive > 120 then
+		return
+	end
+	Fx.ring(ground, 26, 3, c2, plan.windup, 0.5)
+	for i = 1, plan.shells do
+		task.delay((i - 1) * plan.windup * 0.2, function()
+			if rig.root.Parent then
+				Fx.shell(rig.root.Position, 19 - i, 3, if i % 2 == 0 then c2 else c1, plan.windup * 0.8, 0.45)
+			end
+		end)
+	end
+	for i = 1, (if Fx.lite then 6 else 12) do
+		local a = i / 12 * math.pi * 2 + math.random() * 0.5
+		local dir = Vector3.new(math.cos(a), (math.random() - 0.3) * 0.6, math.sin(a)).Unit
+		local from = pos + dir * (13 + math.random() * 4)
+		local to = pos + dir * 2.5
+		Fx.flash("block", CFrame.lookAt(from, pos), Vector3.new(0.3, 0.3, 4), c2, plan.windup * 0.85, { CFrame = CFrame.lookAt(to, pos), Size = Vector3.new(0.08, 0.08, 1), Transparency = 1 }, 0.2)
+	end
+end
+
+-- Big transformation moment. plan (own transformation only) tunes the camera + flash.
+local function transformBurst(rig: Rig, form: number, plan: any?)
 	local pos = rig.root.Position
 	local c1, c2 = Fx.formColors(form)
 	local ground = Vector3.new(pos.X, pos.Y - 2.8, pos.Z)
@@ -17883,11 +18213,19 @@ local function transformBurst(rig: Rig, form: number)
 	end
 	local cam = workspace.CurrentCamera
 	local dist = if cam then (cam.CFrame.Position - pos).Magnitude else 0
-	Fx.shake(math.clamp(1.6 - dist / 100, 0, 1.6))
-	if rig.char == player.Character then
-		Fx.kick(16)
+	local own = rig.char == player.Character
+	Fx.shake(if plan and own then plan.shake else math.clamp(1.6 - dist / 100, 0, 1.6))
+	if own then
+		Fx.kick(if plan then plan.kick else 16)
+		Fx.hitStop(if plan and plan.bars then 0.14 else 0.08)
+		if plan and plan.bars then
+			-- first transformation: one more, wider shockwave
+			Fx.ring(ground, 4, 60, c2, 0.8, 1.2)
+			Fx.shell(pos, 5, 36, WHITE, 0.45, 0.35)
+		end
 	end
 	Fx.sound("boom", 0.6, 0.55)
+	Fx.sound("levelup", 0.6, 1) -- hook: silent until an id is added to the audio list
 end
 
 CharFx.transformBurst = transformBurst
@@ -17978,7 +18316,15 @@ function CharFx.init()
 		local rig = rigOf(d)
 		if rig then
 			applyForm(rig, d.f)
-			if d.f > 0 then
+			if d.f > 0 and rig.char == player.Character then
+				local plan = Onboarding.transformPlan(Fx.lite, Fx.reduced(), Fx.firstForm == true)
+				transformWindup(rig, d.f, plan)
+				task.delay(plan.windup, function()
+					if rig.root.Parent then
+						transformBurst(rig, d.f, plan)
+					end
+				end)
+			elseif d.f > 0 then
 				transformBurst(rig, d.f)
 			else
 				Fx.shell(rig.root.Position, 5, 3, Color3.fromRGB(200, 220, 255), 0.25, 0.4)
@@ -18056,7 +18402,7 @@ return CharFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="73">
+        <Item class="ModuleScript" referent="74">
           <Properties>
             <string name="Name">CombatFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -18487,7 +18833,7 @@ return CombatFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="74">
+        <Item class="ModuleScript" referent="75">
           <Properties>
             <string name="Name">Controls</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19024,7 +19370,7 @@ return Controls
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="75">
+        <Item class="ModuleScript" referent="76">
           <Properties>
             <string name="Name">Flight</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19214,7 +19560,7 @@ return Flight
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="76">
+        <Item class="ModuleScript" referent="77">
           <Properties>
             <string name="Name">Fx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19483,9 +19829,27 @@ function Fx.shake(amount: number)
 	shake = math.min(1.6, math.max(shake, amount))
 end
 function Fx.kick(amount: number)
+	if Net.setting("shake") == false then
+		return
+	end
 	fovKick = math.max(fovKick, amount)
 end
+-- "Reduced motion": the player turned camera shake off. Camera moves, big flashes and zooms
+-- are skipped or softened wherever this is checked.
+function Fx.reduced(): boolean
+	return Net.setting("shake") == false
+end
+-- Smooth FOV dolly (negative = zoom in) that eases in over `inTime` and back out over `outTime`.
+local zoomNow, zoomGoal, zoomHoldUntil = 0, 0, 0
+function Fx.zoom(delta: number, hold: number)
+	if Fx.reduced() then
+		return
+	end
+	zoomGoal = delta
+	zoomHoldUntil = os.clock() + hold
+end
 Fx.fovBoost = 0 -- sustained (flight boost), set by Flight
+Fx.firstForm = false -- set by the HUD while the player has never transformed (bigger show)
 
 -- Hit-stop: a very short freeze of local animation (poses / enemy models / shots) that sells
 -- the impact. Other modules read Fx.frozen().
@@ -19515,7 +19879,14 @@ RunService:BindToRenderStep("KiwCamera", Enum.RenderPriority.Camera.Value + 1, f
 		end
 	end
 	fovKick = math.max(0, fovKick - dt * 40)
-	local want = baseFov + fovKick + Fx.fovBoost
+	if zoomGoal ~= 0 and os.clock() > zoomHoldUntil then
+		zoomGoal = 0
+	end
+	zoomNow += (zoomGoal - zoomNow) * math.min(1, dt * (if zoomGoal ~= 0 then 6 else 12))
+	if math.abs(zoomNow) < 0.01 and zoomGoal == 0 then
+		zoomNow = 0
+	end
+	local want = baseFov + fovKick + Fx.fovBoost + zoomNow
 	if cam.CameraType ~= Enum.CameraType.Scriptable and math.abs(cam.FieldOfView - want) > 0.05 then
 		cam.FieldOfView += (want - cam.FieldOfView) * math.min(1, dt * 10)
 	end
@@ -19559,7 +19930,7 @@ return Fx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="77">
+        <Item class="ModuleScript" referent="78">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -19679,13 +20050,230 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="78">
+        <Item class="ModuleScript" referent="79">
+          <Properties>
+            <string name="Name">Loading</string>
+            <string name="Source"><![CDATA[--!nonstrict
+-- Branded loading screen: game name, one tip and a progress bar. It is only an overlay (the
+-- game keeps loading under it) and it closes by itself after Onboarding.LOAD_MAX seconds no
+-- matter what failed to load. Everything is pcall'd: this module can never stop the client.
+-- It depends on nothing but Locale / Config / Onboarding (not on Net or Lang, which wait for the
+-- server remotes), so it appears at once.
+local LocalizationService = game:GetService("LocalizationService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local Locale = require(ReplicatedStorage.Shared.Locale)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
+
+local Loading = {}
+
+local TIPS = { "load.tip1", "load.tip2", "load.tip3", "load.tip4" }
+local GOLD = Color3.fromRGB(255, 214, 80)
+
+local function languageCode(): string
+	local player = Players.LocalPlayer
+	local okRoblox, roblox = pcall(function()
+		return LocalizationService.RobloxLocaleId
+	end)
+	return Locale.resolveFirst(player.LocaleId, if okRoblox then roblox else nil)
+end
+
+local function build(lang: string): (ScreenGui, TextLabel, Frame, Frame)
+	local gui = Instance.new("ScreenGui")
+	gui.Name = "KiWarriorsLoading"
+	gui.IgnoreGuiInset = true
+	gui.ResetOnSpawn = false
+	gui.DisplayOrder = 100
+	gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+	local bg = Instance.new("Frame")
+	bg.Name = "Backdrop"
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.BackgroundColor3 = Color3.new(1, 1, 1)
+	bg.BorderSizePixel = 0
+	bg.Active = true -- eats clicks while it is up
+	bg.Parent = gui
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new(Color3.fromRGB(34, 20, 70), Color3.fromRGB(12, 10, 28))
+	grad.Rotation = 90
+	grad.Parent = bg
+
+	local title = Instance.new("TextLabel")
+	title.Name = "Title"
+	title.BackgroundTransparency = 1
+	title.Size = UDim2.new(0.8, 0, 0.22, 0)
+	title.Position = UDim2.fromScale(0.5, 0.34)
+	title.AnchorPoint = Vector2.new(0.5, 0.5)
+	title.Font = Enum.Font.Bangers
+	title.Text = string.upper(Config.GameName)
+	title.TextColor3 = GOLD
+	title.TextScaled = true
+	title.Parent = bg
+	local cap = Instance.new("UITextSizeConstraint")
+	cap.MaxTextSize = 96
+	cap.MinTextSize = 24
+	cap.Parent = title
+	local stroke = Instance.new("UIStroke")
+	stroke.Thickness = 5
+	stroke.Color = Color3.fromRGB(60, 24, 20)
+	stroke.Parent = title
+	local pulse = Instance.new("UIScale")
+	pulse.Parent = title
+	TweenService:Create(pulse, TweenInfo.new(0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.04 }):Play()
+
+	local tip = Instance.new("TextLabel")
+	tip.Name = "Tip"
+	tip.BackgroundTransparency = 1
+	tip.Size = UDim2.new(0.7, 0, 0.08, 0)
+	tip.Position = UDim2.fromScale(0.5, 0.56)
+	tip.AnchorPoint = Vector2.new(0.5, 0.5)
+	tip.Font = Enum.Font.GothamMedium
+	tip.Text = Locale.t(lang, TIPS[(os.time() % #TIPS) + 1])
+	tip.TextColor3 = Color3.fromRGB(235, 235, 255)
+	tip.TextScaled = true
+	tip.TextWrapped = true
+	tip.Parent = bg
+	local tipCap = Instance.new("UITextSizeConstraint")
+	tipCap.MaxTextSize = 26
+	tipCap.MinTextSize = 13
+	tipCap.Parent = tip
+
+	local track = Instance.new("Frame")
+	track.Name = "Track"
+	track.Size = UDim2.new(0.42, 0, 0, 14)
+	track.Position = UDim2.fromScale(0.5, 0.7)
+	track.AnchorPoint = Vector2.new(0.5, 0.5)
+	track.BackgroundColor3 = Color3.fromRGB(10, 8, 24)
+	track.BorderSizePixel = 0
+	track.Parent = bg
+	local trackCorner = Instance.new("UICorner")
+	trackCorner.CornerRadius = UDim.new(0, 7)
+	trackCorner.Parent = track
+	local trackStroke = Instance.new("UIStroke")
+	trackStroke.Thickness = 2
+	trackStroke.Color = Color3.fromRGB(255, 255, 255)
+	trackStroke.Transparency = 0.6
+	trackStroke.Parent = track
+	local fill = Instance.new("Frame")
+	fill.Name = "Fill"
+	fill.Size = UDim2.fromScale(0.02, 1)
+	fill.BackgroundColor3 = GOLD
+	fill.BorderSizePixel = 0
+	fill.Parent = track
+	local fillCorner = Instance.new("UICorner")
+	fillCorner.CornerRadius = UDim.new(0, 7)
+	fillCorner.Parent = fill
+
+	local label = Instance.new("TextLabel")
+	label.Name = "Status"
+	label.BackgroundTransparency = 1
+	label.Size = UDim2.new(0.42, 0, 0, 24)
+	label.Position = UDim2.new(0.5, 0, 0.7, 24)
+	label.AnchorPoint = Vector2.new(0.5, 0)
+	label.Font = Enum.Font.GothamBold
+	label.Text = Locale.t(lang, "load.loading")
+	label.TextColor3 = Color3.fromRGB(190, 190, 225)
+	label.TextScaled = true
+	label.Parent = bg
+	local labelCap = Instance.new("UITextSizeConstraint")
+	labelCap.MaxTextSize = 18
+	labelCap.MinTextSize = 11
+	labelCap.Parent = label
+
+	gui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
+	return gui, label, fill, bg
+end
+
+function Loading.start()
+	local okBuild, gui, _status, fill, bg = pcall(function()
+		local g, l, f, b = build(languageCode())
+		return g, l, f, b
+	end)
+	if not okBuild then
+		return -- no loading screen is better than a broken client
+	end
+	local player = Players.LocalPlayer
+	local netModule: any = nil
+	local t0 = os.clock()
+	local shown = 0
+	local closing = false
+	local conn: RBXScriptConnection
+	conn = RunService.Heartbeat:Connect(function(dt)
+		if closing then
+			return
+		end
+		local elapsed = os.clock() - t0
+		-- stages are plain checks, each guarded: a missing piece only delays the bar, the
+		-- hard cap still closes the screen
+		if not netModule and ReplicatedStorage:FindFirstChild("Remotes") then
+			local ok, m = pcall(function()
+				return require(script.Parent.Net)
+			end)
+			if ok then
+				netModule = m
+			end
+		end
+		local char = player.Character
+		local stages = {
+			ReplicatedStorage:FindFirstChild("Remotes") ~= nil,
+			netModule ~= nil and netModule.state ~= nil,
+			char ~= nil and char:FindFirstChild("HumanoidRootPart") ~= nil,
+		}
+		local frac, close = Onboarding.loadingProgress(elapsed, stages)
+		shown += (frac - shown) * math.min(1, dt * 8)
+		if fill.Parent then
+			fill.Size = UDim2.fromScale(math.max(0.02, shown), 1)
+		end
+		if close then
+			closing = true
+			conn:Disconnect()
+			fill.Size = UDim2.fromScale(1, 1)
+			local info = TweenInfo.new(0.4, Enum.EasingStyle.Quad)
+			pcall(function()
+				TweenService:Create(bg, info, { BackgroundTransparency = 1 }):Play()
+				for _, d in bg:GetDescendants() do
+					if d:IsA("TextLabel") then
+						TweenService:Create(d, info, { TextTransparency = 1 }):Play()
+					elseif d:IsA("Frame") then
+						TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play()
+					elseif d:IsA("UIStroke") then
+						TweenService:Create(d, info, { Transparency = 1 }):Play()
+					end
+				end
+			end)
+			task.delay(0.45, function()
+				gui:Destroy()
+			end)
+		end
+	end)
+	-- belt and braces: even if Heartbeat never ran, the screen is gone after the cap
+	task.delay(Onboarding.LOAD_MAX + 2, function()
+		if gui.Parent then
+			gui:Destroy()
+		end
+	end)
+end
+
+return Loading
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="LocalScript" referent="80">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!nonstrict
 -- Ki Warriors: client bootstrap.
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+-- Branded loading overlay first: it needs nothing from the server and closes itself in a few seconds.
+pcall(function()
+	require(script.Parent.Loading).start()
+end)
 
 ReplicatedStorage:WaitForChild("Remotes")
 
@@ -19745,7 +20333,7 @@ end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="79">
+        <Item class="ModuleScript" referent="81">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -19861,7 +20449,7 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="80">
+        <Item class="ModuleScript" referent="82">
           <Properties>
             <string name="Name">NpcRender</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -20375,7 +20963,7 @@ return NpcRender
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="81">
+        <Item class="ModuleScript" referent="83">
           <Properties>
             <string name="Name">Purchase</string>
             <string name="Source"><![CDATA[--!strict
@@ -20426,7 +21014,7 @@ return Purchase
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="82">
+        <Item class="ModuleScript" referent="84">
           <Properties>
             <string name="Name">RelicsClient</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -20665,7 +21253,7 @@ return RelicsClient
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="83">
+        <Item class="ModuleScript" referent="85">
           <Properties>
             <string name="Name">StoryText</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -20696,7 +21284,8 @@ end
 
 -- One-line "how" for the tutorial steps, by device.
 function StoryText.hint(step, touch: boolean): string?
-	local key = "hint." .. step.kind .. (if touch then ".touch" else ".pc")
+	local kind = if step.kind == "power" then "reps" else step.kind -- "reach power": keep punching
+	local key = "hint." .. kind .. (if touch then ".touch" else ".pc")
 	local text = Lang.t(key)
 	return if text ~= key then text else nil
 end
@@ -20754,11 +21343,11 @@ return StoryText
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="84">
+        <Item class="Folder" referent="86">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">EventsHud</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21018,7 +21607,7 @@ return EventsHud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21038,6 +21627,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Net = require(script.Parent.Parent.Net)
@@ -21348,6 +21938,57 @@ end
 -- Top-centre: zone pill, boss bar. Centre: combo, beam meter, form title. Overlays.
 ---------------------------------------------------------------------------
 local comboAt = 0
+local punchButton: GuiObject? = nil
+local comboCallout, comboFinisher
+local comboCallGen = 0
+local comboFirstSeen = false
+comboCallout = function(text: string, color: Color3, big: boolean)
+	local label = refs.comboCall
+	comboCallGen += 1
+	local gen = comboCallGen
+	label.Text = text
+	label.TextColor3 = color
+	label.TextTransparency = 0
+	label.Visible = true
+	local stroke = label:FindFirstChildOfClass("UIStroke")
+	if stroke then
+		stroke.Transparency = 0
+	end
+	local sc = label:FindFirstChildOfClass("UIScale")
+	-- the first callout of the session is bigger: it is the "you are doing it right" moment
+	local pop = if not comboFirstSeen then 1.7 elseif big then 1.45 else 1.2
+	comboFirstSeen = true
+	sc.Scale = pop
+	TweenService:Create(sc, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	task.delay(0.7, function()
+		if gen ~= comboCallGen then
+			return
+		end
+		TweenService:Create(label, TweenInfo.new(0.25), { TextTransparency = 1 }):Play()
+		if stroke then
+			TweenService:Create(stroke, TweenInfo.new(0.25), { Transparency = 1 }):Play()
+		end
+		task.wait(0.26)
+		if gen == comboCallGen then
+			label.Visible = false
+		end
+	end)
+end
+
+-- Combo finisher: camera micro-shake + FOV kick (both off with reduced motion), a gold ring at
+-- the feet and a few sparks. Capped by the shared effect budget.
+comboFinisher = function(tier)
+	Fx.shake(tier.shake)
+	Fx.kick(3 + tier.tier * 2)
+	Theme.play("combo", 0.5, 1 + tier.tier * 0.1)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart")
+	if root and Fx.alive < 100 then
+		Fx.ring(root.Position - Vector3.new(0, 2.6, 0), 2, 9 + tier.tier * 4, Color3.fromRGB(255, 226, 90), 0.35, 0.5)
+		Fx.sparks(root.Position + Vector3.new(0, 1, 0), Color3.fromRGB(255, 200, 80), 6 + tier.tier * 3, 32, 0.5)
+	end
+end
+
 local function buildCombat()
 	-- touch: the training dock owns the top centre, so these sit lower / to the right
 	local zone = new("Frame", {
@@ -21388,6 +22029,17 @@ local function buildCombat()
 	Root.mount(title)
 	refs.formTitle = title
 
+	refs.formSub = Theme.text({ Name = "FormSub", Text = "", Font = Theme.Display, Size = UDim2.fromOffset(500, 44), Position = UDim2.fromScale(0.5, 0.3), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 40, Stroke = 4, Visible = false, Parent = Root.gui })
+	refs.formSub.Position = UDim2.new(0.5, 0, 0.3, 70)
+	new("UIScale", { Parent = refs.formSub })
+	Root.mount(refs.formSub)
+	-- tier callout under the combo counter ("NICE!", "GREAT!"...)
+	refs.comboCall = Theme.text({ Name = "ComboCall", Text = "", Font = Theme.Comic, Size = UDim2.fromOffset(220, 34), Position = UDim2.fromOffset(0, 98), MaxTextSize = 32, Stroke = 3, Rotation = -6, Visible = false, Parent = combo })
+	new("UIScale", { Parent = refs.comboCall })
+	-- cinematic letterbox for the first transformation
+	refs.barTop = new("Frame", { Name = "BarTop", Size = UDim2.new(1, 0, 0.11, 0), Position = UDim2.new(0, 0, -0.11, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Visible = false, Parent = Root.overlay })
+	refs.barBottom = new("Frame", { Name = "BarBottom", Size = UDim2.new(1, 0, 0.11, 0), Position = UDim2.new(0, 0, 1, 0), BackgroundColor3 = Color3.new(0, 0, 0), BorderSizePixel = 0, Visible = false, Parent = Root.overlay })
+
 	-- full-screen overlays (no input)
 	refs.flash = new("Frame", { Name = "Flash", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.White, BackgroundTransparency = 1, BorderSizePixel = 0, Parent = Root.overlay })
 	refs.hurt = new("Frame", { Name = "Hurt", Size = UDim2.fromScale(1, 1), BackgroundColor3 = Theme.Red, BackgroundTransparency = 1, BorderSizePixel = 0, Parent = Root.overlay }, {
@@ -21401,12 +22053,36 @@ end
 function Hud.flash(color: Color3, strength: number?)
 	local f = refs.flash
 	f.BackgroundColor3 = color
-	f.BackgroundTransparency = 1 - (strength or 0.7)
+	local power = strength or 0.7
+	if Fx.reduced() then
+		power *= 0.35 -- reduced motion: no full-screen white-out
+	end
+	f.BackgroundTransparency = 1 - power
 	TweenService:Create(f, TweenInfo.new(0.45), { BackgroundTransparency = 1 }):Play()
 end
 
-local function formTitle(text: string, color: Color3)
+local function formTitle(text: string, color: Color3, hold: number?, sub: string?)
 	local t = refs.formTitle
+	local gen = (t:GetAttribute("Gen") or 0) + 1
+	t:SetAttribute("Gen", gen)
+	local subLabel = refs.formSub
+	if sub and subLabel then
+		subLabel.Text = sub
+		subLabel.TextColor3 = Theme.White
+		subLabel.TextTransparency = 1
+		subLabel.Visible = true
+		local ss = subLabel:FindFirstChildOfClass("UIStroke")
+		if ss then
+			ss.Transparency = 1
+		end
+		local sc2 = subLabel:FindFirstChildOfClass("UIScale")
+		sc2.Scale = 0.6
+		TweenService:Create(subLabel, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { TextTransparency = 0 }):Play()
+		if ss then
+			TweenService:Create(ss, TweenInfo.new(0.3), { Transparency = 0 }):Play()
+		end
+		TweenService:Create(sc2, TweenInfo.new(0.35, Enum.EasingStyle.Back), { Scale = 1 }):Play()
+	end
 	t.Text = text
 	t.TextColor3 = Theme.lighten(color, 0.35)
 	t.TextTransparency = 0
@@ -21418,15 +22094,56 @@ local function formTitle(text: string, color: Color3)
 	local sc = t:FindFirstChildOfClass("UIScale")
 	sc.Scale = 2.2
 	TweenService:Create(sc, TweenInfo.new(0.22, Enum.EasingStyle.Back), { Scale = 1 }):Play()
-	task.delay(0.9, function()
+	task.delay(hold or 0.9, function()
+		if t:GetAttribute("Gen") ~= gen then
+			return -- a newer title took over
+		end
 		TweenService:Create(t, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
 		if st then
 			TweenService:Create(st, TweenInfo.new(0.35), { Transparency = 1 }):Play()
 		end
-		task.wait(0.36)
-		if t.TextTransparency >= 0.99 then
-			t.Visible = false
+		if subLabel and sub then
+			TweenService:Create(subLabel, TweenInfo.new(0.35), { TextTransparency = 1 }):Play()
+			local ss = subLabel:FindFirstChildOfClass("UIStroke")
+			if ss then
+				TweenService:Create(ss, TweenInfo.new(0.35), { Transparency = 1 }):Play()
+			end
 		end
+		task.wait(0.36)
+		if t:GetAttribute("Gen") == gen then
+			t.Visible = false
+			if subLabel then
+				subLabel.Visible = false
+			end
+		end
+	end)
+end
+
+-- Own transformation: letterbox + wind-up (CharFx pulls the ki in), then flash + giant title at
+-- the burst. Same timeline as CharFx (Onboarding.transformPlan). Reduced motion: no bars.
+local function transformShow(name: string, mult: number, c1: Color3, plan: any)
+	if plan.bars and not Fx.reduced() then
+		refs.barTop.Visible = true
+		refs.barBottom.Visible = true
+		TweenService:Create(refs.barTop, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Position = UDim2.new(0, 0, 0, 0) }):Play()
+		TweenService:Create(refs.barBottom, TweenInfo.new(0.3, Enum.EasingStyle.Quad), { Position = UDim2.new(0, 0, 0.89, 0) }):Play()
+		task.delay(plan.windup + plan.titleHold + 0.2, function()
+			TweenService:Create(refs.barTop, TweenInfo.new(0.4), { Position = UDim2.new(0, 0, -0.11, 0) }):Play()
+			TweenService:Create(refs.barBottom, TweenInfo.new(0.4), { Position = UDim2.new(0, 0, 1, 0) }):Play()
+			task.delay(0.45, function()
+				refs.barTop.Visible = false
+				refs.barBottom.Visible = false
+			end)
+		end)
+	end
+	task.delay(plan.windup, function()
+		Hud.flash(Theme.lighten(c1, 0.5), plan.flash)
+		formTitle(Lang.upper(name) .. "!", c1, plan.titleHold, Lang.t("form.surge", { n = Format.abbrev(mult) }))
+		Theme.play("levelup", 0.6)
+	end)
+	-- the very first one gets the long version once; later ones the short one
+	task.delay(plan.windup + plan.titleHold + 2, function()
+		Fx.firstForm = false
 	end)
 end
 
@@ -21435,6 +22152,49 @@ end
 ---------------------------------------------------------------------------
 local lastPower = -1
 local lastSparks, lastGems = -1, -1
+
+-- First-ever transformation = the long cinematic. Latched when the first state arrives: if the
+-- story step "Transform" is still pending then, this player has never transformed.
+local formStepIndex = 0
+for i, step in Config.Story do
+	if step.kind == "form" then
+		formStepIndex = i
+		break
+	end
+end
+local firstFormLatched = false
+local function latchFirstForm()
+	local s = Net.state
+	if firstFormLatched or not s or not s.story then
+		return
+	end
+	firstFormLatched = true
+	Fx.firstForm = formStepIndex > 0 and s.story.step <= formStepIndex and (s.forms or 0) == 0
+end
+
+-- Counters roll up to the new value (ease out) instead of jumping; reduced motion snaps.
+local rolling: { [TextLabel]: { from: number, to: number, t: number } } = {}
+local function rollTo(label: TextLabel, from: number, to: number)
+	if to <= from or Fx.reduced() or to - from < 2 then
+		rolling[label] = nil
+		label.Text = Format.abbrev(to)
+		return
+	end
+	-- continue from what is on screen, so quick successive gains do not restart from the old value
+	local cur = rolling[label]
+	rolling[label] = { from = if cur then Onboarding.rollValue(cur.from, cur.to, cur.t) else from, to = to, t = 0 }
+end
+local function rollStep(dt: number)
+	for label, r in rolling do
+		r.t += dt
+		if r.t >= 0.5 then
+			rolling[label] = nil
+			label.Text = Format.abbrev(r.to)
+		else
+			label.Text = Format.abbrev(math.floor(Onboarding.rollValue(r.from, r.to, r.t)))
+		end
+	end
+end
 
 local function refreshNumbers()
 	local s = Net.state
@@ -21445,22 +22205,22 @@ local function refreshNumbers()
 		if lastPower >= 0 and s.power > lastPower then
 			Theme.pop(refs.powerBox, 1.05)
 		end
+		rollTo(refs.power, math.max(lastPower, 0), s.power)
 		lastPower = s.power
-		refs.power.Text = Format.abbrev(s.power)
 	end
 	if s.sparks ~= lastSparks then
 		if lastSparks >= 0 and s.sparks > lastSparks then
 			Theme.pop(refs.SparksPill, 1.1)
 		end
+		rollTo(refs.sparks, math.max(lastSparks, 0), s.sparks)
 		lastSparks = s.sparks
-		refs.sparks.Text = Format.abbrev(s.sparks)
 	end
 	if s.gems ~= lastGems then
 		if lastGems >= 0 and s.gems > lastGems then
 			Theme.pop(refs.GemsPill, 1.1)
 		end
+		rollTo(refs.gems, math.max(lastGems, 0), s.gems)
 		lastGems = s.gems
-		refs.gems.Text = Format.abbrev(s.gems)
 	end
 	for stat, slot in statSlots do
 		slot.value.Text = Format.abbrev(s.stats[stat] or 0)
@@ -21476,6 +22236,7 @@ local function refreshFull()
 	if not s then
 		return
 	end
+	latchFirstForm()
 	refreshNumbers()
 	local selected = s.settings.stat
 	for stat, slot in statSlots do
@@ -21593,8 +22354,7 @@ local function tick()
 			refs.form.TextColor3 = Theme.lighten(c1, 0.5)
 			Theme.setBarColor(refs.kiBar, c1)
 			if not first then
-				Hud.flash(Theme.lighten(c1, 0.5), 0.75)
-				formTitle(Lang.upper(name) .. "!", c1)
+				transformShow(name, Config.Forms[form].mult, c1, Onboarding.transformPlan(Fx.lite, Fx.reduced(), Fx.firstForm == true))
 			end
 		else
 			refs.form.Text = ""
@@ -21666,10 +22426,17 @@ function Hud.init()
 		if kind == "combo" then
 			comboAt = os.clock()
 			if a >= 2 then
+				local tier = Onboarding.comboTier(a, C.comboFinisher)
 				refs.combo.Visible = true
 				refs.comboN.Text = "x" .. a
-				refs.comboN.TextColor3 = if a % C.comboFinisher == 0 then Theme.Red else Theme.Yellow
-				Theme.pop(refs.combo, if a % C.comboFinisher == 0 then 1.5 else 1.22)
+				refs.comboN.TextColor3 = if tier.finisher then Theme.Red elseif tier.tier >= 2 then Theme.Orange else Theme.Yellow
+				Theme.pop(refs.combo, tier.scale)
+				if tier.key then
+					comboCallout(Lang.t(tier.key), refs.comboN.TextColor3, tier.finisher)
+				end
+				if tier.finisher then
+					comboFinisher(tier)
+				end
 			end
 		elseif kind == "kill" then
 			if Hud.notify and a.b then
@@ -21697,6 +22464,13 @@ function Hud.init()
 				local stat = s.settings.stat
 				local gain = s.perRep[stat] or 1
 				CombatFx.damageNumber(head.Position + Vector3.new(0, 1, 0), "+" .. Format.abbrev(math.max(1, gain)) .. " " .. Config.StatInfo[stat].icon, Theme.rgb(Config.StatInfo[stat].color):Lerp(Theme.White, 0.25), true)
+				-- squash the punch button (then overshoot back): the press feels physical
+				if not punchButton or not punchButton:IsDescendantOf(Root.gui) then
+					punchButton = Root.gui:FindFirstChild(if touch then "Touch_punch" else "Slot_melee", true) :: GuiObject?
+				end
+				if punchButton then
+					Theme.pop(punchButton, 0.86)
+				end
 				local slot = statSlots[stat]
 				if slot then
 					slot.scale.Scale = 1.26
@@ -21713,6 +22487,7 @@ function Hud.init()
 
 	local acc = 0
 	RunService.RenderStepped:Connect(function(dt)
+		rollStep(dt)
 		cooldowns()
 		acc += dt
 		if acc >= 0.066 then
@@ -21726,7 +22501,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="87">
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21908,7 +22683,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="88">
+          <Item class="ModuleScript" referent="90">
             <Properties>
               <string name="Name">Menu</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22146,7 +22921,7 @@ return Menu
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="89">
+          <Item class="ModuleScript" referent="91">
             <Properties>
               <string name="Name">Panels1</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22441,7 +23216,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="90">
+          <Item class="ModuleScript" referent="92">
             <Properties>
               <string name="Name">Panels2</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -23073,7 +23848,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="91">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Panels3</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -23327,7 +24102,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="92">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">QuestTracker</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -23342,6 +24117,7 @@ local TweenService = game:GetService("TweenService")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Goals = require(ReplicatedStorage.Shared.Goals)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Toasts = require(script.Parent.Toasts)
@@ -23446,6 +24222,60 @@ QuestTracker.guideTarget = function(): Vector3?
 	return if guidePart then guidePart.Position else nil
 end
 
+-- HUD pointer: pulsing ring + bobbing arrow on the button the tutorial step asks for. It
+-- follows the real GuiObject every frame and hides itself if that button is missing / hidden,
+-- so a layout change can never leave a dangling arrow.
+local pointer: Frame
+local pointerArrow: TextLabel
+local pointerStroke: UIStroke
+local pointerName: string? = nil
+local stuck = 0 -- Onboarding.stuckLevel of the current step
+local tracker: Onboarding.Tracker? = nil
+local skipBtn: TextButton
+
+local cached: GuiObject? = nil
+local cachedName: string? = nil
+local cachedAt = 0
+local function findTarget(name: string): GuiObject?
+	local now = os.clock()
+	-- the recursive search runs at most once a second (the HUD can be rebuilt by a language switch)
+	if cachedName ~= name or not cached or not cached:IsDescendantOf(Root.gui) or now - cachedAt > 1 then
+		cachedName, cachedAt = name, now
+		local found = Root.gui:FindFirstChild(name, true)
+		cached = if found and found:IsA("GuiObject") then found else nil
+	end
+	local c = cached
+	if c and c.Visible and c.AbsoluteSize.X > 4 then
+		return c
+	end
+	return nil
+end
+
+local function updatePointer()
+	local target = if pointerName then findTarget(pointerName) else nil
+	if not target then
+		pointer.Visible = false
+		return
+	end
+	local origin = Root.gui.AbsolutePosition
+	local pos = target.AbsolutePosition - origin
+	local size = target.AbsoluteSize
+	local pad = 8
+	pointer.Position = UDim2.fromOffset(pos.X - pad, pos.Y - pad)
+	pointer.Size = UDim2.fromOffset(size.X + pad * 2, size.Y + pad * 2)
+	pointer.Visible = true
+	local t = os.clock()
+	local loud = stuck >= 1
+	pointerStroke.Thickness = if loud then 5 else 3.5
+	pointerStroke.Transparency = 0.1 + (math.sin(t * 6) * 0.5 + 0.5) * 0.4
+	-- arrow above the button (below it when the button hugs the top of the screen)
+	local below = pos.Y < 70
+	pointerArrow.Text = if below then "▲" else "▼"
+	local bob = math.sin(t * 7) * 5
+	pointerArrow.Position = if below then UDim2.new(0.5, 0, 1, 2 + bob) else UDim2.new(0.5, 0, 0, -2 - bob)
+	pointerArrow.AnchorPoint = if below then Vector2.new(0.5, 0) else Vector2.new(0.5, 1)
+end
+
 local function refresh()
 	local s = Net.state
 	if not s or not s.story then
@@ -23461,6 +24291,8 @@ local function refresh()
 		setBar(goal.frac, Format.abbrev(goal.have) .. " / " .. Format.abbrev(goal.need))
 		reward.Text = ""
 		hint.Visible = false
+		pointerName = nil
+		skipBtn.Visible = false
 		clearGuide()
 		return
 	end
@@ -23478,6 +24310,17 @@ local function refresh()
 	local h = if s.story.step <= Config.TutorialSteps + 3 then StoryText.hint(step, touch) else nil
 	hint.Text = h or ""
 	hint.Visible = h ~= nil
+	pointerName = if h ~= nil then Onboarding.pointerName(step.kind, touch) else nil
+	-- idle clock: resets on any progress, so only a really stuck player sees the Skip button
+	local idle
+	tracker, idle = Onboarding.track(tracker, s.story.step, s.story.progress, os.clock())
+	stuck = Onboarding.stuckLevel(idle)
+	skipBtn.Visible = stuck >= 2 and Onboarding.canSkip(s.story.step, step.kind, Config.TutorialSteps)
+	if stuck >= 1 and h ~= nil then
+		hint.TextColor3 = Color3.fromRGB(255, 255, 255)
+	else
+		hint.TextColor3 = Theme.Yellow
+	end
 	setGuide(StoryText.target(step))
 end
 
@@ -23509,6 +24352,19 @@ function QuestTracker.init()
 		_bar, setBar = Theme.bar({ Name = "Progress", Size = UDim2.new(1, -20, 0, 12), Position = UDim2.new(0, 10, 1, -16), Color = Theme.Yellow, TextSize = 10, Stroke = 1.5, Corner = 5, Parent = panel })
 		hint = Theme.text({ Name = "Hint", Text = "", Size = UDim2.fromOffset(560, 30), Position = UDim2.new(0.5, 0, 1, 6), AnchorPoint = Vector2.new(0.5, 0), MaxTextSize = 22, Stroke = 3, TextColor3 = Theme.Yellow, TextXAlignment = Enum.TextXAlignment.Center, Parent = panel })
 	end
+	-- pointer ring over the HUD button the step wants (starts hidden)
+	pointer = new("Frame", { Name = "TutorialPointer", BackgroundTransparency = 1, Visible = false, ZIndex = 40, Parent = Root.gui }, { Theme.corner(14) })
+	pointerStroke = new("UIStroke", { Color = Theme.Yellow, Thickness = 3.5, Parent = pointer })
+	pointerArrow = Theme.text({ Name = "Arrow", Text = "▼", Size = UDim2.fromOffset(40, 30), Position = UDim2.new(0.5, 0, 0, -2), AnchorPoint = Vector2.new(0.5, 1), MaxTextSize = 30, Stroke = 3, TextColor3 = Theme.Yellow, ZIndex = 41, Parent = pointer })
+	-- "Skip": only appears after a while without progress on a first-minute step
+	skipBtn = Theme.button({ Name = "SkipStep", Key = "tut.skip", Color = Theme.Grey, Size = if touch then UDim2.fromOffset(110, 44) else UDim2.fromOffset(100, 32), Position = if touch then UDim2.new(1, 0, 1, 36) else UDim2.new(0.5, 0, 1, 40), AnchorPoint = if touch then Vector2.new(1, 0) else Vector2.new(0.5, 0), TextSize = 16, ZIndex = 45, Parent = panel, OnClick = function()
+		skipBtn.Visible = false
+		local ok = Net.request("SkipStep")
+		if not ok then
+			tracker = nil -- try again later
+		end
+	end })
+	skipBtn.Visible = false
 	local click = new("TextButton", { Size = UDim2.fromScale(1, 1), BackgroundTransparency = 1, Text = "", ZIndex = 5, Parent = panel })
 	click.Activated:Connect(function()
 		Windows.toggle("Quests")
@@ -23547,6 +24403,9 @@ function QuestTracker.init()
 			if d.gems > 0 then
 				table.insert(parts, "+" .. d.gems .. " 💎")
 			end
+			if d.skipped then
+				tracker = nil
+			end
 			Toasts.banner("✔ " .. (if step then StoryText.text(step) else "") .. "   " .. table.concat(parts, "  "), Theme.Green)
 			Theme.pop(panel, 1.15)
 			local char = player.Character
@@ -23563,8 +24422,9 @@ function QuestTracker.init()
 	RunService.Heartbeat:Connect(function(dt)
 		acc += dt
 		if hint.Visible then
-			hint.Rotation = math.sin(os.clock() * 3) * 1.5
+			hint.Rotation = math.sin(os.clock() * 3) * (if stuck >= 1 then 3 else 1.5)
 		end
+		updatePointer()
 		if acc > 1 then
 			acc = 0
 			refresh()
@@ -23579,7 +24439,7 @@ return QuestTracker
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="93">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">Root</string>
               <string name="Source"><![CDATA[--!strict
@@ -23711,7 +24571,7 @@ return Root
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="94">
+          <Item class="ModuleScript" referent="96">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -24186,7 +25046,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="95">
+          <Item class="ModuleScript" referent="97">
             <Properties>
               <string name="Name">Toasts</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -24327,7 +25187,7 @@ return Toasts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="96">
+          <Item class="ModuleScript" referent="98">
             <Properties>
               <string name="Name">TouchControls</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -24552,7 +25412,7 @@ return TouchControls
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="97">
+          <Item class="ModuleScript" referent="99">
             <Properties>
               <string name="Name">Windows</string>
               <string name="Source"><![CDATA[--!strict
@@ -24815,7 +25675,7 @@ return Windows
             </Properties>
           </Item>
         </Item>
-        <Item class="ModuleScript" referent="98">
+        <Item class="ModuleScript" referent="100">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -25093,7 +25953,7 @@ return WorldFx
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="99">
+  <Item class="Workspace" referent="101">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="FallenPartsDestroyHeight">-400</float>

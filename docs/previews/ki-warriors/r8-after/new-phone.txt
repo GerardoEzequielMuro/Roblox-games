@@ -1,0 +1,7 @@
+# uipreview ki-warriors state=new screen=phone (844x390, touch)
+# image: new-phone.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (0)
+
+## Runtime log (0)

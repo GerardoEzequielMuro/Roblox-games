@@ -346,3 +346,30 @@ Auditoría de anti-exploit y seguridad de guardado, asumiendo que cada cliente e
 - Los pasos de historia "cargar ki", "volar" y "dash" se completan con un toque: spamear el toggle los acelera (una sola vez por paso, valor casi nulo).
 - El umbral de velocidad (`SPEED_SLACK = 1,4`, capacidad en `Guard.luau`) está razonado, no medido: con lag extremo podría corregir de más. Mirar `Guard.count(player)` en Studio con latencia simulada.
 - Nunca corrí el flujo de compra real ni el DataStore real (sin Studio): los reintentos y el chequeo de presupuesto están verificados solo por tipos y por lectura.
+
+## Ronda 8: primera sesión y game feel
+
+### Recorrido de los primeros 2 minutos
+**Antes:** spawn -> HUD completo de una -> tracker "Punch 10 times" + "Click to punch!" -> 4 pasos de tutorial (cargar ki, 3 blasts, volar, 3 thornlings) con rayo guía solo hacia enemigos/zonas. Sin pantalla de carga propia, sin indicación de *qué botón* tocar, sin salida si el jugador se trababa (el único "skip" era jugar). Transformación: flash + título + burst instantáneos, combos sin distinción entre golpe 2 y golpe 12.
+**Ahora:** pantalla de carga con marca (máx. 4 s) -> tracker + anillo pulsante con flecha sobre el botón exacto del paso (puño, carga, blast, vuelo, pesas, forma) -> si pasan 20 s sin progreso el hint se vuelve blanco y más nervioso, a los 45 s aparece "Skip" (sin recompensa) -> primer combo con callout "COMBO!" grande y finisher con shake/ring -> primera transformación en cámara cinematográfica.
+
+### Qué agregué
+- `shared/Onboarding.luau` (puro): `canSkip`, `stuckLevel`, `track` (reloj de inactividad por paso), `pointerName`, `loadingProgress` (nunca pasa de 4 s), `rollValue` (easing de contadores), `comboTier`, `transformPlan` (lite / reduced / primera vez). Test: `tests/onboarding_check.luau`.
+- `client/Loading.luau`: overlay con nombre del juego, tip (4 tips, 12 idiomas) y barra. No depende de Net/Lang (aparece al instante), todo en pcall, tope duro de 4 s + red de seguridad a los 6 s. Se arranca primero en `Main.client.luau`.
+- Tutorial a prueba de soft-lock: `Story.skip` + remote `SkipStep` (cooldown 1 s) solo para pasos 1 a `TutorialSteps+3` y tipos reps/charge/blasts/fly/defeat/gear/power/zone, sin sparks ni gems (no se farmea). El progreso ya se guardaba en el perfil, así que sigue tras rejoin. Si falta el objetivo (enemigo en otro planeta, botón oculto) el rayo/anillo simplemente se esconde y el Skip queda como salida. El paso "power" reutiliza el hint de golpear.
+- `UI/QuestTracker`: anillo + flecha (sigue al GuiObject real, búsqueda recursiva cacheada 1/s), hint fuerte al trabarse, botón Skip.
+- Transformación (`CharFx` + `Hud`): wind-up propio de 0,3 s (0,55 s la primera vez en la vida: se decide al llegar el primer estado, "Transform" pendiente y 0 formas): shells que se achican, rayitas de ki hacia adentro, anillo que cierra, FOV que se mete (`Fx.zoom`). Después burst: flash, hit-stop, kick, shake, anillo extra la primera vez, letterbox (barras negras 11 %), título gigante + subtítulo "PODER xN". Sonidos como hooks (`charge`, `levelup`, `combo`) que no suenan hasta que el módulo de audio tenga ids.
+- Combos: `comboTier` escala el pop y el color (amarillo -> naranja -> rojo), callout "COMBO!/BIEN!/GENIAL!/IMPARABLE!" (el primero de la sesión más grande), finisher con shake + FOV kick + anillo dorado + chispas (tope por `Fx.alive`).
+- Contadores de poder/sparks/gems suben rodando (0,5 s, ease out); el botón de puño hace squash y rebota al pegar.
+- Reduced-motion: con "shake" apagado se saltan shake, kick, zoom, letterbox y el flash baja a 35 % (`Fx.reduced()`).
+- Locales: 11 claves nuevas en los 12 idiomas (`tut.skip`, `combo.*`, `form.surge`, `load.*`).
+
+### Qué mirar en Studio
+- Que el anillo caiga justo sobre `Slot_melee` en PC: el preview calcula `AbsolutePosition` con layout viejo y lo dibuja desplazado; en el celular (botones fijos) cae perfecto.
+- La primera transformación con un perfil nuevo (poder 1000): sensación del wind-up (¿0,55 s se hace largo?), que el `applyForm` del tick de 0,3 s no muestre el pelo/aura nuevo antes del burst, y las barras en celular.
+- Pantalla de carga en un server lento: debe cerrar sola a los 4 s aunque el estado no llegue.
+- Skip: quedarse 45 s sin pegar en el paso 1 y ver que aparece y avanza sin dar ⚡.
+- FPS en celular durante la transformación con varios jugadores cerca (los shells propios se saltean si `Fx.alive > 120`).
+
+### Verificación
+`rojo build` OK, `luau-lsp analyze` sin salida, todos los `*_check`, `security_test` y `pacing_sim` pasan, preview `--state new` pc/phone con 0 errores. Capturas en `docs/previews/ki-warriors/r8-before` y `r8-after`. No se pudo renderizar la secuencia animada (el preview es estático).

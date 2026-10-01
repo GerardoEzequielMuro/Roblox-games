@@ -58,6 +58,7 @@ local ACTION_COOLDOWN: { [string]: number } = {
 	EquipSkin = 0.25,
 	EquipMount = 0.25,
 	UseSeed = 0.2,
+	SkipStep = 1,
 }
 local lastCall: { [Player]: { [string]: number } } = {}
 

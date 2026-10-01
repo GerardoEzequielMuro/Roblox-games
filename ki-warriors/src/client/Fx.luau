@@ -264,9 +264,27 @@ function Fx.shake(amount: number)
 	shake = math.min(1.6, math.max(shake, amount))
 end
 function Fx.kick(amount: number)
+	if Net.setting("shake") == false then
+		return
+	end
 	fovKick = math.max(fovKick, amount)
 end
+-- "Reduced motion": the player turned camera shake off. Camera moves, big flashes and zooms
+-- are skipped or softened wherever this is checked.
+function Fx.reduced(): boolean
+	return Net.setting("shake") == false
+end
+-- Smooth FOV dolly (negative = zoom in) that eases in over `inTime` and back out over `outTime`.
+local zoomNow, zoomGoal, zoomHoldUntil = 0, 0, 0
+function Fx.zoom(delta: number, hold: number)
+	if Fx.reduced() then
+		return
+	end
+	zoomGoal = delta
+	zoomHoldUntil = os.clock() + hold
+end
 Fx.fovBoost = 0 -- sustained (flight boost), set by Flight
+Fx.firstForm = false -- set by the HUD while the player has never transformed (bigger show)
 
 -- Hit-stop: a very short freeze of local animation (poses / enemy models / shots) that sells
 -- the impact. Other modules read Fx.frozen().
@@ -296,7 +314,14 @@ RunService:BindToRenderStep("KiwCamera", Enum.RenderPriority.Camera.Value + 1, f
 		end
 	end
 	fovKick = math.max(0, fovKick - dt * 40)
-	local want = baseFov + fovKick + Fx.fovBoost
+	if zoomGoal ~= 0 and os.clock() > zoomHoldUntil then
+		zoomGoal = 0
+	end
+	zoomNow += (zoomGoal - zoomNow) * math.min(1, dt * (if zoomGoal ~= 0 then 6 else 12))
+	if math.abs(zoomNow) < 0.01 and zoomGoal == 0 then
+		zoomNow = 0
+	end
+	local want = baseFov + fovKick + Fx.fovBoost + zoomNow
 	if cam.CameraType ~= Enum.CameraType.Scriptable and math.abs(cam.FieldOfView - want) > 0.05 then
 		cam.FieldOfView += (want - cam.FieldOfView) * math.min(1, dt * 10)
 	end

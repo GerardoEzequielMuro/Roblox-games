@@ -26,7 +26,8 @@ end
 
 -- One-line "how" for the tutorial steps, by device.
 function StoryText.hint(step, touch: boolean): string?
-	local key = "hint." .. step.kind .. (if touch then ".touch" else ".pc")
+	local kind = if step.kind == "power" then "reps" else step.kind -- "reach power": keep punching
+	local key = "hint." .. kind .. (if touch then ".touch" else ".pc")
 	local text = Lang.t(key)
 	return if text ~= key then text else nil
 end

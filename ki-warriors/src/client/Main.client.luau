@@ -3,6 +3,11 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- Branded loading overlay first: it needs nothing from the server and closes itself in a few seconds.
+pcall(function()
+	require(script.Parent.Loading).start()
+end)
+
 ReplicatedStorage:WaitForChild("Remotes")
 
 local Net = require(script.Parent.Net)
