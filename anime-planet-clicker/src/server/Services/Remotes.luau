@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local Security = require(ReplicatedStorage.Shared.Security)
 local M = Locale.m
 
 local Remotes = {}
@@ -35,13 +36,21 @@ request.Name = "Request"
 request.Parent = folder
 
 type Handler = (player: Player, payload: any) -> (boolean, any?)
+export type Options = { interval: number?, exclusive: boolean? }
 local handlers: { [string]: Handler } = {}
-local budget: { [Player]: { tokens: number, t: number } } = {}
+local options: { [string]: Options } = {}
+local budget: { [Player]: Security.Bucket } = {}
+local guards: { [Player]: Security.Guard } = {}
 local RATE = 12 -- requests per second sustained
 local BURST = 30
 
-function Remotes.handle(action: string, fn: Handler)
+-- opts.interval: minimum seconds between two calls of this action by one player.
+-- opts.exclusive: a second call while the first still yields (web calls) is refused.
+function Remotes.handle(action: string, fn: Handler, opts: Options?)
 	handlers[action] = fn
+	if opts then
+		options[action] = opts
+	end
 end
 
 function Remotes.fire(name: string, player: Player, ...: any)
@@ -59,32 +68,45 @@ end
 
 function Remotes.forget(player: Player)
 	budget[player] = nil
+	guards[player] = nil
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any)
-	if type(action) ~= "string" then
+	if type(action) ~= "string" or #action > 40 then
 		return false, M("msg.bad_request")
 	end
-	local b = budget[player]
 	local now = os.clock()
+	local b = budget[player]
 	if not b then
-		b = { tokens = BURST, t = now }
+		b = Security.newBucket(RATE, BURST, now)
 		budget[player] = b
 	end
-	b.tokens = math.min(BURST, b.tokens + (now - b.t) * RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not Security.take(b, now) then
 		return false, M("msg.slow_down")
 	end
-	b.tokens -= 1
 	local fn = handlers[action]
 	if not fn then
 		return false, M("msg.unknown_action")
 	end
-	if payload ~= nil and type(payload) ~= "table" then
+	if payload ~= nil and (type(payload) ~= "table" or not Security.payloadOk(payload)) then
 		return false, M("msg.bad_request")
 	end
+	local opts = options[action]
+	local g: Security.Guard? = nil
+	if opts then
+		g = guards[player]
+		if not g then
+			g = Security.newGuard()
+			guards[player] = g
+		end
+		if not Security.enter(g :: Security.Guard, action, now, opts.interval, opts.exclusive) then
+			return false, M("msg.slow_down")
+		end
+	end
 	local ok, a, b2 = pcall(fn, player, payload or {})
+	if g then
+		Security.leave(g, action)
+	end
 	if not ok then
 		warn("[Remotes]", action, "error:", a)
 		return false, M("msg.error")

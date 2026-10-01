@@ -199,7 +199,7 @@ function Social.init()
 			return false, M("msg.share_unavailable")
 		end
 		return true
-	end)
+	end, { interval = 3, exclusive = true })
 
 	Remotes.handle("ClaimGroupGift", function(player)
 		local p = Data.get(player)
@@ -220,6 +220,9 @@ function Social.init()
 		if not ok or not member then
 			return false, M("msg.join_group_first")
 		end
+		if p.groupGiftClaimed or Data.get(player) ~= p then
+			return false, M("msg.already_claimed") -- claimed while the group lookup yielded
+		end
 		if not Pets.hasRoom(p, 1) then
 			return false, M("msg.free_a_slot")
 		end
@@ -227,7 +230,7 @@ function Social.init()
 		Pets.add(player, Config.GroupGiftPet, 0, true)
 		State.dirty(player)
 		return true, M("msg.group_gift", { pet = M("pet." .. Config.GroupGiftPet) })
-	end)
+	end, { exclusive = true })
 
 	State.extras.social = function(_player, p)
 		return { groupGiftClaimed = p.groupGiftClaimed, referralRewards = p.referralRewards, referredBy = p.referredBy }

@@ -270,3 +270,40 @@ Sin daily (caso pesimista): mediana de espera máxima en 2 h = 18-19 min (antes 
 ### Límites
 - Un campo no tiene geografía propia (no hay sub-zonas en el mapa): es una línea de herramientas dentro de la galaxia. Sub-zonas reales y cápsulas propias son sistemas grandes (modelos, pets, locale) y quedaron fuera.
 - Después de ~2 h siguen los huecos de 20-40 min entre Void y el rebirth 6 (cola larga); Void, slot de pets 3 y rebirths son lo único ahí.
+
+## Ronda 7: seguridad
+
+Auditoría de todo lo que el cliente puede disparar (`Request`, `Hit`, `Zap`), compras, DataStore y memoria. Helper nuevo y puro: `src/shared/Security.luau` (validadores, token bucket, guard por acción, forma del payload, sanitizado de perfil, migraciones, backoff). Tests: `tests/security_test.luau` (70 checks, `luau tests/security_test.luau`).
+
+### Vulnerabilidades
+| Sev. | Archivo:línea | Cómo se explotaba / fallaba | Arreglo |
+|---|---|---|---|
+| Alta | `Data.luau:326` (`save`) / `:390` (`release`) | Un solo `UpdateAsync` fallido al salir o al cerrar el server perdía toda la sesión (sin reintentos). | Reintentos con backoff (4 intentos al salir, 2 en autosave), espera de budget con `GetRequestBudgetForRequestType`, un save a la vez por jugador, corte rápido en Studio sin acceso. |
+| Alta | `Data.luau:415` (`BindToClose`) | Esperaba solo sus propios saves; los de `PlayerRemoving` en vuelo se cortaban al apagar el server. | Contador `inflight`; espera hasta que no quede ninguno (tope 25 s, deadline de 24 s para los reintentos). |
+| Alta | `Monetization.luau:135-200` (`ProcessReceipt`) | Roblox reintenta el mismo `PurchaseId` mientras el primero todavía guarda: el segundo veía el id en memoria y devolvía `PurchaseGranted` sin que estuviera en el DataStore. Con perfil no cargado (sin save) se entregaba y se perdía al salir. | `receiptsInFlight` por PurchaseId (`NotProcessedYet`), el camino "ya otorgado" también guarda antes de confirmar, perfil no persistente => `NotProcessedYet` (salvo Studio). |
+| Media | `Social.luau:204` (`ClaimGroupGift`) | `IsInGroupAsync` yieldea: dos llamadas en paralelo pasaban `groupGiftClaimed == false` y daban 2 pets. | `exclusive` en `Remotes.handle` + recheck después del yield. |
+| Media | `Monetization.luau:229` (`WatchAd`) | Mismo patrón: el cap diario se chequeaba antes del yield del video y se contaba después; llamadas en paralelo lo salteaban. | `exclusive` + `interval = 2`. |
+| Media | `Data.luau:350` | NaN/inf en el perfil (overflow de números enormes) hace que `UpdateAsync` tire error y el jugador nunca guarde. | `Security.sanitize` copia el perfil (NaN -> 0, inf -> 1e300, cycles/funciones fuera) en cada save y en la carga; avisa con `warn`. |
+| Media | `Data.luau:276,361` | Un server viejo podía pisar un save de una versión más nueva (rollback de deploy). Sin migraciones. | `Data.VERSION` + `Data.migrations` (`Security.migrate`); un save más nuevo (o ilegible) no se carga ni se sobreescribe. |
+| Media | `Mining.luau:355` (`Hit`), `Pvp.luau:369` (`Zap`) | Sin límite al ritmo del evento: un flood de eventos mínimos gasta CPU del server antes del bucket de hits. | Bucket por jugador (Hit 40/s ráfaga 80; Zap 8/s ráfaga 12). El bucket de hits sigue siendo `hitsPerSecond` + `HitBurst` y ahora sigue las mejoras/buffs. |
+| Media | `Remotes.luau:91` | Payload sin forma: un `Delete` con un millón de uids, strings enormes, NaN/inf, tablas profundas o con metatable. | `Security.payloadOk` central (1000 nodos, profundidad 4, strings de 200, números finitos, sin metatables/ciclos) antes de llamar a cualquier handler; `Delete` además rechaza más de 300 uids (`Pets.luau:254`). |
+| Media | `Leaderboard.luau:93` | `SetAsync` ciego: un server atrasado bajaba el puntaje; `encode` con NaN publicaba basura. | `UpdateAsync` que conserva el mejor valor, solo enteros finitos > 0, no reenvía valores sin cambios, `encode` devuelve 0 si no es finito. |
+| Media | `Rewards.luau:141` (`RedeemCode`) | Fuerza bruta de códigos hasta 12/s. | `interval = 1`. |
+| Baja | `Data.luau:405` | Autosave de todos los jugadores en el mismo instante. | 0,2 s entre jugadores. |
+| Baja | `Progression.luau:277`, `:273`; `Mining.luau:543` | `Teleport`, `Rebirth`, `GetNodes` sin cooldown propio (solo el bucket global). | `interval` 0,5 / 0,5 / 0,2 s. |
+| Baja | `Monetization.luau:258` | `PromptGamePassPurchaseFinished` sin chequeo de tipos. | Exige `purchased == true` y id numérico (el evento lo dispara el server, el cliente no lo puede falsificar). |
+| Baja | `Monetization.luau:215` (`CanBuy`) | Key de largo arbitrario. | Tope de 40 chars (además del payload central). |
+
+Total corregido: 3 altas, 8 medias, 4 bajas.
+
+### Lo que ya estaba bien (sin cambios)
+Hits: posición del personaje del server, zona desbloqueada, rango, bucket por `hitsPerSecond` (el cliente no manda daño ni plata); Auto Mine, drones, respawns y buffs corren en el server; cápsulas validan zona, distancia, cooldown, precio y espacio; todas las compras de moneda son server-side; ProcessReceipt ya guardaba antes de confirmar; los pases se cachean al entrar y se actualizan al comprar; tablas por jugador se limpian en `PlayerRemoving` (Mining, State, Remotes, QuestService, Pvp, ahora también los buckets nuevos y el cache de Leaderboard).
+
+### Qué queda
+- Referidos: el tope de por vida (`ReferralLifetimeCap`) limita el abuso, pero alguien con cuentas alt puede cobrar las recompensas hasta ese tope; ligarlo a algo costoso (edad de cuenta) es decisión de diseño.
+- Los pases comprados fuera del juego mientras estás conectado no se ven hasta el próximo join (no hay refresco periódico).
+- El lock de sesión es de tipo "soft" (TTL 150 s, toma el control en el último intento de carga); un server que cuelga más de 150 s puede ser pisado. `MessagingService`/`/event` solo para `AdminUserIds` (hoy vacío).
+- No se probó en Studio real: reintentos y budget de DataStore solo se verificaron por análisis y por el mock del preview (que no tiene DataStore).
+
+### Verificación
+`rojo build` OK, `luau-lsp analyze` sin salida, `unit` (195), `locale_check`, `check_config`, `pacing_test` (27) y `security_test` (70) pasan, preview `--state mid --screen pc` sin errores de runtime.

@@ -272,7 +272,7 @@ function Progression.init()
 
 	Remotes.handle("Rebirth", function(player)
 		return Progression.rebirth(player)
-	end)
+	end, { interval = 0.5 })
 
 	Remotes.handle("Teleport", function(player, payload)
 		local p = Data.get(player)
@@ -292,7 +292,7 @@ function Progression.init()
 		end
 		Progression.teleportTo(player, Layout.spawnPoint(zone))
 		return true
-	end)
+	end, { interval = 0.5 })
 
 	Remotes.handle("SetAuto", function(player, payload)
 		local p = Data.get(player)

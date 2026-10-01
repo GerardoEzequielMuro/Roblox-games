@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
+local Security = require(ReplicatedStorage.Shared.Security)
 
 local Data = {}
 
@@ -82,7 +83,15 @@ end
 
 Data.profiles = {} :: { [Player]: Profile }
 local loadedOk: { [Player]: boolean } = {}
+local saving: { [Player]: boolean } = {} -- one UpdateAsync per player at a time
+local inflight = 0 -- saves running right now (BindToClose waits for them)
+local closeDeadline: number? = nil -- os.clock() limit once the server is shutting down
 local LOCK_TTL = 150
+
+-- Profile layout version. A change to the shape that reconcile() cannot fill by itself gets a
+-- migration here: Data.migrations[n] upgrades a version n profile to n + 1 in place.
+Data.VERSION = 1
+Data.migrations = {} :: { [number]: (any) -> () }
 
 local function defaultProfile(): Profile
 	local upgrades = {}
@@ -98,7 +107,7 @@ local function defaultProfile(): Profile
 		relics[stat] = { grade = 0, dust = 0 }
 	end
 	local p: Profile = {
-		version = 1,
+		version = Data.VERSION,
 		stardust = 0,
 		crystals = 0,
 		totalMined = 0,
@@ -223,6 +232,23 @@ local function key(player: Player): string
 	return "u_" .. player.UserId
 end
 
+-- Waits (up to `maxWait` s) for DataStore request budget; true when there is some.
+local function waitBudget(requestType: Enum.DataStoreRequestType, maxWait: number): boolean
+	local t0 = os.clock()
+	while true do
+		local ok, budget = pcall(function()
+			return DataStoreService:GetRequestBudgetForRequestType(requestType)
+		end)
+		if not ok or budget >= 1 then
+			return true
+		end
+		if os.clock() - t0 >= maxWait then
+			return false
+		end
+		task.wait(1)
+	end
+end
+
 function Data.load(player: Player): Profile
 	if not storeOk or not store then
 		local p = defaultProfile()
@@ -234,19 +260,34 @@ function Data.load(player: Player): Profile
 	local result: any = nil
 	for attempt = 1, 6 do
 		local lockedByOther = false
+		local newer = false
+		waitBudget(Enum.DataStoreRequestType.UpdateAsync, 5)
 		local ok, err = pcall(function()
 			ds:UpdateAsync(key(player), function(old: any)
 				local now = os.time()
+				if old ~= nil and type(old) ~= "table" then
+					newer = true -- unreadable: never replace it with a blank profile
+					return nil
+				end
 				if old and old.lock and old.lock.job ~= game.JobId and now - old.lock.t < LOCK_TTL and attempt < 6 then
 					lockedByOther = true
 					return nil -- abort write, another server still owns the session
 				end
+				if old and Security.migrate(old, Data.VERSION, Data.migrations) == "newer" then
+					newer = true -- saved by a newer build: leave it alone
+					return nil
+				end
 				local p = if old then reconcile(old) else defaultProfile()
 				p.lock = { job = game.JobId, t = now }
 				result = p
-				return p
+				return (Security.sanitize(p))
 			end)
 		end)
+		if ok and newer then
+			warn("[Data] save of", player.Name, "is from a newer version or unreadable - session will not save")
+			result = nil
+			break
+		end
 		if ok and not lockedByOther and result then
 			break
 		end
@@ -260,7 +301,7 @@ function Data.load(player: Player): Profile
 			end
 		end
 		result = nil
-		task.wait(if lockedByOther then 5 else 2)
+		task.wait(if lockedByOther then 5 else Security.backoff(attempt, 1.5, 8))
 		if not player.Parent then
 			break
 		end
@@ -277,28 +318,72 @@ function Data.load(player: Player): Profile
 	return result
 end
 
-function Data.save(player: Player, release: boolean?): boolean
+-- Saves the profile with UpdateAsync (never a blind SetAsync): the callback refuses to write
+-- when another server took the session lock. The value is a sanitized copy (no NaN / inf),
+-- rebuilt on every attempt. Final saves (release) retry with backoff. wait = queue behind a
+-- running save instead of skipping (purchases). Returns true when the
+-- data reached the store.
+function Data.save(player: Player, release: boolean?, wait: boolean?): boolean
 	local p = Data.profiles[player]
 	if not p or not loadedOk[player] or not store then
 		return false
 	end
-	local ds = store :: DataStore
-	p.savedAt = os.time()
-	p.lock = if release then nil else { job = game.JobId, t = os.time() }
-	local wrote = false
-	local ok, err = pcall(function()
-		ds:UpdateAsync(key(player), function(old: any)
-			if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
-				return nil -- another server owns it now; don't clobber
-			end
-			wrote = true
-			return p
-		end)
-	end)
-	if not ok then
-		warn("[Data] save failed for", player.Name, err)
-		return false
+	if saving[player] then
+		if not release and not wait then
+			return false -- autosave: the running save is close enough
+		end
+		local t0 = os.clock()
+		while saving[player] and os.clock() - t0 < 20 do
+			task.wait(0.1)
+		end
+		if saving[player] then
+			return false
+		end
 	end
+	saving[player] = true
+	inflight += 1
+	local ds = store :: DataStore
+	local wrote = false
+	local attempts = if release then 4 else 2
+	for attempt = 1, attempts do
+		if closeDeadline and os.clock() >= closeDeadline then
+			break
+		end
+		if not waitBudget(Enum.DataStoreRequestType.UpdateAsync, if release then 6 else 0) then
+			break -- out of budget: the next autosave will try again
+		end
+		p.savedAt = os.time()
+		p.lock = if release then nil else { job = game.JobId, t = os.time() }
+		local copy, fixed = Security.sanitize(p)
+		if fixed > 0 then
+			warn("[Data] repaired", fixed, "invalid values (NaN/inf) while saving", player.Name)
+		end
+		wrote = false
+		local ok, err = pcall(function()
+			ds:UpdateAsync(key(player), function(old: any)
+				if type(old) == "table" and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
+					return nil -- another server owns it now; don't clobber
+				end
+				if type(old) == "table" and type(old.version) == "number" and old.version > Data.VERSION then
+					return nil -- a newer build wrote this; don't downgrade it
+				end
+				wrote = true
+				return copy
+			end)
+		end)
+		if ok then
+			break
+		end
+		warn("[Data] save failed for", player.Name, err)
+		if Data.isAccessDenied(err) then
+			break
+		end
+		if attempt < attempts then
+			task.wait(Security.backoff(attempt))
+		end
+	end
+	saving[player] = nil
+	inflight -= 1
 	return wrote
 end
 
@@ -306,6 +391,7 @@ function Data.release(player: Player)
 	Data.save(player, true)
 	Data.profiles[player] = nil
 	loadedOk[player] = nil
+	saving[player] = nil
 end
 
 function Data.get(player: Player): Profile?
@@ -322,6 +408,7 @@ function Data.startAutosave()
 			task.wait(Config.AutosaveInterval)
 			for _, player in Players:GetPlayers() do
 				task.spawn(Data.save, player)
+				task.wait(0.2) -- spread the requests instead of one burst
 			end
 		end
 	end)
@@ -329,6 +416,7 @@ function Data.startAutosave()
 		if RunService:IsStudio() and not storeOk then
 			return
 		end
+		closeDeadline = os.clock() + 24
 		local pending = 0
 		for _, player in Players:GetPlayers() do
 			pending += 1
@@ -338,7 +426,8 @@ function Data.startAutosave()
 			end)
 		end
 		local t0 = os.clock()
-		while pending > 0 and os.clock() - t0 < 25 do
+		-- also wait for the PlayerRemoving releases that are still saving
+		while (pending > 0 or inflight > 0) and os.clock() - t0 < 25 do
 			task.wait(0.1)
 		end
 	end)

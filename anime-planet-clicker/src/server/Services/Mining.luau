@@ -11,6 +11,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Layout = require(ReplicatedStorage.Shared.Layout)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -23,7 +24,8 @@ local Mining = {}
 export type Node = { kind: string, layer: number, hp: number, dense: boolean, respawnAt: number? }
 
 local nodes: { [Player]: { [number]: { [number]: Node } } } = {}
-local buckets: { [Player]: { tokens: number, t: number } } = {}
+local buckets: { [Player]: Security.Bucket } = {}
+local eventBuckets: { [Player]: Security.Bucket } = {} -- how often the Hit event itself may fire
 local autoAcc: { [Player]: number } = {}
 local focus: { [Player]: number? } = {} -- zone * 100 + node the player last hit by hand
 local lastFullNotice: { [Player]: number } = {}
@@ -351,12 +353,23 @@ end
 -- Manual hits
 ---------------------------------------------------------------------------
 local function onHit(player: Player, n: any, count: any)
-	if type(n) ~= "number" or type(count) ~= "number" or n ~= n or count ~= count then
-		return
+	if not Security.isFinite(n) or not Security.isFinite(count) then
+		return -- also drops NaN and inf
 	end
 	n = math.floor(n)
 	count = math.floor(count)
 	if count <= 0 or n < 0 or n > Config.NodeGate then
+		return
+	end
+	-- cap on the event rate itself (the legit client sends a few batches per second), so a
+	-- flood of tiny events cannot burn server time before the hit bucket below
+	local now0 = os.clock()
+	local eb = eventBuckets[player]
+	if not eb then
+		eb = Security.newBucket(40, 80, now0)
+		eventBuckets[player] = eb
+	end
+	if not Security.take(eb, now0) then
 		return
 	end
 	local p = Data.get(player)
@@ -380,18 +393,15 @@ local function onHit(player: Player, n: any, count: any)
 	local now = os.clock()
 	local rate = Formulas.hitsPerSecond(stats)
 	local b = buckets[player]
-	local cap = rate + Config.HitBurst
 	if not b then
-		b = { tokens = cap, t = now }
+		b = Security.newBucket(rate, rate + Config.HitBurst, now)
 		buckets[player] = b
 	end
-	b.tokens = math.min(cap, b.tokens + (now - b.t) * rate)
-	b.t = now
-	local accepted = math.min(count, math.floor(b.tokens))
+	b.rate, b.burst = rate, rate + Config.HitBurst -- follows upgrades and buffs
+	local accepted = Security.takeUpTo(b, now, count)
 	if accepted <= 0 then
 		return
 	end
-	b.tokens -= accepted
 	focus[player] = zone * 100 + n
 	apply(player, p, zone, n, accepted, false)
 end
@@ -513,6 +523,7 @@ function Mining.forget(player: Player)
 	landDrone(player) -- a drone in flight still delivers
 	nodes[player] = nil
 	buckets[player] = nil
+	eventBuckets[player] = nil
 	autoAcc[player] = nil
 	focus[player] = nil
 	lastFullNotice[player] = nil
@@ -541,7 +552,7 @@ function Mining.init()
 			table.insert(out, serialize(zone, n, node))
 		end
 		return true, out
-	end)
+	end, { interval = 0.2 })
 
 	Remotes.handle("SellCargo", function(player)
 		local p = Data.get(player)

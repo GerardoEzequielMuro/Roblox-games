@@ -155,7 +155,7 @@ function Rewards.init()
 		local text = Rewards.grant(player, reward)
 		State.dirty(player)
 		return true, text
-	end)
+	end, { interval = 1 })
 
 	Remotes.handle("ClaimIndex", function(player, payload)
 		local p = Data.get(player)

@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Layout = require(ReplicatedStorage.Shared.Layout)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local M = Locale.m
 local Data = require(script.Parent.Data)
@@ -25,6 +26,7 @@ local Hooks = require(script.Parent.Hooks)
 local Pvp = {}
 
 local C = Config.Pvp
+local zapBuckets: { [Player]: Security.Bucket } = {}
 
 export type Combatant = {
 	id: number, -- UserId for players, negative for bots and dummies
@@ -351,6 +353,7 @@ function Pvp.removeDummy(id: number)
 end
 
 function Pvp.forget(player: Player)
+	zapBuckets[player] = nil
 	combatants[player.UserId] = nil
 end
 
@@ -364,7 +367,15 @@ function Pvp.init(parent: Instance?)
 	end
 
 	Remotes.ZapEvent.OnServerEvent:Connect(function(player: Player, targetId: any)
-		if type(targetId) ~= "number" or targetId ~= targetId or not State.ready[player] then
+		if not Security.isFinite(targetId) or not State.ready[player] then
+			return
+		end
+		local zb = zapBuckets[player]
+		if not zb then
+			zb = Security.newBucket(8, 12, os.clock()) -- the legit cooldown is well under this
+			zapBuckets[player] = zb
+		end
+		if not Security.take(zb, os.clock()) then
 			return
 		end
 		local target = combatants[math.floor(targetId)]

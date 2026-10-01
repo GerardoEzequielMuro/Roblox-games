@@ -251,7 +251,7 @@ function Pets.init()
 
 	Remotes.handle("Delete", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.uids) ~= "table" then
+		if not p or type(payload.uids) ~= "table" or #payload.uids > 300 then
 			return false, M("msg.bad_request")
 		end
 		local n = 0

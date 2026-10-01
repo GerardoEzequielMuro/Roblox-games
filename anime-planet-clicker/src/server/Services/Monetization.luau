@@ -24,6 +24,7 @@ local Offline = require(script.Parent.Offline)
 local Monetization = {}
 
 local MAX_RECEIPTS = 60
+local receiptsInFlight: { [string]: boolean } = {}
 
 local passByGamepassId: { [number]: any } = {}
 for _, pass in Config.Passes do
@@ -131,7 +132,7 @@ function Monetization.grantProduct(player: Player, p: Data.Profile, product: any
 	end
 end
 
-local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
+local function processReceiptInner(receipt: any): Enum.ProductPurchaseDecision
 	local player = Players:GetPlayerByUserId(receipt.PlayerId)
 	if not player then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -140,9 +141,18 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 	if not p or not State.ready[player] then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
+	-- A profile that failed to load will not save: granting now would lose the purchase
+	-- when the player leaves, so let Roblox retry later (Studio has no DataStore: allowed).
+	if not Data.isPersistent(player) and not RunService:IsStudio() then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	local purchaseId = tostring(receipt.PurchaseId)
 	if table.find(p.purchases, purchaseId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- already granted earlier
+		-- granted earlier in this session; make sure it reached the DataStore before acking
+		if Data.isPersistent(player) and not Data.save(player, false, true) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 	local product = productById[receipt.ProductId]
 	local adPlacement = adPlacementById[receipt.ProductId]
@@ -166,13 +176,28 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		table.remove(p.purchases, 1)
 	end
 	-- Persist before acknowledging, so a crash can't grant twice or lose the purchase.
-	if Data.isPersistent(player) and not Data.save(player) then
+	if Data.isPersistent(player) and not Data.save(player, false, true) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	if product then
 		Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
 	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
+end
+
+local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
+	local purchaseKey = tostring(receipt.PurchaseId)
+	if receiptsInFlight[purchaseKey] then
+		return Enum.ProductPurchaseDecision.NotProcessedYet -- Roblox retried while the first call still saves
+	end
+	receiptsInFlight[purchaseKey] = true
+	local ok, decision = pcall(processReceiptInner, receipt)
+	receiptsInFlight[purchaseKey] = nil
+	if not ok then
+		warn("[Monetization] receipt error", decision)
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	return decision
 end
 
 function Monetization.init()
@@ -189,7 +214,7 @@ function Monetization.init()
 	-- restricted players (their buttons are hidden as well).
 	Remotes.handle("CanBuy", function(player, payload)
 		local key = payload.key
-		local item = if type(key) == "string" then (Config.ProductByKey[key] or Config.PassByKey[key]) else nil
+		local item = if type(key) == "string" and #key <= 40 then (Config.ProductByKey[key] or Config.PassByKey[key]) else nil
 		if not item then
 			return false, M("msg.bad_request")
 		end
@@ -225,10 +250,12 @@ function Monetization.init()
 		p.ads.count += 1
 		State.dirty(player)
 		return true, tostring(if typeof(result) == "EnumItem" then (result :: any).Name else result)
-	end)
+	end, { interval = 2, exclusive = true })
 
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, gamePassId: number, purchased: boolean)
-		if not purchased then
+		-- Server-fired by MarketplaceService (a client cannot raise it); the pass is only
+		-- granted for ids that exist in Config.
+		if purchased ~= true or type(gamePassId) ~= "number" then
 			return
 		end
 		local pass = passByGamepassId[gamePassId]

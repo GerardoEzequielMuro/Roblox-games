@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Data = require(script.Parent.Data)
 local State = require(script.Parent.State)
 
@@ -26,6 +27,9 @@ do
 end
 
 function Leaderboard.encode(n: number): number
+	if not Security.isFinite(n) then
+		return 0 -- never publish NaN / inf
+	end
 	return math.floor(math.log10(math.max(1, n) + 1) * SCALE)
 end
 function Leaderboard.decode(v: number): number
@@ -74,6 +78,8 @@ function Leaderboard.updateStats(player: Player)
 	end
 end
 
+local pushed: { [string]: number } = {} -- last value sent per userId:board (skips unchanged writes)
+
 local function pushScores()
 	for _, player in Players:GetPlayers() do
 		local p = Data.get(player)
@@ -81,10 +87,19 @@ local function pushScores()
 			local key = tostring(player.UserId)
 			local values = { mined = Leaderboard.encode(p.totalMined), rebirths = p.rebirths, arena = p.arenaPoints }
 			for name, store in stores do
-				local v = values[name]
-				if v and v > 0 then
+				local v: number = values[name] or 0
+				-- only whole, finite, positive scores; UpdateAsync keeps the best value, so a
+				-- stale server can never push a board entry down
+				local pk = key .. ":" .. name
+				if Security.isInt(v, 1, 2 ^ 52) and pushed[pk] ~= v then
+					pushed[pk] = v
 					pcall(function()
-						store:SetAsync(key, v)
+						store:UpdateAsync(key, function(old: any)
+							if type(old) == "number" and old >= v then
+								return nil :: any -- keep the better stored score
+							end
+							return v
+						end)
 					end)
 				end
 			end
@@ -144,6 +159,11 @@ local function fetch(store: OrderedDataStore?, decode: (number) -> string): { { 
 end
 
 function Leaderboard.init(boards: { [string]: BasePart })
+	Players.PlayerRemoving:Connect(function(player)
+		for name in stores do
+			pushed[tostring(player.UserId) .. ":" .. name] = nil
+		end
+	end)
 	task.spawn(function()
 		while true do
 			for _, player in Players:GetPlayers() do
