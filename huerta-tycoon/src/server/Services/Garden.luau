@@ -14,6 +14,7 @@ local Goals = require(ReplicatedStorage.Shared.Goals)
 local R = Locale.ref
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
+local Validate = require(script.Parent.Parent.Security.Validate)
 local Weather = require(script.Parent.Weather)
 local Events = require(script.Parent.Events)
 local Rewards = require(script.Parent.Rewards)
@@ -412,23 +413,20 @@ local function withSession(fn: (s: Session.S, payload: any) -> (boolean, Locale.
 end
 
 local function tileArg(payload: any): number?
-	local i = tonumber(payload.tile)
-	if not i or i ~= math.floor(i) or i < 1 or i > Config.MaxTiles then
-		return nil
-	end
-	return i
+	return Validate.integer(payload.tile, 1, Config.MaxTiles)
 end
 
 Remotes.handle("Plant", withSession(function(s, payload)
 	local i = tileArg(payload)
-	if not i or type(payload.seedId) ~= "string" then
+	local seedId = Validate.key(payload.seedId, Config.SeedById)
+	if not i or not seedId then
 		return false, R("err.badTile")
 	end
-	return Garden.plant(s, i, payload.seedId)
+	return Garden.plant(s, i, seedId)
 end))
 
 Remotes.handle("PlantAll", withSession(function(s, payload)
-	if type(payload.seedId) ~= "string" or not Config.SeedById[payload.seedId] then
+	if not Validate.key(payload.seedId, Config.SeedById) then
 		return false, R("err.pickSeed")
 	end
 	local n = 0
@@ -495,7 +493,7 @@ Remotes.handle("BuyTile", withSession(function(s)
 end))
 
 Remotes.handle("BuyUpgrade", withSession(function(s, payload)
-	local u = if type(payload.id) == "string" then Config.UpgradeById[payload.id] else nil
+	local u = if Validate.key(payload.id, Config.UpgradeById) then Config.UpgradeById[payload.id] else nil
 	if not u then
 		return false, R("err.unknownUpgrade")
 	end

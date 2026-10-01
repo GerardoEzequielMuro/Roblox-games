@@ -11,6 +11,8 @@ local Locale = require(ReplicatedStorage.Shared.Locale)
 local R = Locale.ref
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
+local Validate = require(script.Parent.Parent.Security.Validate)
+local RateLimit = require(script.Parent.Parent.Security.RateLimit)
 
 local Rewards = {}
 
@@ -90,14 +92,30 @@ Remotes.handle("ClaimDaily", function(player)
 end)
 
 -- ===== Codes =====
+-- Wrong guesses are limited per player (brute-forcing the code list): 6 misses in a minute lock redeeming for 2.
+local codeStrikes: { [Player]: RateLimit.Strikes } = {}
+function Rewards.forget(player: Player)
+	codeStrikes[player] = nil
+end
+
 Remotes.handle("RedeemCode", function(player, payload)
 	local s = Session.get(player)
 	if not s then
 		return false, R("err.loading")
 	end
-	local code = if type(payload.code) == "string" then string.upper((string.gsub(payload.code :: string, "%s", ""))) else ""
-	local reward = (Config.Codes :: any)[code]
-	if not reward then
+	local st = codeStrikes[player]
+	if not st then
+		st = RateLimit.newStrikes()
+		codeStrikes[player] = st
+	end
+	local now = os.clock()
+	if RateLimit.locked(st, now) then
+		return false, R("err.slowDown")
+	end
+	local code = Validate.code(payload.code)
+	local reward = if code then (Config.Codes :: any)[code] else nil
+	if not reward or not code then
+		RateLimit.strike(st, now, 6, 60, 120)
 		return false, R("err.invalidCode")
 	end
 	if s.profile.codes[code] then
@@ -113,7 +131,7 @@ Remotes.handle("ClaimGift", function(player, payload)
 	if not s then
 		return false, R("err.loading")
 	end
-	local index = tonumber(payload.index)
+	local index = Validate.integer(payload.index, 1, #Config.PlaytimeGifts)
 	local ok, why = Gifts.canClaim(Config.PlaytimeGifts, index, s.sessionStart, os.time(), s.giftsClaimed)
 	if not ok or not index then
 		return false, R(if why == "early" then "err.giftEarly" elseif why == "claimed" then "err.giftClaimed" else "err.badRequest")
@@ -129,7 +147,8 @@ Remotes.handle("ClaimIndex", function(player, payload)
 	if not s then
 		return false, R("err.loading")
 	end
-	local seed = if type(payload.seedId) == "string" then Config.SeedById[payload.seedId] else nil
+	local seedKey = Validate.key(payload.seedId, Config.SeedById)
+	local seed = if seedKey then Config.SeedById[seedKey] else nil
 	if not seed then
 		return false, R("err.unknownSeed")
 	end

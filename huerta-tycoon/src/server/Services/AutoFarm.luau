@@ -10,6 +10,7 @@ local Locale = require(ReplicatedStorage.Shared.Locale)
 local R = Locale.ref
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
+local Validate = require(script.Parent.Parent.Security.Validate)
 local Garden = require(script.Parent.Garden)
 
 local AutoFarm = {}
@@ -93,7 +94,7 @@ Remotes.handle("SetAuto", function(player, payload)
 	if not s then
 		return false, R("err.loading")
 	end
-	if not Rules.isMode(payload.mode) or type(payload.on) ~= "boolean" then
+	if not Rules.isMode(payload.mode) or Validate.bool(payload.on) == nil then
 		return false, R("err.badRequest")
 	end
 	local mode = payload.mode :: string
@@ -113,7 +114,7 @@ Remotes.handle("SetAutoSeed", function(player, payload)
 	if not s then
 		return false, R("err.loading")
 	end
-	if type(payload.seedId) ~= "string" or not Config.SeedById[payload.seedId] then
+	if not Validate.key(payload.seedId, Config.SeedById) then
 		return false, R("err.unknownSeed")
 	end
 	local saved = Rules.sanitize(s.profile.auto)

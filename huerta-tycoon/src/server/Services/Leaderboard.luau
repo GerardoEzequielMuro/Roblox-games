@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Session = require(script.Parent.Session)
+local Data = require(script.Parent.Data)
 
 local Leaderboard = {}
 
@@ -83,9 +84,20 @@ local function refresh(board: BasePart)
 	end
 	local s = ordered :: OrderedDataStore
 	for _, sess in Session.sessions do
-		pcall(function()
-			s:SetAsync(tostring(sess.player.UserId), math.floor(sess.profile.totalEarned))
-		end)
+		-- Only sessions whose profile really loaded: an unsaved fallback profile starts at 0 and would overwrite
+		-- the player's real score. The score only ever goes up (max of stored and current), and must be finite.
+		local score = sess.profile.totalEarned
+		if Data.isPersistent(sess.player) and score == score and score > 0 and score < 2 ^ 53 then
+			local value = math.floor(score)
+			pcall(function()
+				s:UpdateAsync(tostring(sess.player.UserId), function(old: any): any
+					if type(old) == "number" and old >= value then
+						return nil
+					end
+					return value
+				end)
+			end)
+		end
 	end
 	local ok2, pages = pcall(function()
 		return s:GetSortedAsync(false, 10)

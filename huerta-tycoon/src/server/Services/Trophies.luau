@@ -8,13 +8,14 @@ local Locale = require(ReplicatedStorage.Shared.Locale)
 local R = Locale.ref
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
+local Validate = require(script.Parent.Parent.Security.Validate)
 local Garden = require(script.Parent.Garden)
 
 local Trophies = {}
 
 function Trophies.exhibit(s: Session.S, key: any): (boolean, Locale.Ref?)
 	local p = s.profile
-	if type(key) ~= "string" or (p.backpack[key] or 0) <= 0 then
+	if not Validate.str(key, 96) or (p.backpack[key :: string] or 0) <= 0 then
 		return false, R("err.badRequest")
 	end
 	local seed, mut, size = Rules.split(key)
@@ -34,13 +35,14 @@ end
 
 function Trophies.takeBack(s: Session.S, slot: any): (boolean, Locale.Ref?)
 	local p = s.profile
-	if type(slot) ~= "number" or slot ~= math.floor(slot) or not p.trophies[slot] then
+	local n = Validate.integer(slot, 1, Rules.SLOTS)
+	if not n or not p.trophies[n] then
 		return false, R("err.badRequest")
 	end
 	if Session.backpackCount(s) >= Session.backpackCap(s) then
 		return false, R("err.basketFull")
 	end
-	local item = table.remove(p.trophies, slot) :: any
+	local item = table.remove(p.trophies, n) :: any
 	local key = Rules.key(item.seed, item.mut, item.size)
 	p.backpack[key] = (p.backpack[key] or 0) + 1
 	Garden.renderTrophies(s)

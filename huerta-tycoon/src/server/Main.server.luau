@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local R = Locale.ref
 local Services = script.Parent.Services
+local Validate = require(script.Parent.Security.Validate)
 local Remotes = require(Services.Remotes)
 local Data = require(Services.Data)
 local Session = require(Services.Session)
@@ -15,7 +16,7 @@ local Weather = require(Services.Weather)
 local Shop = require(Services.Shop)
 local Garden = require(Services.Garden)
 local Monetization = require(Services.Monetization)
-require(Services.Rewards)
+local Rewards = require(Services.Rewards)
 local Events = require(Services.Events)
 local Social = require(Services.Social)
 local AutoFarm = require(Services.AutoFarm)
@@ -97,6 +98,7 @@ Players.PlayerRemoving:Connect(function(player)
 	Data.release(player)
 	Session.remove(player)
 	Remotes.forget(player)
+	Rewards.forget(player)
 	Session.refreshFriends()
 end)
 
@@ -106,7 +108,7 @@ Remotes.handle("Hello", function(player, payload)
 		return false, R("err.loading")
 	end
 	-- the client reports its auto-detected language (used until the player picks one)
-	if type(payload.lang) == "string" and Locale.Supported[payload.lang] and s.autoLang ~= payload.lang then
+	if Validate.key(payload.lang, Locale.Supported, 8) and s.autoLang ~= payload.lang then
 		s.autoLang = payload.lang
 		Session.markDirty(s)
 	end
@@ -127,7 +129,7 @@ Remotes.handle("SetLanguage", function(player, payload)
 	if not s then
 		return false, R("err.loading")
 	end
-	if type(payload.lang) ~= "string" or not Locale.Supported[payload.lang] then
+	if not Validate.key(payload.lang, Locale.Supported, 8) then
 		return false, R("err.badRequest")
 	end
 	s.profile.lang = payload.lang

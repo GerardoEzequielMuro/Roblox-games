@@ -56,9 +56,18 @@ end
 function Monetization.loadPasses(s: Session.S)
 	for _, pass in Config.GamePasses do
 		if pass.id ~= 0 then
-			local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, s.player.UserId, pass.id)
-			if ok and owns then
-				applyPass(s, pass.key)
+			-- retry a couple of times: a transient web error must not leave a paying player without their pass
+			for attempt = 1, 3 do
+				local ok, owns = pcall(MarketplaceService.UserOwnsGamePassAsync, MarketplaceService, s.player.UserId, pass.id)
+				if ok then
+					if owns then
+						applyPass(s, pass.key)
+					end
+					break
+				end
+				if attempt < 3 and s.player.Parent then
+					task.wait(attempt * 2)
+				end
 			end
 		end
 	end
@@ -68,7 +77,8 @@ MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player, passI
 	if not purchased then
 		return
 	end
-	local pass = passById[passId]
+	-- only Roblox raises this event (a client cannot fire it); the pass id must still be one of ours
+	local pass = if type(passId) == "number" then passById[passId] else nil
 	local s = Session.get(player)
 	if pass and s then
 		applyPass(s, pass.key)
@@ -156,8 +166,21 @@ MarketplaceService.ProcessReceipt = function(receipt: any)
 		warn("[Monetization] unknown product", receipt.ProductId)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
+	-- With a DataStore, a session that could not load (or lost its lock) cannot persist the grant: let Roblox retry
+	-- the receipt later instead of granting something that would vanish or be granted twice.
+	local persistent = Data.isPersistent(player)
+	if Data.storeAvailable() and not persistent then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	local purchases = s.profile.purchases
+	if type(receipt.PurchaseId) ~= "string" then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	if table.find(purchases, receipt.PurchaseId) then
+		-- already granted in memory (a retry after a failed save): only acknowledge once it is really saved
+		if persistent and not Data.save(player) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 	local ok, granted = pcall(grant, s, prod)
@@ -166,11 +189,14 @@ MarketplaceService.ProcessReceipt = function(receipt: any)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	table.insert(purchases, receipt.PurchaseId)
-	while #purchases > 100 do
+	while #purchases > 200 do
 		table.remove(purchases, 1)
 	end
-	-- persist immediately so a crash can't grant twice
-	Data.save(player)
+	-- persist immediately so a crash can't grant twice; PurchaseGranted only after the write went through. If it
+	-- failed, the id stays recorded in memory and the retry above only re-saves (no second grant).
+	if persistent and not Data.save(player) then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	return Enum.ProductPurchaseDecision.PurchaseGranted
 end
 
@@ -184,10 +210,18 @@ local function adProduct(key: string): Config.Product?
 	return nil
 end
 
+local adBusy: { [Player]: boolean } = {}
+Players.PlayerRemoving:Connect(function(player)
+	adBusy[player] = nil
+end)
+
 Remotes.handle("WatchAd", function(player, payload)
 	local s = Session.get(player)
 	if not s then
 		return false, R("err.loading")
+	end
+	if adBusy[player] then
+		return false, R("err.slowDown")
 	end
 	if payload.placement ~= "restock" then
 		return false, R("err.badRequest")
@@ -199,10 +233,12 @@ Remotes.handle("WatchAd", function(player, payload)
 	if Session.adsLeft(s) <= 0 then
 		return false, R("err.adCap")
 	end
+	adBusy[player] = true
 	local ok, result = pcall(function()
 		local reward = AdService:CreateAdRewardFromDevProductId(prod.id)
 		return AdService:ShowRewardedVideoAdAsync(player, reward)
 	end)
+	adBusy[player] = nil
 	if not ok then
 		return false, R("err.adUnavailable")
 	end

@@ -247,6 +247,9 @@ end
 
 -- ===== cash =====
 function Session.addCash(s: S, amount: number, fromSale: boolean?)
+	if amount ~= amount or amount == math.huge or amount == -math.huge then
+		return -- never let NaN/inf reach the profile (it would poison every later comparison and the save)
+	end
 	amount = math.floor(amount)
 	s.profile.cash += amount
 	if amount > 0 then
@@ -269,7 +272,8 @@ function Session.addCash(s: S, amount: number, fromSale: boolean?)
 end
 
 function Session.trySpend(s: S, amount: number): boolean
-	if s.profile.cash < amount then
+	-- reject NaN/inf/negative amounts: `cash < NaN` is false, which used to turn a purchase into free cash NaN
+	if amount ~= amount or amount < 0 or amount == math.huge or s.profile.cash < amount then
 		return false
 	end
 	s.profile.cash -= amount

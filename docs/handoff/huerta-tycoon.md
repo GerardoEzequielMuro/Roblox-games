@@ -280,3 +280,36 @@ Para que el sim corra con Luau puro toqué `src/shared/Formulas.luau`: `require(
 - Modelo de ronda: 7 s con viaje a vender, 3 s solo plantar; 4 s de arranque antes de la primera acción. Un jugador real es más lento o más torpe.
 - "Primer premio < 10 s" se cumple con el daily (6 s), pero ese botón está en el menú con badge, no se abre solo; la primera cosecha real cae a los ~15 s. Bajar más la zanahoria la rompe por el stock; si se quiere, abrir el Daily solo en la sesión 1 (cambio de UI, no hecho).
 - Quedan tails de suerte de stock (p90 del mango ~65 min). Faltan números medidos en Studio: la política de compra es una aproximación.
+
+## Ronda 7: seguridad
+
+Auditoría anti-exploit / seguridad de guardado. Todo el tráfico cliente->servidor pasa por un solo `RemoteFunction` (`Request`), no hay `OnServerEvent`; los `RemoteEvent` son solo servidor->cliente. Nada económico lo reporta el cliente (crecimiento, cosecha lista, ventas y precios los calcula el servidor), así que no hizo falta tope de plausibilidad nuevo.
+
+**Código nuevo (puro, sin servicios de Roblox):** `src/server/Security/Validate.luau` (tipos, NaN/inf, largos, whitelists), `RateLimit.luau` (token bucket, cooldowns por acción, strikes) y `ProfileGuard.luau` (sanea NaN/inf, migraciones por versión, backoff). Tests: `tests/security_test.luau` (71 checks).
+
+| # | Sev. | Archivo:línea (antes del fix) | Cómo se explotaba | Cómo se arregló |
+|---|---|---|---|---|
+| 1 | Alta | `Services/Shop.luau:~106` (BuySeed) | `amount = NaN` (0/0) pasaba `clamp`/`min`/`<= 0`; `trySpend(price*NaN)` daba true y dejaba `cash = NaN`: semillas gratis, plata corrupta y perfil imposible de guardar. | `Validate.clampAmount` (NaN/inf/no-número -> 1); `trySpend` rechaza NaN/inf/negativo; `addCash` ignora NaN/inf. |
+| 2 | Alta | `Services/Monetization.luau:~118` (ProcessReceipt) | `Data.save` no devolvía resultado: si el guardado fallaba, o la sesión no cargó (`loadedOk=false`), igual devolvía `PurchaseGranted` y la compra se perdía o se duplicaba. | Sin perfil persistente (con DataStore) -> `NotProcessedYet`. `Data.save` devuelve éxito real; `PurchaseGranted` solo si se guardó. Reintento con el id ya anotado solo vuelve a guardar (no regala dos veces). |
+| 3 | Media | `Services/Leaderboard.luau:~83` | `SetAsync` del `totalEarned` de sesiones que no cargaron (perfil en 0) pisaba el puntaje real del ranking. | Solo sesiones persistentes, finitas, y `UpdateAsync` que solo sube (máximo). |
+| 4 | Media | `Services/Data.luau:~167` (save) | Un solo intento sin backoff; sin chequeo de budget; NaN/inf en el perfil hacía fallar el guardado para siempre; doble guardado en BindToClose + PlayerRemoving. | 3 intentos (4 al salir) con backoff exponencial, `GetRequestBudgetForRequestType` (autosave se saltea si no hay budget), `ProfileGuard.sanitize` antes de escribir, flag de "ya liberado", si se pierde el lock deja de escribir. |
+| 5 | Media | `Services/Data.luau:~139` (load) | Si el jugador se iba durante la carga, el perfil quedaba en `Data.profiles` (fuga) y el lock del servidor quedaba 150 s bloqueando su próximo ingreso. | Al terminar la carga, si ya no está, `Data.release` (libera lock y tablas). Backoff exponencial en reintentos de carga. |
+| 6 | Media | `Services/Rewards.luau:~93` (RedeemCode) | Fuerza bruta de códigos hasta 20 req/s, y string sin tope de largo (gsub sobre string enorme). | Largo máx 40, strikes por jugador (6 fallos/min -> bloqueo 2 min) y cooldown 1 s. |
+| 7 | Media | `Services/Monetization.luau:~51` (loadPasses) | Un error web transitorio en `UserOwnsGamePassAsync` dejaba sin pase a quien lo había pagado toda la sesión. | 3 intentos con espera; `PromptGamePassPurchaseFinished` valida que `passId` sea número y de los nuestros. |
+| 8 | Media | `Services/Session.luau:~232` | `trySpend`/`addCash` confiaban en el monto (defensa en profundidad del #1). | Guardas de NaN/inf/negativo. |
+| 9 | Baja | `Services/Remotes.luau:~79` | Sin cooldown por acción: spam de `ShareLink`/`WatchAd` (llamadas async concurrentes), `Hello` (arma snapshot completo), `GoHome`. | `ACTION_COOLDOWN` por jugador (Hello 0.5 s, GoHome 1, SetLanguage 0.5, ShareLink/WatchAd 3, ClaimGroupGift 2, RedeemCode 1) + guard "en curso" en `WatchAd`. El bucket global (20/s, ráfaga 40) queda igual. |
+| 10 | Baja | `Remotes.luau` + handlers | `action` sin tope de largo; `tonumber()` aceptaba strings ("0x10", "inf") en tile/gift/amount. | `action` <= 32 bytes; `Validate.integer/key/str/bool` estrictos en Plant, PlantAll, Harvest, Shovel, BuyUpgrade, ClaimGift, ClaimIndex, Exhibit/Unexhibit, SetAuto, SetAutoSeed, SetLanguage, Hello. El cliente legítimo ya mandaba números/strings correctos. |
+| 11 | Baja | `Remotes.luau:~79` | Un invoke que llegaba después de `PlayerRemoving` recreaba el bucket del jugador (fuga). | Se rechaza si `player.Parent == nil`; `forget` limpia también los cooldowns y los strikes de códigos (`Rewards.forget`), `adBusy` se limpia al salir. |
+| 12 | Baja | `Services/Data.luau` | `version = 1` fija, sin migraciones. | `ProfileGuard.CURRENT_VERSION = 2` con paso 1->2 (contadores negativos, `purchases`); nunca baja un perfil de versión más nueva. Se corre en cada carga junto con `sanitize`. |
+
+**Ya estaba bien:** `ProcessReceipt` registraba `PurchaseId` y guardaba antes de responder (ahora además se verifica el resultado); `UpdateAsync` con session lock (150 s) en load/save; `BindToClose` con espera de 25 s; autosave espaciado; fast-fail en Studio (`PlaceId == 0`, sin store) intacto; ownership de items (Exhibit exige tenerlo en la mochila, Plant exige la semilla, Wild exige rango en el servidor); sell cerca del puesto se valida con la posición del servidor.
+
+**Verificación:** `rojo build` default y test OK; `luau-lsp analyze src` sin salida; todos los `tests/*_test.luau` y `sim/pacing_sim.luau` pasan; preview `--state mid --screen pc`: 0 hallazgos, 0 errores de runtime.
+
+**Lo que queda (no se tocó o no se puede cerrar sin Studio/diseño):**
+- La posición del personaje la controla el cliente: el chequeo de "cerca del puesto de venta" se evade teletransportándose (el pase SellAnywhere ya lo regala). No hay beneficio económico extra, solo comodidad.
+- Cosechar/plantar no exige cercanía (es decisión de diseño del hotbar); solo se limita por el bucket global y el estado de cada tile.
+- Regalos por tiempo de sesión (`ClaimGift`) cuentan desde que entra al servidor: reentrar reinicia el reloj. Es diseño, pero se puede farmear con cuentas/reentradas; si molesta, guardar `giftsClaimed` por día en el perfil.
+- Referidos: el `LaunchData` lo elige quien comparte el link; con cuentas alternativas se puede farmear hasta `ReferralMaxRewards` (tope de por vida ya existente).
+- Nada de esto se probó en Studio (sin Studio en Linux): conviene correr `tests/run.ps1` y mirar con pocos datos reales que `Data.save` devuelve true y que una compra de prueba responde `PurchaseGranted` una sola vez.
+- `Remotes.ACTION_COOLDOWN` está ajustado a ojo con el cliente actual; si se agrega un flujo que llame a `Hello`/`GoHome` más seguido que eso, subir el límite.

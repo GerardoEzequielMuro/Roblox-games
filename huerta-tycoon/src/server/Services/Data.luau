@@ -6,6 +6,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local ProfileGuard = require(script.Parent.Parent.Security.ProfileGuard)
 
 local Data = {}
 
@@ -72,7 +73,7 @@ local function defaultProfile(): Profile
 		upgrades[u.id] = 0
 	end
 	return {
-		version = 1,
+		version = ProfileGuard.CURRENT_VERSION,
 		cash = Config.StartingCash,
 		totalEarned = 0,
 		rebirths = 0,
@@ -136,6 +137,27 @@ local function key(player: Player): string
 	return "u_" .. player.UserId
 end
 
+-- Waits (up to maxWait seconds) until the DataStore request budget has `need` requests left. false = still low.
+local function budgetOk(kind: Enum.DataStoreRequestType, need: number, maxWait: number): boolean
+	local t0 = os.clock()
+	while true do
+		local ok, left = pcall(function()
+			return DataStoreService:GetRequestBudgetForRequestType(kind)
+		end)
+		if not ok or left >= need then
+			return true
+		end
+		if os.clock() - t0 >= maxWait then
+			return false
+		end
+		task.wait(1)
+	end
+end
+
+function Data.storeAvailable(): boolean
+	return storeOk and store ~= nil
+end
+
 function Data.load(player: Player): Profile
 	if not storeOk or not store then
 		local p = defaultProfile()
@@ -147,6 +169,7 @@ function Data.load(player: Player): Profile
 	local result: any = nil
 	for attempt = 1, 6 do
 		local lockedByOther = false
+		budgetOk(Enum.DataStoreRequestType.UpdateAsync, 1, 10)
 		local ok, err = pcall(function()
 			ds:UpdateAsync(key(player), function(old: any)
 				local now = os.time()
@@ -155,6 +178,8 @@ function Data.load(player: Player): Profile
 					return nil -- abort write
 				end
 				local p = if old then reconcile(old) else defaultProfile()
+				ProfileGuard.migrate(p)
+				ProfileGuard.sanitize(p, defaultProfile())
 				p.lock = { job = game.JobId, t = now }
 				result = p
 				return p
@@ -167,7 +192,7 @@ function Data.load(player: Player): Profile
 			warn("[Data] load failed for", player.Name, err)
 		end
 		result = nil
-		task.wait(if lockedByOther then 5 else 2)
+		task.wait(if lockedByOther then 5 else ProfileGuard.backoff(attempt, 2, 12))
 		if not player.Parent then
 			break
 		end
@@ -181,39 +206,87 @@ function Data.load(player: Player): Profile
 		loadedOk[player] = true
 	end
 	Data.profiles[player] = result
+	if not player.Parent then
+		-- left while loading: PlayerRemoving already ran, so nobody else would free the lock or the tables
+		Data.release(player)
+	end
 	return result
 end
 
 -- One write at a time per player: a purchase receipt, the autosave and the leave-save can all ask at once, and
 -- parallel UpdateAsync calls on the same key only queue up and burn the request budget.
 local saving: { [Player]: boolean } = {}
+local releasedOnce: { [Player]: boolean } = {} -- the final (lock-releasing) save already went through
 Data.saves = 0 -- writes attempted (for the tests)
 
-function Data.save(player: Player, release: boolean?)
+-- Writes the profile. Returns true only when it really reached the DataStore (or was already released).
+-- Retries with exponential backoff; skipped (false) when the request budget is exhausted and the caller is
+-- not in a hurry (autosave), so the budget is left for purchases and leave-saves.
+function Data.save(player: Player, release: boolean?): boolean
 	local p = Data.profiles[player]
 	if not p or not loadedOk[player] or not store then
-		return
+		return false
+	end
+	if releasedOnce[player] then
+		return true
 	end
 	while saving[player] do
 		task.wait(0.1)
 	end
-	saving[player] = true
-	Data.saves += 1
-	local ds = store :: DataStore
-	p.savedAt = os.time()
-	p.lock = if release then nil else { job = game.JobId, t = os.time() }
-	local ok, err = pcall(function()
-		ds:UpdateAsync(key(player), function(old: any)
-			if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
-				return nil -- another server owns it now; don't clobber
-			end
-			return p
-		end)
-	end)
-	saving[player] = nil
-	if not ok then
-		warn("[Data] save failed for", player.Name, err)
+	if releasedOnce[player] then
+		return true
 	end
+	saving[player] = true
+	local ds = store :: DataStore
+	local written = false
+	local lockLost = false
+	local attempts = if release then 4 else 3
+	for attempt = 1, attempts do
+		if not budgetOk(Enum.DataStoreRequestType.UpdateAsync, 1, if release then 8 else 0) then
+			break
+		end
+		Data.saves += 1
+		local fixed = ProfileGuard.sanitize(p, defaultProfile())
+		if fixed > 0 then
+			warn("[Data] repaired", fixed, "non-finite value(s) before saving", player.Name)
+		end
+		p.savedAt = os.time()
+		p.lock = if release then nil else { job = game.JobId, t = os.time() }
+		local ok, err = pcall(function()
+			ds:UpdateAsync(key(player), function(old: any)
+				written, lockLost = false, false -- the transform can run more than once: only the last run counts
+				if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
+					lockLost = true
+					return nil -- another server owns it now; don't clobber
+				end
+				written = true
+				return p
+			end)
+		end)
+		if ok and written then
+			break
+		end
+		written = false
+		if ok and lockLost then
+			break -- retrying cannot help: someone else owns the profile
+		end
+		if not ok then
+			warn("[Data] save failed for", player.Name, "attempt", attempt, err)
+		end
+		if attempt < attempts then
+			task.wait(ProfileGuard.backoff(attempt, 1, 8))
+		end
+	end
+	if lockLost then
+		-- this session is stale (the player is on another server): stop writing so we never clobber their data
+		warn("[Data] lost the session lock of", player.Name, "- further saves from this server are disabled")
+		loadedOk[player] = false
+	end
+	if written and release then
+		releasedOnce[player] = true
+	end
+	saving[player] = nil
+	return written
 end
 
 function Data.release(player: Player)
@@ -221,6 +294,7 @@ function Data.release(player: Player)
 	Data.profiles[player] = nil
 	loadedOk[player] = nil
 	saving[player] = nil
+	releasedOnce[player] = nil
 end
 
 -- Seconds between two players' autosaves: everyone is saved once per interval, spread evenly instead of all

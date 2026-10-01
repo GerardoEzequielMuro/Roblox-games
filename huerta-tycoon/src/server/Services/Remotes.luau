@@ -5,6 +5,8 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local Validate = require(script.Parent.Parent.Security.Validate)
+local RateLimit = require(script.Parent.Parent.Security.RateLimit)
 
 local Remotes = {}
 
@@ -25,9 +27,22 @@ request.Parent = folder
 
 type Handler = (player: Player, payload: any) -> (boolean, any?, any?)
 local handlers: { [string]: Handler } = {}
-local budget: { [Player]: { tokens: number, t: number } } = {}
+local budget: { [Player]: RateLimit.Bucket } = {}
+local cooldowns: { [Player]: RateLimit.Cooldowns } = {}
 local RATE = 20 -- requests per second sustained
 local BURST = 40
+-- Minimum seconds between two calls of the same action by one player (on top of the global bucket). Only for
+-- actions a real client calls rarely; the farming actions are limited by the bucket and by their own state checks.
+local ACTION_COOLDOWN: { [string]: number } = {
+	Hello = 0.5,
+	GoHome = 1,
+	SetLanguage = 0.5,
+	ShareLink = 3,
+	WatchAd = 3,
+	ClaimGroupGift = 2,
+	RedeemCode = 1,
+}
+Remotes.ACTION_COOLDOWN = ACTION_COOLDOWN
 
 function Remotes.handle(action: string, fn: Handler)
 	handlers[action] = fn
@@ -74,38 +89,50 @@ end
 
 function Remotes.forget(player: Player)
 	budget[player] = nil
+	cooldowns[player] = nil
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any)
-	if type(action) ~= "string" then
+	if type(action) ~= "string" or #action > Validate.MAX_ACTION_LEN then
 		return false, Remotes.tr(player, Locale.ref("err.badRequest"))
 	end
+	if not player.Parent then
+		return false -- already leaving: do not create per-player state that nobody would clean up
+	end
 	Remotes.requests += 1
-	local b = budget[player]
 	local now = os.clock()
+	local b = budget[player]
 	if not b then
-		b = { tokens = BURST, t = now }
+		b = RateLimit.newBucket(BURST, now)
 		budget[player] = b
 	end
-	b.tokens = math.min(BURST, b.tokens + (now - b.t) * RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not RateLimit.take(b, now, RATE, BURST) then
 		return false, Remotes.tr(player, Locale.ref("err.slowDown"))
 	end
-	b.tokens -= 1
 	local fn = handlers[action]
 	if not fn then
 		return false, Remotes.tr(player, Locale.ref("err.unknownAction"))
 	end
-	if payload ~= nil and type(payload) ~= "table" then
+	if not Validate.payload(payload) then
 		return false, Remotes.tr(player, Locale.ref("err.badRequest"))
+	end
+	local gap = ACTION_COOLDOWN[action]
+	if gap then
+		local cd = cooldowns[player]
+		if not cd then
+			cd = {}
+			cooldowns[player] = cd
+		end
+		if not RateLimit.ready(cd, action, now, gap) then
+			return false, Remotes.tr(player, Locale.ref("err.slowDown"))
+		end
 	end
 	local ok, a, b2, c = pcall(fn, player, payload or {})
 	if not ok then
 		warn("[Remotes]", action, "error:", a)
 		return false, Remotes.tr(player, Locale.ref("err.generic"))
 	end
-	return a, Remotes.tr(player, b2), c
+	return a == true, Remotes.tr(player, b2), c
 end
 
 folder.Parent = ReplicatedStorage

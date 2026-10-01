@@ -6,6 +6,7 @@ local Locale = require(ReplicatedStorage.Shared.Locale)
 local R = Locale.ref
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
+local Validate = require(script.Parent.Parent.Security.Validate)
 
 local Shop = {}
 
@@ -101,8 +102,9 @@ Remotes.handle("BuySeed", function(player, payload)
 		return false, R("err.loading")
 	end
 	local seedId = payload.seedId
-	local amount = math.clamp(math.floor(tonumber(payload.amount) or 1), 1, 50)
-	local seed = if type(seedId) == "string" then Config.SeedById[seedId] else nil
+	-- NaN/inf/strings fall back to 1: a NaN amount used to slip past every comparison and made cash NaN
+	local amount = Validate.clampAmount(payload.amount, 1, 50, 1)
+	local seed = if Validate.key(seedId, Config.SeedById) then Config.SeedById[seedId] else nil
 	if not seed then
 		return false, R("err.unknownSeed")
 	end
