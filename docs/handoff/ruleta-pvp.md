@@ -303,3 +303,10 @@ Build `default.project.json` OK (y test/showcase*), `luau-lsp analyze src` sin s
 ### Pendiente
 - "Saltar tutorial" es solo de sesión; si se quiere permanente haría falta un flag en el server.
 - Sin ids de audio: los cues nuevos (`win`) son silenciosos hasta cargarlos en `Config.Audio.sfx`.
+
+## Ronda 10: arreglos del playtest
+
+- Regalos por minutos: ahora se guardan en el perfil (`giftState = {day, played, claimed}`, dia UTC). Logica pura en `src/shared/Gifts.luau` (`roll`, `startFor`, `playedAt`); `State.loadGifts` al cargar el perfil y `State.syncGifts` (snapshot, reclamo, salida) guardan el tiempo jugado hoy. Reentrar el mismo dia no permite reclamar de nuevo y el reloj continua; un dia UTC nuevo reinicia todo. Saves viejos: default seguro via reconcile + `Gifts.roll`. Tests en `tests/unit_core.luau`.
+- "Jugar de nuevo": el cliente siempre manda `QuickPlay`. El servidor (`Tables.releaseFinished`) suelta la mesa en cuanto salen los resultados (`runner.resultsOut`, puesto en `MatchRunner` al emitir `ended`), tambien en `JoinTable`. Si el jugador ya espera en una mesa (auto-cola) `QuickPlay` responde ok sin error.
+- `not_your_turn` con carta PASS/SKIP: `Director.H.card` apaga `myTurn`/fase del HUD apenas el jugador juega esa carta, hasta el evento `turn`.
+- Playtest (new y mid): veredicto OK, sin rechazos de remotes.

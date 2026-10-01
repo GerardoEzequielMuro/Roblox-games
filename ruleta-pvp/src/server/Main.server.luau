@@ -67,6 +67,7 @@ local function onPlayerAdded(player: Player)
 		Data.release(player)
 		return
 	end
+	State.loadGifts(player)
 	Monetization.loadPasses(player)
 	State.checkSeason(player)
 	QuestService.ensure(player)
@@ -82,6 +83,7 @@ local function onPlayerAdded(player: Player)
 end
 
 local function onPlayerRemoving(player: Player)
+	State.syncGifts(player) -- bank today's play time in the profile before it is saved
 	-- free the per-player tables first: the final save below can take a few retries
 	State.cleanup(player)
 	Remotes.forget(player)

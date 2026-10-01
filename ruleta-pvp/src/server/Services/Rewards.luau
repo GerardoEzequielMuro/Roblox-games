@@ -84,6 +84,7 @@ function Rewards.init()
 		local p = Data.get(player)
 		local index = payload.index
 		local gift = if Guard.isInt(index, 1, #Config.Gifts) then Config.Gifts[index] else nil
+		State.syncGifts(player)
 		local claimed = State.giftsClaimed[player]
 		if not p or not gift or not claimed then
 			return false, M("msg.bad_request")

@@ -59,6 +59,7 @@ export type Profile = {
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
+	giftState: { day: number, played: number, claimed: { [number]: boolean } }, -- session gifts: UTC day, seconds played that day, claimed indexes
 	lock: { job: string, t: number }?,
 }
 
@@ -127,6 +128,7 @@ local function defaultProfile(): Profile
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
+		giftState = { day = 0, played = 0, claimed = {} },
 	}
 end
 Data.defaultProfile = defaultProfile

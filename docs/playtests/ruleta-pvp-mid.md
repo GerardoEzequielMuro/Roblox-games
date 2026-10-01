@@ -1,23 +1,23 @@
 # Playtest de ruleta-pvp
 
-- Comando: `python3 tools/uipreview/preview.py ruleta-pvp --playtest --minutes 25 --seed 1 --state mid`
-- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 25.2 min | reales: 14 s | rejoins del bot: 1
+- Comando: `python3 tools/uipreview/preview.py ruleta-pvp --playtest --minutes 10 --seed 1 --state mid`
+- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 10.2 min | reales: 5 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)
 
-**Veredicto: ERRORES**
+**Veredicto: OK**
 
 - Errores de Luau unicos (del juego): **0**
 - Warnings unicos: **0**
-- Remotes rechazados por el servidor sin que el bot lo esperara: **6** llamadas en 3 acciones
-- Invariantes violados / problemas de guardado / recibos / DataStore: **2**
+- Remotes rechazados por el servidor sin que el bot lo esperara: **0** llamadas en 0 acciones
+- Invariantes violados / problemas de guardado / recibos / DataStore: **0**
 - Estados trabados > 60 s virtuales: **0**
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
 - Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **0**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 6371 (t=0:39) -> 4753 (t=25:09); partes 1459 -> 1560; GUI 1719 -> 1064
-- Acciones del bot: aborted=1, afkTurns=2, botTurnsSeen=123, brakes=9, cards=8, eliminated=2, ended=5, leftMid=1, matches=4, maxBotTurnGapAfter=landed, maxBotTurnGapS=8, maxGapAfter=decide, maxGapS=14, playAgainNoop=2, playAgainOk=0, releasedAfterEnded=9.1, resultAfterEnded=2.2, results=5, spins=5, targets=5, wins=2
+- Instancias vivas en el DataModel: 6372 (t=0:39) -> 1857 (t=10:09); partes 1459 -> 917; GUI 1719 -> 250
+- Acciones del bot: aborted=0, afkTurns=2, botTurnsSeen=33, brakes=6, cards=2, eliminated=1, ended=2, leftMid=0, matches=2, maxBotTurnGapAfter=landed, maxBotTurnGapS=7, maxGapAfter=decide, maxGapS=14, playAgainNoop=0, playAgainOk=1, releasedAfterEnded=30, resultAfterEnded=2.1, results=2, spins=3, targets=3, wins=1
 
 ## Analisis del revisor (a mano)
 
@@ -44,20 +44,20 @@
 | t (virtual) | coins | elims | level | matches | streak | trophies | tutorialDone | wins | xp |
 |---|---|---|---|---|---|---|---|---|---|
 | 0:09 (start) | 2340 | 74 | 14 | 60 | 2 | 420 | 1 | 21 | 180 |
+| 0:39 | 2140 | 74 | 14 | 60 | 2 | 420 | 1 | 21 | 180 |
 | 1:39 | 2140 | 74 | 14 | 60 | 2 | 420 | 1 | 21 | 180 |
+| 2:09 | 2140 | 74 | 14 | 60 | 2 | 420 | 1 | 21 | 180 |
+| 3:09 | 2140 | 74 | 14 | 60 | 2 | 420 | 1 | 21 | 180 |
 | 3:39 | 2140 | 74 | 14 | 60 | 2 | 420 | 1 | 21 | 180 |
-| 5:09 | 2242 | 77 | 15 | 61 | 3 | 432 | 1 | 22 | 42 |
-| 7:09 | 2242 | 77 | 15 | 61 | 3 | 432 | 1 | 22 | 42 |
-| 9:09 | 2282 | 77 | 15 | 62 | 0 | 433 | 1 | 22 | 88 |
-| 10:39 | 2012 | 77 | 15 | 62 | 0 | 433 | 1 | 22 | 148 |
-| 12:39 | 2012 | 77 | 15 | 62 | 0 | 433 | 1 | 22 | 148 |
-| 14:39 | 2012 | 77 | 15 | 62 | 0 | 433 | 1 | 22 | 148 |
-| 16:12 | 4352 | 77 | 16 | 63 | 1 | 442 | 1 | 23 | 143 |
-| 18:12 | 4392 | 77 | 16 | 64 | 0 | 443 | 1 | 23 | 173 |
-| 20:12 | 4392 | 77 | 16 | 64 | 0 | 443 | 1 | 23 | 173 |
-| 21:42 | 4392 | 77 | 16 | 64 | 0 | 443 | 1 | 23 | 173 |
-| 23:42 | 3252 | 77 | 16 | 64 | 0 | 443 | 1 | 23 | 173 |
-| 25:09 (end) | 3252 | 77 | 16 | 64 | 0 | 443 | 1 | 23 | 173 |
+| 4:39 | 2140 | 74 | 14 | 60 | 2 | 420 | 1 | 21 | 180 |
+| 5:39 | 2482 | 77 | 15 | 61 | 3 | 432 | 1 | 22 | 42 |
+| 6:09 | 2482 | 77 | 15 | 61 | 3 | 432 | 1 | 22 | 42 |
+| 7:09 | 2482 | 77 | 15 | 61 | 3 | 432 | 1 | 22 | 42 |
+| 7:39 | 2482 | 77 | 15 | 61 | 3 | 432 | 1 | 22 | 42 |
+| 8:39 | 2522 | 78 | 15 | 62 | 0 | 434 | 1 | 22 | 88 |
+| 9:09 | 2522 | 78 | 15 | 62 | 0 | 434 | 1 | 22 | 88 |
+| 10:09 | 5922 | 78 | 15 | 62 | 0 | 434 | 1 | 22 | 158 |
+| 10:09 (end) | 5922 | 78 | 15 | 62 | 0 | 434 | 1 | 22 | 158 |
 
 Hitos:
 
@@ -66,27 +66,14 @@ Hitos:
 - 0:09 bought cosmetic e_cool
 - 0:23 match 1 seated
 - 4:43 match 1 result: place 1/5 classic coins +132 xp +102 trophies +12
-- 5:00 bought cosmetic e_cry
-- 5:01 match 2 seated
-- 8:58 match 2 eliminated (keeps watching): place 4/6 chaos coins +40 xp +46 trophies +1
-- 9:48 match 2 result: place 4/6 chaos coins +40 xp +46 trophies +1
-- 9:54 bought cosmetic w_neon
-- 9:55 match 3 seated
-- 14:48 match 3 result: place 1/6 teams coins +80 xp +80 trophies +9
-- 15:05 bought cosmetic t_carbon
-- 15:17 match 4 seated
-- 15:54 leaves mid match
-- 15:57 bought cosmetic ti_lucky
-- 15:57 rejoin: leaves (mid)
-- 16:12 rejoin ok: profile reloaded identical
-- 16:12 match 5 seated
-- 17:51 match 5 eliminated (keeps watching): place 6/6 chaos coins +40 xp +30 trophies +1
-- 22:57 match 5 result: place 6/6 chaos coins +40 xp +30 trophies +1
-- 23:01 bought cosmetic w_candy
-- 23:03 match 6 seated
-- 25:09 match 6 ended without a result screen: stopped
-- 25:09 bot script finished
-- 25:19 late receipt for a player that left -> NotProcessedYet
+- 5:00 match 2 seated
+- 8:14 match 2 eliminated (keeps watching): place 3/5 classic coins +40 xp +46 trophies +2
+- 9:38 match 2 result: place 3/5 classic coins +40 xp +46 trophies +2
+- 9:43 bought cosmetic e_cry
+- 9:55 rejoin: leaves (mid)
+- 10:09 rejoin ok: profile reloaded identical
+- 10:13 bot script finished
+- 10:19 late receipt for a player that left -> NotProcessedYet
 
 ## Errores de Luau
 
@@ -102,46 +89,33 @@ Ninguno.
 
 ## Remotes rechazados inesperadamente
 
-| remote:accion | llamadas | ok | rechazos | motivos |
-|---|---|---|---|---|
-| Request:Act | 27 | 23 | 4 | msg.not_your_turn x4 |
-| Request:ClaimDaily | 2 | 1 | 1 | msg.daily_tomorrow x1 |
-| Request:LeaveTable | 4 | 3 | 1 | msg.bad_request x1 |
-
-Ejemplos de `Request:Act`: `t=952 Act(kind=target,target=b1_2) -> msg.not_your_turn`; `t=953 Act(kind=spin) -> msg.not_your_turn`; `t=1415 Act(kind=target,target=b1_7) -> msg.not_your_turn`; `t=1415 Act(kind=spin) -> msg.not_your_turn`
-
-Ejemplos de `Request:ClaimDaily`: `t=905 ClaimDaily() -> msg.daily_tomorrow`
-
-Ejemplos de `Request:LeaveTable`: `t=1509 LeaveTable() -> msg.bad_request`
-
+Ninguno (los rechazos que el bot provoco a proposito no cuentan).
 
 ## Invariantes, trabas, guardado, recibos
 
-- **Posible bug del juego (detectado por el bot)** t=4:58 x2: 'Play again' pressed 2.6 s after the result screen appeared (the server still had me at the table: true) ends in the lobby without a new match: Main.client.luau:96 onPlayAgain only calls QuickPlay when Net.get('table') is nil, but the table is not released until MatchRunner finishes T.ending (9 s) after the 'ended' event (`ruleta-pvp/src/client/Main.client.luau:96 < ruleta-pvp/src/server/Services/MatchRunner.luau:198 < ruleta-pvp/src/server/Services/Tables.luau:327`)
-- **Posible bug del juego (detectado por el bot)** t=16:12: the session gifts (Config.Gifts, 'minutes since joining') are not saved: after rejoining the 2 claimed gifts are claimable again (State.giftsClaimed is per session, never in the profile) (`ruleta-pvp/src/server/Services/State.luau:32 < ruleta-pvp/src/server/Services/Rewards.luau:83`)
+Ninguno.
 
 ## Trafico de remotes
 
 | remote:accion | llamadas | ok | rechazos inesperados | rechazos provocados | max s |
 |---|---|---|---|---|---|
-| Request:Act | 27 | 23 | 4 | 0 | 0 |
-| Request:Buy | 6 | 6 | 0 | 0 | 0 |
-| Request:ClaimDaily | 2 | 1 | 1 | 0 | 0 |
-| Request:ClaimGift | 4 | 4 | 0 | 0 | 0 |
-| Request:ClaimQuest | 2 | 2 | 0 | 0 | 0 |
-| Request:Equip | 4 | 4 | 0 | 0 | 0 |
-| Request:GetBoards | 26 | 26 | 0 | 0 | 0 |
+| Request:Act | 14 | 14 | 0 | 0 | 0 |
+| Request:Buy | 2 | 2 | 0 | 0 | 0 |
+| Request:ClaimDaily | 1 | 1 | 0 | 0 | 0 |
+| Request:ClaimGift | 1 | 1 | 0 | 0 | 0 |
+| Request:ClaimQuest | 1 | 1 | 0 | 0 | 0 |
+| Request:GetBoards | 11 | 11 | 0 | 0 | 0 |
 | Request:GetState | 2 | 2 | 0 | 0 | 0 |
-| Request:GetTables | 2 | 2 | 0 | 0 | 0 |
-| Request:LeaveTable | 4 | 3 | 1 | 0 | 0 |
-| Request:QuickPlay | 6 | 6 | 0 | 0 | 0 |
-| Request:SetSetting | 15 | 15 | 0 | 0 | 0 |
+| Request:GetTables | 1 | 1 | 0 | 0 | 0 |
+| Request:LeaveTable | 1 | 1 | 0 | 0 | 0 |
+| Request:QuickPlay | 3 | 3 | 0 | 0 | 0 |
+| Request:SetSetting | 6 | 6 | 0 | 0 | 0 |
 
-RemoteEvents: Hand (srv->cli 106, cli->srv 0), LevelUp (srv->cli 2, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Match (srv->cli 598, cli->srv 0), Notify (srv->cli 3, cli->srv 0), Result (srv->cli 4, cli->srv 0), State (srv->cli 29, cli->srv 0), Tables (srv->cli 22, cli->srv 0), Unlock (srv->cli 1, cli->srv 0)
+RemoteEvents: Hand (srv->cli 43, cli->srv 0), LevelUp (srv->cli 1, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Match (srv->cli 227, cli->srv 0), Notify (srv->cli 3, cli->srv 0), Result (srv->cli 2, cli->srv 0), State (srv->cli 15, cli->srv 0), Tables (srv->cli 9, cli->srv 0), Unlock (srv->cli 1, cli->srv 0)
 
 Avisos del servidor al jugador (Notify/Toast): msg.thanks [success] x2, msg.pass_unlocked [success] x1
 
-DataStore: SpinShowdown_v1/u_90000001 (lecturas 24, escrituras 24), SpinShowdown_v1_lb_season_24321/90000001 (lecturas 12, escrituras 4), SpinShowdown_v1_lb_wins/90000001 (lecturas 12, escrituras 1), SpinShowdown_v1_referrals/90000001 (lecturas 13, escrituras 0)
+DataStore: SpinShowdown_v1/u_90000001 (lecturas 14, escrituras 14), SpinShowdown_v1_lb_season_24321/90000001 (lecturas 5, escrituras 2), SpinShowdown_v1_lb_wins/90000001 (lecturas 5, escrituras 1), SpinShowdown_v1_referrals/90000001 (lecturas 6, escrituras 0)
 
 Compras simuladas: prompt producto 8001 (grant); recibo producto 8001 -> PurchaseGranted; prompt producto 8002 (grant); recibo producto 8002 -> PurchaseGranted; prompt pase 7002 (grant); prompt producto 8003 (cancel)
 
@@ -160,8 +134,8 @@ Recibos concedidos: 2; reenviados con el mismo PurchaseId: 2.
 ## Log crudo (extracto)
 
 ```
-[info] t=15:06 MarketplaceService:PromptProductPurchase(8001) mode=grant
-[info] t=15:09 MarketplaceService:PromptProductPurchase(8002) mode=grant
-[info] t=15:12 MarketplaceService:PromptGamePassPurchase(7002) mode=grant
-[info] t=15:15 MarketplaceService:PromptProductPurchase(8003) mode=cancel
+[info] t=9:44 MarketplaceService:PromptProductPurchase(8001) mode=grant
+[info] t=9:47 MarketplaceService:PromptProductPurchase(8002) mode=grant
+[info] t=9:50 MarketplaceService:PromptGamePassPurchase(7002) mode=grant
+[info] t=9:53 MarketplaceService:PromptProductPurchase(8003) mode=cancel
 ```

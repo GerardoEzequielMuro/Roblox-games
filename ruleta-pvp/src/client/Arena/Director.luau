@@ -402,6 +402,13 @@ H.card = function(view, e, _my)
 	end
 	if e.player == myId then
 		MatchHud.cardPlayed = true
+		if e.card == "pass" or e.card == "skip" then
+			-- the turn leaves me with this card: no actions until the next `turn` event (the server would answer not_your_turn)
+			MatchHud.myTurn = false
+			MatchHud.phase = "idle"
+			MatchHud.pendingCard = nil
+			MatchHud.selectedTarget = nil
+		end
 	end
 	MatchHud.refresh()
 end

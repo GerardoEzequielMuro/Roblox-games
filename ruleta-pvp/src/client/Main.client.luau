@@ -93,9 +93,8 @@ end
 MatchHud.onPlayAgain = function(mode: string)
 	MatchHud.hide()
 	syncHud()
-	if not Net.get("table") then
-		request("QuickPlay", { mode = if mode == "duel" then nil else mode })
-	end
+	-- always ask: the server frees the seat as soon as the results are out (and answers ok if already queued)
+	request("QuickPlay", { mode = if mode == "duel" then nil else mode })
 end
 MenuWindows.onSpectate = function(tableId: string)
 	Director.spectate(tableId)

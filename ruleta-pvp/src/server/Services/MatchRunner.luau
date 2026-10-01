@@ -63,6 +63,7 @@ function Runner.new(tbl: TableRef, entrants: { MatchCore.Entrant }, humans: { [s
 	self.results = {} :: { [string]: any }
 	self.aborted = false
 	self.done = false
+	self.resultsOut = false
 	self.startCount = #entrants
 	self.events = 0
 	return self
@@ -194,6 +195,7 @@ function Runner:present(e: MatchCore.Event, nextEvent: MatchCore.Event?)
 			self:pay(id)
 		end
 		e.results = self.results
+		self.resultsOut = true -- results are on the clients: a seated player may queue again (Tables.releaseFinished)
 		self:broadcast(e)
 		self:wait(T.ending)
 		return

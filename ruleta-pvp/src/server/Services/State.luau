@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Gifts = require(ReplicatedStorage.Shared.Gifts)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Data = require(script.Parent.Data)
@@ -31,6 +32,36 @@ function State.init(player: Player)
 	State.sessionStart[player] = os.clock()
 	State.giftsClaimed[player] = {}
 	State.lastEmote[player] = 0
+end
+
+-- Called once the profile is loaded: restores today's claims and play time (a rejoin cannot re-claim gifts).
+function State.loadGifts(player: Player)
+	local p = Data.get(player)
+	if not p then
+		return
+	end
+	local rec = Gifts.roll(p.giftState, os.time())
+	p.giftState = rec
+	State.giftsClaimed[player] = rec.claimed
+	State.sessionStart[player] = Gifts.startFor(rec, os.clock())
+end
+
+-- Rolls over at the UTC day change and stores the seconds played today in the profile.
+function State.syncGifts(player: Player)
+	local p = Data.get(player)
+	local start = State.sessionStart[player]
+	if not p or not start then
+		return
+	end
+	local rec = p.giftState
+	if type(rec) ~= "table" or rec.day ~= Gifts.dayKey(os.time()) then
+		rec = Gifts.roll(nil, os.time())
+		p.giftState = rec
+		State.giftsClaimed[player] = rec.claimed
+		State.sessionStart[player] = os.clock()
+		start = os.clock()
+	end
+	rec.played = Gifts.playedAt(start, os.clock())
 end
 
 function State.cleanup(player: Player)
@@ -184,6 +215,7 @@ function State.snapshot(player: Player): { [string]: any }?
 	if not p then
 		return nil
 	end
+	State.syncGifts(player)
 	local gifts = {}
 	local claimed = State.giftsClaimed[player]
 	if claimed then

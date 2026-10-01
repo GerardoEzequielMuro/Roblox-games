@@ -15,6 +15,7 @@ local Referral = require("../src/shared/Referral")
 local MatchFlow = require("../src/shared/MatchFlow")
 local Icons = require("../src/shared/Icons")
 local SeasonPass = require("../src/shared/SeasonPass")
+local Gifts = require("../src/shared/Gifts")
 
 local checks, fails = 0, 0
 local function check(name: string, cond: any, detail: any?)
@@ -1155,6 +1156,32 @@ do
 	check("points formula has no paid input", #{ SeasonPass.matchPoints(1, 5, 2) } == 1)
 	-- the season products exist and are matched by kind
 	check("season products wired", Config.ProductByKey.SeasonPass.kind == "season" and Config.ProductByKey.SeasonTier.kind == "tier")
+end
+
+-- play-time gifts persisted per UTC day: a same-day rejoin cannot re-claim, a new day resets
+do
+	local day0 = 20000 * 86400
+	local t1 = day0 + 3600
+	local rec = Gifts.roll(nil, t1)
+	check("gifts: nil save gets a default", rec.day == 20000 and rec.played == 0 and next(rec.claimed) == nil)
+	check("gifts: garbage replaced", Gifts.roll("junk", t1).day == 20000)
+	local clock = 500 -- os.clock at join
+	local start = Gifts.startFor(rec, clock)
+	local function ready(i: number, nowClock: number, r: any): boolean
+		return not r.claimed[i] and nowClock - start >= Config.Gifts[i].minutes * 60
+	end
+	check("gifts: ready after its minutes", ready(1, clock + 180, rec) and not ready(1, clock + 179, rec))
+	rec.claimed[1] = true
+	rec.played = Gifts.playedAt(start, clock + 200)
+	local back = Gifts.roll(rec, t1 + 260) -- rejoin on the same day
+	check("gifts: claim survives same-day rejoin", back.claimed[1] == true and back.played == 200)
+	local clock2 = 9000
+	start = Gifts.startFor(back, clock2)
+	check("gifts: same-day rejoin cannot re-claim", not ready(1, clock2 + 99999, back))
+	check("gifts: timer continues across rejoin", ready(2, clock2 + 280, back) and not ready(2, clock2 + 279, back))
+	local nd = Gifts.roll(back, day0 + 86400 + 5)
+	check("gifts: new UTC day resets claims and time", nd.day == 20001 and nd.played == 0 and next(nd.claimed) == nil)
+	check("gifts: bad numbers clamped", Gifts.roll({ day = 20000, played = -9, claimed = { [1] = true, x = true } }, t1).played == 0)
 end
 
 print(string.format("%d checks, %d failures", checks, fails))

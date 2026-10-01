@@ -245,6 +245,21 @@ function Tables.leave(player: Player)
 	markDirty()
 end
 
+-- Play again / re-queue: a player still seated at a match whose results are already out is released right away
+-- (instead of waiting for the end-of-match pause). Returns true when the player is free to sit somewhere else.
+function Tables.releaseFinished(player: Player): boolean
+	local w = where[player]
+	if not w then
+		return true
+	end
+	local runner = w.tbl.runner
+	if runner and runner.resultsOut then
+		Tables.leave(player)
+		return true
+	end
+	return false
+end
+
 local function addBots(tbl: Table, count: number)
 	local used: { [string]: boolean } = {}
 	for _, seat in tbl.seats do
@@ -555,6 +570,13 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 		if not p.tutorialDone then
 			modeId = "classic" -- the first match is always the simple one
 		end
+		if not Tables.releaseFinished(player) then
+			local w = where[player]
+			if w and not w.tbl.runner and w.tbl.status ~= "playing" then
+				return true, w.tbl.id -- already waiting at a table for the next match (auto-queue): nothing to do
+			end
+			return false, M("msg.already_seated")
+		end
 		local tbl = Tables.findPublic(modeId)
 		if not tbl then
 			return false, M("msg.no_free_table")
@@ -568,6 +590,7 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 		if not tbl or tbl.kind ~= "public" then
 			return false, M("msg.bad_request")
 		end
+		Tables.releaseFinished(player)
 		local ok, err = Tables.sit(player, tbl)
 		return ok, if ok then tbl.id else err
 	end)
