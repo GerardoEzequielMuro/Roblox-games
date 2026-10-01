@@ -96,7 +96,7 @@ function LiveEventService.init()
 			pcall(function()
 				MessagingService:SubscribeAsync(TOPIC, function(message)
 					local d = message.Data
-					if type(d) == "table" and type(d.id) == "string" and Config.LiveEventDefs[d.id] and type(d.endsAt) == "number" then
+					if type(d) == "table" and type(d.id) == "string" and Config.LiveEventDefs[d.id] and type(d.endsAt) == "number" and d.endsAt == d.endsAt and d.endsAt ~= math.huge then
 						override = { id = d.id, endsAt = math.min(d.endsAt, os.time() + Config.LiveEventMaxMinutes * 60) }
 						LiveEventService.refresh()
 					end

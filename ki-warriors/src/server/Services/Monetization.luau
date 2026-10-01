@@ -26,6 +26,8 @@ local Cosmetics = require(script.Parent.Cosmetics)
 local Monetization = {}
 
 local MAX_RECEIPTS = 60
+local receiptBusy: { [string]: boolean } = {} -- PurchaseIds being processed right now
+local adBusy: { [Player]: boolean } = {} -- one rewarded ad at a time per player
 
 -- Lookups read Config every time, so IDs pasted into Config (or set by a test) just work.
 local function passByGamepassId(id: number): any
@@ -163,7 +165,19 @@ function Monetization.loadPasses(player: Player)
 	State.refreshPasses(player)
 end
 
+-- Persist the profile (it holds the PurchaseId) before the receipt is acknowledged.
+local function persisted(player: Player): boolean
+	if Data.isPersistent(player) then
+		return Data.save(player)
+	end
+	-- no DataStore at all (Studio without API access): nothing to wait for
+	return RunService:IsStudio()
+end
+
 local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
+	if type(receipt) ~= "table" or type(receipt.PlayerId) ~= "number" or type(receipt.ProductId) ~= "number" or receipt.PurchaseId == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	local player = Players:GetPlayerByUserId(receipt.PlayerId)
 	if not player then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -173,39 +187,62 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local purchaseId = tostring(receipt.PurchaseId)
-	if table.find(p.purchases, purchaseId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- already granted earlier
-	end
-	local product = productById(receipt.ProductId)
-	local adPlacement = adPlacementById(receipt.ProductId)
-	if not product and not adPlacement then
-		warn("[Monetization] unknown product", receipt.ProductId)
+	-- Roblox can call this again while a previous call is still saving: answer "not yet"
+	if receiptBusy[purchaseId] then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	local granted = true
-	local ok, err = pcall(function()
-		if adPlacement then
-			grantAd(player, p, adPlacement)
-		elseif product then
-			granted = Monetization.grantProduct(player, product.key)
+	-- A profile that failed to load would lose the grant on leave: do not take the money yet.
+	if not Data.isPersistent(player) and not RunService:IsStudio() then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	receiptBusy[purchaseId] = true
+	local decision = Enum.ProductPurchaseDecision.NotProcessedYet
+	local okRun, errRun = (pcall :: any)(function()
+		if table.find(p.purchases, purchaseId) then
+			-- granted earlier; make sure it reached the DataStore before saying so (a failed
+			-- save on the first attempt leaves the id in memory only)
+			if persisted(player) then
+				decision = Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+			return
 		end
+		local product = productById(receipt.ProductId)
+		local adPlacement = adPlacementById(receipt.ProductId)
+		if not product and not adPlacement then
+			warn("[Monetization] unknown product", receipt.ProductId)
+			return
+		end
+		local granted = true
+		local ok, err = pcall(function()
+			if adPlacement then
+				grantAd(player, p, adPlacement)
+			elseif product then
+				granted = Monetization.grantProduct(player, product.key)
+			end
+		end)
+		if not ok or not granted then
+			warn("[Monetization] grant failed", err)
+			return
+		end
+		table.insert(p.purchases, purchaseId)
+		while #p.purchases > MAX_RECEIPTS do
+			table.remove(p.purchases, 1)
+		end
+		-- Persist before acknowledging, so a crash cannot grant twice or lose the purchase.
+		if not persisted(player) then
+			return
+		end
+		if product then
+			Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
+		end
+		decision = Enum.ProductPurchaseDecision.PurchaseGranted
 	end)
-	if not ok or not granted then
-		warn("[Monetization] grant failed", err)
+	receiptBusy[purchaseId] = nil
+	if not okRun then
+		warn("[Monetization] receipt error", errRun)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	table.insert(p.purchases, purchaseId)
-	while #p.purchases > MAX_RECEIPTS do
-		table.remove(p.purchases, 1)
-	end
-	-- Persist before acknowledging, so a crash cannot grant twice or lose the purchase.
-	if Data.isPersistent(player) and not Data.save(player) then
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-	if product then
-		Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
-	end
-	return Enum.ProductPurchaseDecision.PurchaseGranted
+	return decision
 end
 Monetization.processReceipt = processReceipt
 
@@ -228,16 +265,21 @@ function Monetization.init()
 		if not p or type(id) ~= "number" or id == 0 then
 			return false, M("msg.ad_unavailable")
 		end
+		if adBusy[player] then
+			return false, M("msg.slow_down")
+		end
 		if adsLeft(p) <= 0 then
 			return false, M("msg.ad_cap")
 		end
 		if p.ads.day ~= adDay() then
 			p.ads = { day = adDay(), count = 0 }
 		end
+		adBusy[player] = true -- ShowRewardedVideoAdAsync yields: block overlapping calls
 		local ok, result = pcall(function()
 			local reward = (AdService :: any):CreateAdRewardFromDevProductId(id)
 			return (AdService :: any):ShowRewardedVideoAdAsync(player, reward)
 		end)
+		adBusy[player] = nil
 		if not ok then
 			warn("[Monetization] ad failed", result)
 			return false, M("msg.ad_unavailable")
@@ -247,14 +289,28 @@ function Monetization.init()
 		return true, tostring(if typeof(result) == "EnumItem" then (result :: any).Name else result)
 	end)
 
+	Players.PlayerRemoving:Connect(function(player)
+		adBusy[player] = nil
+	end)
+
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, gamePassId: number, purchased: boolean)
-		if not purchased then
+		if purchased ~= true or not player.Parent then
 			return
 		end
 		local pass = passByGamepassId(gamePassId)
 		if pass then
+			-- the engine's own server-side signal; cache it, then refresh the rest of the
+			-- cache from the Marketplace so a pass bought elsewhere (another server) shows too
 			State.passes[player] = State.passes[player] or {}
 			State.passes[player][pass.key] = true
+			task.spawn(function()
+				local ok, has = pcall(function()
+					return MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamePassId)
+				end)
+				if ok and not has then
+					warn("[Monetization] Marketplace has not confirmed the pass yet:", pass.key)
+				end
+			end)
 			onPassChanged(player)
 			Remotes.notify(player, M("msg.pass_unlocked", { item = M("pass." .. pass.key .. ".name") }), "success")
 		end

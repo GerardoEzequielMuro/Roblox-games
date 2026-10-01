@@ -7,8 +7,13 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Validate = require(script.Parent.Validate)
 
 local Data = {}
+
+-- Save format version. Bump it and add a migrations[old] step whenever the shape changes.
+-- A save written by a NEWER version is never loaded (and never overwritten): see Data.load.
+Data.VERSION = 2
 
 export type Profile = {
 	version: number,
@@ -86,7 +91,10 @@ end
 
 Data.profiles = {} :: { [Player]: Profile }
 local loadedOk: { [Player]: boolean } = {}
+local saving: { [Player]: boolean } = {} -- one UpdateAsync in flight per player
 local LOCK_TTL = 150
+local SAVE_ATTEMPTS = 3
+local tooNew: { [Player]: boolean } = {}
 
 local function defaultSettings(): { [string]: any }
 	return { stat = "strength", autoTrain = false, autoCharge = false, autoFight = false, music = true, sfx = true, lite = false, shake = true }
@@ -102,7 +110,7 @@ local function defaultProfile(): Profile
 		upgrades[u.id] = 0
 	end
 	local p: Profile = {
-		version = 1,
+		version = Data.VERSION,
 		stats = stats,
 		sparks = 0,
 		gems = 0,
@@ -170,8 +178,30 @@ local function num(v: any, default: number): number
 	return default
 end
 
+-- Ordered upgrade steps: migrations[n] turns a version-n save into version n + 1.
+local migrations: { [number]: (any) -> () } = {
+	-- 1 -> 2: round 7 hardening; saves written before it could hold NaN / inf from bugs
+	[1] = function(p: any)
+		Validate.sanitize(p)
+	end,
+}
+
+local function migrate(p: any)
+	local v = if type(p.version) == "number" and p.version >= 1 and p.version == p.version then math.floor(p.version) else 1
+	while v < Data.VERSION do
+		local step = migrations[v]
+		if step then
+			step(p)
+		end
+		v += 1
+	end
+	p.version = Data.VERSION
+end
+Data.migrate = migrate
+
 -- Fill keys added in later versions and drop content that no longer exists in Config.
 local function reconcile(p: any): Profile
+	migrate(p)
 	local def = defaultProfile() :: any
 	for k, v in def do
 		if p[k] == nil then
@@ -303,6 +333,22 @@ local function key(player: Player): string
 	return "u_" .. player.UserId
 end
 
+-- Waits (bounded) until the UpdateAsync request budget has room, so bursts of saves (shutdown,
+-- many players joining) queue up instead of being dropped by the engine.
+local function waitBudget(maxWait: number)
+	local waited = 0
+	while waited < maxWait do
+		local ok, budget = pcall(function()
+			return DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+		end)
+		if not ok or budget >= 2 then
+			return
+		end
+		task.wait(0.5)
+		waited += 0.5
+	end
+end
+
 function Data.load(player: Player): Profile
 	if not storeOk or not store then
 		local p = defaultProfile()
@@ -314,9 +360,18 @@ function Data.load(player: Player): Profile
 	local result: any = nil
 	for attempt = 1, 6 do
 		local lockedByOther = false
+		local newer = false
+		waitBudget(10)
 		local ok, err = pcall(function()
 			ds:UpdateAsync(key(player), function(old: any)
 				local now = os.time()
+				if old and type(old) ~= "table" then
+					return nil -- corrupt entry: leave it alone, session will not save
+				end
+				if old and type(old.version) == "number" and old.version > Data.VERSION then
+					newer = true -- written by a newer server version (rollback): never touch it
+					return nil
+				end
 				if old and old.lock and old.lock.job ~= game.JobId and now - old.lock.t < LOCK_TTL and attempt < 6 then
 					lockedByOther = true
 					return nil -- abort write, another server still owns the session
@@ -327,6 +382,12 @@ function Data.load(player: Player): Profile
 				return p
 			end)
 		end)
+		if newer then
+			warn("[Data] save of", player.Name, "is from a newer game version - session will not save")
+			tooNew[player] = true
+			result = nil
+			break
+		end
 		if ok and not lockedByOther and result then
 			break
 		end
@@ -334,7 +395,7 @@ function Data.load(player: Player): Profile
 			warn("[Data] load failed for", player.Name, err)
 		end
 		result = nil
-		task.wait(if lockedByOther then 5 else 2)
+		task.wait(if lockedByOther then 5 else 2 * attempt)
 		if not player.Parent then
 			break
 		end
@@ -351,35 +412,72 @@ function Data.load(player: Player): Profile
 	return result
 end
 
+-- Writes the profile with UpdateAsync (never a blind SetAsync) under the soft session lock.
+-- One save per player at a time; transient failures retry with backoff. release = true also
+-- frees the lock (player leaving / server closing) and waits for any save already in flight.
 function Data.save(player: Player, release: boolean?): boolean
 	local p = Data.profiles[player]
-	if not p or not loadedOk[player] or not store then
+	if not p or not loadedOk[player] or not store or tooNew[player] then
 		return false
 	end
+	if saving[player] then
+		if not release then
+			return false -- autosave skips while a save is running
+		end
+		local t0 = os.clock()
+		while saving[player] and os.clock() - t0 < 20 do
+			task.wait(0.1)
+		end
+		if saving[player] or not Data.profiles[player] then
+			return false
+		end
+	end
+	saving[player] = true
 	local ds = store :: DataStore
-	p.savedAt = os.time()
-	p.lock = if release then nil else { job = game.JobId, t = os.time() }
 	local wrote = false
-	local ok, err = pcall(function()
-		ds:UpdateAsync(key(player), function(old: any)
-			if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
-				return nil -- another server owns it now; don't clobber
-			end
-			wrote = true
-			return p
+	local okAny = false
+	for attempt = 1, SAVE_ATTEMPTS do
+		-- never persist NaN / inf: fix in place and say so
+		local fixed = Validate.sanitize(p)
+		if fixed > 0 then
+			warn("[Data] replaced", fixed, "non-finite number(s) before saving", player.Name)
+		end
+		p.version = Data.VERSION
+		p.savedAt = os.time()
+		p.lock = if release then nil else { job = game.JobId, t = os.time() }
+		waitBudget(if release then 5 else 15)
+		wrote = false
+		local ok, err = pcall(function()
+			ds:UpdateAsync(key(player), function(old: any)
+				if old and type(old) == "table" and type(old.version) == "number" and old.version > Data.VERSION then
+					return nil -- newer format on disk: do not clobber it
+				end
+				if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
+					return nil -- another server owns it now; don't clobber
+				end
+				wrote = true
+				return p
+			end)
 		end)
-	end)
-	if not ok then
-		warn("[Data] save failed for", player.Name, err)
-		return false
+		if ok then
+			okAny = true
+			break
+		end
+		warn("[Data] save failed for", player.Name, "attempt", attempt, err)
+		if attempt < SAVE_ATTEMPTS then
+			task.wait(attempt * 1.5) -- backoff: 1.5 s, 3 s
+		end
 	end
-	return wrote
+	saving[player] = nil
+	return okAny and wrote
 end
 
 function Data.release(player: Player)
 	Data.save(player, true)
 	Data.profiles[player] = nil
 	loadedOk[player] = nil
+	saving[player] = nil
+	tooNew[player] = nil
 end
 
 function Data.get(player: Player): Profile?
@@ -394,8 +492,14 @@ function Data.startAutosave()
 	task.spawn(function()
 		while true do
 			task.wait(Config.AutosaveInterval)
-			for _, player in Players:GetPlayers() do
-				task.spawn(Data.save, player)
+			-- spread the writes over the interval instead of one burst
+			local list = Players:GetPlayers()
+			local gap = math.clamp(Config.AutosaveInterval / math.max(1, #list) * 0.5, 0.2, 3)
+			for _, player in list do
+				if player.Parent then
+					task.spawn(Data.save, player)
+					task.wait(gap)
+				end
 			end
 		end
 	end)

@@ -9,6 +9,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Quests = require(ReplicatedStorage.Shared.Quests)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
@@ -116,8 +117,8 @@ function QuestService.init()
 
 	Remotes.handle("ClaimQuest", function(player, payload)
 		local p = QuestService.ensure(player)
-		local i = payload.i
-		if not p or type(i) ~= "number" or not p.quests.list[i] then
+		local i = Validate.int(payload.i, 1, 16)
+		if not p or not i or not p.quests.list[i] then
 			return false, M("msg.bad_request")
 		end
 		local q = p.quests.list[i]

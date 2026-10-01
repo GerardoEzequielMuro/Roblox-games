@@ -7,6 +7,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
@@ -104,8 +105,8 @@ function Relics.init(world: { [string]: any })
 	Remotes.handle("CollectRelic", function(player, payload)
 		local p = Data.get(player)
 		local f = Fighters.ofPlayer(player)
-		local i = payload.i
-		if not p or not f or type(i) ~= "number" then
+		local i = Validate.int(payload.i, 1, Config.Relics.count)
+		if not p or not f or not i then
 			return false, M("msg.bad_request")
 		end
 		if os.time() < p.relics.nextAt then

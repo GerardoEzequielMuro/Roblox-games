@@ -19,6 +19,7 @@ local Hooks = require(script.Parent.Hooks)
 local M = Locale.m
 
 local Social = {}
+local groupBusy: { [Player]: boolean } = {}
 
 local live = game.PlaceId ~= 0 -- DataStores only work in a published place
 
@@ -159,6 +160,10 @@ function Social.init()
 		end
 	end)
 
+	Players.PlayerRemoving:Connect(function(player)
+		groupBusy[player] = nil
+	end)
+
 	Remotes.handle("ShareLink", function(player)
 		local ok, err = pcall(function()
 			(SocialService :: any):PromptLinkSharingAsync(player, {
@@ -178,12 +183,17 @@ function Social.init()
 		if not p or Config.GroupId == 0 then
 			return false, M("msg.group_unavailable")
 		end
-		if p.groupGiftClaimed then
+		if p.groupGiftClaimed or groupBusy[player] then
 			return false, M("msg.already_claimed")
 		end
+		groupBusy[player] = true -- IsInGroupAsync yields: two calls must not both pay out
 		local ok, member = pcall(function()
 			return (player :: any):IsInGroupAsync(Config.GroupId)
 		end)
+		groupBusy[player] = nil
+		if p.groupGiftClaimed then
+			return false, M("msg.already_claimed")
+		end
 		if not ok or not member then
 			return false, M("msg.join_group_first")
 		end

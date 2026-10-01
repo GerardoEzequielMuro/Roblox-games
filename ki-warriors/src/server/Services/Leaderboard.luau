@@ -86,18 +86,47 @@ local function updateStats(player: Player)
 	end
 end
 
+-- Scores come only from the server's own profile (never from a client). Written with
+-- UpdateAsync: power and ascensions only ever go up (a lagging server cannot lower them), the
+-- arena rating is a plain latest value. Skipped when unchanged and when the budget is low.
+local lastPushed: { [Player]: { [string]: number } } = {}
+local MONOTONIC = { power = true, rebirths = true }
+
+local function finiteScore(v: number): number?
+	if v ~= v or v == math.huge or v == -math.huge or v < 0 or v > 2 ^ 52 then
+		return nil
+	end
+	return math.floor(v)
+end
+Leaderboard.finiteScore = finiteScore
+
 local function pushScores()
 	for _, player in Players:GetPlayers() do
 		local p = Data.get(player)
 		if p and Data.isPersistent(player) then
 			local key = tostring(player.UserId)
 			local values = { power = encodePower(math.max(p.bestPower, State.power(p))), rebirths = p.rebirths, arena = p.pvp.rating }
+			local last = lastPushed[player] or {}
+			lastPushed[player] = last
 			for id, store in stores do
-				if id ~= "rebirths" or p.rebirths > 0 then
-					if id ~= "arena" or p.pvp.kills > 0 then
-						pcall(function()
-							store:SetAsync(key, values[id])
+				local v = finiteScore(values[id] or 0)
+				if v and last[id] ~= v and (id ~= "rebirths" or p.rebirths > 0) and (id ~= "arena" or p.pvp.kills > 0) then
+					local okBudget, budget = pcall(function()
+						return DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+					end)
+					if okBudget and budget < 4 then
+						break -- leave the rest for the next round; profile saves come first
+					end
+					local ok = pcall(function()
+						store:UpdateAsync(key, function(old: any)
+							if MONOTONIC[id] and type(old) == "number" and old >= v then
+								return nil :: any
+							end
+							return v
 						end)
+					end)
+					if ok then
+						last[id] = v
 					end
 				end
 			end
@@ -161,6 +190,9 @@ function Leaderboard.init(world: { [string]: any })
 	for _, board in boards do
 		renderBoard(board, {})
 	end
+	Players.PlayerRemoving:Connect(function(player)
+		lastPushed[player] = nil
+	end)
 	Remotes.handle("GetBoards", function()
 		return true, Leaderboard.rows
 	end)

@@ -437,6 +437,13 @@ function Fighters.init()
 		if f then
 			Fighters.remove(f)
 		end
+		-- enemies keep damage credit per Player: drop the leaver so the reference is released
+		for _, other in list do
+			local c = other.contributions
+			if c then
+				c[player] = nil
+			end
+		end
 	end)
 	-- keep max HP in line with Defense
 	task.spawn(function()

@@ -302,3 +302,47 @@ El activo sigue sin terminar antes de ~3 semanas (día 21), aunque quedó más c
 - Forms: Corona y Solstice se desbloquean a 600M y 1,25B y los efectos se ven bien (colores dorado y dorado/violeta). Tras ascender, con poder 40M siguen siendo 3 formas (Kindled, Blazing, Tempest).
 - No corrí el AutoTest de Studio; no agregué pruebas de los desafíos ahí (solo puras). En el celular la ventana es larga: los desafíos quedan justo bajo el encabezado y se ve con un scroll corto.
 - Límite del simulador: el casual juega todos los días; uno que falta 3 de 7 días no llega a cerrar el pase, pero el multiplicador lo acerca bastante.
+
+## Ronda 7: seguridad
+
+Auditoría de anti-exploit y seguridad de guardado, asumiendo que cada cliente es un exploiter. Todo sin Studio. Los `src/server/Services/*` ahora pasan por un helper puro nuevo, `src/server/Services/Validate.luau` (tipos, rangos, enteros, whitelist, payload plano, token bucket, cooldown, presupuesto de movimiento, saneo de NaN/inf). Corregidas: **3 altas, 8 medias, 7 bajas**.
+
+### Vulnerabilidades
+
+| Sev. | Archivo:línea | Cómo se explotaba | Cómo se arregló |
+|---|---|---|---|
+| Alta | `Monetization.luau:177` (`processReceipt`) | Si el `Data.save` fallaba tras otorgar, el `PurchaseId` quedaba solo en memoria y el reintento de Roblox devolvía `PurchaseGranted` sin que estuviera guardado (compra perdida al salir). Además, dos llamadas concurrentes con el mismo id: la segunda veía el id y respondía Granted antes de que terminara el guardado. | Ahora el camino "ya otorgado" también exige guardado exitoso antes de `PurchaseGranted`; set `receiptBusy` por PurchaseId (concurrente = `NotProcessedYet`); validación de la forma del recibo. |
+| Alta | `Guard.luau:56-80` | El tope anti-teleport permitía ~400 studs/s sostenidos (6x el vuelo legítimo con boost): un exploiter con WalkSpeed/velocidad editada volaba a esa velocidad sin corrección. | Presupuesto de studs (`Validate.moveStep`): refill a `maxSpeed*1,4` por segundo (maxSpeed = vuelo con boost o caminata del Agility server-side), capacidad para dash x2, knockback y picos de latencia. Mide horizontal + subida (caer es gratis). Sigue el chequeo de salto único. |
+| Alta | `Data.luau:418` (`save`) | Un solo intento: si el DataStore fallaba al salir (`PlayerRemoving`) se perdía la sesión hasta 90 s de progreso; sin serialización, autosave y salida podían pisarse; sin chequeo de presupuesto. | Reintentos con backoff (3 intentos), un guardado en vuelo por jugador (el de salida espera al del autosave), espera de `GetRequestBudgetForRequestType`, autosave escalonado en el intervalo. `UpdateAsync` con lock de sesión se mantiene (no hay `SetAsync` en perfiles). |
+| Media | `Combat.luau:675` + `melee` | Cada `Act "melee"` pagaba una rep manual aunque el golpe estuviera en cooldown, muerto o bloqueando: spamear a 8 reps/s (tope del bucket) contra ~3,7 legítimos. Farmeo de stats ~2x. | `Combat.melee` devuelve `(hits, swung)`; la rep solo se paga si el servidor aceptó el swing. |
+| Media | `Monetization.luau:182-190` | Perfil que no cargó (sin guardado) igual aceptaba recibos: el jugador pagaba y perdía el ítem al salir. | `NotProcessedYet` si el perfil no es persistente (salvo Studio sin DataStore). |
+| Media | `Data.luau` (`save`/`Validate.sanitize`) | Un NaN/inf de un bug llegaba al DataStore y rompía el perfil. | Se sanea (a 0, con warn) antes de cada guardado; migración v1→v2 lo limpia en saves viejos; `reconcile` lo vuelve a acotar. |
+| Media | `Data.luau:352` (`load`) | Tras un rollback del juego, un save con `version` mayor se cargaba y se pisaba con formato viejo. | `Data.VERSION = 2` + tabla `migrations`; save de versión futura: no se carga, no se toca, la sesión no guarda. |
+| Media | `Monetization.luau:277` (`WatchAd`) | `ShowRewardedVideoAdAsync` cede: varias llamadas en paralelo pasaban el chequeo de cupo diario antes de sumar. | Candado `adBusy` por jugador. |
+| Media | `Social.luau:189` (`ClaimGroupGift`) | `IsInGroupAsync` cede: dos llamadas paralelas otorgaban el aura dos veces. | Candado `groupBusy` + re-chequeo de `groupGiftClaimed` tras ceder. |
+| Media | `Rewards.luau:171` (`RedeemCode`) | Fuerza bruta de códigos a 12 req/s. | Bucket de fallos: 5 intentos errados y luego 1 cada 12 s. |
+| Media | `Leaderboard.luau:103` | `SetAsync` ciego cada ciclo: un server con datos viejos bajaba el puntaje; sin chequeo de presupuesto; escribía aunque no cambiara. | `UpdateAsync` (poder y ascensiones solo suben), solo si cambió, corta si el presupuesto es bajo, valores finitos. |
+| Baja | `Remotes.luau:107` | Payloads con NaN/inf, anidados, strings gigantes, muchas claves, índices fraccionarios. | `Validate.payload` global (plano, <=12 claves, strings <=64, finitos) y `Validate.int/enum` en Travel, ClaimGift, CollectRelic, ClaimQuest, ClaimPass. Nombre de acción <=32. |
+| Baja | `Remotes.luau:42` | Travel/Wish/ShareLink/WatchAd/SpinAura a la velocidad del bucket (12/s). | Tabla `ACTION_COOLDOWN` por acción y jugador. |
+| Baja | `Combat.luau:640-660` | `Act` con tipos raros: `kind` desconocido, `tech.id` larguísimo, vector con NaN/inf. | Whitelist de `kind`, `Validate.str/int`, `unit()` rechaza no-finitos. Los toggles no se throttlean por tipo a propósito (descartar un "block off" dejaría trabado al jugador). |
+| Baja | `Combat.luau:241` + `Config.luau` | Alcance de melee exacto: con latencia legítima el golpe fallaba. | `Combat.latencyTolerance = 2.5` studs extra, chequeado contra posiciones del servidor. Daño, cooldown, ki, forma y rango siguen 100% del servidor. |
+| Baja | `State.luau:167,185` | `spendSparks/Gems` con NaN descontaba NaN (hoy solo se llama con números de Config). | Guarda contra NaN/inf. |
+| Baja | `Fighters.luau:442` | Enemigos retenían al `Player` en `contributions` tras salir. | Se limpia en `PlayerRemoving`. |
+| Baja | `LiveEventService.luau:97` | `endsAt` NaN desde MessagingService. | Chequeo de finito. |
+
+### Qué ya estaba bien (revisado, sin cambios)
+- Daño, cooldowns, ki, costo de técnicas, requisitos de transformación (`refreshForms` por poder/pase) y hit detection son 100% del servidor; los proyectiles salen de la posición del servidor y el cliente solo manda una dirección.
+- `Request` ya tenía bucket por jugador; compras con chequeo de dueño/poder/gemas; reliquias y altar con chequeo de distancia contra la posición del servidor.
+- `ProcessReceipt` ya era idempotente por `PurchaseId` y guardaba antes de `PurchaseGranted`; los pases se cachean al entrar y al terminar `PromptGamePassPurchaseFinished` (evento del servidor; ahora además se reconfirma con `UserOwnsGamePassAsync`).
+- `BindToClose` guardaba a todos y el lock de sesión con `UpdateAsync` ya existía; el fast-fail en Studio se mantiene.
+
+### Tests
+- `tests/security_test.luau` (puro): finitos/enteros/rangos/whitelist, payloads (anidados, NaN/inf, claves, metatables, ciclos), token bucket (burst, sostenido, reloj hacia atrás, idle), cooldown, presupuesto de movimiento (vuelo legítimo con boost + dashes no dispara; 2x sostenido dispara en < 6 s; teleport; NaN), saneo/limpieza de NaN/inf con ciclos. Pasa junto a los demás `*_check` y el sim de pacing.
+- Build, `luau-lsp analyze` (0 líneas) y `preview.py ki-warriors --state mid --screen pc` (0 errores de runtime) OK.
+
+### Qué queda
+- `Travel` no exige estar cerca del portal (la UI viaja desde el menú, es decisión de diseño); solo tiene cooldown de 1,5 s y chequeo de combate.
+- Las direcciones de ataque las manda el cliente (el melee permite apuntar hacia atrás hasta 3 enemigos dentro del alcance); el daño/rango no cambia, pero un aim-bot sigue siendo posible. Un tope de ángulo contra el facing del servidor necesita probarse en Studio.
+- Los pasos de historia "cargar ki", "volar" y "dash" se completan con un toque: spamear el toggle los acelera (una sola vez por paso, valor casi nulo).
+- El umbral de velocidad (`SPEED_SLACK = 1,4`, capacidad en `Guard.luau`) está razonado, no medido: con lag extremo podría corregir de más. Mirar `Guard.count(player)` en Studio con latencia simulada.
+- Nunca corrí el flujo de compra real ni el DataStore real (sin Studio): los reintentos y el chequeo de presupuesto están verificados solo por tipos y por lectura.

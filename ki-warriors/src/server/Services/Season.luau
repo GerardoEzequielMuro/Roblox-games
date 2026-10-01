@@ -10,6 +10,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local BattlePass = require(ReplicatedStorage.Shared.BattlePass)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
@@ -209,8 +210,9 @@ function Season.init()
 	end
 
 	Remotes.handle("ClaimPass", function(player, payload)
-		local track, tier = payload.track, payload.tier
-		if type(track) ~= "string" or type(tier) ~= "number" then
+		local track = Validate.enum(payload.track, { free = true, premium = true })
+		local tier = Validate.int(payload.tier, 1, Config.BattlePass.tiers)
+		if not track or not tier then
 			return false, M("msg.bad_request")
 		end
 		return claim(player, track, tier)

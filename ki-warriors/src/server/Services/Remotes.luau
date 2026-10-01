@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local Validate = require(script.Parent.Validate)
 local M = Locale.m
 
 local Remotes = {}
@@ -33,9 +34,32 @@ request.Parent = folder
 
 type Handler = (player: Player, payload: any) -> (boolean, any?)
 local handlers: { [string]: Handler } = {}
-local budget: { [Player]: { tokens: number, t: number } } = {}
+local budget: { [Player]: Validate.Bucket } = {}
 local RATE = 12 -- requests per second sustained
 local BURST = 30
+-- Minimum seconds between two calls of the same action per player (on top of the bucket).
+-- Actions that open web prompts, spend real resources or roll random results get a floor.
+local ACTION_COOLDOWN: { [string]: number } = {
+	GetState = 0.5,
+	GetBoards = 5,
+	SetLanguage = 0.5,
+	Travel = 1.5,
+	Rebirth = 2,
+	SetRace = 1,
+	RedeemCode = 1.5,
+	ShareLink = 5,
+	WatchAd = 3,
+	SpinAura = 0.4,
+	Wish = 2,
+	ClaimOffline = 1,
+	ClaimPassAll = 1,
+	SetProtection = 1,
+	EquipAura = 0.25,
+	EquipSkin = 0.25,
+	EquipMount = 0.25,
+	UseSeed = 0.2,
+}
+local lastCall: { [Player]: { [string]: number } } = {}
 
 function Remotes.handle(action: string, fn: Handler)
 	handlers[action] = fn
@@ -56,30 +80,43 @@ end
 
 function Remotes.forget(player: Player)
 	budget[player] = nil
+	lastCall[player] = nil
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any)
 	if type(action) ~= "string" then
 		return false, M("msg.bad_request")
 	end
+	if #action > 32 then
+		return false, M("msg.bad_request")
+	end
 	local b = budget[player]
 	local now = os.clock()
 	if not b then
-		b = { tokens = BURST, t = now }
+		b = Validate.newBucket(RATE, BURST, now)
 		budget[player] = b
 	end
-	b.tokens = math.min(BURST, b.tokens + (now - b.t) * RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not Validate.take(b, now, 1) then
 		return false, M("msg.slow_down")
 	end
-	b.tokens -= 1
 	local fn = handlers[action]
 	if not fn then
 		return false, M("msg.unknown_action")
 	end
-	if payload ~= nil and type(payload) ~= "table" then
+	-- every payload is a flat table of primitives (no NaN/inf, no nesting, capped strings)
+	if payload ~= nil and not Validate.payload(payload) then
 		return false, M("msg.bad_request")
+	end
+	local floor = ACTION_COOLDOWN[action]
+	if floor then
+		local last = lastCall[player]
+		if not last then
+			last = {}
+			lastCall[player] = last
+		end
+		if not Validate.cooldown(last, action, now, floor) then
+			return false, M("msg.slow_down")
+		end
 	end
 	local ok, a, b2 = pcall(fn, player, payload or {})
 	if not ok then

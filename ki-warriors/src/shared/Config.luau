@@ -233,6 +233,7 @@ Config.Combat = {
 	-- melee
 	meleeCooldown = 0.3,
 	meleeRange = 9,
+	latencyTolerance = 2.5, -- extra studs of reach the server grants for client latency (melee)
 	meleeArc = 0.2, -- min dot(facing, toTarget)
 	meleeBase = 4,
 	meleePerStrength = 1,

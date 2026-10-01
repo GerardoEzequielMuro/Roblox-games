@@ -9,11 +9,13 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local M = Locale.m
 
 local Rewards = {}
+local codeTries: { [Player]: Validate.Bucket } = {}
 
 export type Reward = { kind: string, amount: number, item: string?, id: string? }
 
@@ -137,10 +139,10 @@ function Rewards.init()
 	end)
 
 	Remotes.handle("ClaimGift", function(player, payload)
-		local i = payload.index
-		local gift = if type(i) == "number" then Config.Gifts[i] else nil
+		local i = Validate.int(payload.index, 1, #Config.Gifts)
+		local gift = if i then Config.Gifts[i] else nil
 		local claimed = State.giftsClaimed[player]
-		if not gift or not claimed then
+		if not i or not gift or not claimed then
 			return false, M("msg.bad_request")
 		end
 		if claimed[i] then
@@ -158,12 +160,22 @@ function Rewards.init()
 
 	Remotes.handle("RedeemCode", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.code) ~= "string" or #payload.code > 30 then
+		local raw = Validate.str(payload.code, 30)
+		if not p or not raw then
 			return false, M("msg.invalid_code")
 		end
-		local code = payload.code:upper():gsub("%s", "")
+		-- guessing codes: 5 wrong tries, then one more every 12 s
+		local bucket = codeTries[player]
+		if not bucket then
+			bucket = Validate.newBucket(1 / 12, 5, os.clock())
+			codeTries[player] = bucket
+		end
+		local code = raw:upper():gsub("%s", "")
 		local reward = Config.Codes[code]
 		if not reward then
+			if not Validate.take(bucket, os.clock(), 1) then
+				return false, M("msg.slow_down")
+			end
 			return false, M("msg.invalid_code")
 		end
 		if p.codes[code] then
@@ -173,6 +185,10 @@ function Rewards.init()
 		local text = Rewards.grant(player, reward)
 		State.dirty(player)
 		return true, text
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		codeTries[player] = nil
 	end)
 
 	task.spawn(function()

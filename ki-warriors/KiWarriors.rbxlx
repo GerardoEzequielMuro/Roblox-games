@@ -558,6 +558,7 @@ Config.Combat = {
 	-- melee
 	meleeCooldown = 0.3,
 	meleeRange = 9,
+	latencyTolerance = 2.5, -- extra studs of reach the server grants for client latency (melee)
 	meleeArc = 0.2, -- min dot(facing, toTarget)
 	meleeBase = 4,
 	meleePerStrength = 1,
@@ -8953,6 +8954,7 @@ local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
 local Fighters = require(script.Parent.Fighters)
 local Seeds = require(ReplicatedStorage.Shared.Seeds)
+local Validate = require(script.Parent.Validate)
 
 type Fighter = Fighters.Fighter
 local C = Config.Combat
@@ -9113,7 +9115,7 @@ function Combat.critChance(f: Fighter): number
 end
 
 local function unit(v: any): Vector3?
-	if typeof(v) ~= "Vector3" then
+	if typeof(v) ~= "Vector3" or not Validate.finiteVec(v.X, v.Y, v.Z) then
 		return nil
 	end
 	local m = v.Magnitude
@@ -9147,13 +9149,15 @@ end
 ---------------------------------------------------------------------------
 -- Melee
 ---------------------------------------------------------------------------
--- Returns the number of targets hit. aim (optional) overrides the facing direction.
-function Combat.melee(f: Fighter, aim: Vector3?): number
+-- Returns the number of targets hit and whether a swing really happened (cooldown passed).
+-- aim (optional) overrides the facing direction. Reach is checked against SERVER positions with
+-- a small latency allowance; the client never says what or how hard it hit.
+function Combat.melee(f: Fighter, aim: Vector3?): (number, boolean)
 	if not canAct(f) or f.blocking then
-		return 0
+		return 0, false
 	end
 	if not Fighters.ready(f, "melee", C.meleeCooldown * 0.9) then
-		return 0
+		return 0, false
 	end
 	stopCharging(f)
 	local now = os.clock()
@@ -9173,7 +9177,7 @@ function Combat.melee(f: Fighter, aim: Vector3?): number
 			if vp then
 				local delta = vp - origin
 				local dist = delta.Magnitude - v.radius
-				if dist <= C.meleeRange then
+				if dist <= C.meleeRange + C.latencyTolerance then
 					local flat = delta * Vector3.new(1, 0, 1)
 					local dot = if flat.Magnitude > 0.1 then flat.Unit:Dot(look) else 1
 					if dot >= C.meleeArc or dist < 4 then
@@ -9207,7 +9211,7 @@ function Combat.melee(f: Fighter, aim: Vector3?): number
 	if f.player and hits > 0 then
 		Remotes.fire("Combat", f.player, "combo", combo)
 	end
-	return hits
+	return hits, true
 end
 
 ---------------------------------------------------------------------------
@@ -9572,25 +9576,28 @@ end
 ---------------------------------------------------------------------------
 -- Act remote
 ---------------------------------------------------------------------------
-local budget: { [Player]: { tokens: number, t: number } } = {}
+local budget: { [Player]: Validate.Bucket } = {}
 local ACT_RATE, ACT_BURST = 40, 60
+-- Whitelist of input kinds. State toggles are not throttled per kind on purpose: dropping a
+-- "block off" or "beam release" would leave the player stuck; the token bucket bounds the rate.
+local ACT_KINDS: { [string]: boolean } = {
+	melee = true, blast = true, beamStart = true, beamRelease = true, block = true, charge = true,
+	dash = true, fly = true, form = true, tech = true,
+}
 
 local function onAct(player: Player, kind: any, a: any)
-	if type(kind) ~= "string" or not State.ready[player] then
+	if type(kind) ~= "string" or not ACT_KINDS[kind] or not State.ready[player] then
 		return
 	end
 	local b = budget[player]
 	local now = os.clock()
 	if not b then
-		b = { tokens = ACT_BURST, t = now }
+		b = Validate.newBucket(ACT_RATE, ACT_BURST, now)
 		budget[player] = b
 	end
-	b.tokens = math.min(ACT_BURST, b.tokens + (now - b.t) * ACT_RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not Validate.take(b, now, 1) then
 		return
 	end
-	b.tokens -= 1
 	local f = Fighters.ofPlayer(player)
 	if not f then
 		return
@@ -9601,8 +9608,12 @@ local function onAct(player: Player, kind: any, a: any)
 			local flat = aim * Vector3.new(1, 0, 1)
 			aim = if flat.Magnitude > 0.05 then flat.Unit else nil
 		end
-		Combat.melee(f, aim)
-		Combat.onManualRep(player)
+		local _, swung = Combat.melee(f, aim)
+		-- a manual rep is paid only for a swing the server accepted (cooldown passed, alive, not
+		-- blocking); punch spam on cooldown earns nothing
+		if swung then
+			Combat.onManualRep(player)
+		end
 	elseif kind == "blast" then
 		local dir = unit(a)
 		if dir then
@@ -9627,14 +9638,16 @@ local function onAct(player: Player, kind: any, a: any)
 	elseif kind == "fly" then
 		Combat.setFly(f, a == true)
 	elseif kind == "form" then
-		if type(a) == "number" then
-			Combat.setForm(f, a)
+		local index = Validate.int(a, 0, #Config.Forms)
+		if index then
+			Combat.setForm(f, index)
 		end
 	elseif kind == "tech" then
-		if type(a) == "table" and type(a.id) == "string" then
-			local dir = unit(a.dir)
+		local id = if type(a) == "table" then Validate.str(a.id, 32) else nil
+		if id then
+			local dir = unit((a :: any).dir)
 			if dir then
-				Combat.technique(f, a.id, dir)
+				Combat.technique(f, id, dir)
 			end
 		end
 	end
@@ -9792,8 +9805,13 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Validate = require(script.Parent.Validate)
 
 local Data = {}
+
+-- Save format version. Bump it and add a migrations[old] step whenever the shape changes.
+-- A save written by a NEWER version is never loaded (and never overwritten): see Data.load.
+Data.VERSION = 2
 
 export type Profile = {
 	version: number,
@@ -9871,7 +9889,10 @@ end
 
 Data.profiles = {} :: { [Player]: Profile }
 local loadedOk: { [Player]: boolean } = {}
+local saving: { [Player]: boolean } = {} -- one UpdateAsync in flight per player
 local LOCK_TTL = 150
+local SAVE_ATTEMPTS = 3
+local tooNew: { [Player]: boolean } = {}
 
 local function defaultSettings(): { [string]: any }
 	return { stat = "strength", autoTrain = false, autoCharge = false, autoFight = false, music = true, sfx = true, lite = false, shake = true }
@@ -9887,7 +9908,7 @@ local function defaultProfile(): Profile
 		upgrades[u.id] = 0
 	end
 	local p: Profile = {
-		version = 1,
+		version = Data.VERSION,
 		stats = stats,
 		sparks = 0,
 		gems = 0,
@@ -9955,8 +9976,30 @@ local function num(v: any, default: number): number
 	return default
 end
 
+-- Ordered upgrade steps: migrations[n] turns a version-n save into version n + 1.
+local migrations: { [number]: (any) -> () } = {
+	-- 1 -> 2: round 7 hardening; saves written before it could hold NaN / inf from bugs
+	[1] = function(p: any)
+		Validate.sanitize(p)
+	end,
+}
+
+local function migrate(p: any)
+	local v = if type(p.version) == "number" and p.version >= 1 and p.version == p.version then math.floor(p.version) else 1
+	while v < Data.VERSION do
+		local step = migrations[v]
+		if step then
+			step(p)
+		end
+		v += 1
+	end
+	p.version = Data.VERSION
+end
+Data.migrate = migrate
+
 -- Fill keys added in later versions and drop content that no longer exists in Config.
 local function reconcile(p: any): Profile
+	migrate(p)
 	local def = defaultProfile() :: any
 	for k, v in def do
 		if p[k] == nil then
@@ -10088,6 +10131,22 @@ local function key(player: Player): string
 	return "u_" .. player.UserId
 end
 
+-- Waits (bounded) until the UpdateAsync request budget has room, so bursts of saves (shutdown,
+-- many players joining) queue up instead of being dropped by the engine.
+local function waitBudget(maxWait: number)
+	local waited = 0
+	while waited < maxWait do
+		local ok, budget = pcall(function()
+			return DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+		end)
+		if not ok or budget >= 2 then
+			return
+		end
+		task.wait(0.5)
+		waited += 0.5
+	end
+end
+
 function Data.load(player: Player): Profile
 	if not storeOk or not store then
 		local p = defaultProfile()
@@ -10099,9 +10158,18 @@ function Data.load(player: Player): Profile
 	local result: any = nil
 	for attempt = 1, 6 do
 		local lockedByOther = false
+		local newer = false
+		waitBudget(10)
 		local ok, err = pcall(function()
 			ds:UpdateAsync(key(player), function(old: any)
 				local now = os.time()
+				if old and type(old) ~= "table" then
+					return nil -- corrupt entry: leave it alone, session will not save
+				end
+				if old and type(old.version) == "number" and old.version > Data.VERSION then
+					newer = true -- written by a newer server version (rollback): never touch it
+					return nil
+				end
 				if old and old.lock and old.lock.job ~= game.JobId and now - old.lock.t < LOCK_TTL and attempt < 6 then
 					lockedByOther = true
 					return nil -- abort write, another server still owns the session
@@ -10112,6 +10180,12 @@ function Data.load(player: Player): Profile
 				return p
 			end)
 		end)
+		if newer then
+			warn("[Data] save of", player.Name, "is from a newer game version - session will not save")
+			tooNew[player] = true
+			result = nil
+			break
+		end
 		if ok and not lockedByOther and result then
 			break
 		end
@@ -10119,7 +10193,7 @@ function Data.load(player: Player): Profile
 			warn("[Data] load failed for", player.Name, err)
 		end
 		result = nil
-		task.wait(if lockedByOther then 5 else 2)
+		task.wait(if lockedByOther then 5 else 2 * attempt)
 		if not player.Parent then
 			break
 		end
@@ -10136,35 +10210,72 @@ function Data.load(player: Player): Profile
 	return result
 end
 
+-- Writes the profile with UpdateAsync (never a blind SetAsync) under the soft session lock.
+-- One save per player at a time; transient failures retry with backoff. release = true also
+-- frees the lock (player leaving / server closing) and waits for any save already in flight.
 function Data.save(player: Player, release: boolean?): boolean
 	local p = Data.profiles[player]
-	if not p or not loadedOk[player] or not store then
+	if not p or not loadedOk[player] or not store or tooNew[player] then
 		return false
 	end
+	if saving[player] then
+		if not release then
+			return false -- autosave skips while a save is running
+		end
+		local t0 = os.clock()
+		while saving[player] and os.clock() - t0 < 20 do
+			task.wait(0.1)
+		end
+		if saving[player] or not Data.profiles[player] then
+			return false
+		end
+	end
+	saving[player] = true
 	local ds = store :: DataStore
-	p.savedAt = os.time()
-	p.lock = if release then nil else { job = game.JobId, t = os.time() }
 	local wrote = false
-	local ok, err = pcall(function()
-		ds:UpdateAsync(key(player), function(old: any)
-			if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
-				return nil -- another server owns it now; don't clobber
-			end
-			wrote = true
-			return p
+	local okAny = false
+	for attempt = 1, SAVE_ATTEMPTS do
+		-- never persist NaN / inf: fix in place and say so
+		local fixed = Validate.sanitize(p)
+		if fixed > 0 then
+			warn("[Data] replaced", fixed, "non-finite number(s) before saving", player.Name)
+		end
+		p.version = Data.VERSION
+		p.savedAt = os.time()
+		p.lock = if release then nil else { job = game.JobId, t = os.time() }
+		waitBudget(if release then 5 else 15)
+		wrote = false
+		local ok, err = pcall(function()
+			ds:UpdateAsync(key(player), function(old: any)
+				if old and type(old) == "table" and type(old.version) == "number" and old.version > Data.VERSION then
+					return nil -- newer format on disk: do not clobber it
+				end
+				if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
+					return nil -- another server owns it now; don't clobber
+				end
+				wrote = true
+				return p
+			end)
 		end)
-	end)
-	if not ok then
-		warn("[Data] save failed for", player.Name, err)
-		return false
+		if ok then
+			okAny = true
+			break
+		end
+		warn("[Data] save failed for", player.Name, "attempt", attempt, err)
+		if attempt < SAVE_ATTEMPTS then
+			task.wait(attempt * 1.5) -- backoff: 1.5 s, 3 s
+		end
 	end
-	return wrote
+	saving[player] = nil
+	return okAny and wrote
 end
 
 function Data.release(player: Player)
 	Data.save(player, true)
 	Data.profiles[player] = nil
 	loadedOk[player] = nil
+	saving[player] = nil
+	tooNew[player] = nil
 end
 
 function Data.get(player: Player): Profile?
@@ -10179,8 +10290,14 @@ function Data.startAutosave()
 	task.spawn(function()
 		while true do
 			task.wait(Config.AutosaveInterval)
-			for _, player in Players:GetPlayers() do
-				task.spawn(Data.save, player)
+			-- spread the writes over the interval instead of one burst
+			local list = Players:GetPlayers()
+			local gap = math.clamp(Config.AutosaveInterval / math.max(1, #list) * 0.5, 0.2, 3)
+			for _, player in list do
+				if player.Parent then
+					task.spawn(Data.save, player)
+					task.wait(gap)
+				end
 			end
 		end
 	end)
@@ -10649,6 +10766,13 @@ function Fighters.init()
 		if f then
 			Fighters.remove(f)
 		end
+		-- enemies keep damage credit per Player: drop the leaver so the reference is released
+		for _, other in list do
+			local c = other.contributions
+			if c then
+				c[player] = nil
+			end
+		end
 	end)
 	-- keep max HP in line with Defense
 	task.spawn(function()
@@ -10683,11 +10807,17 @@ local Data = require(script.Parent.Data)
 local State = require(script.Parent.State)
 local Fighters = require(script.Parent.Fighters)
 local Progression = require(script.Parent.Progression)
+local Validate = require(script.Parent.Validate)
 
 local Guard = {}
 
 local STEP = 0.5
 local lastGood: { [Player]: Vector3 } = {}
+local lastAt: { [Player]: number } = {}
+local budgets: { [Player]: Validate.MoveBudget } = {}
+-- Sustained travel may exceed the best legit speed (boosted flight) by this factor before it
+-- counts as a speed hack; dashes, knockback and latency spikes ride on the burst capacity.
+local SPEED_SLACK = 1.4
 Guard.corrections = {} :: { [Player]: number }
 
 function Guard.count(player: Player): number
@@ -10697,6 +10827,8 @@ end
 function Guard.init()
 	Players.PlayerRemoving:Connect(function(player)
 		lastGood[player] = nil
+		lastAt[player] = nil
+		budgets[player] = nil
 		Guard.corrections[player] = nil
 	end)
 	task.spawn(function()
@@ -10709,25 +10841,40 @@ function Guard.init()
 				local pos = f and Fighters.position(f)
 				if not p or not f or not pos or not State.ready[player] or not f.alive then
 					lastGood[player] = nil
+					budgets[player] = nil
 					continue
 				end
 				-- fell off the planet: back to the plaza
 				if pos.Y < Config.GroundY - 160 then
 					Progression.placeOnSpawn(player)
 					lastGood[player] = nil
+					budgets[player] = nil
 					continue
 				end
 				local teleported = now - (Progression.teleportedAt[player] or -100) < 3
 				local prev = lastGood[player]
+				local fly = Formulas.flySpeed(p.stats.agility, State.owns(player, "FastFlight") and not f.inArena) * 1.7 -- boosted flight
+				local maxSpeed = math.max(fly, Formulas.walkSpeed(p.stats.agility))
+				local capacity = maxSpeed * 1.5 + Config.Combat.dashDistance * 2 + 90
+				if teleported or not budgets[player] then
+					budgets[player] = Validate.newMoveBudget(capacity)
+				end
 				if prev and not teleported then
-					local fly = Formulas.flySpeed(p.stats.agility, State.owns(player, "FastFlight")) * 1.7
-					local allowed = math.max(fly, 170) * STEP * 1.6 + Config.Combat.dashDistance + 40
-					if (pos - prev).Magnitude > allowed then
+					local fly0 = fly
+					local allowed = math.max(fly0, 170) * STEP * 1.6 + Config.Combat.dashDistance + 40
+					local delta = pos - prev
+					-- one big jump (warp) or a sustained speed above anything a real setup reaches
+					local dt = math.min(2, now - (lastAt[player] or now - STEP))
+					local travelled = Vector3.new(delta.X, 0, delta.Z).Magnitude + math.max(0, delta.Y) -- falling is free
+					local inBudget = Validate.moveStep(budgets[player], travelled, dt, maxSpeed, SPEED_SLACK, capacity)
+					if delta.Magnitude > allowed or not inBudget then
 						Guard.corrections[player] = (Guard.corrections[player] or 0) + 1
 						Progression.teleport(player, CFrame.new(prev))
+						lastAt[player] = now
 						continue
 					end
 				end
+				lastAt[player] = now
 				lastGood[player] = pos
 			end
 		end
@@ -11012,18 +11159,47 @@ local function updateStats(player: Player)
 	end
 end
 
+-- Scores come only from the server's own profile (never from a client). Written with
+-- UpdateAsync: power and ascensions only ever go up (a lagging server cannot lower them), the
+-- arena rating is a plain latest value. Skipped when unchanged and when the budget is low.
+local lastPushed: { [Player]: { [string]: number } } = {}
+local MONOTONIC = { power = true, rebirths = true }
+
+local function finiteScore(v: number): number?
+	if v ~= v or v == math.huge or v == -math.huge or v < 0 or v > 2 ^ 52 then
+		return nil
+	end
+	return math.floor(v)
+end
+Leaderboard.finiteScore = finiteScore
+
 local function pushScores()
 	for _, player in Players:GetPlayers() do
 		local p = Data.get(player)
 		if p and Data.isPersistent(player) then
 			local key = tostring(player.UserId)
 			local values = { power = encodePower(math.max(p.bestPower, State.power(p))), rebirths = p.rebirths, arena = p.pvp.rating }
+			local last = lastPushed[player] or {}
+			lastPushed[player] = last
 			for id, store in stores do
-				if id ~= "rebirths" or p.rebirths > 0 then
-					if id ~= "arena" or p.pvp.kills > 0 then
-						pcall(function()
-							store:SetAsync(key, values[id])
+				local v = finiteScore(values[id] or 0)
+				if v and last[id] ~= v and (id ~= "rebirths" or p.rebirths > 0) and (id ~= "arena" or p.pvp.kills > 0) then
+					local okBudget, budget = pcall(function()
+						return DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+					end)
+					if okBudget and budget < 4 then
+						break -- leave the rest for the next round; profile saves come first
+					end
+					local ok = pcall(function()
+						store:UpdateAsync(key, function(old: any)
+							if MONOTONIC[id] and type(old) == "number" and old >= v then
+								return nil :: any
+							end
+							return v
 						end)
+					end)
+					if ok then
+						last[id] = v
 					end
 				end
 			end
@@ -11087,6 +11263,9 @@ function Leaderboard.init(world: { [string]: any })
 	for _, board in boards do
 		renderBoard(board, {})
 	end
+	Players.PlayerRemoving:Connect(function(player)
+		lastPushed[player] = nil
+	end)
 	Remotes.handle("GetBoards", function()
 		return true, Leaderboard.rows
 	end)
@@ -11229,7 +11408,7 @@ function LiveEventService.init()
 			pcall(function()
 				MessagingService:SubscribeAsync(TOPIC, function(message)
 					local d = message.Data
-					if type(d) == "table" and type(d.id) == "string" and Config.LiveEventDefs[d.id] and type(d.endsAt) == "number" then
+					if type(d) == "table" and type(d.id) == "string" and Config.LiveEventDefs[d.id] and type(d.endsAt) == "number" and d.endsAt == d.endsAt and d.endsAt ~= math.huge then
 						override = { id = d.id, endsAt = math.min(d.endsAt, os.time() + Config.LiveEventMaxMinutes * 60) }
 						LiveEventService.refresh()
 					end
@@ -11302,6 +11481,8 @@ local Cosmetics = require(script.Parent.Cosmetics)
 local Monetization = {}
 
 local MAX_RECEIPTS = 60
+local receiptBusy: { [string]: boolean } = {} -- PurchaseIds being processed right now
+local adBusy: { [Player]: boolean } = {} -- one rewarded ad at a time per player
 
 -- Lookups read Config every time, so IDs pasted into Config (or set by a test) just work.
 local function passByGamepassId(id: number): any
@@ -11439,7 +11620,19 @@ function Monetization.loadPasses(player: Player)
 	State.refreshPasses(player)
 end
 
+-- Persist the profile (it holds the PurchaseId) before the receipt is acknowledged.
+local function persisted(player: Player): boolean
+	if Data.isPersistent(player) then
+		return Data.save(player)
+	end
+	-- no DataStore at all (Studio without API access): nothing to wait for
+	return RunService:IsStudio()
+end
+
 local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
+	if type(receipt) ~= "table" or type(receipt.PlayerId) ~= "number" or type(receipt.ProductId) ~= "number" or receipt.PurchaseId == nil then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	local player = Players:GetPlayerByUserId(receipt.PlayerId)
 	if not player then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
@@ -11449,39 +11642,62 @@ local function processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	local purchaseId = tostring(receipt.PurchaseId)
-	if table.find(p.purchases, purchaseId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- already granted earlier
-	end
-	local product = productById(receipt.ProductId)
-	local adPlacement = adPlacementById(receipt.ProductId)
-	if not product and not adPlacement then
-		warn("[Monetization] unknown product", receipt.ProductId)
+	-- Roblox can call this again while a previous call is still saving: answer "not yet"
+	if receiptBusy[purchaseId] then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	local granted = true
-	local ok, err = pcall(function()
-		if adPlacement then
-			grantAd(player, p, adPlacement)
-		elseif product then
-			granted = Monetization.grantProduct(player, product.key)
+	-- A profile that failed to load would lose the grant on leave: do not take the money yet.
+	if not Data.isPersistent(player) and not RunService:IsStudio() then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	receiptBusy[purchaseId] = true
+	local decision = Enum.ProductPurchaseDecision.NotProcessedYet
+	local okRun, errRun = (pcall :: any)(function()
+		if table.find(p.purchases, purchaseId) then
+			-- granted earlier; make sure it reached the DataStore before saying so (a failed
+			-- save on the first attempt leaves the id in memory only)
+			if persisted(player) then
+				decision = Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+			return
 		end
+		local product = productById(receipt.ProductId)
+		local adPlacement = adPlacementById(receipt.ProductId)
+		if not product and not adPlacement then
+			warn("[Monetization] unknown product", receipt.ProductId)
+			return
+		end
+		local granted = true
+		local ok, err = pcall(function()
+			if adPlacement then
+				grantAd(player, p, adPlacement)
+			elseif product then
+				granted = Monetization.grantProduct(player, product.key)
+			end
+		end)
+		if not ok or not granted then
+			warn("[Monetization] grant failed", err)
+			return
+		end
+		table.insert(p.purchases, purchaseId)
+		while #p.purchases > MAX_RECEIPTS do
+			table.remove(p.purchases, 1)
+		end
+		-- Persist before acknowledging, so a crash cannot grant twice or lose the purchase.
+		if not persisted(player) then
+			return
+		end
+		if product then
+			Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
+		end
+		decision = Enum.ProductPurchaseDecision.PurchaseGranted
 	end)
-	if not ok or not granted then
-		warn("[Monetization] grant failed", err)
+	receiptBusy[purchaseId] = nil
+	if not okRun then
+		warn("[Monetization] receipt error", errRun)
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
-	table.insert(p.purchases, purchaseId)
-	while #p.purchases > MAX_RECEIPTS do
-		table.remove(p.purchases, 1)
-	end
-	-- Persist before acknowledging, so a crash cannot grant twice or lose the purchase.
-	if Data.isPersistent(player) and not Data.save(player) then
-		return Enum.ProductPurchaseDecision.NotProcessedYet
-	end
-	if product then
-		Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
-	end
-	return Enum.ProductPurchaseDecision.PurchaseGranted
+	return decision
 end
 Monetization.processReceipt = processReceipt
 
@@ -11504,16 +11720,21 @@ function Monetization.init()
 		if not p or type(id) ~= "number" or id == 0 then
 			return false, M("msg.ad_unavailable")
 		end
+		if adBusy[player] then
+			return false, M("msg.slow_down")
+		end
 		if adsLeft(p) <= 0 then
 			return false, M("msg.ad_cap")
 		end
 		if p.ads.day ~= adDay() then
 			p.ads = { day = adDay(), count = 0 }
 		end
+		adBusy[player] = true -- ShowRewardedVideoAdAsync yields: block overlapping calls
 		local ok, result = pcall(function()
 			local reward = (AdService :: any):CreateAdRewardFromDevProductId(id)
 			return (AdService :: any):ShowRewardedVideoAdAsync(player, reward)
 		end)
+		adBusy[player] = nil
 		if not ok then
 			warn("[Monetization] ad failed", result)
 			return false, M("msg.ad_unavailable")
@@ -11523,14 +11744,28 @@ function Monetization.init()
 		return true, tostring(if typeof(result) == "EnumItem" then (result :: any).Name else result)
 	end)
 
+	Players.PlayerRemoving:Connect(function(player)
+		adBusy[player] = nil
+	end)
+
 	MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(player: Player, gamePassId: number, purchased: boolean)
-		if not purchased then
+		if purchased ~= true or not player.Parent then
 			return
 		end
 		local pass = passByGamepassId(gamePassId)
 		if pass then
+			-- the engine's own server-side signal; cache it, then refresh the rest of the
+			-- cache from the Marketplace so a pass bought elsewhere (another server) shows too
 			State.passes[player] = State.passes[player] or {}
 			State.passes[player][pass.key] = true
+			task.spawn(function()
+				local ok, has = pcall(function()
+					return MarketplaceService:UserOwnsGamePassAsync(player.UserId, gamePassId)
+				end)
+				if ok and not has then
+					warn("[Monetization] Marketplace has not confirmed the pass yet:", pass.key)
+				end
+			end)
 			onPassChanged(player)
 			Remotes.notify(player, M("msg.pass_unlocked", { item = M("pass." .. pass.key .. ".name") }), "success")
 		end
@@ -12264,6 +12499,7 @@ local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Collection = require(ReplicatedStorage.Shared.Collection)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
@@ -12356,8 +12592,8 @@ end
 function Progression.init()
 	Remotes.handle("Travel", function(player, payload)
 		local p = Data.get(player)
-		local index = payload.planet
-		if not p or type(index) ~= "number" or not Config.Planets[index] then
+		local index = Validate.int(payload.planet, 1, #Config.Planets)
+		if not p or not index or not Config.Planets[index] then
 			return false, M("msg.bad_request")
 		end
 		local f = Fighters.ofPlayer(player)
@@ -12474,6 +12710,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Quests = require(ReplicatedStorage.Shared.Quests)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
@@ -12581,8 +12818,8 @@ function QuestService.init()
 
 	Remotes.handle("ClaimQuest", function(player, payload)
 		local p = QuestService.ensure(player)
-		local i = payload.i
-		if not p or type(i) ~= "number" or not p.quests.list[i] then
+		local i = Validate.int(payload.i, 1, 16)
+		if not p or not i or not p.quests.list[i] then
 			return false, M("msg.bad_request")
 		end
 		local q = p.quests.list[i]
@@ -12667,6 +12904,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
@@ -12764,8 +13002,8 @@ function Relics.init(world: { [string]: any })
 	Remotes.handle("CollectRelic", function(player, payload)
 		local p = Data.get(player)
 		local f = Fighters.ofPlayer(player)
-		local i = payload.i
-		if not p or not f or type(i) ~= "number" then
+		local i = Validate.int(payload.i, 1, Config.Relics.count)
+		if not p or not f or not i then
 			return false, M("msg.bad_request")
 		end
 		if os.time() < p.relics.nextAt then
@@ -12852,6 +13090,7 @@ return Relics
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local Validate = require(script.Parent.Validate)
 local M = Locale.m
 
 local Remotes = {}
@@ -12881,9 +13120,32 @@ request.Parent = folder
 
 type Handler = (player: Player, payload: any) -> (boolean, any?)
 local handlers: { [string]: Handler } = {}
-local budget: { [Player]: { tokens: number, t: number } } = {}
+local budget: { [Player]: Validate.Bucket } = {}
 local RATE = 12 -- requests per second sustained
 local BURST = 30
+-- Minimum seconds between two calls of the same action per player (on top of the bucket).
+-- Actions that open web prompts, spend real resources or roll random results get a floor.
+local ACTION_COOLDOWN: { [string]: number } = {
+	GetState = 0.5,
+	GetBoards = 5,
+	SetLanguage = 0.5,
+	Travel = 1.5,
+	Rebirth = 2,
+	SetRace = 1,
+	RedeemCode = 1.5,
+	ShareLink = 5,
+	WatchAd = 3,
+	SpinAura = 0.4,
+	Wish = 2,
+	ClaimOffline = 1,
+	ClaimPassAll = 1,
+	SetProtection = 1,
+	EquipAura = 0.25,
+	EquipSkin = 0.25,
+	EquipMount = 0.25,
+	UseSeed = 0.2,
+}
+local lastCall: { [Player]: { [string]: number } } = {}
 
 function Remotes.handle(action: string, fn: Handler)
 	handlers[action] = fn
@@ -12904,30 +13166,43 @@ end
 
 function Remotes.forget(player: Player)
 	budget[player] = nil
+	lastCall[player] = nil
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any)
 	if type(action) ~= "string" then
 		return false, M("msg.bad_request")
 	end
+	if #action > 32 then
+		return false, M("msg.bad_request")
+	end
 	local b = budget[player]
 	local now = os.clock()
 	if not b then
-		b = { tokens = BURST, t = now }
+		b = Validate.newBucket(RATE, BURST, now)
 		budget[player] = b
 	end
-	b.tokens = math.min(BURST, b.tokens + (now - b.t) * RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not Validate.take(b, now, 1) then
 		return false, M("msg.slow_down")
 	end
-	b.tokens -= 1
 	local fn = handlers[action]
 	if not fn then
 		return false, M("msg.unknown_action")
 	end
-	if payload ~= nil and type(payload) ~= "table" then
+	-- every payload is a flat table of primitives (no NaN/inf, no nesting, capped strings)
+	if payload ~= nil and not Validate.payload(payload) then
 		return false, M("msg.bad_request")
+	end
+	local floor = ACTION_COOLDOWN[action]
+	if floor then
+		local last = lastCall[player]
+		if not last then
+			last = {}
+			lastCall[player] = last
+		end
+		if not Validate.cooldown(last, action, now, floor) then
+			return false, M("msg.slow_down")
+		end
 	end
 	local ok, a, b2 = pcall(fn, player, payload or {})
 	if not ok then
@@ -12957,11 +13232,13 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Format = require(ReplicatedStorage.Shared.Format)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local M = Locale.m
 
 local Rewards = {}
+local codeTries: { [Player]: Validate.Bucket } = {}
 
 export type Reward = { kind: string, amount: number, item: string?, id: string? }
 
@@ -13085,10 +13362,10 @@ function Rewards.init()
 	end)
 
 	Remotes.handle("ClaimGift", function(player, payload)
-		local i = payload.index
-		local gift = if type(i) == "number" then Config.Gifts[i] else nil
+		local i = Validate.int(payload.index, 1, #Config.Gifts)
+		local gift = if i then Config.Gifts[i] else nil
 		local claimed = State.giftsClaimed[player]
-		if not gift or not claimed then
+		if not i or not gift or not claimed then
 			return false, M("msg.bad_request")
 		end
 		if claimed[i] then
@@ -13106,12 +13383,22 @@ function Rewards.init()
 
 	Remotes.handle("RedeemCode", function(player, payload)
 		local p = Data.get(player)
-		if not p or type(payload.code) ~= "string" or #payload.code > 30 then
+		local raw = Validate.str(payload.code, 30)
+		if not p or not raw then
 			return false, M("msg.invalid_code")
 		end
-		local code = payload.code:upper():gsub("%s", "")
+		-- guessing codes: 5 wrong tries, then one more every 12 s
+		local bucket = codeTries[player]
+		if not bucket then
+			bucket = Validate.newBucket(1 / 12, 5, os.clock())
+			codeTries[player] = bucket
+		end
+		local code = raw:upper():gsub("%s", "")
 		local reward = Config.Codes[code]
 		if not reward then
+			if not Validate.take(bucket, os.clock(), 1) then
+				return false, M("msg.slow_down")
+			end
 			return false, M("msg.invalid_code")
 		end
 		if p.codes[code] then
@@ -13121,6 +13408,10 @@ function Rewards.init()
 		local text = Rewards.grant(player, reward)
 		State.dirty(player)
 		return true, text
+	end)
+
+	Players.PlayerRemoving:Connect(function(player)
+		codeTries[player] = nil
 	end)
 
 	task.spawn(function()
@@ -13150,6 +13441,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local BattlePass = require(ReplicatedStorage.Shared.BattlePass)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Rewards = require(script.Parent.Rewards)
@@ -13349,8 +13641,9 @@ function Season.init()
 	end
 
 	Remotes.handle("ClaimPass", function(player, payload)
-		local track, tier = payload.track, payload.tier
-		if type(track) ~= "string" or type(tier) ~= "number" then
+		local track = Validate.enum(payload.track, { free = true, premium = true })
+		local tier = Validate.int(payload.tier, 1, Config.BattlePass.tiers)
+		if not track or not tier then
 			return false, M("msg.bad_request")
 		end
 		return claim(player, track, tier)
@@ -13419,6 +13712,7 @@ local Hooks = require(script.Parent.Hooks)
 local M = Locale.m
 
 local Social = {}
+local groupBusy: { [Player]: boolean } = {}
 
 local live = game.PlaceId ~= 0 -- DataStores only work in a published place
 
@@ -13559,6 +13853,10 @@ function Social.init()
 		end
 	end)
 
+	Players.PlayerRemoving:Connect(function(player)
+		groupBusy[player] = nil
+	end)
+
 	Remotes.handle("ShareLink", function(player)
 		local ok, err = pcall(function()
 			(SocialService :: any):PromptLinkSharingAsync(player, {
@@ -13578,12 +13876,17 @@ function Social.init()
 		if not p or Config.GroupId == 0 then
 			return false, M("msg.group_unavailable")
 		end
-		if p.groupGiftClaimed then
+		if p.groupGiftClaimed or groupBusy[player] then
 			return false, M("msg.already_claimed")
 		end
+		groupBusy[player] = true -- IsInGroupAsync yields: two calls must not both pay out
 		local ok, member = pcall(function()
 			return (player :: any):IsInGroupAsync(Config.GroupId)
 		end)
+		groupBusy[player] = nil
+		if p.groupGiftClaimed then
+			return false, M("msg.already_claimed")
+		end
 		if not ok or not member then
 			return false, M("msg.join_group_first")
 		end
@@ -13792,7 +14095,7 @@ end
 
 function State.spendSparks(player: Player, amount: number): boolean
 	local p = Data.get(player)
-	if not p or amount < 0 or p.sparks < amount then
+	if not p or amount ~= amount or amount < 0 or amount == math.huge or p.sparks < amount then
 		return false
 	end
 	p.sparks -= amount
@@ -13810,7 +14113,7 @@ end
 
 function State.spendGems(player: Player, amount: number): boolean
 	local p = Data.get(player)
-	if not p or amount < 0 or p.gems < amount then
+	if not p or amount ~= amount or amount < 0 or amount == math.huge or p.gems < amount then
 		return false
 	end
 	p.gems -= amount
@@ -14339,6 +14642,199 @@ return Training
         </Item>
         <Item class="ModuleScript" referent="61">
           <Properties>
+            <string name="Name">Validate</string>
+            <string name="Source"><![CDATA[--!strict
+-- Round 7: pure input validation + rate limiting helpers (no Roblox APIs, so tests/security_test.luau
+-- can run them under plain Luau). Every remote handler funnels untrusted values through here.
+local Validate = {}
+
+---------------------------------------------------------------------------
+-- Scalars
+---------------------------------------------------------------------------
+-- A real, finite number (rejects NaN, +inf, -inf and every non-number type).
+function Validate.finite(v: any): boolean
+	return type(v) == "number" and v == v and v ~= math.huge and v ~= -math.huge
+end
+
+-- Finite number inside [min, max], or nil.
+function Validate.number(v: any, min: number, max: number): number?
+	if Validate.finite(v) and v >= min and v <= max then
+		return v
+	end
+	return nil
+end
+
+-- Whole number inside [min, max], or nil.
+function Validate.int(v: any, min: number, max: number): number?
+	if Validate.finite(v) and v % 1 == 0 and v >= min and v <= max then
+		return v
+	end
+	return nil
+end
+
+-- String of at most maxLen bytes, or nil.
+function Validate.str(v: any, maxLen: number): string?
+	if type(v) == "string" and #v <= maxLen then
+		return v
+	end
+	return nil
+end
+
+-- String that is a key of `set` (a whitelist), or nil.
+function Validate.enum(v: any, set: { [string]: any }): string?
+	if type(v) == "string" and #v <= 64 and set[v] ~= nil then
+		return v
+	end
+	return nil
+end
+
+-- A Vector3-like triple must be finite on every axis (works on tables { x, y, z } for tests).
+function Validate.finiteVec(x: any, y: any, z: any): boolean
+	return Validate.finite(x) and Validate.finite(y) and Validate.finite(z)
+end
+
+---------------------------------------------------------------------------
+-- Remote payloads: every payload in this game is a flat table of primitives.
+---------------------------------------------------------------------------
+Validate.MAX_PAYLOAD_KEYS = 12
+Validate.MAX_KEY_LEN = 32
+Validate.MAX_STRING_LEN = 64
+
+-- True when `payload` is a flat table, at most 12 entries, string keys <= 32 bytes, values are
+-- finite numbers, booleans or strings <= 64 bytes (no nested tables, no functions, no NaN/inf).
+function Validate.payload(payload: any): boolean
+	if type(payload) ~= "table" then
+		return false
+	end
+	if getmetatable(payload) ~= nil then
+		return false
+	end
+	local n = 0
+	for k, v in payload do
+		n += 1
+		if n > Validate.MAX_PAYLOAD_KEYS or type(k) ~= "string" or #k > Validate.MAX_KEY_LEN then
+			return false
+		end
+		local t = type(v)
+		if t == "number" then
+			if not Validate.finite(v) then
+				return false
+			end
+		elseif t == "string" then
+			if #v > Validate.MAX_STRING_LEN then
+				return false
+			end
+		elseif t ~= "boolean" then
+			return false
+		end
+	end
+	return true
+end
+
+---------------------------------------------------------------------------
+-- Token bucket: rate per second, burst capacity. Time is passed in (os.clock()).
+---------------------------------------------------------------------------
+export type Bucket = { tokens: number, t: number, rate: number, burst: number }
+
+function Validate.newBucket(rate: number, burst: number, now: number): Bucket
+	return { tokens = burst, t = now, rate = rate, burst = burst }
+end
+
+-- Takes `cost` tokens; false when the bucket is empty. A clock that goes backwards never refunds.
+function Validate.take(b: Bucket, now: number, cost: number?): boolean
+	local dt = math.max(0, now - b.t)
+	b.tokens = math.min(b.burst, b.tokens + dt * b.rate)
+	b.t = math.max(b.t, now)
+	local c = cost or 1
+	if b.tokens < c then
+		return false
+	end
+	b.tokens -= c
+	return true
+end
+
+-- Minimum seconds between two uses of the same key. Returns true (and stamps) when allowed.
+function Validate.cooldown(last: { [string]: number }, key: string, now: number, seconds: number): boolean
+	local prev = last[key]
+	if prev ~= nil and now - prev < seconds then
+		return false
+	end
+	last[key] = now
+	return true
+end
+
+---------------------------------------------------------------------------
+-- Movement budget (anti speed hack). Bucket of studs that refills at maxSpeed * slack per
+-- second; every checked step spends the distance travelled. A burst capacity absorbs dashes,
+-- knockback and latency spikes, so only sustained speed above the best legit setup trips it.
+---------------------------------------------------------------------------
+export type MoveBudget = { studs: number }
+
+function Validate.newMoveBudget(capacity: number): MoveBudget
+	return { studs = capacity }
+end
+
+-- Returns true while the player is within budget. `dist` is the distance moved this step (use
+-- horizontal + upward only; falling is free), `dt` the seconds since the last step.
+function Validate.moveStep(m: MoveBudget, dist: number, dt: number, maxSpeed: number, slack: number, capacity: number): boolean
+	if not Validate.finite(dist) or not Validate.finite(dt) then
+		return false
+	end
+	m.studs = math.min(capacity, m.studs + maxSpeed * slack * math.max(0, dt))
+	m.studs -= math.max(0, dist)
+	if m.studs < 0 then
+		m.studs = capacity -- caller teleports the player back; start the next window clean
+		return false
+	end
+	return true
+end
+
+---------------------------------------------------------------------------
+-- Save safety: never write NaN / inf. Replaces them in place (with 0) and returns how many.
+---------------------------------------------------------------------------
+function Validate.sanitize(value: any, depth: number?): number
+	local d = depth or 0
+	if type(value) ~= "table" or d > 12 then
+		return 0
+	end
+	local fixed = 0
+	local t = value :: { [any]: any }
+	for k, v in t do
+		if type(v) == "number" then
+			if v ~= v or v == math.huge or v == -math.huge then
+				t[k] = 0
+				fixed += 1
+			end
+		elseif type(v) == "table" then
+			fixed += Validate.sanitize(v, d + 1)
+		end
+	end
+	return fixed
+end
+
+-- True when the table (recursively) holds no NaN / inf.
+function Validate.clean(value: any, depth: number?): boolean
+	local d = depth or 0
+	if type(value) == "number" then
+		return value == value and value ~= math.huge and value ~= -math.huge
+	end
+	if type(value) ~= "table" or d > 12 then
+		return true
+	end
+	for _, v in value :: { [any]: any } do
+		if not Validate.clean(v, d + 1) then
+			return false
+		end
+	end
+	return true
+end
+
+return Validate
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="62">
+          <Properties>
             <string name="Name">WorldBoss</string>
             <string name="Source"><![CDATA[--!strict
 -- World boss event: the Astral Titan lands in the crater on planet 1 on a UTC schedule (every
@@ -14512,11 +15008,11 @@ return WorldBoss
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="62">
+      <Item class="Folder" referent="63">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="63">
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">ModelSlots</string>
             <string name="Source"><![CDATA[--!strict
@@ -14671,7 +15167,7 @@ return ModelSlots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="64">
+        <Item class="ModuleScript" referent="65">
           <Properties>
             <string name="Name">WorldBuilder</string>
             <string name="Source"><![CDATA[--!strict
@@ -16432,31 +16928,31 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="ServerStorage" referent="65">
+  <Item class="ServerStorage" referent="66">
     <Properties>
       <string name="Name">ServerStorage</string>
     </Properties>
-    <Item class="Folder" referent="66">
+    <Item class="Folder" referent="67">
       <Properties>
         <string name="Name">ModelLibrary</string>
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="67">
+  <Item class="StarterPlayer" referent="68">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">60</float>
       <float name="CameraMinZoomDistance">6</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="68">
+    <Item class="StarterPlayerScripts" referent="69">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="69">
+      <Item class="Folder" referent="70">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="70">
+        <Item class="ModuleScript" referent="71">
           <Properties>
             <string name="Name">Ads</string>
             <string name="Source"><![CDATA[--!strict
@@ -16528,7 +17024,7 @@ return Ads
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="71">
+        <Item class="ModuleScript" referent="72">
           <Properties>
             <string name="Name">CharFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -17560,7 +18056,7 @@ return CharFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="72">
+        <Item class="ModuleScript" referent="73">
           <Properties>
             <string name="Name">CombatFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -17991,7 +18487,7 @@ return CombatFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="73">
+        <Item class="ModuleScript" referent="74">
           <Properties>
             <string name="Name">Controls</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -18528,7 +19024,7 @@ return Controls
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="74">
+        <Item class="ModuleScript" referent="75">
           <Properties>
             <string name="Name">Flight</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -18718,7 +19214,7 @@ return Flight
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="75">
+        <Item class="ModuleScript" referent="76">
           <Properties>
             <string name="Name">Fx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19063,7 +19559,7 @@ return Fx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="76">
+        <Item class="ModuleScript" referent="77">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -19183,7 +19679,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="77">
+        <Item class="LocalScript" referent="78">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19249,7 +19745,7 @@ end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="78">
+        <Item class="ModuleScript" referent="79">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -19365,7 +19861,7 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="79">
+        <Item class="ModuleScript" referent="80">
           <Properties>
             <string name="Name">NpcRender</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -19879,7 +20375,7 @@ return NpcRender
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="80">
+        <Item class="ModuleScript" referent="81">
           <Properties>
             <string name="Name">Purchase</string>
             <string name="Source"><![CDATA[--!strict
@@ -19930,7 +20426,7 @@ return Purchase
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="81">
+        <Item class="ModuleScript" referent="82">
           <Properties>
             <string name="Name">RelicsClient</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -20169,7 +20665,7 @@ return RelicsClient
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="82">
+        <Item class="ModuleScript" referent="83">
           <Properties>
             <string name="Name">StoryText</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -20258,11 +20754,11 @@ return StoryText
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="83">
+        <Item class="Folder" referent="84">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">EventsHud</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -20522,7 +21018,7 @@ return EventsHud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21230,7 +21726,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">Kit</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21412,7 +21908,7 @@ return Kit
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="87">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">Menu</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21650,7 +22146,7 @@ return Menu
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="88">
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">Panels1</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -21945,7 +22441,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="89">
+          <Item class="ModuleScript" referent="90">
             <Properties>
               <string name="Name">Panels2</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22577,7 +23073,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="90">
+          <Item class="ModuleScript" referent="91">
             <Properties>
               <string name="Name">Panels3</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -22831,7 +23327,7 @@ return Panels
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="91">
+          <Item class="ModuleScript" referent="92">
             <Properties>
               <string name="Name">QuestTracker</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -23083,7 +23579,7 @@ return QuestTracker
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="92">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Root</string>
               <string name="Source"><![CDATA[--!strict
@@ -23215,7 +23711,7 @@ return Root
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="93">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -23690,7 +24186,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="94">
+          <Item class="ModuleScript" referent="95">
             <Properties>
               <string name="Name">Toasts</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -23831,7 +24327,7 @@ return Toasts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="95">
+          <Item class="ModuleScript" referent="96">
             <Properties>
               <string name="Name">TouchControls</string>
               <string name="Source"><![CDATA[--!nonstrict
@@ -24056,7 +24552,7 @@ return TouchControls
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="96">
+          <Item class="ModuleScript" referent="97">
             <Properties>
               <string name="Name">Windows</string>
               <string name="Source"><![CDATA[--!strict
@@ -24319,7 +24815,7 @@ return Windows
             </Properties>
           </Item>
         </Item>
-        <Item class="ModuleScript" referent="97">
+        <Item class="ModuleScript" referent="98">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--!nonstrict
@@ -24597,7 +25093,7 @@ return WorldFx
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="98">
+  <Item class="Workspace" referent="99">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="FallenPartsDestroyHeight">-400</float>

@@ -8,6 +8,7 @@ local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Collection = require(ReplicatedStorage.Shared.Collection)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
+local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
@@ -100,8 +101,8 @@ end
 function Progression.init()
 	Remotes.handle("Travel", function(player, payload)
 		local p = Data.get(player)
-		local index = payload.planet
-		if not p or type(index) ~= "number" or not Config.Planets[index] then
+		local index = Validate.int(payload.planet, 1, #Config.Planets)
+		if not p or not index or not Config.Planets[index] then
 			return false, M("msg.bad_request")
 		end
 		local f = Fighters.ofPlayer(player)

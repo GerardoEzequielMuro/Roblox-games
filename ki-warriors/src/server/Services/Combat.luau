@@ -15,6 +15,7 @@ local State = require(script.Parent.State)
 local Hooks = require(script.Parent.Hooks)
 local Fighters = require(script.Parent.Fighters)
 local Seeds = require(ReplicatedStorage.Shared.Seeds)
+local Validate = require(script.Parent.Validate)
 
 type Fighter = Fighters.Fighter
 local C = Config.Combat
@@ -175,7 +176,7 @@ function Combat.critChance(f: Fighter): number
 end
 
 local function unit(v: any): Vector3?
-	if typeof(v) ~= "Vector3" then
+	if typeof(v) ~= "Vector3" or not Validate.finiteVec(v.X, v.Y, v.Z) then
 		return nil
 	end
 	local m = v.Magnitude
@@ -209,13 +210,15 @@ end
 ---------------------------------------------------------------------------
 -- Melee
 ---------------------------------------------------------------------------
--- Returns the number of targets hit. aim (optional) overrides the facing direction.
-function Combat.melee(f: Fighter, aim: Vector3?): number
+-- Returns the number of targets hit and whether a swing really happened (cooldown passed).
+-- aim (optional) overrides the facing direction. Reach is checked against SERVER positions with
+-- a small latency allowance; the client never says what or how hard it hit.
+function Combat.melee(f: Fighter, aim: Vector3?): (number, boolean)
 	if not canAct(f) or f.blocking then
-		return 0
+		return 0, false
 	end
 	if not Fighters.ready(f, "melee", C.meleeCooldown * 0.9) then
-		return 0
+		return 0, false
 	end
 	stopCharging(f)
 	local now = os.clock()
@@ -235,7 +238,7 @@ function Combat.melee(f: Fighter, aim: Vector3?): number
 			if vp then
 				local delta = vp - origin
 				local dist = delta.Magnitude - v.radius
-				if dist <= C.meleeRange then
+				if dist <= C.meleeRange + C.latencyTolerance then
 					local flat = delta * Vector3.new(1, 0, 1)
 					local dot = if flat.Magnitude > 0.1 then flat.Unit:Dot(look) else 1
 					if dot >= C.meleeArc or dist < 4 then
@@ -269,7 +272,7 @@ function Combat.melee(f: Fighter, aim: Vector3?): number
 	if f.player and hits > 0 then
 		Remotes.fire("Combat", f.player, "combo", combo)
 	end
-	return hits
+	return hits, true
 end
 
 ---------------------------------------------------------------------------
@@ -634,25 +637,28 @@ end
 ---------------------------------------------------------------------------
 -- Act remote
 ---------------------------------------------------------------------------
-local budget: { [Player]: { tokens: number, t: number } } = {}
+local budget: { [Player]: Validate.Bucket } = {}
 local ACT_RATE, ACT_BURST = 40, 60
+-- Whitelist of input kinds. State toggles are not throttled per kind on purpose: dropping a
+-- "block off" or "beam release" would leave the player stuck; the token bucket bounds the rate.
+local ACT_KINDS: { [string]: boolean } = {
+	melee = true, blast = true, beamStart = true, beamRelease = true, block = true, charge = true,
+	dash = true, fly = true, form = true, tech = true,
+}
 
 local function onAct(player: Player, kind: any, a: any)
-	if type(kind) ~= "string" or not State.ready[player] then
+	if type(kind) ~= "string" or not ACT_KINDS[kind] or not State.ready[player] then
 		return
 	end
 	local b = budget[player]
 	local now = os.clock()
 	if not b then
-		b = { tokens = ACT_BURST, t = now }
+		b = Validate.newBucket(ACT_RATE, ACT_BURST, now)
 		budget[player] = b
 	end
-	b.tokens = math.min(ACT_BURST, b.tokens + (now - b.t) * ACT_RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not Validate.take(b, now, 1) then
 		return
 	end
-	b.tokens -= 1
 	local f = Fighters.ofPlayer(player)
 	if not f then
 		return
@@ -663,8 +669,12 @@ local function onAct(player: Player, kind: any, a: any)
 			local flat = aim * Vector3.new(1, 0, 1)
 			aim = if flat.Magnitude > 0.05 then flat.Unit else nil
 		end
-		Combat.melee(f, aim)
-		Combat.onManualRep(player)
+		local _, swung = Combat.melee(f, aim)
+		-- a manual rep is paid only for a swing the server accepted (cooldown passed, alive, not
+		-- blocking); punch spam on cooldown earns nothing
+		if swung then
+			Combat.onManualRep(player)
+		end
 	elseif kind == "blast" then
 		local dir = unit(a)
 		if dir then
@@ -689,14 +699,16 @@ local function onAct(player: Player, kind: any, a: any)
 	elseif kind == "fly" then
 		Combat.setFly(f, a == true)
 	elseif kind == "form" then
-		if type(a) == "number" then
-			Combat.setForm(f, a)
+		local index = Validate.int(a, 0, #Config.Forms)
+		if index then
+			Combat.setForm(f, index)
 		end
 	elseif kind == "tech" then
-		if type(a) == "table" and type(a.id) == "string" then
-			local dir = unit(a.dir)
+		local id = if type(a) == "table" then Validate.str(a.id, 32) else nil
+		if id then
+			local dir = unit((a :: any).dir)
 			if dir then
-				Combat.technique(f, a.id, dir)
+				Combat.technique(f, id, dir)
 			end
 		end
 	end

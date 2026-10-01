@@ -164,7 +164,7 @@ end
 
 function State.spendSparks(player: Player, amount: number): boolean
 	local p = Data.get(player)
-	if not p or amount < 0 or p.sparks < amount then
+	if not p or amount ~= amount or amount < 0 or amount == math.huge or p.sparks < amount then
 		return false
 	end
 	p.sparks -= amount
@@ -182,7 +182,7 @@ end
 
 function State.spendGems(player: Player, amount: number): boolean
 	local p = Data.get(player)
-	if not p or amount < 0 or p.gems < amount then
+	if not p or amount ~= amount or amount < 0 or amount == math.huge or p.gems < amount then
 		return false
 	end
 	p.gems -= amount
