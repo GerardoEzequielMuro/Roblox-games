@@ -4,6 +4,40 @@ local Gifts = {}
 
 export type GiftView = { minutes: number, ready: boolean, claimed: boolean }
 
+-- ===== Daily persistence (UTC day key) =====
+export type GiftState = { day: number, played: number, claimed: { [number]: boolean } }
+
+function Gifts.dayKey(now: number): number
+	return math.floor(now / 86400)
+end
+
+-- Normalizes a saved record (nil / garbage / old save) for `now`: a different UTC day (or invalid data) gives a fresh
+-- record with nothing claimed and 0 seconds played; the same day keeps its claims and played time.
+function Gifts.roll(rec: any, now: number): GiftState
+	local today = Gifts.dayKey(now)
+	if type(rec) ~= "table" or rec.day ~= today or type(rec.claimed) ~= "table" then
+		return { day = today, played = 0, claimed = {} }
+	end
+	local claimed: { [number]: boolean } = {}
+	for k, v in rec.claimed do
+		if type(k) == "number" and v == true then
+			claimed[k] = true
+		end
+	end
+	local played = if type(rec.played) == "number" and rec.played == rec.played then math.clamp(rec.played, 0, 86400) else 0
+	return { day = today, played = played, claimed = claimed }
+end
+
+-- Session start that makes "now - start" equal to the time already played today (so the timer continues across rejoins).
+function Gifts.startFor(rec: GiftState, now: number): number
+	return now - rec.played
+end
+
+-- Seconds played today for a session whose (effective) start is sessionStart.
+function Gifts.playedAt(sessionStart: number, now: number): number
+	return math.clamp(now - sessionStart, 0, 86400)
+end
+
 -- ready = the time has been reached and it hasn't been claimed yet. Returns the views and how many are ready.
 function Gifts.ready(gifts: { any }, sessionStart: number, now: number, claimed: { [number]: boolean }): ({ GiftView }, number)
 	local out: { GiftView } = {}

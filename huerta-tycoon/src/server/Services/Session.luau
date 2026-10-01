@@ -32,8 +32,8 @@ export type S = {
 	joinedAt: number,
 	leaderstats: Folder?,
 	autoLang: string?, -- language the client auto-detected (Hello payload)
-	sessionStart: number, -- play-time gifts count from here (not saved)
-	giftsClaimed: { [number]: boolean },
+	sessionStart: number, -- effective start of today's play time (now - seconds played today; persisted as profile.giftState.played)
+	giftsClaimed: { [number]: boolean }, -- same table as profile.giftState.claimed (saved, resets each UTC day)
 	boosts: { [string]: { mult: number, endsAt: number } }, -- "growth" | "cash" timed boosts (not saved)
 	autoAt: number, -- os.clock() of the last auto-farm round (not saved)
 	paidRandomAllowed: boolean, -- PolicyService: false where paid random items are restricted (and until we know)
@@ -51,6 +51,9 @@ function Session.create(player: Player, profile: Data.Profile): S
 	for _, pass in Config.GamePasses do
 		passes[pass.key] = false
 	end
+	local joinNow = os.time()
+	local gs = Gifts.roll(profile.giftState, joinNow)
+	profile.giftState = gs
 	local s: S = {
 		player = player,
 		profile = profile,
@@ -66,8 +69,8 @@ function Session.create(player: Player, profile: Data.Profile): S
 		joinedAt = os.time(),
 		leaderstats = nil,
 		autoLang = nil,
-		sessionStart = os.time(),
-		giftsClaimed = {},
+		sessionStart = Gifts.startFor(gs, joinNow),
+		giftsClaimed = gs.claimed,
 		boosts = {},
 		autoAt = 0,
 		paidRandomAllowed = false,
@@ -360,9 +363,24 @@ function Session.adsLeft(s: S): number
 	return math.max(0, Config.AdDailyCap - used)
 end
 
+-- Keeps the saved play-time gift record current: rolls over at the UTC day change (claims reset, timer restarts) and
+-- stores the seconds played today so a rejoin on the same day continues the timer instead of resetting it.
+function Session.syncGifts(s: S, now: number)
+	local rec = s.profile.giftState
+	if type(rec) ~= "table" or rec.day ~= Gifts.dayKey(now) then
+		local fresh = Gifts.roll(nil, now)
+		s.profile.giftState = fresh
+		s.giftsClaimed = fresh.claimed
+		s.sessionStart = now
+		rec = fresh
+	end
+	rec.played = Gifts.playedAt(s.sessionStart, now)
+end
+
 function Session.buildState(s: S): { [string]: any }
 	local p = s.profile
 	local now = os.time()
+	Session.syncGifts(s, now)
 	local gifts = Gifts.ready(Config.PlaytimeGifts, s.sessionStart, now, s.giftsClaimed)
 	local index = {}
 	for _, seed in Config.Seeds do

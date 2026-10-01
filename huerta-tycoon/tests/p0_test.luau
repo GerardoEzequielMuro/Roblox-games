@@ -123,6 +123,33 @@ do
 end
 
 print(string.format("p0_test: %d checks, %d failures", checks, failures))
+-- ===== Gifts: daily persistence (rejoin cannot re-claim, new UTC day resets) =====
+do
+	local day0 = 20000 * 86400
+	local t1 = day0 + 3600
+	local rec = Gifts.roll(nil, t1)
+	check(rec.day == 20000 and rec.played == 0 and next(rec.claimed) == nil, "old save (nil) gets a safe default")
+	check(Gifts.roll("junk", t1).day == 20000, "garbage record is replaced")
+	local sStart = Gifts.startFor(rec, t1)
+	check(select(1, Gifts.canClaim(GIFTS, 1, sStart, t1 + 300, rec.claimed)) == true, "claimable after 5 min")
+	rec.claimed[1] = true
+	rec.played = Gifts.playedAt(sStart, t1 + 400)
+	-- rejoin 1 minute later, same day
+	local t2 = t1 + 460
+	local back = Gifts.roll(rec, t2)
+	check(back.claimed[1] == true, "claim survives a rejoin on the same day")
+	local s2 = Gifts.startFor(back, t2)
+	check(select(2, Gifts.canClaim(GIFTS, 1, s2, t2 + 9999, back.claimed)) == "claimed", "same-day rejoin cannot re-claim")
+	check(select(1, Gifts.canClaim(GIFTS, 2, s2, t2 + 60, back.claimed)) == false, "timer continues (10 min not reached at 7:40+1)")
+	check(select(1, Gifts.canClaim(GIFTS, 2, s2, t2 + 200, back.claimed)) == true, "timer continues across rejoin (10 min reached)")
+	-- next UTC day
+	local t3 = day0 + 86400 + 5
+	local nd = Gifts.roll(back, t3)
+	check(nd.day == 20001 and nd.played == 0 and next(nd.claimed) == nil, "new day resets claims and played time")
+	check(select(2, Gifts.canClaim(GIFTS, 1, Gifts.startFor(nd, t3), t3 + 10, nd.claimed)) == "early", "new day: timer restarts")
+	check(Gifts.roll({ day = 20000, played = -5, claimed = { [1] = true, x = true } }, t1).played == 0, "negative played clamped")
+end
+
 if failures > 0 then
 	error("p0_test failed")
 end

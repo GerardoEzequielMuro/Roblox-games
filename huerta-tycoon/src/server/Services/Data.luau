@@ -34,6 +34,7 @@ export type Profile = {
 	groupGiftClaimed: boolean,
 	notifAskedAt: number,
 	ads: { day: number, count: number },
+	giftState: { day: number, played: number, claimed: { [number]: boolean } }, -- play-time gifts: UTC day, seconds played that day, claimed indexes
 	auto: { harvest: boolean, plant: boolean, sell: boolean, seed: string }, -- auto-farm switches + seed to replant
 	wild: { cycle: number, claimed: { [string]: boolean } }, -- Wild Patch nodes picked in that hourly cycle
 	trophies: { { seed: string, mut: string?, size: string? } }, -- crops on the plot's pedestals (luck)
@@ -96,6 +97,7 @@ local function defaultProfile(): Profile
 		groupGiftClaimed = false,
 		notifAskedAt = 0,
 		ads = { day = 0, count = 0 },
+		giftState = { day = 0, played = 0, claimed = {} },
 		auto = { harvest = true, plant = false, sell = false, seed = "" },
 		wild = { cycle = 0, claimed = {} },
 		trophies = {},

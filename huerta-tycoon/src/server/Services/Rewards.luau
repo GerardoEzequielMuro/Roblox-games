@@ -132,6 +132,7 @@ Remotes.handle("ClaimGift", function(player, payload)
 		return false, R("err.loading")
 	end
 	local index = Validate.integer(payload.index, 1, #Config.PlaytimeGifts)
+	Session.syncGifts(s, os.time())
 	local ok, why = Gifts.canClaim(Config.PlaytimeGifts, index, s.sessionStart, os.time(), s.giftsClaimed)
 	if not ok or not index then
 		return false, R(if why == "early" then "err.giftEarly" elseif why == "claimed" then "err.giftClaimed" else "err.badRequest")

@@ -336,3 +336,9 @@ Auditoría anti-exploit / seguridad de guardado. Todo el tráfico cliente->servi
 - Que el menú progresivo no confunda: un jugador que saltea el tutorial queda en tier 1 hasta los $250. Si preferís mostrar todo al saltear, es una línea en `Onboarding.menuTier`.
 - La pantalla de carga con red lenta (debe irse sola a los 6 s) y que no tape el chat/menú de Roblox.
 - Hay un solo `Humanoid.CameraOffset` en uso: si otro script lo toca, se pisan.
+
+## Ronda 10: arreglos del playtest
+
+- Regalos por minutos de sesion: ya no se pueden farmear reentrando. `profile.giftState = {day, played, claimed}` (dia UTC) en el perfil; `Session.syncGifts` (buildState, `ClaimGift`, al salir) guarda los segundos jugados hoy y `sessionStart` se reconstruye como `ahora - played`, asi el reloj continua entre reentradas del mismo dia. Dia UTC nuevo: reclamos y tiempo a cero (tambien a mitad de sesion). `s.giftsClaimed` es la misma tabla que `giftState.claimed`.
+- Funciones puras en `src/shared/Gifts.luau` (`dayKey`, `roll`, `startFor`, `playedAt`); saves viejos o corruptos reciben un default seguro. Tests en `tests/p0_test.luau` (reentrada mismo dia, dia nuevo, clamp).
+- Playtest (new y mid): veredicto OK.

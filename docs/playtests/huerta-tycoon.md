@@ -1,7 +1,7 @@
 # Playtest de huerta-tycoon
 
 - Comando: `python3 tools/uipreview/preview.py huerta-tycoon --playtest --minutes 10 --seed 1`
-- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 10.2 min | reales: 71 s | rejoins del bot: 1
+- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 10.2 min | reales: 68 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)

@@ -93,6 +93,7 @@ Players.PlayerRemoving:Connect(function(player)
 	local s = Session.get(player)
 	if s then
 		s.profile.playTime += os.time() - s.joinedAt
+		Session.syncGifts(s, os.time())
 		Garden.releasePlot(s)
 	end
 	Data.release(player)
