@@ -2,6 +2,10 @@
 -- Spin Showdown: client bootstrap.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+-- Loading screen first: it covers the build below and always goes away on its own.
+local Loading = require(script.Parent.UI.Loading)
+pcall(Loading.start)
+
 ReplicatedStorage:WaitForChild("Remotes")
 
 local Net = require(script.Parent.Net)
@@ -17,6 +21,7 @@ local Hud = require(UI.Hud)
 local MatchHud = require(UI.MatchHud)
 local MenuWindows = require(UI.MenuWindows)
 local Popups = require(UI.Popups)
+local Guide = require(UI.Guide)
 local CoreClient = require(script.Parent.CoreClient)
 local WorldText = require(script.Parent.WorldText)
 
@@ -28,6 +33,7 @@ Hud.init()
 MenuWindows.init()
 Director.init()
 Popups.init()
+Guide.init()
 CoreClient.init()
 WorldText.init()
 
@@ -51,6 +57,16 @@ TableViews.Changed:Connect(function(id)
 	syncHud()
 end)
 Net.Changed:Connect(syncHud)
+
+-- tell the loading screen when the HUD is built and the profile has arrived
+Loading.mark("ui")
+if Net.state then
+	Loading.mark("data")
+else
+	Net.Changed:Once(function()
+		Loading.mark("data")
+	end)
+end
 
 local function request(action: string, payload: { [string]: any }?)
 	task.spawn(function()

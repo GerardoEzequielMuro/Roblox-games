@@ -267,3 +267,39 @@ Revisado y sin cambios (estaba bien): `Act` (turno, mesa propia y fase vía `whe
 - Los regalos de sesión se reinician por server (reentrar cada 3 min rinde parecido a una sesión larga, no se tocó).
 - Crédito de referido fire-and-forget: si falla el `UpdateAsync` del invitador el crédito se pierde (queda en el log).
 - `tests/unit_core.luau:761` tiene una advertencia de tipos previa (no afecta a `src`).
+
+## Ronda 8: primera sesión y game feel
+
+### Recorrido de los primeros 2 minutos
+**Antes:** el jugador nuevo aparece con el HUD completo (8 botones de menú, metas, Núcleo de energía, Auto-cola), un cartelito "Juega tu primera partida" sin animación, y al apretar JUGAR se abre una ventana con modos que hay que elegir. Dentro de la partida solo había frases largas de 5-9 s ("Tu turno. Elegí a quién zapear y apretá GIRAR...") que se tapan entre sí. No había pantalla de carga propia. Capturas: `docs/previews/ruleta-pvp/r8-before/`.
+
+**Después:**
+1. 0-2 s: pantalla de carga de marca (Spin Showdown, rueda girando, barra, tip rotativo). Tope duro de 6 s, nunca cuelga.
+2. HUD mínimo: solo perfil, monedas y JUGAR. El menú, metas, Auto-cola, evento y Núcleo entran con un pop recién al terminar la primera partida.
+3. Un cartel "Toca JUGAR" + flecha que rebota + borde que pulsa sobre el botón. Un toque y va directo a la partida guiada (mesa clásica con bots; el server ya la fuerza). Si falla, se abre la ventana Jugar para no trabarse.
+4. En la partida: una sola cosa por vez, con 2-4 palabras y flecha: "Elegí un rival" (apunta a los rivales), "Ahora GIRAR", "¡FRENÁ!" (apunta al botón), "Mirá la rueda" mientras juegan otros, "Eliminado! Ahora el premio".
+5. El momento "wow" (primer giro/eliminación) ya estaba bien armado (finisher, cámara, grading); no toqué tiempos. Lo que sumé es la recompensa: pantalla de resultado con números que suben (monedas, XP, trofeos, bono de tutorial) con pop por fila, y el HUD recupera menú/metas con pop.
+
+### Qué agregué
+- `src/shared/Tutorial.luau` (puro): el paso es una función del estado visible (`done`, sentado, en partida, mi turno, fase, objetivo elegido, eliminado). No guarda progreso propio, así que no se puede trabar, retoma solo después de reentrar (`tutorialDone` sigue en el perfil) y se recupera si falta el objetivo (después de 2,5 s queda solo el texto). Tracker con "Saltar tutorial" (por sesión; reentrando vuelve si no terminó la primera partida).
+- `src/shared/LoadingFlow.luau` (puro): progreso por etapas ponderadas, mínimo 1,2 s, máximo 6 s, una etapa que falla cuenta como hecha, rotación de tips.
+- `tests/tutorial_test.luau`: 57 checks (recorrido completo, todas las combinaciones de contexto, recuperación, carga).
+- `src/client/UI/Guide.luau`: flecha, borde pulsante, línea corta, botón Saltar. Con "Sacudida" apagada la flecha no rebota; con "Destellos" apagados el borde no pulsa.
+- `src/client/UI/Loading.luau` (autocontenida, con watchdog y pcall en todo) + `src/first/Boot.client.luau` en ReplicatedFirst (quita la pantalla por defecto de Roblox y pone un telón de marca que se autodestruye a los 7 s). Agregué `ReplicatedFirst` a los 5 `*.project.json`.
+- `src/client/UI/Moments.luau`: tarjeta de subida de nivel (confeti, "¡SUBISTE DE NIVEL!") y de desbloqueo con color de rareza (rare/epic/legendary; mayor ráfaga y tiempo según rareza; common sigue siendo toast). Una sola tarjeta, sin apilar. Sonido por `Audio.play("win")` (ids vacíos, silencioso hasta que el dueño cargue ids).
+- Juice: `Theme.roll` (contador que sube con easing), monedas del HUD que suben, barra de XP y barra del Núcleo con tween, Núcleo con tono que sube en cada toque, "+1" flotante (pool de 8, apagado en lite), confeti al cobrar carga, filas de resultado que suben.
+- Locales: 15 claves nuevas en los 12 idiomas (`tut.step.*`, `tut.skip`, `loading.*`, `hud.level_up`, `reveal.new`); acorté `tut.intro`/`tut.eliminated` en en/es y saqué de Popups las líneas de decidir/girar (las reemplaza la guía).
+- Playtest (`tests/AutoTestClient`): el chequeo del cartel "PlayTip" ahora verifica que la guía apunte a JUGAR y que el HUD sea mínimo.
+
+### Verificación
+Build `default.project.json` OK (y test/showcase*), `luau-lsp analyze src` sin salida, unit_core 1019, security 60, pacing 17, model_slots 23, locale_check, check_keys y tutorial_test pasan; preview con 0 errores de runtime. Capturas: `docs/previews/ruleta-pvp/r8-after/` (nuevo pc/phone, carga pc/phone, partida phone, ventana Jugar).
+
+### Qué mirar en Studio
+- El simulador no aplica `UIScale` a `AbsoluteSize`: en la captura el borde pulsante sale corrido del botón JUGAR. En Studio tiene que calzar justo (la guía usa `AbsolutePosition/Size`). Mirar también el modo "izquierda" de la flecha sobre GIRAR/FRENAR y el borde sobre la fila de rivales; la captura no llegó a mi turno.
+- Pantalla de carga: que el telón `SpinBoot` de ReplicatedFirst se reemplace sin parpadeo y que no tape el HUD pasados ~2 s en conexión lenta.
+- Sacudida de cámara: sigue solo dentro de la arena (la cámara del lobby es la de Roblox); no agregué temblor en el lobby.
+- Tarjetas de nivel/desbloqueo con un cosmético épico/legendario y con "Sacudida" apagada.
+
+### Pendiente
+- "Saltar tutorial" es solo de sesión; si se quiere permanente haría falta un flag en el server.
+- Sin ids de audio: los cues nuevos (`win`) son silenciosos hasta cargarlos en `Config.Audio.sfx`.

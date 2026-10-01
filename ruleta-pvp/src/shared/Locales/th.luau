@@ -474,4 +474,21 @@ return {
 	["goal.league"] = "อีก {n} ถ้วยถึง {league}",
 	["goal.top_league"] = "ถึงลีกสูงสุดแล้ว",
 	["goal.season"] = "อีก {n} แต้มถึงระดับซีซัน {tier}",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "กดเล่น",
+	["tut.step.wait"] = "เตรียมตัว...",
+	["tut.step.target"] = "เลือกคู่ต่อสู้",
+	["tut.step.spin"] = "ตอนนี้กดหมุน",
+	["tut.step.brake"] = "เบรก!",
+	["tut.step.watch"] = "ดูวงล้อ",
+	["tut.step.out"] = "ตกรอบ! รางวัลกำลังมา",
+	["tut.skip"] = "ข้ามบทสอน",
+	["loading.loading"] = "กำลังโหลด...",
+	["loading.tip.1"] = "กดเบรกเพื่อเลือกจุดที่วงล้อหยุด",
+	["loading.tip.2"] = "ทุกคนมี 3 ชีวิต หมดแล้วตกรอบ",
+	["loading.tip.3"] = "การ์ดฟรี เล่นหนึ่งใบก่อนหมุน",
+	["loading.tip.4"] = "ชนะแมตช์เพื่อเลื่อนลีกและปลดล็อกสกิน",
+	["hud.level_up"] = "เลเวลอัป!",
+	["reveal.new"] = "ใหม่!",
 }

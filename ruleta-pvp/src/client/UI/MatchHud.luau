@@ -116,6 +116,8 @@ local hint = Theme.text({ Name = "Hint", Text = "", Size = UDim2.new(1, 0, 0, 26
 local targets = Theme.new("Frame", { Name = "Targets", Size = UDim2.new(1, 0, 0, 66), Position = UDim2.fromOffset(0, 30), BackgroundTransparency = 1, Parent = bottom }, { Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Center) }) :: Frame
 local handRow = Theme.new("Frame", { Name = "Hand", Size = UDim2.new(1, 0, 0, 122), Position = UDim2.fromOffset(0, 104), BackgroundTransparency = 1, Parent = bottom }, { Theme.list(Enum.FillDirection.Horizontal, 8, Enum.HorizontalAlignment.Center, Enum.VerticalAlignment.Bottom) }) :: Frame
 local action = Theme.button({ Name = "Action", Text = "", Title = true, Color = Theme.Green, Size = UDim2.fromOffset(280, 62), Position = UDim2.new(0.5, 0, 1, -2), AnchorPoint = Vector2.new(0.5, 1), TextSize = 40, Corner = 18, Parent = bottom })
+MatchHud.actionButton = action -- the tutorial guide points at it
+MatchHud.targetsFrame = targets
 action.Visible = false
 local actionKey = Theme.text({ Name = "Key", Text = "", Size = UDim2.fromOffset(90, 18), Position = UDim2.new(0.5, 150, 1, -24), AnchorPoint = Vector2.new(0, 0.5), MaxTextSize = 15, TextColor3 = Theme.Dim, TextXAlignment = Enum.TextXAlignment.Left, Parent = bottom })
 
@@ -783,11 +785,26 @@ function MatchHud.coach(text: string?)
 	end
 end
 
-local function resultRow(icon: string, label: string, value: string, color: Color3, order: number)
+-- `rollTo`: the number rolls up from 0 (eased, staggered by row) and the row pops when it lands.
+local function resultRow(icon: string, label: string, value: string, color: Color3, order: number, rollTo: number?, suffix: string?)
 	local row = Theme.new("Frame", { Size = UDim2.new(1, 0, 0, 36), BackgroundColor3 = Theme.Panel2, LayoutOrder = order, ZIndex = 41, Parent = resultRows }, { Theme.corner(10) })
 	Theme.text({ Text = icon, Stroke = false, Size = UDim2.fromOffset(28, 28), Position = UDim2.fromOffset(8, 4), ZIndex = 42, Parent = row })
 	Theme.text({ Text = label, Size = UDim2.new(0.55, -44, 1, -10), Position = UDim2.fromOffset(44, 5), TextXAlignment = Enum.TextXAlignment.Left, MaxTextSize = 20, ZIndex = 42, Parent = row })
-	Theme.text({ Text = value, Title = true, Size = UDim2.new(0.45, -12, 1, -8), Position = UDim2.new(0.55, 0, 0, 4), TextXAlignment = Enum.TextXAlignment.Right, MaxTextSize = 24, TextColor3 = color, ZIndex = 42, Parent = row })
+	local valueLabel = Theme.text({ Text = value, Title = true, Size = UDim2.new(0.45, -12, 1, -8), Position = UDim2.new(0.55, 0, 0, 4), TextXAlignment = Enum.TextXAlignment.Right, MaxTextSize = 24, TextColor3 = color, ZIndex = 42, Parent = row })
+	if rollTo and rollTo > 0 then
+		local tail = suffix or ""
+		local function fmt(n: number): string
+			return "+" .. Format.commas(n) .. tail
+		end
+		valueLabel.Text = fmt(0)
+		task.delay(0.25 + order * 0.14, function()
+			if valueLabel.Parent then
+				Theme.roll(valueLabel, 0, rollTo, 0.7, fmt)
+				Theme.pop(row, 1.08)
+				Theme.play("tick", 0.3, 1.2 + order * 0.15)
+			end
+		end)
+	end
 end
 
 -- The reward screen. `final` = the match is over (otherwise you were eliminated and can watch).
@@ -802,14 +819,14 @@ function MatchHud.showResult(r: { [string]: any }, final: boolean)
 	resultsHead.BackgroundColor3 = color
 	resultsTitle.Text = if r.won then "🏆 " .. Lang.t("result.victory") else Lang.t("result.place", { n = r.place, total = r.n })
 	resultsSub.Text = if r.won and r.streak > 1 then "🔥 " .. Lang.t("result.streak", { n = r.streak }) elseif r.won then Lang.t("result.winner_sub") else Lang.t("result.loser_sub")
-	resultRow("🪙", Lang.t("result.coins"), "+" .. Format.commas(r.coins) .. (if (r.eventCoin or 1) > 1 then "  ×" .. r.eventCoin else ""), Theme.Yellow, 1)
-	resultRow("⭐", Lang.t("result.xp"), "+" .. Format.commas(r.xp) .. (if r.levelUp then "  ⬆ " .. Lang.t("result.level", { n = r.level }) else ""), Theme.Cyan, 2)
-	resultRow("🏆", Lang.t("result.trophies"), "+" .. r.trophies, Theme.Pink, 3)
+	resultRow("🪙", Lang.t("result.coins"), "+" .. Format.commas(r.coins) .. (if (r.eventCoin or 1) > 1 then "  ×" .. r.eventCoin else ""), Theme.Yellow, 1, r.coins, if (r.eventCoin or 1) > 1 then "  ×" .. r.eventCoin else "")
+	resultRow("⭐", Lang.t("result.xp"), "+" .. Format.commas(r.xp) .. (if r.levelUp then "  ⬆ " .. Lang.t("result.level", { n = r.level }) else ""), Theme.Cyan, 2, r.xp, if r.levelUp then "  ⬆ " .. Lang.t("result.level", { n = r.level }) else "")
+	resultRow("🏆", Lang.t("result.trophies"), "+" .. r.trophies, Theme.Pink, 3, r.trophies)
 	if (r.seasonPoints or 0) > 0 then
 		resultRow("🏅", Lang.t("result.season"), "+" .. r.seasonPoints, Theme.Green, 4)
 	end
 	if r.tutorial then
-		resultRow("🎓", Lang.t("result.tutorial"), "+" .. Format.commas(r.tutorialCoins), Theme.Green, 5)
+		resultRow("🎓", Lang.t("result.tutorial"), "+" .. Format.commas(r.tutorialCoins), Theme.Green, 5, r.tutorialCoins)
 	end
 	Theme.setButton(againButton, (if final then "▶ " .. Lang.t("match.play_again") else "👁 " .. Lang.t("match.keep_watching")), if final then Theme.Green else Theme.Purple)
 	results.Visible = true

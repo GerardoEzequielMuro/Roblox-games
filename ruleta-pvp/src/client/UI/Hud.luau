@@ -5,6 +5,7 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
 local Workspace = game:GetService("Workspace")
 
 local Config = require(ReplicatedStorage.Shared.Config)
@@ -13,6 +14,7 @@ local Referral = require(ReplicatedStorage.Shared.Referral)
 local Theme = require(script.Parent.Theme)
 local Root = require(script.Parent.Root)
 local Windows = require(script.Parent.Windows)
+local Moments = require(script.Parent.Moments)
 local Toasts = require(script.Parent.Toasts)
 local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
@@ -41,6 +43,9 @@ Hud.buttons = {} :: { [string]: TextButton }
 Hud.badges = {} :: { [string]: Frame }
 Hud.onCoreTap = nil :: (() -> ())?
 Hud.liveEvent = nil :: { [string]: any }?
+Hud.minimal = false -- new player: only the essentials (profile, currencies, PLAY) until the first match is done
+
+local refreshEvent: () -> () -- defined with the refresh functions below
 
 local function setting(key: string, value: any)
 	task.spawn(function()
@@ -92,7 +97,7 @@ local goalSeason = Theme.text({ Name = "Season", Text = "", Size = UDim2.new(1, 
 -- Menu (left)
 ---------------------------------------------------------------------------
 local menu = Theme.new("Frame", { Name = "Menu", Size = pick(UDim2.fromOffset(140, 276), UDim2.fromOffset(306, 138)), Position = pick(UDim2.new(0, 8, 0, 76), UDim2.new(0.29, 0, 0, 6)), AnchorPoint = Vector2.zero, BackgroundTransparency = 1, Parent = root }) :: Frame
-Root.mount(menu, root)
+local menuHolder = Root.mount(menu, root)
 Theme.new("UIGridLayout", { CellSize = pick(UDim2.fromOffset(64, 62), UDim2.fromOffset(72, 66)), CellPadding = UDim2.fromOffset(6, 6), SortOrder = Enum.SortOrder.LayoutOrder, Parent = menu })
 local MENU: { { any } } = {
 	{ "Shop", "🛒", Theme.Green },
@@ -128,11 +133,24 @@ end
 local playBar = Theme.new("Frame", { Name = "PlayBar", Size = pick(UDim2.fromOffset(520, 92), UDim2.fromOffset(540, 92)), Position = UDim2.new(0.5, 0, 1, -10), AnchorPoint = Vector2.new(0.5, 1), BackgroundTransparency = 1, Parent = root }) :: Frame
 Root.mount(playBar, root)
 local playButton = Theme.button({ Name = "Play", Key = "hud.play", Prefix = "▶ ", Title = true, Color = Theme.Green, Size = UDim2.fromOffset(300, 84), Position = UDim2.fromScale(0.5, 0.5), AnchorPoint = Vector2.new(0.5, 0.5), TextSize = 50, Corner = 24, Parent = playBar, OnClick = function()
+	if Hud.minimal and Net.get("table") == nil and Windows.current() == nil then
+		-- brand-new player: one press goes straight to the guided first match (a classic table
+		-- with bots; the server forces it). If that fails, the normal Play window opens so
+		-- nobody is ever stuck.
+		task.spawn(function()
+			local ok, err = Net.request("QuickPlay", {})
+			if not ok then
+				if err then
+					Toasts.show(Lang.msg(err), "error")
+				end
+				Windows.open("Play")
+			end
+		end)
+		return
+	end
 	Windows.toggle("Play")
 end })
 Hud.buttons.Play = playButton
-local playTip = Theme.panel({ Name = "PlayTip", Size = UDim2.fromOffset(300, 34), Position = UDim2.new(0.5, 0, 0, -32), AnchorPoint = Vector2.new(0.5, 0), Corner = 14, StrokeColor = Theme.Yellow, Visible = false, Parent = playBar })
-Theme.text({ Key = "tut.first_match", Prefix = "👇 ", Size = UDim2.new(1, -12, 1, -8), Position = UDim2.fromOffset(6, 4), MaxTextSize = pick(18, 19), TextColor3 = Theme.Yellow, Parent = playTip })
 local autoQueue = Theme.button({ Name = "AutoQueue", Text = "", Color = Theme.Grey, Size = pick(UDim2.fromOffset(100, 56), UDim2.fromOffset(112, 66)), Position = UDim2.new(1, 0, 0.5, 0), AnchorPoint = Vector2.new(1, 0.5), TextSize = pick(15, 17), KeepSize = true, Parent = playBar })
 Hud.buttons.AutoQueue = autoQueue
 autoQueue.Activated:Connect(function()
@@ -231,12 +249,40 @@ autoCharge.Activated:Connect(function()
 	setting("autoCharge", not (Net.setting("autoCharge") == true))
 end)
 
-function Hud.setCoreVisible(near: boolean)
-	core.Visible = near and root.Visible
+function Hud.coinPop()
+	Theme.pop(coinPill, 1.2)
 end
 
+function Hud.setCoreVisible(near: boolean)
+	core.Visible = near and root.Visible and not Hud.minimal
+end
+
+-- New player (tutorial not done): only the essentials. Leaving minimal brings the menu,
+-- goals and toggles in with a small pop, so the HUD visibly grows after the first match.
+function Hud.setMinimal(on: boolean)
+	if Hud.minimal == on then
+		return
+	end
+	local wasMinimal = Hud.minimal
+	Hud.minimal = on
+	Hud.refresh()
+	refreshEvent()
+	if wasMinimal and not on then
+		Theme.pop(menu, 0.8)
+		Theme.pop(goalChip, 0.85)
+		Theme.pop(autoQueue, 0.8)
+	end
+end
+
+local lastCoreTaps = 0
 function Hud.coreProgress(taps: number, need: number)
-	coreFill.Size = UDim2.fromScale(math.clamp(taps / need, 0, 1), 1)
+	local frac = math.clamp(taps / need, 0, 1)
+	-- the bar eases to the new value; when it wraps (a charge was paid) it snaps to the start
+	if taps < lastCoreTaps then
+		coreFill.Size = UDim2.fromScale(0, 1)
+	end
+	lastCoreTaps = taps
+	TweenService:Create(coreFill, TweenInfo.new(0.16, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.fromScale(frac, 1) }):Play()
 	coreText.Text = taps .. "/" .. need
 end
 
@@ -264,7 +310,7 @@ local function refresh()
 		return
 	end
 	levelText.Text = tostring(s.level)
-	xpFill.Size = UDim2.fromScale(math.clamp(s.xp / math.max(1, s.xpNeed), 0, 1), 1)
+	TweenService:Create(xpFill, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), { Size = UDim2.fromScale(math.clamp(s.xp / math.max(1, s.xpNeed), 0, 1), 1) }):Play()
 	local icon = ""
 	for _, l in Config.Leagues do
 		if l.id == s.league then
@@ -282,13 +328,15 @@ local function refresh()
 	else
 		goalSeason.Text = ""
 	end
-	goalChip.Visible = true
+	goalChip.Visible = not Hud.minimal
 	if shownCoins ~= s.coins then
 		if shownCoins >= 0 and s.coins > shownCoins then
 			Theme.pop(coinPill, 1.12)
+			Theme.roll(coinValue, shownCoins, s.coins, math.clamp((s.coins - shownCoins) / 400, 0.35, 1.1), Format.abbrev)
+		else
+			coinValue.Text = Format.abbrev(s.coins)
 		end
 		shownCoins = s.coins
-		coinValue.Text = Format.abbrev(s.coins)
 	end
 	-- auto toggles
 	local q = s.settings.autoQueue == true
@@ -299,11 +347,11 @@ local function refresh()
 		Theme.setButton(autoCharge, if c.autoUnlocked then ("🤖 " .. Lang.t("core.auto") .. ": " .. (if on then "ON" else "OFF")) else ("🔒 " .. Lang.t("core.auto_locked", { level = c.autoLevel })), if on then Theme.Green else Theme.Grey)
 		Hud.coreProgress(c.taps, c.need)
 	end
-	-- first match nudge
-	playTip.Visible = s.tutorialDone == false
 	-- starter offer
 	local st = s.starter
-	starter.Visible = type(st) == "table" and st.available == true
+	starter.Visible = type(st) == "table" and st.available == true and not Hud.minimal
+	autoQueue.Visible = not Hud.minimal
+	menuHolder.Visible = not Hud.minimal
 	-- badges
 	local daily = s.dailyState
 	local giftReady = false
@@ -358,9 +406,9 @@ local function refresh()
 end
 Hud.refresh = refresh
 
-local function refreshEvent()
+function refreshEvent()
 	local d = Hud.liveEvent
-	if not d then
+	if not d or Hud.minimal then
 		eventChip.Visible = false
 		return
 	end
@@ -405,14 +453,18 @@ function Hud.init()
 		end
 	end)
 	Net.event("LevelUp").OnClientEvent:Connect(function(d)
-		Toasts.show("⬆ " .. Lang.t("toast.level_up", { n = d.level, coins = d.coins }), "success", 4)
-		Theme.play("heal", 0.5, 1.4)
+		Moments.levelUp(d.level, d.coins)
 		Theme.pop(profile, 1.15)
+		-- the XP bar restarts: show it empty then growing
+		xpFill.Size = UDim2.fromScale(0, 1)
 	end)
 	Net.event("Unlock").OnClientEvent:Connect(function(id)
 		local item = Config.CosmeticById[id]
 		if item then
-			Toasts.show("🔓 " .. Lang.t("toast.unlocked", { item = item.icon .. " " .. Lang.t("cos." .. id) }), "success", 4)
+			-- rare and better: the reveal card in the rarity colour; commons: a toast
+			if not Moments.unlock(id) then
+				Toasts.show("🔓 " .. Lang.t("toast.unlocked", { item = item.icon .. " " .. Lang.t("cos." .. id) }), "success", 4)
+			end
 		end
 	end)
 	-- once a second: timers on the chips

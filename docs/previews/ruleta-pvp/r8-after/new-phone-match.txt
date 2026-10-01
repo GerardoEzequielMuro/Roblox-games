@@ -1,0 +1,10 @@
+# uipreview ruleta-pvp state=new screen=phone (844x390, touch) window=match -> ok
+# image: new-phone-match.png  (coordinates below are in the full 844x390 screen space)
+# APPROXIMATION of Roblox layout: see tools/uipreview/README.md (limits).
+
+## Layout findings (0)
+
+## Runtime log (0)
+
+## Other log: warn/info/print (1, first 60)
+[info] (client) [fixture] QuickPlay -> true t1

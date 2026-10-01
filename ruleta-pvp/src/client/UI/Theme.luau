@@ -443,6 +443,38 @@ function Theme.pop(obj: GuiObject, amount: number?)
 	TweenService:Create(sc, TweenInfo.new(0.25, Enum.EasingStyle.Back), { Scale = 1 }):Play()
 end
 
+-- Counter that rolls up to its new value (ease out). One roll per label: a new call takes
+-- over from the number currently shown, so rapid gains never stack tweens. `fmt` renders it.
+local rolls: { [Instance]: number } = {}
+function Theme.roll(label: TextLabel, from: number, to: number, duration: number?, fmt: ((number) -> string)?)
+	local render: (number) -> string = fmt or function(n: number): string
+		return tostring(n)
+	end
+	local token = (rolls[label] or 0) + 1
+	rolls[label] = token
+	local dur = duration or 0.6
+	if to == from or dur <= 0 then
+		label.Text = render(to)
+		return
+	end
+	task.spawn(function()
+		local t0 = os.clock()
+		while rolls[label] == token and label.Parent ~= nil do
+			local a = math.clamp((os.clock() - t0) / dur, 0, 1)
+			local eased = 1 - (1 - a) ^ 3
+			label.Text = render(math.floor(from + (to - from) * eased + 0.5))
+			if a >= 1 then
+				break
+			end
+			task.wait()
+		end
+		if rolls[label] == token then
+			label.Text = render(to)
+			rolls[label] = nil
+		end
+	end)
+end
+
 -- ON / OFF toggle row used by the HUD and the settings window.
 function Theme.toggle(props: { Key: string, Parent: Instance?, Size: UDim2?, LayoutOrder: number?, Get: () -> boolean, Set: (boolean) -> (), Name: string? }): (Frame, () -> ())
 	local row = Theme.new("Frame", {

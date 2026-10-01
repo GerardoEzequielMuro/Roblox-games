@@ -482,4 +482,21 @@ return {
 	["goal.top_league"] = "Ligue maximale atteinte",
 	["goal.season"] = "{n} points pour le palier {tier} de la saison",
 	["goal.season.one"] = "{n} point pour le palier {tier} de la saison",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "Appuie sur JOUER",
+	["tut.step.wait"] = "Prépare-toi...",
+	["tut.step.target"] = "Choisis un rival",
+	["tut.step.spin"] = "Maintenant TOURNER",
+	["tut.step.brake"] = "FREINE !",
+	["tut.step.watch"] = "Regarde la roue",
+	["tut.step.out"] = "Éliminé ! Place aux gains",
+	["tut.skip"] = "Passer le tutoriel",
+	["loading.loading"] = "Chargement...",
+	["loading.tip.1"] = "Freine pour choisir où la roue s'arrête.",
+	["loading.tip.2"] = "Chacun a 3 vies. Plus de vies, tu es éliminé.",
+	["loading.tip.3"] = "Les cartes sont gratuites : joues-en une avant de tourner.",
+	["loading.tip.4"] = "Gagne des parties pour monter de ligue et débloquer des skins.",
+	["hud.level_up"] = "NIVEAU SUPÉRIEUR !",
+	["reveal.new"] = "NOUVEAU !",
 }

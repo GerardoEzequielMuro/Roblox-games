@@ -22,6 +22,7 @@ local CoreClient = {}
 local player = Players.LocalPlayer
 local pending = 0
 local lastTap = 0
+local combo = 0
 local corePart: BasePart? = nil
 local rings: { Part } = {}
 CoreClient.sent = 0
@@ -48,12 +49,18 @@ function CoreClient.tap()
 	end
 	lastTap = now
 	pending += 1
-	Audio.play("tick", 0.35, 1.6 + math.random() * 0.3)
+	combo = combo % Config.Core.tapsPerCharge + 1
+	-- the pitch climbs with every tap of the charge: the last taps sound like "almost there"
+	Audio.play("tick", 0.35, 1.3 + 0.9 * combo / Config.Core.tapsPerCharge + math.random() * 0.1)
 	local core = corePart
 	if core then
 		core.Size = Vector3.one * (Layout.CoreRadius * 2 + 0.9)
 		TweenService:Create(core, TweenInfo.new(0.18, Enum.EasingStyle.Back), { Size = Vector3.one * Layout.CoreRadius * 2 }):Play()
 		Fx.shards(core.Position, Color3.fromRGB(0, 235, 255), 3, 18, { life = 0.6, size = 0.4 })
+		-- a "+1" pop every other tap (the floating texts are a pool of 8, so this is capped)
+		if combo % 2 == 0 and not Prefs.lite() then
+			Fx.floatText(core.Position + Vector3.new((math.random() - 0.5) * 6, 4.5, (math.random() - 0.5) * 6), "+1", Color3.fromRGB(0, 235, 255):Lerp(Color3.fromRGB(255, 215, 80), combo / Config.Core.tapsPerCharge), 2.6)
+		end
 	end
 end
 
@@ -100,8 +107,11 @@ function CoreClient.init()
 	Net.event("Core").OnClientEvent:Connect(function(d)
 		Hud.coreProgress(d.taps, Config.Core.tapsPerCharge)
 		if d.coins > 0 and corePart then
-			Fx.floatText(corePart.Position + Vector3.new(0, 6, 0), "+" .. d.coins .. " 🪙", Color3.fromRGB(255, 215, 80), 4)
+			Fx.floatText(corePart.Position + Vector3.new(0, 6, 0), "+" .. d.coins .. " 🪙", Color3.fromRGB(255, 215, 80), 5)
 			Fx.ring(Vector3.new(0, 0.6, 0), Color3.fromRGB(0, 235, 255), 6, 22, 0.7)
+			Fx.confetti(corePart.Position + Vector3.new(0, 3, 0), 14, 26)
+			combo = 0
+			Hud.coinPop()
 			Audio.play("heal", 0.4, 1.5)
 		end
 	end)

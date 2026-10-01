@@ -375,10 +375,10 @@ return {
 
 	-- first match
 	["tut.first_match"] = "Play your first match",
-	["tut.intro"] = "Everyone has 3 lives. Lose them all and you are out.",
+	["tut.intro"] = "3 lives each. Lose all and you are out.",
 	["tut.decide"] = "Your turn. Pick who to zap, then press SPIN.",
 	["tut.spin"] = "Press BRAKE to stop it. Aim for the slot you want and stay away from Backfire.",
-	["tut.eliminated"] = "Out this time. You still get paid for your place.",
+	["tut.eliminated"] = "Out this time. You still get paid!",
 	["tut.ended"] = "Match over. Your reward is on the way.",
 	["tut.won"] = "You won your first match.",
 
@@ -483,4 +483,21 @@ return {
 	["goal.top_league"] = "Top league reached",
 	["goal.season"] = "{n} points to season tier {tier}",
 	["goal.season.one"] = "{n} point to season tier {tier}",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "Press PLAY",
+	["tut.step.wait"] = "Get ready...",
+	["tut.step.target"] = "Pick a rival",
+	["tut.step.spin"] = "Now press SPIN",
+	["tut.step.brake"] = "Press BRAKE!",
+	["tut.step.watch"] = "Watch the wheel",
+	["tut.step.out"] = "Out! Rewards next",
+	["tut.skip"] = "Skip tutorial",
+	["loading.loading"] = "Loading...",
+	["loading.tip.1"] = "Press BRAKE to choose where the wheel stops.",
+	["loading.tip.2"] = "Everyone has 3 lives. Lose them all and you are out.",
+	["loading.tip.3"] = "Cards are free: play one before you spin.",
+	["loading.tip.4"] = "Win matches to climb leagues and unlock skins.",
+	["hud.level_up"] = "LEVEL UP!",
+	["reveal.new"] = "NEW!",
 }

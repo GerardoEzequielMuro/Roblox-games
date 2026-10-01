@@ -474,4 +474,21 @@ return {
 	["goal.league"] = "{league}까지 트로피 {n}개",
 	["goal.top_league"] = "최고 리그 달성",
 	["goal.season"] = "시즌 {tier}단계까지 {n}포인트",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "플레이를 누르세요",
+	["tut.step.wait"] = "준비하세요...",
+	["tut.step.target"] = "상대를 고르세요",
+	["tut.step.spin"] = "이제 스핀",
+	["tut.step.brake"] = "브레이크!",
+	["tut.step.watch"] = "휠을 보세요",
+	["tut.step.out"] = "탈락! 보상이 옵니다",
+	["tut.skip"] = "튜토리얼 건너뛰기",
+	["loading.loading"] = "불러오는 중...",
+	["loading.tip.1"] = "브레이크로 휠이 멈출 곳을 정하세요.",
+	["loading.tip.2"] = "모두 목숨이 3개예요. 다 잃으면 탈락입니다.",
+	["loading.tip.3"] = "카드는 무료예요. 돌리기 전에 한 장 쓰세요.",
+	["loading.tip.4"] = "경기에서 이겨 리그를 올리고 스킨을 여세요.",
+	["hud.level_up"] = "레벨 업!",
+	["reveal.new"] = "신규!",
 }

@@ -482,4 +482,21 @@ return {
 	["goal.top_league"] = "Höchste Liga erreicht",
 	["goal.season"] = "{n} Punkte bis Saisonstufe {tier}",
 	["goal.season.one"] = "{n} Punkt bis Saisonstufe {tier}",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "Tippe auf SPIELEN",
+	["tut.step.wait"] = "Mach dich bereit...",
+	["tut.step.target"] = "Wähle einen Gegner",
+	["tut.step.spin"] = "Jetzt DREHEN",
+	["tut.step.brake"] = "BREMSEN!",
+	["tut.step.watch"] = "Schau aufs Rad",
+	["tut.step.out"] = "Raus! Gleich gibt's Belohnung",
+	["tut.skip"] = "Tutorial überspringen",
+	["loading.loading"] = "Lädt...",
+	["loading.tip.1"] = "Bremse, um zu bestimmen, wo das Rad stoppt.",
+	["loading.tip.2"] = "Jeder hat 3 Leben. Sind sie weg, bist du raus.",
+	["loading.tip.3"] = "Karten sind gratis: spiel eine vor dem Drehen.",
+	["loading.tip.4"] = "Gewinne Partien, steige in Ligen auf und schalte Skins frei.",
+	["hud.level_up"] = "LEVEL-UP!",
+	["reveal.new"] = "NEU!",
 }

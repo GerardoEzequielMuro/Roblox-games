@@ -255,9 +255,14 @@ check("main UI built", mainGui ~= nil and #mainGui:GetDescendants() > 150, mainG
 check("main UI uses CoreUISafeInsets", mainGui and mainGui.ScreenInsets == Enum.ScreenInsets.CoreUISafeInsets)
 check("veil and overlay guis exist", gui:FindFirstChild("SpinVeil") ~= nil and gui:FindFirstChild("SpinOverlay") ~= nil)
 check("lobby HUD: play button and menu", Hud.buttons.Play ~= nil and Hud.buttons.Shop ~= nil and Hud.buttons.Settings ~= nil and Hud.buttons.AutoQueue ~= nil)
-check("first-match nudge shown", (function()
-	local tip = mainGui:FindFirstChild("PlayTip", true)
-	return tip ~= nil and tip.Visible
+check("first-match guide points at PLAY", (function()
+	local Guide = require(UI:WaitForChild("Guide"))
+	Guide.update()
+	return Guide.step == "play" and Guide.pointing == "play"
+end)())
+check("new player HUD is minimal (menu hidden)", (function()
+	local menuHolder = (Hud.buttons.Shop.Parent :: any).Parent
+	return Hud.minimal == true and menuHolder.Visible == false
 end)())
 
 waitFor(function()

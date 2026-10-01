@@ -374,10 +374,10 @@ return {
 
 	-- first match
 	["tut.first_match"] = "Juega tu primera partida",
-	["tut.intro"] = "Todos tienen 3 vidas. Si las pierdes todas, quedas fuera.",
+	["tut.intro"] = "3 vidas cada uno. Si las perdés, quedás afuera.",
 	["tut.decide"] = "Tu turno. Elige a quién darle y toca GIRAR.",
 	["tut.spin"] = "Toca FRENAR para pararla. Apunta a la casilla que quieres y evita Rebote.",
-	["tut.eliminated"] = "Esta vez quedaste fuera. Igual te pagan por tu puesto.",
+	["tut.eliminated"] = "Esta vez caíste. ¡Igual cobrás premio!",
 	["tut.ended"] = "Partida terminada. Tu premio ya viene en camino.",
 	["tut.won"] = "Ganaste tu primera partida.",
 
@@ -482,4 +482,21 @@ return {
 	["goal.top_league"] = "Liga máxima alcanzada",
 	["goal.season"] = "{n} puntos para el nivel {tier} de temporada",
 	["goal.season.one"] = "{n} punto para el nivel {tier} de temporada",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "Toca JUGAR",
+	["tut.step.wait"] = "Preparate...",
+	["tut.step.target"] = "Elegí un rival",
+	["tut.step.spin"] = "Ahora GIRAR",
+	["tut.step.brake"] = "¡FRENÁ!",
+	["tut.step.watch"] = "Mirá la rueda",
+	["tut.step.out"] = "¡Eliminado! Ahora el premio",
+	["tut.skip"] = "Saltar tutorial",
+	["loading.loading"] = "Cargando...",
+	["loading.tip.1"] = "Frená para elegir dónde se detiene la rueda.",
+	["loading.tip.2"] = "Todos tienen 3 vidas. Si las perdés, quedás afuera.",
+	["loading.tip.3"] = "Las cartas son gratis: jugá una antes de girar.",
+	["loading.tip.4"] = "Ganá partidas para subir de liga y desbloquear skins.",
+	["hud.level_up"] = "¡SUBISTE DE NIVEL!",
+	["reveal.new"] = "¡NUEVO!",
 }

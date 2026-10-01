@@ -474,4 +474,21 @@ return {
 	["goal.league"] = "{league}まであと{n}トロフィー",
 	["goal.top_league"] = "最高リーグに到達",
 	["goal.season"] = "シーズンティア{tier}まであと{n}ポイント",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "プレイを押そう",
+	["tut.step.wait"] = "準備しよう...",
+	["tut.step.target"] = "相手を選ぼう",
+	["tut.step.spin"] = "次はスピン",
+	["tut.step.brake"] = "ブレーキ！",
+	["tut.step.watch"] = "ホイールを見よう",
+	["tut.step.out"] = "脱落！ 報酬が届くよ",
+	["tut.skip"] = "チュートリアルをスキップ",
+	["loading.loading"] = "読み込み中...",
+	["loading.tip.1"] = "ブレーキで止まる場所を決めよう。",
+	["loading.tip.2"] = "全員ライフは3。全部失うと脱落。",
+	["loading.tip.3"] = "カードは無料。回す前に1枚使おう。",
+	["loading.tip.4"] = "勝ってリーグを上げ、スキンを解放しよう。",
+	["hud.level_up"] = "レベルアップ！",
+	["reveal.new"] = "NEW！",
 }

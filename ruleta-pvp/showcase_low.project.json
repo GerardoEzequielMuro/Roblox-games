@@ -2,6 +2,9 @@
   "name": "SpinShowdownShowcaseLow",
   "tree": {
     "$className": "DataModel",
+    "ReplicatedFirst": {
+      "$path": "src/first"
+    },
     "ReplicatedStorage": {
       "Shared": {
         "$path": "src/shared"

@@ -474,4 +474,21 @@ return {
 	["goal.league"] = "Còn {n} cúp tới {league}",
 	["goal.top_league"] = "Đã đạt hạng cao nhất",
 	["goal.season"] = "Còn {n} điểm tới bậc mùa giải {tier}",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "Nhấn CHƠI",
+	["tut.step.wait"] = "Chuẩn bị nhé...",
+	["tut.step.target"] = "Chọn đối thủ",
+	["tut.step.spin"] = "Giờ bấm QUAY",
+	["tut.step.brake"] = "PHANH!",
+	["tut.step.watch"] = "Xem vòng quay",
+	["tut.step.out"] = "Bị loại! Sắp có thưởng",
+	["tut.skip"] = "Bỏ qua hướng dẫn",
+	["loading.loading"] = "Đang tải...",
+	["loading.tip.1"] = "Nhấn PHANH để chọn nơi vòng quay dừng.",
+	["loading.tip.2"] = "Ai cũng có 3 mạng. Hết mạng là bị loại.",
+	["loading.tip.3"] = "Thẻ miễn phí: dùng một thẻ trước khi quay.",
+	["loading.tip.4"] = "Thắng trận để lên hạng và mở skin.",
+	["hud.level_up"] = "LÊN CẤP!",
+	["reveal.new"] = "MỚI!",
 }

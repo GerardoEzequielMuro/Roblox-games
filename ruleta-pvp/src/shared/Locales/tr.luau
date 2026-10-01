@@ -474,4 +474,21 @@ return {
 	["goal.league"] = "{league} için {n} kupa",
 	["goal.top_league"] = "En üst lige ulaşıldı",
 	["goal.season"] = "Sezon kademesi {tier} için {n} puan",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "OYNA'ya bas",
+	["tut.step.wait"] = "Hazırlan...",
+	["tut.step.target"] = "Bir rakip seç",
+	["tut.step.spin"] = "Şimdi ÇEVİR",
+	["tut.step.brake"] = "FREN!",
+	["tut.step.watch"] = "Çarka bak",
+	["tut.step.out"] = "Elendin! Sırada ödül var",
+	["tut.skip"] = "Eğitimi atla",
+	["loading.loading"] = "Yükleniyor...",
+	["loading.tip.1"] = "Çarkın nerede duracağını FREN ile seç.",
+	["loading.tip.2"] = "Herkesin 3 canı var. Hepsi biterse elenirsin.",
+	["loading.tip.3"] = "Kartlar bedava: çevirmeden önce bir tane oyna.",
+	["loading.tip.4"] = "Maç kazan, ligde yüksel, kaplama aç.",
+	["hud.level_up"] = "SEVİYE ATLADIN!",
+	["reveal.new"] = "YENİ!",
 }

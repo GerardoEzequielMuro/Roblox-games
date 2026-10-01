@@ -474,4 +474,21 @@ return {
 	["goal.league"] = "{n} trofi lagi ke {league}",
 	["goal.top_league"] = "Liga tertinggi tercapai",
 	["goal.season"] = "{n} poin lagi ke tingkat musim {tier}",
+
+	-- first session guide, loading, level up
+	["tut.step.play"] = "Ketuk MAIN",
+	["tut.step.wait"] = "Bersiaplah...",
+	["tut.step.target"] = "Pilih lawan",
+	["tut.step.spin"] = "Sekarang PUTAR",
+	["tut.step.brake"] = "REM!",
+	["tut.step.watch"] = "Perhatikan roda",
+	["tut.step.out"] = "Tersingkir! Hadiah menunggu",
+	["tut.skip"] = "Lewati tutorial",
+	["loading.loading"] = "Memuat...",
+	["loading.tip.1"] = "Tekan REM untuk memilih di mana roda berhenti.",
+	["loading.tip.2"] = "Semua punya 3 nyawa. Habis nyawa, kamu keluar.",
+	["loading.tip.3"] = "Kartu gratis: mainkan satu sebelum memutar.",
+	["loading.tip.4"] = "Menangkan pertandingan untuk naik liga dan buka skin.",
+	["hud.level_up"] = "NAIK LEVEL!",
+	["reveal.new"] = "BARU!",
 }

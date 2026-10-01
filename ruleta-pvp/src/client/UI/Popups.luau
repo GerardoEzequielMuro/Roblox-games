@@ -44,7 +44,8 @@ end })
 Popups.answer = answer
 
 -- The first match: one short line per step, each shown once.
-local COACH = { intro = "tut.intro", decide = "tut.decide", spin = "tut.spin", eliminated = "tut.eliminated", ended = "tut.ended" }
+-- (the "what to press" lines come from the Guide: a pointer and 2-4 words)
+local COACH = { intro = "tut.intro", eliminated = "tut.eliminated", ended = "tut.ended" }
 local function coach(step: string, arg: any)
 	local key = COACH[step]
 	if not key or Popups.coachShown[step] then
@@ -56,7 +57,7 @@ local function coach(step: string, arg: any)
 	end
 	MatchHud.coach(Lang.t(key))
 	local shown = step
-	task.delay(if step == "decide" then 9 else 6, function()
+	task.delay(5, function()
 		if Popups.coachShown[shown] then
 			MatchHud.coach(nil)
 		end
