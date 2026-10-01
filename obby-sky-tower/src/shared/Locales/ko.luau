@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "황혼",
 	["effect.frost"] = "서리",
 	["effect.goldenhour"] = "골든 아워",
+
+	-- first session guide + loading
+	["guide.go"] = "빛나는 발판으로 점프하세요",
+	["guide.next"] = "다음 빛나는 발판!",
+	["guide.retry"] = "기다렸다가 점프!",
+	["guide.shop"] = "코인 사용: 메뉴 > 상점",
+	["guide.skip"] = "건너뛰기",
+	["intro.tip1"] = "팁: 발판을 밟으면 진행 상황이 저장돼요",
+	["intro.tip2"] = "팁: 올라가면서 코인을 모으세요",
+	["intro.tip3"] = "팁: 빨간 블록에 닿으면 처음부터예요",
+	["intro.loading"] = "로딩 중...",
 }

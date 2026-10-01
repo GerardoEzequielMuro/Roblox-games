@@ -15,6 +15,7 @@ local Gifts = require(ReplicatedStorage.Shared.Gifts)
 local TowerStyle = require(ReplicatedStorage.Shared.TowerStyle)
 local Net = require(script.Parent.Parent.Net)
 local Kit = require(script.Parent.Kit)
+local Feel = require(script.Parent.Feel)
 
 local Progress = {}
 
@@ -167,6 +168,7 @@ function Progress.init()
 	local shownFraction, shownTotal = -1, -1
 	local shownTower = 1
 	local shownSub = ""
+	local shownStage = -1
 
 	local dots: { [Player]: ImageLabel } = {}
 	local function dotFor(p: Player): ImageLabel
@@ -222,6 +224,10 @@ function Progress.init()
 			if subKey ~= shownSub then
 				shownSub = subKey
 				Kit.setText(label, "progress.label", { stage = myStage, total = TOTAL, pct = math.floor(myStage / TOTAL * 100) })
+				if shownStage >= 0 and myStage > shownStage then
+					Feel.punch(label, 0.2) -- the level counter pops when you climb
+				end
+				shownStage = myStage
 				local name = { key = "tower." .. TowerStyle.mood(tower).key }
 				if gift then
 					Kit.setText(sub, "progress.sub", { n = tower, name = name, stage = gift.stage, gift = { key = "gift." .. gift.id .. ".name" } })

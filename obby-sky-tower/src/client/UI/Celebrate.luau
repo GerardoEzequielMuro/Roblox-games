@@ -9,6 +9,8 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local Kit = require(script.Parent.Kit)
 local Lang = require(script.Parent.Parent.Lang)
+local Sfx = require(script.Parent.Parent.Sfx)
+local Feel = require(script.Parent.Feel)
 
 local Celebrate = {}
 
@@ -21,6 +23,10 @@ local CONFETTI_COLORS = {
 	Kit.C.purple,
 	Kit.C.orange,
 }
+
+local MAX_CONFETTI = 60 -- pieces alive at once, whatever the celebration (cheap on phones)
+local MAX_CONFETTI_LITE = 24
+local alive = 0
 
 local region: Frame? = nil
 local confettiLayer: Frame? = nil
@@ -39,12 +45,19 @@ local function ensure(): (Frame, Frame)
 	return r, layer
 end
 
-local function confetti(count: number)
+local function confetti(count: number, colors: { Color3 }?)
+	if not Feel.effectsOn() then
+		return
+	end
 	local _, layer = ensure()
+	local lite = game:GetService("Workspace"):GetAttribute("LiteProfile") == true
+	count = math.min(count, (if lite then MAX_CONFETTI_LITE else MAX_CONFETTI) - alive)
+	local palette: { Color3 } = colors or CONFETTI_COLORS
 	local h = layer.AbsoluteSize.Y
 	for _ = 1, count do
 		local size = math.random(8, 16)
-		local piece = Kit.frame(layer, UDim2.fromOffset(size, size * 0.6), UDim2.new(math.random(), 0, 0, -20), CONFETTI_COLORS[math.random(1, #CONFETTI_COLORS)])
+		local piece = Kit.frame(layer, UDim2.fromOffset(size, size * 0.6), UDim2.new(math.random(), 0, 0, -20), palette[math.random(1, #palette)])
+		alive += 1
 		piece.ZIndex = 29
 		piece.Rotation = math.random(0, 360)
 		local duration = 1.6 + math.random() * 1.2
@@ -54,12 +67,16 @@ local function confetti(count: number)
 			Rotation = piece.Rotation + math.random(-540, 540),
 		}):Play()
 		task.delay(duration + 0.05, function()
+			alive -= 1
 			piece:Destroy()
 		end)
 	end
 end
 
-local function burst3D()
+local function burst3D(colors: { Color3 }?)
+	if not Feel.effectsOn() then
+		return
+	end
 	local char = Players.LocalPlayer.Character
 	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
 	if not root then
@@ -75,12 +92,12 @@ local function burst3D()
 	e.Size = NumberSequence.new(0.7, 0.1)
 	e.LightEmission = 0.8
 	e.EmissionDirection = Enum.NormalId.Top
-	e.Color = ColorSequence.new({
-		ColorSequenceKeypoint.new(0, Kit.C.pink),
-		ColorSequenceKeypoint.new(0.33, Kit.C.yellow),
-		ColorSequenceKeypoint.new(0.66, Kit.C.blue),
-		ColorSequenceKeypoint.new(1, Kit.C.green),
-	})
+	local c: { Color3 } = colors or { Kit.C.pink, Kit.C.yellow, Kit.C.blue, Kit.C.green }
+	local keys: { ColorSequenceKeypoint } = {}
+	for i, col in ipairs(c) do
+		table.insert(keys, ColorSequenceKeypoint.new((i - 1) / math.max(#c - 1, 1), col))
+	end
+	e.Color = ColorSequence.new(keys)
 	e.Parent = root
 	e:Emit(45)
 	task.delay(2, function()
@@ -90,7 +107,8 @@ end
 
 local showing = 0
 -- `ribbon` = two colours: the subtitle sits on a banner in those colours (new world, win).
-function Celebrate.show(title: string, subtitle: string?, big: boolean?, ribbon: { Color3 }?)
+-- `tint` (optional) = the palette of the confetti / sparks (rarity colour for a rare drop).
+function Celebrate.show(title: string, subtitle: string?, big: boolean?, ribbon: { Color3 }?, tint: { Color3 }?)
 	local r = ensure()
 	showing += 1
 	local my = showing
@@ -102,6 +120,7 @@ function Celebrate.show(title: string, subtitle: string?, big: boolean?, ribbon:
 	local t = Kit.bold(r, title, UDim2.new(1, 0, 0, if big then 130 else 100), UDim2.fromScale(0.5, 0), Kit.C.yellow, Vector2.new(0.5, 0), if big then 110 else 84)
 	t.Rotation = -3
 	Kit.pop(t, 0.2)
+	Sfx.play(if big then "worldUp" else "checkpoint")
 	if subtitle then
 		local y = if big then 140 else 108
 		if ribbon then
@@ -121,8 +140,8 @@ function Celebrate.show(title: string, subtitle: string?, big: boolean?, ribbon:
 		local s = Kit.bold(r, subtitle, UDim2.new(if ribbon then 0.88 else 1, 0, 0, 56), UDim2.new(0.5, 0, 0, y), Kit.C.white, Vector2.new(0.5, 0), 44)
 		Kit.pop(s, 0.4)
 	end
-	confetti(if big then 110 else 45)
-	burst3D()
+	confetti(if big then 110 else 45, tint)
+	burst3D(tint)
 	task.delay(if big then 4 else 2.2, function()
 		if showing ~= my then
 			return

@@ -34,10 +34,11 @@ local function getRegion(): Frame
 end
 
 local order = 0
-function Toast.show(text: string, kind: string?)
+-- `tint` overrides the kind colour (rarity reveals).
+function Toast.show(text: string, kind: string?, tint: Color3?)
 	local r = getRegion()
 	order += 1
-	local color = COLORS[kind or "info"] or Kit.C.blue
+	local color = tint or COLORS[kind or "info"] or Kit.C.blue
 	local f = Kit.frame(r, UDim2.fromOffset(460, 50), UDim2.new(), color)
 	f.LayoutOrder = order
 	Kit.corner(f, 25)

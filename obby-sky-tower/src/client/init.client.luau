@@ -8,6 +8,9 @@ local Hud = require(script.UI.Hud)
 local Progress = require(script.UI.Progress)
 local Celebrate = require(script.UI.Celebrate)
 local Intro = require(script.UI.Intro)
+local Guide = require(script.UI.Guide)
+local Feel = require(script.UI.Feel)
+local Sfx = require(script.Sfx)
 local ShopPanel = require(script.UI.ShopPanel)
 local StorePanel = require(script.UI.StorePanel)
 local RewardsPanel = require(script.UI.RewardsPanel)
@@ -21,6 +24,7 @@ local Config = require(game:GetService("ReplicatedStorage").Shared.Config)
 local TowerStyle = require(game:GetService("ReplicatedStorage").Shared.TowerStyle)
 local RunTime = require(game:GetService("ReplicatedStorage").Shared.RunTime)
 local Quality = require(game:GetService("ReplicatedStorage").Shared.Quality)
+local Rarity = require(game:GetService("ReplicatedStorage").Shared.Rarity)
 local LocalFx = require(script.World.LocalFx)
 local Atmos = require(script.World.Atmos)
 local Juice = require(script.World.Juice)
@@ -32,6 +36,7 @@ Kit.gui()
 Intro.play()
 Progress.init()
 Hud.init()
+Guide.init()
 ShopPanel.init()
 StorePanel.init()
 RewardsPanel.init()
@@ -58,6 +63,8 @@ Net.changed:Connect(function(s)
 		Atmos.setEffects(on)
 		Juice.setEffects(on)
 		Weather.setEffects(on)
+		Feel.setEffects(on)
+		Guide.setEffects(on)
 	end
 end)
 
@@ -78,6 +85,7 @@ do
 			Atmos.setLite(now)
 			Juice.setLite(now)
 			Weather.setLite(now)
+			Feel.setLite(now)
 		end
 		Workspace:SetAttribute("LiteProfile", lite)
 	end
@@ -101,8 +109,19 @@ local function moodColors(tower: number): { Color3 }
 	return { c:Lerp(Kit.C.ink, 0.45), c:Lerp(Kit.C.ink, 0.15) }
 end
 
+local function tierColors(giftId: number): (Rarity.Tier, Color3, { Color3 })
+	local tier = Rarity.ofGift(giftId)
+	local c = Color3.fromRGB(tier.color[1], tier.color[2], tier.color[3])
+	return tier, c, { c, c:Lerp(Color3.new(1, 1, 1), 0.55), c:Lerp(Kit.C.yellow, 0.35) }
+end
+
 Net.on("Gift", function(data)
-	Toast.show(Lang.t("gift.got", { name = { key = "gift." .. tostring(data.id) .. ".name" } }), "success")
+	-- the reveal is coloured by rarity: a toast in the tier colour, a bigger shake and more sparks
+	-- the higher the tier (no randomness: gifts are fixed, the tier is how far up the chain it is)
+	local tier, color = tierColors(tonumber(data.id) or 1)
+	Toast.show(Lang.t("gift.got", { name = { key = "gift." .. tostring(data.id) .. ".name" } }), "success", color)
+	Juice.shake(tier.shake, 0.4)
+	Sfx.play(if tier.rank >= 3 then "rare" else "checkpoint")
 end)
 Net.on("TowerEnter", function(data)
 	local tower = tonumber(data.tower) or 2
@@ -113,7 +132,10 @@ Net.on("Win", function(data)
 	if tower > 1 then
 		-- summit of a later tower: the gift is the headline, the portal is the next step
 		local gift = if data.gift then Lang.t("gift." .. tostring(data.gift) .. ".name") else nil
-		Celebrate.show(Lang.t("celebrate.tower", { n = tower }), gift, true, moodColors(tower))
+		local tier, color, palette = tierColors(tonumber(data.gift) or tower)
+		Celebrate.show(Lang.t("celebrate.tower", { n = tower }), gift, true, { color:Lerp(Kit.C.ink, 0.35), color:Lerp(Kit.C.ink, 0.1) }, palette)
+		Juice.shake(math.max(tier.shake, 0.3), 0.5)
+		Sfx.play("win")
 		return
 	end
 	local sub = Lang.t("celebrate.total_wins", { n = data.wins or 1 })
@@ -123,6 +145,8 @@ Net.on("Win", function(data)
 		sub = Lang.t("celebrate.run_time", { time = RunTime.format(data.runMs) })
 	end
 	Celebrate.show(Lang.t("celebrate.win"), sub, true, { Kit.C.orange, Kit.C.pink })
+	Juice.shake(0.5, 0.6)
+	Sfx.play("win")
 	task.delay(2.5, function()
 		Kit.open("win")
 	end)

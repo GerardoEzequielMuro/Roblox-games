@@ -22,7 +22,9 @@ local Quality = require(game:GetService("ReplicatedStorage").Shared.Quality)
 local Config = require(ReplicatedStorage.Shared.Config)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local Rules = require(ReplicatedStorage.Shared.Rules)
+local FeelMath = require(ReplicatedStorage.Shared.FeelMath)
 local Net = require(script.Parent.Parent.Net)
+local Sfx = require(script.Parent.Parent.Sfx)
 
 local Juice = {}
 
@@ -64,8 +66,19 @@ local function ghost(size: Vector3, cf: CFrame, color: Color3, material: Enum.Ma
 	return p
 end
 
+-- Cheap on mobile: at most CAP rings + bursts alive at once (fewer in the lite profile); extra
+-- ones are dropped, the newest are what the player is looking at anyway.
+local liveFx = 0
+local function fxCap(): number
+	return if lite then 5 else 12
+end
+
 -- Flat ring that grows and fades (a cylinder lying on the pad).
 local function shockwave(pos: Vector3, color: Color3, from: number, to: number, duration: number)
+	if FeelMath.budget(liveFx, 1, fxCap()) < 1 then
+		return
+	end
+	liveFx += 1
 	local ring = ghost(Vector3.new(0.3, from, from), CFrame.new(pos) * CFrame.Angles(0, 0, math.pi / 2), color)
 	ring.Shape = Enum.PartType.Cylinder
 	ring.Transparency = 0.25
@@ -74,12 +87,20 @@ local function shockwave(pos: Vector3, color: Color3, from: number, to: number, 
 		Transparency = 1,
 	}):Play()
 	task.delay(duration + 0.1, function()
+		liveFx -= 1
 		ring:Destroy()
 	end)
 end
 Juice.shockwave = shockwave
 
 local function burst(pos: Vector3, texture: string, colors: ColorSequence, count: number, speed: number, size: number, life: number, gravity: number)
+	if FeelMath.budget(liveFx, 1, fxCap()) < 1 then
+		return
+	end
+	liveFx += 1
+	if lite then
+		count = math.ceil(count * 0.6)
+	end
 	local anchor = ghost(Vector3.new(1, 1, 1), CFrame.new(pos), Color3.new())
 	anchor.Transparency = 1
 	local e = Instance.new("ParticleEmitter")
@@ -95,6 +116,7 @@ local function burst(pos: Vector3, texture: string, colors: ColorSequence, count
 	e.Parent = anchor
 	e:Emit(count)
 	task.delay(life + 0.3, function()
+		liveFx -= 1
 		anchor:Destroy()
 	end)
 end
@@ -180,6 +202,23 @@ Juice.flash = flash
 ---------------------------------------------------------------------------------------------
 local shakeUntil = 0
 local shakePower = 0
+local shakeDur = 0.35
+
+-- Camera micro-shake for big moments. Off with "Visual effects" (reduced motion); a bigger shake
+-- never gets replaced by a smaller one that is still running.
+function Juice.shake(power: number, duration: number?)
+	if not enabled or power <= 0 then
+		return
+	end
+	local dur = duration or 0.35
+	local now = os.clock()
+	if now < shakeUntil and FeelMath.shake(shakePower, shakeDur - (shakeUntil - now), shakeDur) > power then
+		return
+	end
+	shakePower = power
+	shakeDur = dur
+	shakeUntil = now + dur
+end
 local function fovKick(amount: number)
 	local cam = Workspace.CurrentCamera
 	if not cam or cam.CameraType ~= Enum.CameraType.Custom then
@@ -357,6 +396,10 @@ function Juice.init()
 			ColorSequenceKeypoint.new(1, DONE),
 		}), if big then 70 else 36, if big then 34 else 24, 1.1, 1.2, 45)
 		fovKick(if big then 12 else 7)
+		if big then
+			Juice.shake(0.3, 0.4)
+		end
+		Sfx.play(if big then "worldUp" else "checkpoint")
 	end)
 	Net.on("TowerEnter", function()
 		if enabled then
@@ -391,6 +434,7 @@ function Juice.init()
 		if coin and enabled then
 			burst(coin.Position, SPARKLES, ColorSequence.new(Color3.fromRGB(255, 240, 150), Color3.fromRGB(255, 180, 40)), 16, 14, 0.8, 0.7, 30)
 		end
+		Sfx.play("coin")
 	end)
 
 	-- death / respawn / jump effect -----------------------------------------------------------------
@@ -416,8 +460,8 @@ function Juice.init()
 			flash(Color3.fromRGB(255, 40, 60), 0.55, 0.6)
 			burst(pos, SMOKE, ColorSequence.new(Color3.fromRGB(255, 255, 255), Color3.fromRGB(200, 205, 220)), 14, 9, 3.2, 0.9, -4)
 			burst(pos, SPARKLES, ColorSequence.new(Color3.fromRGB(255, 90, 90), Color3.fromRGB(255, 220, 120)), 26, 26, 0.9, 0.8, 60)
-			shakePower = 0.45
-			shakeUntil = os.clock() + 0.35
+			Juice.shake(0.45, 0.35)
+			Sfx.play("death")
 		end)
 		-- lounge jump effects: a ring or a puff of stars under your feet on every jump
 		hum.StateChanged:Connect(function(_, new)
@@ -505,7 +549,7 @@ function Juice.init()
 			beam.Transparency = 0.74 + math.sin(t * 2) * 0.08
 		end
 		if cam and t < shakeUntil then
-			local k = shakePower * (shakeUntil - t) / 0.35
+			local k = FeelMath.shake(shakePower, shakeDur - (shakeUntil - t), shakeDur)
 			cam.CFrame *= CFrame.Angles((math.random() - 0.5) * 0.06 * k, (math.random() - 0.5) * 0.06 * k, 0)
 		end
 		slowAcc += dt

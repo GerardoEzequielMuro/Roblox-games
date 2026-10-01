@@ -378,4 +378,15 @@ return {
 	["trail.twilight"] = "Twilight",
 	["effect.frost"] = "Frostbite",
 	["effect.goldenhour"] = "Golden Hour",
+
+	-- first session guide + loading
+	["guide.go"] = "Jump to the glowing pad",
+	["guide.next"] = "Next glowing pad!",
+	["guide.retry"] = "Wait, then jump!",
+	["guide.shop"] = "Spend coins: Menu > Shop",
+	["guide.skip"] = "Skip",
+	["intro.tip1"] = "Tip: every pad you touch saves your spot",
+	["intro.tip2"] = "Tip: grab coins on the way up",
+	["intro.tip3"] = "Tip: red bricks reset you, stay off them",
+	["intro.loading"] = "Loading...",
 }

@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "Crépuscule",
 	["effect.frost"] = "Givre",
 	["effect.goldenhour"] = "Heure Dorée",
+
+	-- first session guide + loading
+	["guide.go"] = "Saute sur la plateforme brillante",
+	["guide.next"] = "Prochaine plateforme brillante !",
+	["guide.retry"] = "Attends, puis saute !",
+	["guide.shop"] = "Dépense tes pièces : Menu > Boutique",
+	["guide.skip"] = "Passer",
+	["intro.tip1"] = "Astuce : chaque plateforme sauvegarde ta place",
+	["intro.tip2"] = "Astuce : ramasse des pièces en montant",
+	["intro.tip3"] = "Astuce : les blocs rouges te font recommencer",
+	["intro.loading"] = "Chargement...",
 }

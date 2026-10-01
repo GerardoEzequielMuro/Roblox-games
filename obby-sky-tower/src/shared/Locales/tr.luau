@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "Alacakaranlık",
 	["effect.frost"] = "Kırağı",
 	["effect.goldenhour"] = "Altın Saat",
+
+	-- first session guide + loading
+	["guide.go"] = "Parlayan platforma zıpla",
+	["guide.next"] = "Sıradaki parlayan platform!",
+	["guide.retry"] = "Bekle, sonra zıpla!",
+	["guide.shop"] = "Jetonları harca: Menü > Mağaza",
+	["guide.skip"] = "Geç",
+	["intro.tip1"] = "İpucu: her platform ilerlemeni kaydeder",
+	["intro.tip2"] = "İpucu: çıkarken jeton topla",
+	["intro.tip3"] = "İpucu: kırmızı bloklar seni başa sarar",
+	["intro.loading"] = "Yükleniyor...",
 }

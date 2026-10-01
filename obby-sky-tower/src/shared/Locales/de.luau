@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "Dämmerung",
 	["effect.frost"] = "Frostbiss",
 	["effect.goldenhour"] = "Goldene Stunde",
+
+	-- first session guide + loading
+	["guide.go"] = "Spring zur leuchtenden Plattform",
+	["guide.next"] = "Nächste leuchtende Plattform!",
+	["guide.retry"] = "Warte, dann spring!",
+	["guide.shop"] = "Münzen ausgeben: Menü > Shop",
+	["guide.skip"] = "Überspringen",
+	["intro.tip1"] = "Tipp: Jede Plattform speichert deinen Stand",
+	["intro.tip2"] = "Tipp: Sammle Münzen beim Klettern",
+	["intro.tip3"] = "Tipp: Rote Blöcke setzen dich zurück",
+	["intro.loading"] = "Lädt...",
 }

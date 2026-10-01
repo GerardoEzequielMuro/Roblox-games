@@ -379,3 +379,23 @@ Queda pendiente / aceptado:
 - Hay que probar en Studio con 2 servidores: lock de sesión + retry, y una compra con DataStore caído (debe quedar `NotProcessedYet`).
 
 Verificación: `rojo build` OK, `luau-lsp analyze` sin salida, tests puros (icons, layout, locale, modelfit, p0, pacing, pricing, rules, visual, security) y `pacing_sim` OK, preview `--state mid --screen pc`: 0 hallazgos, 0 errores de runtime.
+
+## Ronda 8: primera sesión y game feel
+
+**Recorrido de los primeros 2 minutos, antes.** Entra -> carta de título fija 2,3 s (sin barra ni tip, no esperaba a nada) -> HUD con timer, Menu, monedas, Checkpoint/Lobby y una columna de luz sobre la primera plataforma (único guía). Ningún texto decía qué hacer. Primera recompensa: al pisar el pad 1 llegaban confetti y "STAGE 1!". Primera compra: nada la empujaba (la tienda estaba escondida tras Menu). Los contadores de monedas saltaban de golpe y el temblor de cámara solo existía al morir.
+
+**Después.**
+1. Carga (`UI/Intro.luau`): misma carta de marca, ahora con barra de progreso real (estado del servidor + personaje) y un tip rotativo (`intro.tip1..3`). Se va cuando todo llegó (mínimo 1,8 s) y **como máximo a los 5 s pase lo que pase** (timer propio, además fade con pcall; no puede colgarse).
+2. Guía de primera sesión (`UI/Guide.luau` + `shared/Onboarding.luau`, puro y testeado): una sola pista de 3-6 palabras ("Jump to the glowing pad", "Next glowing pad!", tras 2 muertes "Wait, then jump!"), pastilla que pulsa, flecha 3D que rebota sobre el próximo pad con distancia en m, y flecha en el borde de la pantalla si el pad queda fuera de cámara. Termina al llegar al stage 3, con Skip, o a los 300 s. Sin estado propio: se deriva del stage guardado, así que al reconectar retoma donde estabas (y un veterano no ve nada). Si no se puede calcular el pad, queda solo el texto. Nunca bloquea input. Primera compra: si cruzaste el stage 3 en esta sesión, tenés monedas para lo más barato (20) y no abriste la tienda, la pastilla dice "Spend coins: Menu > Shop" y el botón Menu parpadea (45 s máx.).
+3. Juice: contadores de monedas/victorias que "ruedan" con easing (`UI/Feel.luau` + `shared/FeelMath.luau`), "+N" flotante (pool de 6, 3 en lite), punch en el contador de monedas y en el nivel al subir; micro-shake de cámara en mundo nuevo, torre, victoria y regalos (`Juice.shake`; el más grande no lo pisa uno chico); revelado de regalos con color de rareza (`shared/Rarity.luau`: común/raro/épico/legendario según el id del regalo; toast, confetti y chispas en ese color, más temblor en tiers altos); tope de efectos simultáneos en Juice (12 PC / 5 lite) y de confetti (60 / 24). "Visual effects" apagado = reduced motion: sin rodado, sin popups, sin shake, sin confetti, sin pulsos.
+4. Sonido: no había módulo de audio, creé `shared/Sounds.luau` (todos los ids vacíos, no inventé ninguno) y `client/Sfx.luau` con pool de 6 Sound. Hooks: coin, checkpoint, worldUp, rare, win, death, hint. Con id vacío no hace nada.
+5. Textos nuevos en los 12 idiomas (`guide.*`, `intro.tip*`, `intro.loading`). Layout.luau intacto.
+
+**Qué mirar en Studio.**
+- Flecha 3D sobre el próximo pad y la flecha de borde (en el preview se ve un artefacto del simulador, la cámara real la calcula bien); que no tape el botón de salto en celular.
+- Que la barra de carga cierre sola en servidor lento y el Skip de la guía (>= 44 px en celu).
+- Sentir el shake en mundo nuevo / regalo del tower 10 (legendario, dorado) y que con Visual effects apagado no haya nada.
+- Pegar ids reales en `Sounds.ids` cuando existan.
+- Revisar la posición de la pastilla en celu (franja libre entre el joystick y la columna de acciones) y en tablet.
+
+Tests nuevos: `tests/onboarding_test.luau` (122 checks: máquina de pasos, que siempre termina, resume, rareza, FeelMath, sonidos vacíos). Previews antes/después en `docs/previews/obby-sky-tower/` (`new-*-before-r8.png`, `new-*.png`, `new-*-intro-r8.png` con la carga).

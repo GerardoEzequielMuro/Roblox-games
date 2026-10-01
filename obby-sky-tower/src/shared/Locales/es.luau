@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "Crepúsculo",
 	["effect.frost"] = "Escarcha",
 	["effect.goldenhour"] = "Hora Dorada",
+
+	-- first session guide + loading
+	["guide.go"] = "Salta a la plataforma brillante",
+	["guide.next"] = "¡Siguiente plataforma brillante!",
+	["guide.retry"] = "¡Espera y salta!",
+	["guide.shop"] = "Gasta monedas: Menú > Tienda",
+	["guide.skip"] = "Saltar",
+	["intro.tip1"] = "Consejo: cada plataforma guarda tu avance",
+	["intro.tip2"] = "Consejo: junta monedas al subir",
+	["intro.tip3"] = "Consejo: los bloques rojos te reinician",
+	["intro.loading"] = "Cargando...",
 }

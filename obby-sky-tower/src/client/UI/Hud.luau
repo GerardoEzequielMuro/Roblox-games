@@ -30,6 +30,7 @@ local Kit = require(script.Parent.Kit)
 local Progress = require(script.Parent.Progress)
 local Lang = require(script.Parent.Parent.Lang)
 local Toast = require(script.Parent.Toast)
+local Feel = require(script.Parent.Feel)
 
 local Hud = {}
 
@@ -531,8 +532,11 @@ function Hud.init()
 	local function refresh()
 		local s = Net.state
 		local at = s.at or s.stage or 0
-		Kit.setRaw(coinLabel, Kit.formatNumber(s.coins or 0))
-		Kit.setRaw(winsLabel, ("%d"):format(s.wins or 0))
+		-- counters roll up to their new value (instant when visual effects are off)
+		Feel.roll(coinLabel, s.coins or 0, Kit.formatNumber)
+		Feel.roll(winsLabel, s.wins or 0, function(n)
+			return ("%d"):format(n)
+		end)
 		local free = s.freeSkips or 0
 		local onBase = s.base == true
 		local studio = Hud.studioTools()
@@ -646,7 +650,12 @@ function Hud.init()
 	Net.changed:Connect(function(new, prev)
 		refresh()
 		if prev.coins and new.coins and new.coins > prev.coins then
-			Kit.pop(coinLabel.Parent :: Frame, 0.85)
+			local box = coinLabel.Parent :: Frame
+			Feel.punch(box, 0.18)
+			Feel.floatText(box, "+" .. Kit.formatNumber(new.coins - prev.coins), Kit.C.yellow)
+		end
+		if prev.wins and new.wins and new.wins > prev.wins then
+			Feel.punch(winsLabel.Parent :: Frame, 0.3)
 		end
 	end)
 	Lang.changed:Connect(refresh)

@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "Hoàng Hôn",
 	["effect.frost"] = "Sương Giá",
 	["effect.goldenhour"] = "Giờ Vàng",
+
+	-- first session guide + loading
+	["guide.go"] = "Nhảy tới bệ đang phát sáng",
+	["guide.next"] = "Bệ phát sáng tiếp theo!",
+	["guide.retry"] = "Chờ rồi nhảy!",
+	["guide.shop"] = "Tiêu xu: Menu > Cửa hàng",
+	["guide.skip"] = "Bỏ qua",
+	["intro.tip1"] = "Mẹo: mỗi bệ đều lưu tiến độ của bạn",
+	["intro.tip2"] = "Mẹo: nhặt xu trên đường lên",
+	["intro.tip3"] = "Mẹo: khối đỏ sẽ đưa bạn về chỗ cũ",
+	["intro.loading"] = "Đang tải...",
 }

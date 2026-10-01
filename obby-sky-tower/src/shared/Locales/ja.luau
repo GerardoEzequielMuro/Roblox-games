@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "たそがれ",
 	["effect.frost"] = "霜",
 	["effect.goldenhour"] = "黄金の時間",
+
+	-- first session guide + loading
+	["guide.go"] = "光るパッドへジャンプ！",
+	["guide.next"] = "次の光るパッドへ！",
+	["guide.retry"] = "タイミングを見てジャンプ！",
+	["guide.shop"] = "コインを使おう：メニュー > ショップ",
+	["guide.skip"] = "スキップ",
+	["intro.tip1"] = "ヒント：パッドに触れると進行が保存されます",
+	["intro.tip2"] = "ヒント：登りながらコインを集めよう",
+	["intro.tip3"] = "ヒント：赤いブロックに触れるとやり直しです",
+	["intro.loading"] = "読み込み中...",
 }

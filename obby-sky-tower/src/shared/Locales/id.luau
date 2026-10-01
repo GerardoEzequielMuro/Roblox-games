@@ -367,4 +367,15 @@ return {
 	["trail.twilight"] = "Senja",
 	["effect.frost"] = "Embun Beku",
 	["effect.goldenhour"] = "Jam Emas",
+
+	-- first session guide + loading
+	["guide.go"] = "Lompat ke platform yang bersinar",
+	["guide.next"] = "Platform bersinar berikutnya!",
+	["guide.retry"] = "Tunggu, lalu lompat!",
+	["guide.shop"] = "Belanjakan koin: Menu > Toko",
+	["guide.skip"] = "Lewati",
+	["intro.tip1"] = "Tips: tiap platform menyimpan progresmu",
+	["intro.tip2"] = "Tips: ambil koin saat naik",
+	["intro.tip3"] = "Tips: balok merah mengulangmu dari awal",
+	["intro.loading"] = "Memuat...",
 }
