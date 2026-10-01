@@ -11,8 +11,13 @@ local Layout = require(ReplicatedStorage.Shared.Layout)
 local Gifts = require(ReplicatedStorage.Shared.Gifts)
 local Powerups = require(ReplicatedStorage.Shared.Powerups)
 local Rules = require(ReplicatedStorage.Shared.Rules)
+local Security = require(ReplicatedStorage.Shared.Security)
 
 local Data = {}
+
+-- Schema version written by this build. A profile saved by a NEWER build is never loaded (and so
+-- never overwritten): the session just runs unsaved instead of downgrading someone's data.
+Data.VERSION = 2
 
 export type Profile = {
 	version: number,
@@ -72,7 +77,10 @@ end
 
 Data.profiles = {} :: { [Player]: Profile }
 local loadedOk: { [Player]: boolean } = {}
+local saving: { [Player]: boolean } = {} -- an UpdateAsync for this player is in flight
 local LOCK_TTL = 150
+local SAVE_ATTEMPTS = 4
+local SAVE_BACKOFF = 1 -- seconds, doubled after every failed attempt
 
 local function defaultProfile(): Profile
 	return {
@@ -171,6 +179,10 @@ local function reconcile(p: any): Profile
 		end
 	end
 	Powerups.sweep(p.boosts, os.time())
+	local fixed = Security.sanitizeProfile(p)
+	if fixed > 0 then
+		warn("[Data] repaired", fixed, "invalid values in a loaded profile")
+	end
 	return p :: Profile
 end
 
@@ -189,6 +201,7 @@ function Data.load(player: Player): Profile
 	local result: any = nil
 	for attempt = 1, 6 do
 		local lockedByOther = false
+		local tooNew = false
 		local ok, err = pcall(function()
 			ds:UpdateAsync(key(player), function(old: any)
 				local now = os.time()
@@ -196,12 +209,21 @@ function Data.load(player: Player): Profile
 					lockedByOther = true
 					return nil -- abort write
 				end
+				if old and (tonumber(old.version) or 1) > Data.VERSION then
+					tooNew = true
+					return nil -- saved by a newer build: do not touch it
+				end
 				local p = if old then reconcile(old) else defaultProfile()
 				p.lock = { job = game.JobId, t = now }
 				result = p
 				return p
 			end)
 		end)
+		if tooNew then
+			warn("[Data] profile of", player.Name, "was saved by a newer version - session will not save")
+			result = nil
+			break
+		end
 		if ok and not lockedByOther and result then
 			break
 		end
@@ -226,31 +248,83 @@ function Data.load(player: Player): Profile
 	return result
 end
 
-function Data.save(player: Player, release: boolean?)
+-- Request budget left for UpdateAsync (math.huge when it can't be read, e.g. in Studio mocks).
+local function budgetLeft(): number
+	local ok, n = pcall(function()
+		return DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+	end)
+	return if ok and type(n) == "number" then n else math.huge
+end
+
+-- Saves the profile with UpdateAsync (never a blind SetAsync) under the soft session lock, with
+-- retries and exponential backoff. Returns true when the data reached the DataStore.
+--   release   : final save, drops the lock
+--   important : waits for a save already in flight and for budget (purchases) instead of skipping
+function Data.save(player: Player, release: boolean?, important: boolean?): boolean
 	local p = Data.profiles[player]
 	if not p or not loadedOk[player] or not store then
-		return
+		return false
 	end
+	if saving[player] then
+		if not release and not important then
+			return false -- an autosave / win save is already writing this profile
+		end
+		local t0 = os.clock()
+		while saving[player] and os.clock() - t0 < 20 do
+			task.wait(0.1)
+		end
+		if saving[player] or not loadedOk[player] then
+			return false
+		end
+	end
+	saving[player] = true
 	local ds = store :: DataStore
-	p.savedAt = os.time()
-	p.lock = if release then nil else { job = game.JobId, t = os.time() }
-	local ok, err = pcall(function()
-		ds:UpdateAsync(key(player), function(old: any)
-			if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
-				return nil -- another server owns it now; don't clobber
-			end
-			return p
+	local done = false
+	local lost = false
+	local attempts = if release or important then SAVE_ATTEMPTS else 2
+	for attempt = 1, attempts do
+		if not release and not important and budgetLeft() < 2 then
+			break -- autosave: leave the budget to loads and purchases, try again next interval
+		end
+		Security.sanitizeProfile(p) -- NaN / inf / negative currency never reach the store
+		p.savedAt = os.time()
+		p.lock = if release then nil else { job = game.JobId, t = os.time() }
+		local ok, err = pcall(function()
+			ds:UpdateAsync(key(player), function(old: any)
+				if old and old.lock and old.lock.job ~= game.JobId and os.time() - old.lock.t < LOCK_TTL then
+					lost = true
+					return nil -- another server owns it now; don't clobber
+				end
+				if old and (tonumber(old.version) or 1) > Data.VERSION then
+					lost = true
+					return nil
+				end
+				return p
+			end)
 		end)
-	end)
-	if not ok then
-		warn("[Data] save failed for", player.Name, err)
+		if ok and lost then
+			warn("[Data] lost the session lock of", player.Name, "- this session stops saving")
+			loadedOk[player] = false
+			break
+		end
+		if ok then
+			done = true
+			break
+		end
+		warn("[Data] save failed for", player.Name, "(attempt", attempt, "):", err)
+		if attempt < attempts then
+			task.wait(SAVE_BACKOFF * 2 ^ (attempt - 1))
+		end
 	end
+	saving[player] = nil
+	return done
 end
 
 function Data.release(player: Player)
 	Data.save(player, true)
 	Data.profiles[player] = nil
 	loadedOk[player] = nil
+	saving[player] = nil
 end
 
 function Data.isPersistent(player: Player): boolean
@@ -265,8 +339,14 @@ function Data.startAutosave()
 	task.spawn(function()
 		while true do
 			task.wait(Config.AutosaveInterval)
-			for _, player in Players:GetPlayers() do
-				task.spawn(Data.save, player)
+			-- spread the writes over the interval instead of one burst for the whole server
+			local list = Players:GetPlayers()
+			local gap = math.min(2, Config.AutosaveInterval / math.max(#list, 1) / 2)
+			for _, player in list do
+				if player.Parent then
+					task.spawn(Data.save, player)
+					task.wait(gap)
+				end
 			end
 		end
 	end)

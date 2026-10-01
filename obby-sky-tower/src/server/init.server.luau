@@ -170,6 +170,7 @@ Players.PlayerRemoving:Connect(function(player)
 		Leaderboard.record(player, p.wins, true)
 		Leaderboard.recordStage(player, p.best, true)
 	end
+	Leaderboard.forget(player)
 	Data.release(player)
 	Session.stop(player)
 	Remotes.forget(player)

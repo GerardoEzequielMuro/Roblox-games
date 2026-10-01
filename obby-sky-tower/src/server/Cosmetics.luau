@@ -8,6 +8,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Economy = require(ReplicatedStorage.Shared.Economy)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Perks = require(ReplicatedStorage.Shared.Perks)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
@@ -386,7 +387,7 @@ end
 function Cosmetics.init()
 	Remotes.handle("BuyTrail", function(player, payload)
 		local p = Data.get(player)
-		local t = trailById[tostring(payload.id)]
+		local t = trailById[(Security.str(payload.id, 48) or "")]
 		if not p or not t or t.pass or t.exclusive then
 			return false, Remotes.M("err.not_for_sale")
 		end
@@ -411,7 +412,7 @@ function Cosmetics.init()
 		if not p then
 			return false
 		end
-		local id = tostring(payload.id or "")
+		local id = (Security.str(payload.id, 48) or "")
 		if id ~= "" and id ~= "rebirth" then
 			local t = trailById[id]
 			if not t then
@@ -433,7 +434,7 @@ function Cosmetics.init()
 	end)
 	Remotes.handle("BuyEffect", function(player, payload)
 		local p = Data.get(player)
-		local e = effectById[tostring(payload.id)]
+		local e = effectById[(Security.str(payload.id, 48) or "")]
 		if not p or not e or e.exclusive then
 			return false, Remotes.M("err.not_for_sale")
 		end
@@ -458,7 +459,7 @@ function Cosmetics.init()
 		if not p then
 			return false
 		end
-		local id = tostring(payload.id or "")
+		local id = (Security.str(payload.id, 48) or "")
 		if id ~= "" and not p.effects[id] then
 			return false, Remotes.M("err.not_owned")
 		end
@@ -469,7 +470,7 @@ function Cosmetics.init()
 	end)
 	Remotes.handle("BuyPet", function(player, payload)
 		local p = Data.get(player)
-		local pet = petById[tostring(payload.id)]
+		local pet = petById[(Security.str(payload.id, 48) or "")]
 		if not p or not pet then
 			return false, Remotes.M("err.not_for_sale")
 		end
@@ -494,7 +495,7 @@ function Cosmetics.init()
 		if not p then
 			return false
 		end
-		local id = tostring(payload.id or "")
+		local id = (Security.str(payload.id, 48) or "")
 		if id ~= "" and not p.pets[id] then
 			return false, Remotes.M("err.not_owned")
 		end
@@ -509,7 +510,7 @@ function Cosmetics.init()
 		if not p then
 			return false
 		end
-		local kind, id = tostring(payload.kind or ""), tostring(payload.id or "")
+		local kind, id = (Security.str(payload.kind, 16) or ""), (Security.str(payload.id, 48) or "")
 		local owned = false
 		if kind == "trail" then
 			local t = trailById[id]
@@ -548,7 +549,7 @@ function Cosmetics.init()
 		if not p then
 			return false
 		end
-		local lang = tostring(payload.lang or "")
+		local lang = (Security.str(payload.lang, 16) or "")
 		if lang ~= "" and not Locale.isSupported(lang) then
 			return false, Remotes.M("err.bad_language")
 		end

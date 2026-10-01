@@ -14,6 +14,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Workspace = game:GetService("Workspace")
 
 local Powerups = require(ReplicatedStorage.Shared.Powerups)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
@@ -70,6 +71,9 @@ function Shops.placePocket(player: Player): (boolean, any?)
 	if s.inLobby or s.roam or math.max(s.at, p.stage) <= 0 then
 		return false, M("err.pocket_here")
 	end
+	if not Checkpoints.nearProgress(player, 100) then
+		return false, M("err.pocket_here") -- not near your pad: no portable checkpoint out there
+	end
 	local unlimited = Session.hasPass(player, "InfiniteRevives")
 	if not unlimited and (p.charges.pocket or 0) <= 0 then
 		return false, M("err.no_charges")
@@ -119,7 +123,7 @@ function Shops.init()
 	end)
 
 	Remotes.handle("BuyPower", function(player, payload)
-		return Shops.buy(player, tostring(payload.id))
+		return Shops.buy(player, (Security.str(payload.id, 48) or ""))
 	end)
 	Remotes.handle("PlacePocket", function(player)
 		return Shops.placePocket(player)

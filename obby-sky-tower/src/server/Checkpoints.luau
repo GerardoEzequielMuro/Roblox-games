@@ -14,6 +14,7 @@ local Config = require(ReplicatedStorage.Shared.Config)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local Rules = require(ReplicatedStorage.Shared.Rules)
 local Gifts = require(ReplicatedStorage.Shared.Gifts)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
@@ -106,6 +107,8 @@ function Checkpoints.teleport(player: Player)
 	end
 	root.AssemblyLinearVelocity = Vector3.zero
 	char:PivotTo(cf)
+	s.lastPos = cf.Position -- the next pad must be reachable on foot from here, in the time that passes
+	s.lastPosAt = os.clock()
 end
 
 local function grantGift(player: Player, p: Data.Profile, gift: Gifts.Gift)
@@ -123,7 +126,7 @@ end
 
 -- Moves the player's progress to pad `g` (already validated) and rewards new progress.
 -- reason "reach" = walked onto it; anything else (skip, freeSkip, ad, coins) saves there.
-local function advanceTo(player: Player, g: number, reason: string)
+local function advanceTo(player: Player, g: number, reason: string, padPos: Vector3?)
 	local p = Data.get(player)
 	local s = Session.get(player)
 	if not p or not s then
@@ -167,6 +170,14 @@ local function advanceTo(player: Player, g: number, reason: string)
 	local isBest = g > p.best
 	p.best = math.max(p.best, g)
 	s.lastCheckpointAt = os.clock()
+	if padPos then
+		-- distance walked on foot from the last known spot: the floor for a ranked time
+		if s.lastPos then
+			run.dist = (run.dist or 0) + (padPos - s.lastPos).Magnitude
+		end
+		s.lastPos = padPos
+		s.lastPosAt = s.lastCheckpointAt
+	end
 	s.inLobby = false
 	local summit = Rules.isSummit(L, g)
 	local newWorld = (g // 10) > (from // 10) and not summit
@@ -220,8 +231,14 @@ local function advanceTo(player: Player, g: number, reason: string)
 			if p.wins == 1 and p.equippedTrail == "" then
 				p.equippedTrail = "rebirth"
 			end
+			local elapsedMs = if run.start then math.floor((Workspace:GetServerTimeNow() - run.start) * 1000) else 0
+			if run.start and run.valid and not Security.rankedPlausible(elapsedMs, run.dist or 0) then
+				-- faster than anyone can walk the pads: teleported. Not ranked (progress is kept)
+				run.valid = false
+				warn("[Checkpoints] implausible run time", elapsedMs, "ms for", player.Name, "- not ranked")
+			end
 			if run.start and run.valid then
-				local ms = math.floor((Workspace:GetServerTimeNow() - run.start) * 1000)
+				local ms = elapsedMs
 				run.finalMs = ms
 				info.runMs = ms
 				if p.bestRunMs == 0 or ms < p.bestRunMs then
@@ -285,7 +302,12 @@ function Checkpoints.reach(player: Player, g: number): string
 	if Vector3.new(d.X, 0, d.Z).Magnitude > Config.CheckpointTouchRadius or d.Y < -3 or d.Y > 12 then
 		return "retry"
 	end
-	advanceTo(player, g, "reach")
+	-- teleport check: nobody covers the distance from where they last were to this pad faster
+	-- than HOP_MAX_SPEED (the character really is next to the pad, but did it get there on foot?)
+	if s.lastPos and not Security.hopPlausible((pad.Position - s.lastPos).Magnitude, os.clock() - s.lastPosAt) then
+		return "retry"
+	end
+	advanceTo(player, g, "reach", pad.Position)
 	return "ok"
 end
 
@@ -317,9 +339,11 @@ local function onPadTouched(player: Player, k: number)
 end
 
 local busy: { [Player]: boolean } = {} -- a teleport / portal is in flight
+local lastPortal: { [Player]: number } = {}
 Players.PlayerRemoving:Connect(function(player)
 	pending[player] = nil
 	busy[player] = nil
+	lastPortal[player] = nil
 end)
 
 local function teleportAsync(player: Player)
@@ -352,6 +376,26 @@ function Checkpoints.skip(player: Player, n: number, reason: string): boolean
 	advanceTo(player, target, reason)
 	teleportAsync(player)
 	return true
+end
+
+-- Is the character within `radius` studs of the pad it holds or the next one? (A teleporting
+-- exploiter cannot park a portable checkpoint somewhere far from its progress.)
+function Checkpoints.nearProgress(player: Player, radius: number): boolean
+	local p = Data.get(player)
+	local s = Session.get(player)
+	local char = player.Character
+	local root = char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+	if not p or not s or not root then
+		return false
+	end
+	local at = atOf(p, s)
+	for g = at, math.min(at + 1, Layout.TOTAL) do
+		local pad = Towers.pad(g)
+		if pad and (root.Position - pad.Position).Magnitude <= radius then
+			return true
+		end
+	end
+	return false
 end
 
 function Checkpoints.canSkip(player: Player): boolean
@@ -416,7 +460,6 @@ end
 
 -- The portal at the summit of `tower`: on to the base of the next one. Open for anybody who has
 -- ever reached that summit.
-local lastPortal: { [Player]: number } = {}
 function Checkpoints.enterPortal(player: Player, tower: number): boolean
 	local p = Data.get(player)
 	local s = Session.get(player)

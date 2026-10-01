@@ -131,6 +131,11 @@ function Monetization.loadPasses(player: Player)
 	end
 end
 
+local watching: { [Player]: boolean } = {} -- a rewarded ad is being shown to this player
+Players.PlayerRemoving:Connect(function(player)
+	watching[player] = nil
+end)
+
 local function utcDay(): number
 	return os.time() // 86400
 end
@@ -145,13 +150,18 @@ function Monetization.init()
 		if p.ads.day ~= utcDay() then
 			p.ads = { day = utcDay(), count = 0 }
 		end
+		if watching[player] then
+			return false, M("err.slow_down") -- ShowRewardedVideoAdAsync yields: no parallel requests
+		end
 		if p.ads.count >= Config.AdDailyCap then
 			return false, M("err.ad_cap")
 		end
+		watching[player] = true
 		local ok, result = pcall(function()
 			local reward = AdService:CreateAdRewardFromDevProductId(Config.Products.AdSkip)
 			return AdService:ShowRewardedVideoAdAsync(player, reward)
 		end)
+		watching[player] = nil
 		if not ok then
 			warn("[Monetization] rewarded ad failed:", result)
 			return false, M("err.ad_unavailable")
@@ -172,7 +182,11 @@ function Monetization.init()
 		end
 		local receiptId = tostring(info.PurchaseId)
 		if table.find(p.purchases, receiptId) then
-			return Enum.ProductPurchaseDecision.PurchaseGranted
+			-- already applied (a retry, or the first save failed): grant only once it is on disk
+			if Data.save(player, false, true) then
+				return Enum.ProductPurchaseDecision.PurchaseGranted
+			end
+			return Enum.ProductPurchaseDecision.NotProcessedYet
 		end
 		local handler = productHandlers[info.ProductId]
 		if not handler then
@@ -188,9 +202,15 @@ function Monetization.init()
 		while #p.purchases > MAX_RECEIPTS do
 			table.remove(p.purchases, 1)
 		end
-		Data.save(player)
 		Remotes.notify(player, msg, "success")
 		Session.push(player)
+		-- PurchaseGranted only after the receipt id and the grant are saved. If the save fails the
+		-- grant stays in memory (and the receipt id with it), Roblox retries and the branch above
+		-- saves again without granting twice.
+		if not Data.save(player, false, true) then
+			warn("[Monetization] receipt", receiptId, "granted but not saved yet")
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
 		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 
@@ -203,6 +223,9 @@ function Monetization.init()
 		if not name or not s then
 			return
 		end
+		-- PromptGamePassPurchaseFinished is raised by Roblox itself (a client cannot fire it), and
+		-- UserOwnsGamePassAsync is cached for a while after a purchase, so the signal is what
+		-- refreshes the session cache. Ownership is re-read from Roblox on every join.
 		s.passes[name] = true
 		Cosmetics.applyAll(player)
 		Remotes.notify(player, M("msg.thanks_pass", { name = M("store." .. name .. ".name") }), "success")

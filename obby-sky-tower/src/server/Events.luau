@@ -65,7 +65,7 @@ function Events.init()
 		pcall(function()
 			MessagingService:SubscribeAsync(TOPIC, function(message)
 				local d = message.Data
-				if type(d) == "table" and validId(d.id) and type(d.endsAt) == "number" then
+				if type(d) == "table" and validId(d.id) and type(d.endsAt) == "number" and d.endsAt == d.endsAt and d.endsAt < os.time() + 86400 * 2 then
 					Events.setOverride(d.id, d.endsAt)
 				end
 			end)
@@ -84,7 +84,8 @@ function Events.init()
 		if not id or not validId(id) then
 			return
 		end
-		local endsAt = os.time() + (tonumber(minutes) or 0) * 60
+		local mins = math.clamp(tonumber(minutes) or 0, 0, 24 * 60) -- at most a day
+		local endsAt = os.time() + mins * 60
 		Events.setOverride(id :: string, endsAt)
 		pcall(function()
 			MessagingService:PublishAsync(TOPIC, { id = id, endsAt = endsAt })

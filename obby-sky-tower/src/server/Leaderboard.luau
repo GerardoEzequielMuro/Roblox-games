@@ -9,6 +9,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local RunTime = require(ReplicatedStorage.Shared.RunTime)
+local Security = require(ReplicatedStorage.Shared.Security)
 local StageGenerator = require(script.Parent.StageGenerator)
 
 local Leaderboard = {}
@@ -49,18 +50,38 @@ local function nameOf(userId: number): string
 		return Players:GetNameFromUserIdAsync(userId)
 	end)
 	local result = if ok and name then name else ("User " .. userId)
+	local count = 0
+	for _ in nameCache do
+		count += 1
+	end
+	if count > 200 then
+		table.clear(nameCache) -- only the 30 board rows are ever asked for: it refills on the next refresh
+	end
 	nameCache[userId] = result
 	return result
 end
 
-local function write(ds: OrderedDataStore?, userId: number, value: number)
-	if not ds then
+local MAX_VALUE = 2 ^ 31 - 1
+local MIN_RUN_MS = 60000 -- no legit 0 -> 100 climb takes under a minute (Checkpoints also checks the pad distances)
+
+-- `better` = "max" (wins, stages) or "min" (fastest run): UpdateAsync keeps the best value ever
+-- written, so a stale / replayed write (another server, a retry) can never make a record worse.
+local function write(ds: OrderedDataStore?, userId: number, value: number, better: string)
+	if not ds or not Security.finite(value) or value <= 0 or value > MAX_VALUE then
 		return
 	end
 	local store = ds :: OrderedDataStore
+	local v = math.floor(value)
 	task.spawn(function()
 		local ok, err = pcall(function()
-			store:SetAsync(tostring(userId), value)
+			store:UpdateAsync(tostring(userId), function(old: any): any
+				if type(old) == "number" then
+					if (better == "max" and old >= v) or (better == "min" and old <= v) then
+						return nil
+					end
+				end
+				return v
+			end)
 		end)
 		if not ok then
 			warn("[Leaderboard] write failed", err)
@@ -77,7 +98,7 @@ function Leaderboard.record(player: Player, wins: number, force: boolean?)
 		return
 	end
 	lastWrite[player.UserId] = now
-	write(winsStore, player.UserId, wins)
+	write(winsStore, player.UserId, wins, "max")
 end
 
 -- Best stage ever reached (1..1000). Throttled: a climber sets a new best every few seconds.
@@ -90,14 +111,21 @@ function Leaderboard.recordStage(player: Player, best: number, force: boolean?)
 		return
 	end
 	lastStageWrite[player.UserId] = now
-	write(stageStore, player.UserId, best)
+	write(stageStore, player.UserId, best, "max")
 end
 
--- New personal best run (ms). Lower is better.
+-- New personal best run (ms). Lower is better. `ms` is measured by the server (Checkpoints), never
+-- reported by a client.
 function Leaderboard.recordFastest(player: Player, ms: number)
-	if ms > 0 then
-		write(fastStore, player.UserId, ms)
+	if ms >= MIN_RUN_MS then
+		write(fastStore, player.UserId, ms, "min")
 	end
+end
+
+-- Per-player throttles and the name cache must not grow for ever.
+function Leaderboard.forget(player: Player)
+	lastWrite[player.UserId] = nil
+	lastStageWrite[player.UserId] = nil
 end
 
 local function buildBoard(board: BasePart, titleKey: string, titleColor: Color3): { TextLabel }

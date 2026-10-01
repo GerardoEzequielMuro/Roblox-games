@@ -31,7 +31,9 @@ export type S = {
 	-- speedrun (P0-2): start = server time of the first checkpoint of the run (nil = not started);
 	-- valid = false as soon as anything helped (Rules.ranked(help)): skips, coils, power-ups,
 	-- abilities, the teleporter, or a session that started mid-run
-	run: { start: number?, valid: boolean, finalMs: number? },
+	run: { start: number?, valid: boolean, finalMs: number?, dist: number? }, -- dist: pad-to-pad studs walked on foot (floor for a ranked time)
+	lastPos: Vector3?, -- where the character was last put / last reached a pad (teleport plausibility)
+	lastPosAt: number, -- os.clock() of lastPos
 	help: Rules.Help,
 	deaths: { stage: number, count: number }, -- death streak on the current stage (P0-1)
 	lastOfferAt: number,
@@ -63,6 +65,8 @@ function Session.start(player: Player): S
 		help = {},
 		deaths = { stage = -1, count = 0 },
 		lastOfferAt = -math.huge,
+		lastPos = nil,
+		lastPosAt = 0,
 	}
 	Session.data[player] = s
 	local ls = Instance.new("Folder")

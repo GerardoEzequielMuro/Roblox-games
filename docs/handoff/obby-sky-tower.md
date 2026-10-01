@@ -349,3 +349,33 @@ Notas del sim (`PacingModel.lateGame`, política del jugador: compra el ítem de
 6. Las mascotas no cambian el tiempo de la run: no hay que marcarla como asistida.
 
 Verificación: `rojo build default.project.json` OK, `luau-lsp analyze` sin salida, tests puros (icons, layout, locale, modelfit, p0, pacing, pricing, rules, visual) pasan.
+
+## Ronda 7: seguridad
+
+Auditoría de todos los remotes (solo existe `Request(action, payload)`; no hay RemoteEvents cliente->servidor), compras, DataStore, leaderboards y memoria. Helper nuevo y puro: `src/shared/Security.luau` (tests en `tests/security_test.luau`, 166 checks). Los jugadores legítimos no notan cambios.
+
+| Sev. | Dónde | Cómo se explotaba | Arreglo |
+|---|---|---|---|
+| Alta | `Checkpoints.luau` `reach` (~l.255) | Un exploiter con teleport se paraba junto a los pads (hasta 3 por delante) cada 0,8 s: stages, monedas y tiempo de speedrun sin caminar. | `Security.hopPlausible`: la distancia desde la última posición conocida (respawn o último pad) hasta el pad tiene que ser recorrible a <= 45 studs/s en el tiempo transcurrido; si no, `retry`. `s.lastPos/lastPosAt` en Session. |
+| Alta | `Checkpoints.luau` `advanceTo` (win) + `Leaderboard.recordFastest` | Tiempo ranked "imposible" con teleports en la tabla "Fastest Climb". | El servidor acumula la distancia pad a pad (`run.dist`); si el tiempo medido por el servidor es menor que `dist / 30 studs/s` (piso ~203 s en torre 1) la run deja de ser ranked (el progreso se conserva). Además `recordFastest` ignora < 60 s. El tiempo ya era 100% server-side (`GetServerTimeNow`). |
+| Alta | `Monetization.luau` ProcessReceipt (~l.160) | Devolvía `PurchaseGranted` aunque `Data.save` fallara (el save no devolvía nada): se perdía la compra o se re-otorgaba. | `Data.save` ahora devuelve boolean y reintenta; `PurchaseGranted` solo si guardó. Si falla, queda en memoria con el receipt id y devuelve `NotProcessedYet`; el reintento de Roblox guarda sin otorgar dos veces. |
+| Alta | `Data.luau` save (~l.200) | Saves solapados (autosave + win + receipt + PlayerRemoving) y sin reintento; valores NaN/inf/negativos podían guardarse (el UpdateAsync falla y se pierde el progreso). Perder el lock seguía intentando escribir. | Mutex por jugador (`saving`), 2-4 intentos con backoff 1/2/4 s, `GetRequestBudgetForRequestType` (el autosave se saltea si no hay presupuesto), `Security.sanitizeProfile` antes de guardar y al cargar, si otro server tomó el lock se deja de guardar. Autosave escalonado. Perfil de versión > `Data.VERSION` no se carga ni se pisa. |
+| Media | `Rewards.luau` RedeemCode | Fuerza bruta de códigos a 8 req/s; `gsub` sobre strings enormes. | Cooldown 2 s, tope 64 bytes antes del gsub, 5 fallos seguidos = bloqueo 60 s por jugador. |
+| Media | `Remotes.luau` | Payloads con strings gigantes, NaN/inf, tablas anidadas; sin cooldown por acción. | `Security.payloadOk` (tabla plana, <= 8 claves, strings <= 128, números finitos), nombre de acción <= 32, cooldown por acción (`DEFAULT_INTERVALS`: compras 0,3 s, teleports 1 s, ShareLink 3 s, WatchAd 5 s...) además del bucket global 8/s. |
+| Media | `Shops.luau` `placePocket` | Teletransportarse lejos, poner el checkpoint portátil ahí y volver (salto sin pasar por los pads). | Exige estar a <= 100 studs del pad actual o el siguiente (`Checkpoints.nearProgress`). |
+| Media | `Monetization.luau` WatchAd | `ShowRewardedVideoAdAsync` yielda: varias llamadas en paralelo antes de sumar al cupo diario. | Lock `watching[player]` mientras se muestra el anuncio. |
+| Media | `Leaderboard.luau` `write` | `SetAsync` ciego: un valor viejo/reintentado podía empeorar un récord. | `UpdateAsync` que solo acepta mejoras (max para wins/stage, min para tiempos); valores finitos y enteros < 2^31. |
+| Baja | `Cosmetics/Lounge/Shops/Rewards` handlers | `tostring(payload.x)` y `tonumber` laxos (strings tipo "0x10", tablas, fracciones). | `Security.str` / `Security.int` con tope y rango (Travel 0..1000, ClaimPlaytime 1..N, ids <= 48 bytes). |
+| Baja | `Checkpoints.luau` `lastPortal`, `Rewards` `codeFails`, `Leaderboard` `lastWrite/lastStageWrite/nameCache`, `Remotes` cooldowns | Tablas por jugador que no se limpiaban en PlayerRemoving. | Limpieza en PlayerRemoving (`Leaderboard.forget`, `Remotes.forget`, etc.); `nameCache` acotado a 200. |
+| Baja | `Events.luau` | `/event` con minutos enormes y `endsAt` NaN/infinito por MessagingService. | Minutos <= 1440, `endsAt` finito y <= 2 días. |
+
+Ya estaba bien (revisado, sin cambios): precios y dueño de ítems siempre del servidor, `Checkpoints` solo avanza con pads en orden (`Rules.canReach`, MaxStageJump 3, nada cruza un portal), monedas por pickup validadas por distancia, `DevSkip` solo en Studio, receipts con `PurchaseId` guardado y `NotProcessedYet` sin perfil, pases releídos al entrar, `BindToClose` guarda a todos, save en PlayerRemoving, lock de sesión en UpdateAsync, fast-fail en Studio.
+
+Queda pendiente / aceptado:
+- Referidos: una cuenta alt puede cobrar el regalo de invitado y acreditar al invitador (tope de por vida `ReferralMaxRewards`). Para cerrarlo hace falta una señal externa (edad de cuenta, verificación); no lo toqué.
+- Un teleporter paciente que espera el tiempo de viaje sigue avanzando a ~45 studs/s por pad (no gana nada contra caminar rápido con coil, pero no se detecta); la tabla ranked sí queda protegida por el piso de 30 studs/s acumulado.
+- El piso de 30 studs/s está calibrado con WalkSpeed 16 y la geometría actual (torre 1: 6103 studs, salto máx. 63); si se agregan boosts en runs ranked, revisar `Security.RANKED_MAX_SPEED`.
+- `UserOwnsGamePassAsync` está cacheado por Roblox: el pase se marca con la señal `PromptGamePassPurchaseFinished` (no la puede disparar el cliente) y se relee al entrar.
+- Hay que probar en Studio con 2 servidores: lock de sesión + retry, y una compra con DataStore caído (debe quedar `NotProcessedYet`).
+
+Verificación: `rojo build` OK, `luau-lsp analyze` sin salida, tests puros (icons, layout, locale, modelfit, p0, pacing, pricing, rules, visual, security) y `pacing_sim` OK, preview `--state mid --screen pc`: 0 hallazgos, 0 errores de runtime.

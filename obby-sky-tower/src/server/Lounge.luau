@@ -10,6 +10,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Perks = require(ReplicatedStorage.Shared.Perks)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
@@ -114,14 +115,14 @@ function Lounge.init()
 		end
 	end)
 	Remotes.handle("TakePerk", function(player, payload)
-		return Lounge.take(player, tostring(payload.id))
+		return Lounge.take(player, (Security.str(payload.id, 48) or ""))
 	end)
 	Remotes.handle("SetRoam", function(player, payload)
-		return Lounge.setRoam(player, tostring(payload.id or ""))
+		return Lounge.setRoam(player, (Security.str(payload.id, 48) or ""))
 	end)
 	Remotes.handle("Travel", function(player, payload)
 		local p = Data.get(player)
-		local target = tonumber(payload.stage)
+		local target = Security.int(payload.stage, 0, 1000)
 		if not p or not target or not Perks.canTravel(p.best, target) then
 			return false, M("err.travel_locked")
 		end

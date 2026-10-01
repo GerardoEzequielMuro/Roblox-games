@@ -1,16 +1,26 @@
 --!strict
 -- Retention rewards: daily streak, codes, and in-session play-time rewards.
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
 
 local Config = require(ReplicatedStorage.Shared.Config)
 local Gifts = require(ReplicatedStorage.Shared.Gifts)
+local Security = require(ReplicatedStorage.Shared.Security)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local Session = require(script.Parent.Session)
 
 local Rewards = {}
 
+local codeFails: { [Player]: number } = {} -- wrong codes in a row
+local codeLock: { [Player]: number } = {} -- os.clock() until which redeeming is paused
+
 function Rewards.init()
+	Players.PlayerRemoving:Connect(function(player)
+		codeFails[player] = nil
+		codeLock[player] = nil
+	end)
+
 	Remotes.handle("ClaimDaily", function(player)
 		local p = Data.get(player)
 		if not p then
@@ -45,12 +55,24 @@ function Rewards.init()
 		if not p then
 			return false
 		end
-		local code = string.upper((string.gsub(tostring(payload.code or ""), "%s", "")))
-		if #code == 0 or #code > 24 then
+		local s = Session.get(player)
+		local raw = Security.str(payload.code, 64) -- a longer string is never a code (and is not worth a gsub)
+		if not s or not raw then
 			return false, Remotes.M("err.invalid_code")
 		end
-		local c = Config.Codes[code]
+		local now = os.clock()
+		if now < (codeLock[player] or 0) then
+			return false, Remotes.M("err.slow_down") -- too many wrong guesses: brute force is slow
+		end
+		local code = string.upper((string.gsub(raw, "%s", "")))
+		local c = if #code > 0 and #code <= 24 then Config.Codes[code] else nil
 		if not c then
+			local fails = (codeFails[player] or 0) + 1
+			codeFails[player] = fails
+			if fails >= 5 then
+				codeFails[player] = 0
+				codeLock[player] = now + 60
+			end
 			return false, Remotes.M("err.invalid_code")
 		end
 		if c.expires and os.time() > c.expires then
@@ -108,7 +130,7 @@ function Rewards.init()
 		if not p or not s then
 			return false
 		end
-		local idx = tonumber(payload.index)
+		local idx = Security.int(payload.index, 1, #Config.PlaytimeRewards)
 		local r = idx and Config.PlaytimeRewards[idx]
 		if not idx or not r then
 			return false, Remotes.M("err.unknown_reward")

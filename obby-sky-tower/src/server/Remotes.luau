@@ -3,6 +3,8 @@
 -- per-player token-bucket rate limit. (Adapted from the huerta-tycoon Remotes service.)
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
+local Security = require(ReplicatedStorage.Shared.Security)
+
 local Remotes = {}
 
 local folder = Instance.new("Folder")
@@ -44,12 +46,28 @@ local M = Remotes.M
 
 type Handler = (player: Player, payload: any) -> (boolean, any?, any?)
 local handlers: { [string]: Handler } = {}
-local budget: { [Player]: { tokens: number, t: number } } = {}
+local budget: { [Player]: Security.Bucket } = {}
+local cooldowns: { [Player]: Security.Cooldowns } = {}
+local intervals: { [string]: number } = {} -- action -> minimum seconds between two calls per player
 local RATE = 8 -- requests per second sustained
 local BURST = 16
 
-function Remotes.handle(action: string, fn: Handler)
+-- Per-player minimum seconds between two calls of an action (tighter than the global bucket for
+-- anything that moves money, teleports, opens a Roblox prompt or can be brute-forced).
+local DEFAULT_INTERVALS: { [string]: number } = {
+	BuyTrail = 0.3, BuyEffect = 0.3, BuyPet = 0.3, UpgradeShine = 0.3, BuyPower = 0.3,
+	EquipTrail = 0.2, EquipEffect = 0.2, EquipPet = 0.2, SetLanguage = 0.5, SetSetting = 0.2,
+	UseFreeSkip = 0.5, DevSkip = 0.5, Rebirth = 1.5, EnterPortal = 1, GoToLobby = 1, ReturnToCheckpoint = 1,
+	PlacePocket = 1, TakePerk = 0.4, SetRoam = 0.4, Travel = 1.5,
+	ClaimDaily = 1, RedeemCode = 2, ClaimGroupGift = 3, ClaimPlaytime = 0.5,
+	WatchAd = 5, ShareLink = 3, GetState = 1,
+}
+
+-- `minInterval` (optional): server-side cooldown per player for this action. A call that comes
+-- sooner is refused with err.slow_down and never reaches the handler.
+function Remotes.handle(action: string, fn: Handler, minInterval: number?)
 	handlers[action] = fn
+	intervals[action] = minInterval or DEFAULT_INTERVALS[action]
 end
 
 function Remotes.fire(name: string, player: Player, ...: any)
@@ -67,30 +85,40 @@ end
 
 function Remotes.forget(player: Player)
 	budget[player] = nil
+	cooldowns[player] = nil
 end
 
 request.OnServerInvoke = function(player: Player, action: any, payload: any)
-	if type(action) ~= "string" then
+	if Security.str(action, Security.MAX_ACTION_LEN) == nil then
 		return false, M("err.bad_request")
 	end
-	local b = budget[player]
 	local now = os.clock()
+	local b = budget[player]
 	if not b then
-		b = { tokens = BURST, t = now }
+		b = Security.newBucket(RATE, BURST, now)
 		budget[player] = b
 	end
-	b.tokens = math.min(BURST, b.tokens + (now - b.t) * RATE)
-	b.t = now
-	if b.tokens < 1 then
+	if not Security.take(b, now) then
 		return false, M("err.slow_down")
 	end
-	b.tokens -= 1
 	local fn = handlers[action]
 	if not fn then
 		return false, M("err.unknown_action")
 	end
-	if payload ~= nil and type(payload) ~= "table" then
+	-- flat table of finite numbers / booleans / short strings, or nothing
+	if not Security.payloadOk(payload) then
 		return false, M("err.bad_request")
+	end
+	local interval = intervals[action]
+	if interval then
+		local cd = cooldowns[player]
+		if not cd then
+			cd = {}
+			cooldowns[player] = cd
+		end
+		if not Security.cooldownOk(cd, action, now, interval) then
+			return false, M("err.slow_down")
+		end
 	end
 	local ok, a, b2, c = pcall(fn, player, payload or {})
 	if not ok then
