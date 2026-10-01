@@ -32,6 +32,10 @@ local Ambience = require(UI.Ambience)
 local Perf = require(UI.Perf)
 local WildPatch = require(UI.WildPatch)
 local Sound = require(UI.Sound)
+local Loading = require(UI.Loading)
+
+-- Branded loading screen first: it fades out by itself after a few seconds even if something below fails.
+Loading.show()
 
 -- ===== ScreenGui + safe-area-based scaling =====
 -- CoreUISafeInsets keeps the whole UI below the Roblox top bar (menu/chat buttons) and inside device notches.
@@ -144,10 +148,12 @@ Tutorial.init(root, {
 
 gui.Parent = player:WaitForChild("PlayerGui")
 updateScale()
+Loading.stage() -- UI built
 
 -- ===== Remotes =====
 local Remotes = ReplicatedStorage:WaitForChild("Remotes")
 Net.init(Remotes)
+Loading.stage() -- remotes wired
 
 local function onEvent(name: string, fn: (...any) -> ())
 	task.spawn(function()
@@ -232,6 +238,7 @@ task.spawn(function()
 		task.wait(2)
 	end
 	loading:Destroy()
+	Loading.stage() -- handshake answered
 	Sound.music()
 	Toasts.show(I18n.L("msg.welcomeNew", { game = "Crop Kingdom" }), "success")
 end)

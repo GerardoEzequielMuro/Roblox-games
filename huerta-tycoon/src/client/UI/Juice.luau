@@ -6,6 +6,9 @@ local C = require(script.Parent.Components)
 local Layout = require(script.Parent.Layout)
 local Perf = require(script.Parent.Perf)
 local Sound = require(script.Parent.Sound)
+local Feel = require(game:GetService("ReplicatedStorage").Shared.Feel)
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 
 local Juice = {}
 
@@ -122,6 +125,144 @@ function Juice.confetti(amount: number?)
 		fall.Completed:Once(finish)
 		task.delay(time + 0.5, finish)
 	end
+end
+
+-- ===== camera micro-shake (Humanoid.CameraOffset: cheap, never fights the camera script) =====
+-- Players who set the "ReducedMotion" attribute on themselves (a future settings toggle) get none.
+local shakeUntil, shakeAmp, shakeStart = 0, 0, 0
+local shakeConn: RBXScriptConnection? = nil
+
+local function reduced(): boolean
+	return Players.LocalPlayer ~= nil and Players.LocalPlayer:GetAttribute("ReducedMotion") == true
+end
+
+function Juice.shake(power: number)
+	local amp, dur = Feel.shake(power, Perf.lite, reduced())
+	if amp <= 0 then
+		return
+	end
+	local now = os.clock()
+	if now + dur < shakeUntil and amp <= shakeAmp then
+		return -- a stronger shake is already running
+	end
+	shakeStart, shakeUntil, shakeAmp = now, now + dur, amp
+	if shakeConn then
+		return
+	end
+	shakeConn = RunService.RenderStepped:Connect(function()
+		local char = Players.LocalPlayer and Players.LocalPlayer.Character
+		local hum = char and char:FindFirstChildOfClass("Humanoid")
+		local t = os.clock()
+		if t >= shakeUntil or not hum then
+			if hum then
+				hum.CameraOffset = Vector3.zero
+			end
+			if shakeConn then
+				shakeConn:Disconnect()
+				shakeConn = nil
+			end
+			return
+		end
+		local fade = 1 - (t - shakeStart) / math.max(shakeUntil - shakeStart, 0.01)
+		local a = shakeAmp * fade
+		hum.CameraOffset = Vector3.new(rng:NextNumber(-a, a), rng:NextNumber(-a, a), 0)
+	end)
+end
+
+-- ===== banners: rarity reveal and unlock =====
+-- One banner at a time (a new one replaces the old), pooled as a single Frame: cheap on phones.
+local banner: Frame? = nil
+local bannerTitle: TextLabel? = nil
+local bannerSub: TextLabel? = nil
+local bannerScale: UIScale? = nil
+local bannerToken = 0
+
+local function ensureBanner()
+	if banner and banner.Parent then
+		return
+	end
+	local l = layer :: Frame
+	local f: Frame = C.new("Frame", {
+		Name = "RevealBanner",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.3),
+		Size = UDim2.fromOffset(440, 84),
+		BackgroundColor3 = Theme.C.Dark,
+		Visible = false,
+		ZIndex = 48,
+		Parent = l,
+	})
+	C.corner(f, 20)
+	local stroke = C.stroke(f, 4, Theme.C.Gold)
+	stroke.Name = "Edge"
+	bannerScale = C.new("UIScale", { Parent = f })
+	bannerTitle = C.label(f, "", UDim2.new(1, -20, 0, 44), { Position = UDim2.fromOffset(10, 6), TextSize = 34, ZIndex = 49, Outline = 3 })
+	bannerSub = C.label(f, "", UDim2.new(1, -20, 0, 28), { Position = UDim2.fromOffset(10, 48), TextSize = 22, ZIndex = 49, Outline = 2 })
+	banner = f
+end
+
+-- title/sub are already-translated strings. tier 0..3 sets the intensity.
+function Juice.banner(title: string, sub: string, color: Color3, tier: number)
+	if not layer then
+		return
+	end
+	ensureBanner()
+	local f, sc = banner :: Frame, bannerScale :: UIScale
+	bannerToken += 1
+	local token = bannerToken
+	;(bannerTitle :: TextLabel).Text = title
+	;(bannerTitle :: TextLabel).TextColor3 = color
+	;(bannerSub :: TextLabel).Text = sub
+	;(bannerSub :: TextLabel).TextColor3 = Theme.C.White
+	local edge = f:FindFirstChild("Edge")
+	if edge and edge:IsA("UIStroke") then
+		edge.Color = color
+	end
+	f.BackgroundTransparency = 0.1
+	f.Visible = true
+	sc.Scale = 0.4
+	C.tween(sc, 0.35, { Scale = 1 + tier * 0.05 }, Enum.EasingStyle.Back)
+	task.delay(1.9 + tier * 0.2, function()
+		if token ~= bannerToken or not f.Parent then
+			return
+		end
+		local out = C.tween(sc, 0.25, { Scale = 0.6 }, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+		out.Completed:Once(function()
+			if token == bannerToken then
+				f.Visible = false
+			end
+		end)
+	end)
+end
+
+-- Rare drop: rarity-colored banner + shake + fanfare. tier from Feel.tier.
+function Juice.reveal(title: string, sub: string, color: Color3, tier: number)
+	if not Feel.bigMoment(tier) then
+		return
+	end
+	Sound.play("reveal")
+	Juice.banner(title, sub, color, tier)
+	Juice.shake(Feel.tierPower(tier))
+	if tier >= 3 then
+		Juice.confetti(18)
+	end
+end
+
+-- Unlock / level-up moment: gold banner, small confetti, sound.
+function Juice.unlock(title: string, sub: string)
+	Sound.play("unlock")
+	Juice.banner(title, sub, Theme.C.Gold, 1)
+	Juice.confetti(14)
+end
+
+-- Quick squash-and-pop on any GuiObject that has (or gets) a UIScale named "Pop". Used for counters and cards.
+function Juice.pop(target: GuiObject, scale: number?)
+	local sc = target:FindFirstChild("Pop")
+	if not sc then
+		sc = C.new("UIScale", { Name = "Pop", Parent = target })
+	end
+	;(sc :: UIScale).Scale = scale or 1.15
+	C.tween(sc :: UIScale, 0.25, { Scale = 1 }, Enum.EasingStyle.Back)
 end
 
 return Juice

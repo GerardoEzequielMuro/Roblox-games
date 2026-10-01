@@ -17,9 +17,12 @@ local Teleport = require(script.Parent.Teleport)
 local Layout = require(script.Parent.Layout)
 local Juice = require(script.Parent.Juice)
 local Sound = require(script.Parent.Sound)
+local Onboarding = require(ReplicatedStorage.Shared.Onboarding)
+local Feel = require(ReplicatedStorage.Shared.Feel)
 
 local Hud = {}
 Hud.refs = {} :: { [string]: GuiObject }
+Hud.minimal = nil :: boolean? -- true until the first sale / tutorial done (see Onboarding.menuTier)
 Hud.onAuto = nil :: (() -> ())?
 
 -- Compact HUD metrics (design pixels). Buttons keep a 54 px short side so they stay >= 44 real px on a
@@ -323,7 +326,7 @@ function Hud.build(root: Instance)
 		local stacked = Layout.stacked
 		local h = 54
 		card.Size = UDim2.fromOffset(Hud.CARD_W, if stacked then Hud.CARD_H_TOUCH else Hud.CARD_H)
-		infoLbl.Visible = not stacked
+		infoLbl.Visible = not stacked and not Hud.minimal
 		actions.AnchorPoint = if stacked then Vector2.new(1, 0) else Vector2.new(1, 0.5)
 		actions.Position = if stacked then UDim2.new(1, -12, 0, 8) else UDim2.new(1, -12, 0.5, 0)
 		actions.Size = UDim2.fromOffset(Hud.ACTION_W, Hud.ACTIONS * h + (Hud.ACTIONS - 1) * 8)
@@ -370,7 +373,22 @@ function Hud.build(root: Instance)
 	}
 
 	-- ===== Updates =====
+	-- Minimal HUD for a brand-new player (nothing sold yet): no stat line, no goal bar, no action column.
+	-- It grows after the first sale / tutorial (same tiers as the menu).
+	local function applyMinimal(minimal: boolean)
+		if minimal == Hud.minimal then
+			return
+		end
+		local grew = Hud.minimal == true and not minimal
+		Hud.minimal = minimal
+		actions.Visible = not minimal
+		infoLbl.Visible = not Layout.stacked and not minimal
+		if grew then
+			Juice.pop(actions, 1.2)
+		end
+	end
 	local lastFull = false
+	local lastBasket = -1
 	local lastCount, lastCash = 0, math.huge
 	local function refresh()
 		local d = State.data
@@ -378,6 +396,7 @@ function Hud.build(root: Instance)
 			return
 		end
 		targetCash = d.cash or 0
+		applyMinimal(Onboarding.menuTier(d.totalEarned or 0, d.rebirths or 0, d.tutorialDone == true) == 0)
 		-- a sale (from the button, the stand or Sell Anywhere): the basket empties and the cash goes up
 		local countNow = d.backpackCount or 0
 		if lastCount > 0 and countNow == 0 and targetCash > lastCash then
@@ -400,6 +419,10 @@ function Hud.build(root: Instance)
 
 		local count, cap = d.backpackCount or 0, math.max(1, d.backpackCap or Config.BackpackBase)
 		local full = count >= cap
+		if count > lastBasket and lastBasket >= 0 then
+			Juice.pop(basketBar.frame, 1.06)
+		end
+		lastBasket = count
 		basketBar.set(count / cap)
 		basketBar.fill.BackgroundColor3 = if full then Theme.C.Red else Theme.C.Orange
 		basketBar.label.Text = I18n.t(if full then "hud.basketFull" else "hud.basket", { count = count, cap = cap, cash = Format.cash(d.backpackValue or 0) })
@@ -428,7 +451,7 @@ function Hud.build(root: Instance)
 			table.insert(cands, { kind = "rebirth", cost = d.rebirthCost })
 		end
 		local g = Goals.nextGoal(d.cash or 0, cands)
-		goalShown = g ~= nil
+		goalShown = g ~= nil and not Hud.minimal
 		if g then
 			local args = { cash = Format.cash(g.remaining) }
 			if g.kind == "seed" then
@@ -476,12 +499,8 @@ function Hud.build(root: Instance)
 	local lastShownText = ""
 	RunService.RenderStepped:Connect(function(dt)
 		if hasCash and shownCash ~= targetCash then
-			local diff = targetCash - shownCash
-			local wasUp = diff > 0
-			shownCash += diff * math.min(1, dt * 7)
-			if math.abs(targetCash - shownCash) < math.max(1, math.abs(targetCash) * 0.0005) then
-				shownCash = targetCash
-			end
+			local wasUp = targetCash > shownCash
+			shownCash = Feel.roll(shownCash, targetCash, dt, 7)
 			local txt = Format.cash(shownCash)
 			if txt ~= lastShownText then
 				lastShownText = txt

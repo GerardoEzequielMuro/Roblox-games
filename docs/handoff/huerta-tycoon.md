@@ -313,3 +313,26 @@ Auditoría anti-exploit / seguridad de guardado. Todo el tráfico cliente->servi
 - Referidos: el `LaunchData` lo elige quien comparte el link; con cuentas alternativas se puede farmear hasta `ReferralMaxRewards` (tope de por vida ya existente).
 - Nada de esto se probó en Studio (sin Studio en Linux): conviene correr `tests/run.ps1` y mirar con pocos datos reales que `Data.save` devuelve true y que una compra de prueba responde `PurchaseGranted` una sola vez.
 - `Remotes.ACTION_COOLDOWN` está ajustado a ojo con el cliente actual; si se agrega un flujo que llame a `Hello`/`GoHome` más seguido que eso, subir el límite.
+
+## Ronda 8: primera sesión y game feel
+
+**Recorrido de los primeros 2 minutos, antes:** carga con un cartelito "Cargando tu huerto" suelto sobre el mundo -> aparecen de golpe los 10 botones del menú, el bloque de stats, la barra de meta y la columna Cosechar todo/Plantar todo/Auto -> tarjeta de tutorial con frases largas de 2 líneas y una flechita -> cosechar y vender con números flotantes y monedas (esto ya estaba bien). Un jugador nuevo veía unos 20 elementos compitiendo con la flecha.
+
+**Después:** pantalla de carga de marca (nombre, tip al azar, barra) que se va sola (máx 6 s, mínimo 0,8 s, nunca se cuelga) -> HUD mínimo: solo plata, Semillas y Diario, teleports y la tarjeta del tutorial con frases de 3-5 palabras ("Compra una semilla de Zanahoria", "Toca una parcela libre", "Toca el cultivo brillante", "Vende tu cosecha") -> contorno dorado pulsante en el botón objetivo, resaltado (Highlight) en la parcela objetivo, flecha y beam como antes -> al terminar cada paso la insignia 1/4 se pone verde y suena el hook `step`; la primera cosecha tira un banner "Primera cosecha" y confeti -> al vender aparecen Upgrades/Gifts/Index/Codes y la columna de acciones (con pop y banner "Desbloqueado"), y Rebirth/Store/Invite/Trophies al llegar a $250 ganados o en el primer rebirth.
+
+**Qué agregué**
+- `src/shared/Onboarding.luau` (puro): máquina de pasos del tutorial derivada solo del estado, textos por subestado (elegir semilla / tocar parcela / creciendo / madura), recuperación anti soft-lock, tiers del menú y progreso de carga. `src/shared/Feel.luau` (puro): parámetros del shake, tiers de rareza, escala del pop, roll-up de contador independiente del framerate, tope de efectos. `tests/onboarding_test.luau`: 91 checks.
+- Anti soft-lock: el paso sale siempre del estado (rejoin retoma donde estaba); si ya vendió antes (rejoin) el tutorial se cierra solo; si no hay parcela libre/objetivo en el mundo cae a "cualquier parcela" o solo GUI; a los 40 s en el mismo paso aparece "¿Atascado? Puedes saltar" y Skip pulsa; a los 5 min se cierra solo sin premio; el loop del tutorial va en pcall.
+- Juice: `Juice.shake` (micro-shake con `Humanoid.CameraOffset`, 60 % más suave en lite, cero si el jugador tiene el atributo `ReducedMotion = true`), `Juice.banner/reveal/unlock/pop`. Mutaciones x8+ y Giant: banner del color de la mutación + shake + sonido `reveal` (x20+ suma confeti). Número flotante con overshoot que crece con el monto. Pop en el contador de la canasta, roll-up del cash con `Feel.roll`, shake chico al comprar parcela. Un solo banner pooleado, confeti y partículas ya respetan el presupuesto de Perf.
+- Sonidos: hooks nuevos `reveal`, `unlock`, `step` en `Config.Sounds` (ids en 0, silencio hasta que pegues ids).
+- Textos: tut.1-4 acortados y claves nuevas (tut.2b, tut.3w, tut.stuck, tut.wow, load.tip1-3, fx.unlock, fx.rare) traducidas a los 12 idiomas; locale_test pasa.
+- `src/client/UI/Loading.luau` + cableado en `Main.client.luau` (3 etapas: UI, remotes, handshake).
+
+**Verificación:** rojo build default y test OK; luau-lsp sin salida; todos los `tests/*_test.luau` y `sim/pacing_sim.luau` pasan; preview new pc/phone y mid pc con 0 hallazgos y 0 errores de runtime. Capturas antes/después en `docs/previews/huerta-tycoon/` (`before-new-*.png` vs `new-*.png`, más `loading-phone.png`). El preview no dibuja banners, shake, glow ni Highlight.
+
+**Qué mirar en Studio**
+- Que el Highlight de la parcela objetivo se vea bien de día y no tape el cultivo; que el contorno dorado del botón Seeds/Skip no se corte con el borde.
+- El shake con `CameraOffset` en celular y con una cosecha Rainbow/Golden; probar `player:SetAttribute("ReducedMotion", true)`.
+- Que el menú progresivo no confunda: un jugador que saltea el tutorial queda en tier 1 hasta los $250. Si preferís mostrar todo al saltear, es una línea en `Onboarding.menuTier`.
+- La pantalla de carga con red lenta (debe irse sola a los 6 s) y que no tape el chat/menú de Roblox.
+- Hay un solo `Humanoid.CameraOffset` en uso: si otro script lo toca, se pisan.

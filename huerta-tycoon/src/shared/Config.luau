@@ -307,9 +307,12 @@ Config.Sounds = {
 	sell = 0, -- basket sold
 	error = 0, -- something was refused
 	fanfare = 0, -- confetti moments: new tile, rebirth, rare toast
+	reveal = 0, -- rare drop banner (mutation / giant)
+	unlock = 0, -- a menu button or feature unlocks
+	step = 0, -- a tutorial step is done
 	music = 0, -- looping background track
 }
-Config.SoundVolume = { click = 0.4, harvest = 0.5, harvestRare = 0.7, sell = 0.6, error = 0.4, fanfare = 0.7, music = 0.25 }
+Config.SoundVolume = { click = 0.4, harvest = 0.5, harvestRare = 0.7, sell = 0.6, error = 0.4, fanfare = 0.7, reveal = 0.8, unlock = 0.6, step = 0.5, music = 0.25 }
 
 -- ===== Seeds for Robux (second button on each Seed Shop row) =====
 -- One developer product per seed you want to sell directly. 0 = no Robux button on that row.

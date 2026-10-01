@@ -141,6 +141,7 @@ local function buildPopup(root: Instance)
 			f.Visible = false
 			if Net.request("BuyTile") then
 				Juice.confetti(16)
+				Juice.shake(0.3)
 			end
 		end,
 	})

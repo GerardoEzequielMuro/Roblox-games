@@ -11,6 +11,8 @@ local I18n = require(script.Parent.I18n)
 local Perf = require(script.Parent.Perf)
 local Sound = require(script.Parent.Sound)
 local TrophyRules = require(ReplicatedStorage.Shared.Trophies)
+local Feel = require(ReplicatedStorage.Shared.Feel)
+local Juice = require(script.Parent.Juice)
 
 local Fx = {}
 
@@ -30,7 +32,7 @@ local live = 0
 local burst = { last = -math.huge, n = 0, sum = 0, count = 0, label = nil :: TextLabel?, sub = nil :: TextLabel? }
 
 -- Floating "+$" billboard at an attachment; returns the amount and sub labels.
-local function floatNumber(att: Attachment, amountText: string, color: Color3, subText: string, subColor: Color3, big: boolean, life: number): (TextLabel, TextLabel)
+local function floatNumber(att: Attachment, amountText: string, color: Color3, subText: string, subColor: Color3, big: boolean, life: number, popTo: number?): (TextLabel, TextLabel)
 	-- a little sideways jitter so numbers of the same burst don't sit on the same spot
 	local jx, jz = math.random() * 2.4 - 1.2, math.random() * 2.4 - 1.2
 	local bb: BillboardGui = C.new("BillboardGui", {
@@ -56,7 +58,15 @@ local function floatNumber(att: Attachment, amountText: string, color: Color3, s
 		Outline = 2,
 	})
 	local sc = C.new("UIScale", { Scale = 0.3, Parent = amount })
-	C.tween(sc, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+	-- pop: overshoot to a size that grows with the amount, then settle
+	local pop = C.tween(sc, 0.2, { Scale = popTo or 1 }, Enum.EasingStyle.Back)
+	if popTo and popTo > 1 then
+		pop.Completed:Once(function()
+			if sc.Parent then
+				C.tween(sc, 0.14, { Scale = 1 })
+			end
+		end)
+	end
 	C.tween(bb, life, { StudsOffsetWorldSpace = Vector3.new(jx, 6, jz) }, Enum.EasingStyle.Quad)
 	task.delay(life - 0.6, function()
 		if bb.Parent then
@@ -131,7 +141,15 @@ function Fx.harvest(position: any, seedId: any, mutation: any, value: any, size:
 		if sizeDef then
 			sub = "⭐ " .. I18n.t("size." .. sizeDef.id) .. "  " .. sub
 		end
-		floatNumber(att, "+" .. Format.cash(amountValue), color, sub, if mut then color else Theme.C.White, mut ~= nil, 1.4)
+		floatNumber(att, "+" .. Format.cash(amountValue), color, sub, if mut then color else Theme.C.White, mut ~= nil, 1.4, Feel.popScale(amountValue, 40))
+	end
+
+	-- rare drop (big mutation or Giant): rarity-colored banner, micro-shake and fanfare
+	local tier = Feel.tier(if mut then mut.multiplier else 1, sizeDef ~= nil and sizeDef.id == "Giant")
+	if Feel.bigMoment(tier) then
+		local what = if mut then I18n.t("mutation." .. mut.id) elseif sizeDef then I18n.t("size." .. sizeDef.id) else ""
+		local fruit = if seed then I18n.t("seed." .. seed.id) else ""
+		Juice.reveal(I18n.t("fx.rare"), Theme.seedEmoji(seedId) .. " " .. what .. " " .. fruit .. "  +" .. Format.cash(amountValue), color, tier)
 	end
 
 	-- every harvest pops: juice in the fruit's color plus a few leaf bits

@@ -13,6 +13,10 @@ local Toasts = require(script.Parent.Toasts)
 local Tiles = require(script.Parent.Tiles)
 local Teleport = require(script.Parent.Teleport)
 local Layout = require(script.Parent.Layout)
+local Juice = require(script.Parent.Juice)
+local Perf = require(script.Parent.Perf)
+local Sound = require(script.Parent.Sound)
+local Onboarding = require(game:GetService("ReplicatedStorage").Shared.Onboarding)
 
 local player = Players.LocalPlayer
 
@@ -24,7 +28,6 @@ export type Refs = {
 	sellButton: GuiObject?,
 }
 
-local STEPS = { "tut.1", "tut.2", "tut.3", "tut.4" }
 
 function Tutorial.init(root: Instance, refs: Refs)
 	local active = false
@@ -75,6 +78,17 @@ function Tutorial.init(root: Instance, refs: Refs)
 		Size = UDim2.fromOffset(90, 56),
 	})
 	skip.ZIndex = 7
+	local skipGlow = C.stroke(skip, 0, Theme.C.Green)
+	skipGlow.Name = "StuckGlow"
+	-- small "Stuck? You can Skip" pill under the card, only after the player has been on one step for a while
+	local stuckLbl = C.label(card, "", UDim2.fromOffset(300, 24), {
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 1, 6),
+		TextSize = 16,
+		Visible = false,
+		ZIndex = 7,
+	})
+	I18n.set(stuckLbl, "Text", L("tut.stuck"))
 
 	Layout.onChanged(function()
 		if Layout.stacked then
@@ -124,6 +138,29 @@ function Tutorial.init(root: Instance, refs: Refs)
 		Segments = 1,
 	})
 
+	-- pulsing outline on the GUI target and a soft highlight on the world target (skipped on lite devices)
+	local glow: UIStroke = C.new("UIStroke", {
+		Name = "TutorialGlow",
+		Color = Theme.C.Yellow,
+		Thickness = 4,
+		ApplyStrokeMode = Enum.ApplyStrokeMode.Border,
+	})
+	local worldGlow: Highlight? = nil
+	if not Perf.lite then
+		local ok, h = pcall(function()
+			return C.new("Highlight", {
+				Name = "TutorialHighlight",
+				FillColor = Color3.fromRGB(255, 240, 80),
+				OutlineColor = Color3.fromRGB(255, 255, 255),
+				FillTransparency = 0.7,
+				DepthMode = Enum.HighlightDepthMode.Occluded,
+			})
+		end)
+		if ok then
+			worldGlow = h
+		end
+	end
+
 	local arrowBaseY = 6
 	local guiTarget: GuiObject? = nil
 	local guiSide = "top"
@@ -131,11 +168,14 @@ function Tutorial.init(root: Instance, refs: Refs)
 	local function setGuiTarget(target: GuiObject?, side: string?)
 		guiTarget = target
 		guiSide = side or "top"
-		if target then
+		if target and target.Parent then
+			glow.Parent = target
 			guiArrow.Parent = target
 			guiArrow.Text = if guiSide == "right" then "👈" else "👇"
 			guiArrow.AnchorPoint = if guiSide == "right" then Vector2.new(0, 0.5) else Vector2.new(0.5, 1)
 		else
+			guiTarget = nil
+			glow.Parent = nil
 			guiArrow.Parent = nil
 		end
 	end
@@ -149,6 +189,10 @@ function Tutorial.init(root: Instance, refs: Refs)
 		end
 		local char = player.Character
 		local hrp = char and char:FindFirstChild("HumanoidRootPart")
+		if worldGlow then
+			worldGlow.Adornee = bp
+			worldGlow.Parent = if bp then workspace.Terrain else nil
+		end
 		if bp then
 			worldArrow.Adornee = bp
 			arrowBaseY = bp.Size.Y / 2 + 5
@@ -162,6 +206,7 @@ function Tutorial.init(root: Instance, refs: Refs)
 				beam.Parent = nil
 			end
 		else
+			(worldArrow :: any).Adornee = nil
 			worldArrow.Parent = nil
 			beam.Parent = nil
 			targetAtt.Parent = nil
@@ -173,6 +218,10 @@ function Tutorial.init(root: Instance, refs: Refs)
 		card.Visible = false
 		setGuiTarget(nil)
 		setWorldTarget(nil)
+		skipGlow.Thickness = 0
+		if worldGlow then
+			worldGlow.Parent = nil
+		end
 	end
 
 	local function finish(silent: boolean?)
@@ -184,6 +233,7 @@ function Tutorial.init(root: Instance, refs: Refs)
 		Net.request("FinishTutorial", nil, { quiet = true, silentOk = true })
 		if not silent then
 			Toasts.show(L("tut.done"), "success")
+			Juice.confetti(24)
 		end
 	end
 
@@ -200,6 +250,8 @@ function Tutorial.init(root: Instance, refs: Refs)
 		return nil
 	end
 
+	local startedAt = os.clock()
+	local stepSince = os.clock()
 	local function evaluate()
 		local d = State.data
 		if finished or not d then
@@ -212,9 +264,20 @@ function Tutorial.init(root: Instance, refs: Refs)
 		end
 		if baselineEarned == nil then
 			baselineEarned = d.totalEarned or 0
+			startedAt = os.clock()
+			-- rejoined after already selling: nothing left to teach (and never a stale step)
+			if Onboarding.alreadyPlayed(baselineEarned :: number) then
+				finish(true)
+				return
+			end
 		end
 		if (d.totalEarned or 0) > (baselineEarned :: number) then
 			finish(false)
+			return
+		end
+		-- safety net: a tutorial that can't progress for minutes ends by itself
+		if Onboarding.giveUp(os.clock() - startedAt) then
+			finish(true)
 			return
 		end
 		active = true
@@ -222,60 +285,99 @@ function Tutorial.init(root: Instance, refs: Refs)
 		local anyCrop = findTile(function(t)
 			return t:GetAttribute("HasCrop") == true
 		end)
-		local newStep
-		if (d.backpackCount or 0) > 0 then
-			newStep = 4
-		elseif anyCrop then
-			newStep = 3
-		elseif State.totalSeeds() > 0 then
-			newStep = 2
-		else
-			newStep = 1
-		end
+		local ripeTile = findTile(function(t)
+			return t:GetAttribute("Ripe") == true
+		end)
+		local facts: Onboarding.Facts = {
+			backpackCount = d.backpackCount or 0,
+			hasCrop = anyCrop ~= nil,
+			ripe = ripeTile ~= nil,
+			seeds = State.totalSeeds(),
+		}
+		local newStep = Onboarding.step(facts)
 
 		if newStep ~= step then
+			local prev = step
 			step = newStep
+			stepSince = os.clock()
 			card.Visible = true
-			stepLbl.Text = step .. "/4"
-			I18n.set(text, "Text", L(STEPS[step]))
+			stepLbl.Text = step .. "/" .. Onboarding.STEPS
 			cardScale.Scale = 0.7
 			C.tween(cardScale, 0.3, { Scale = 1 }, Enum.EasingStyle.Back)
+			if prev > 0 and newStep > prev then
+				-- a step is done: the badge flashes green and the card pops
+				Sound.play("step")
+				stepLbl.BackgroundColor3 = Theme.C.Green
+				task.delay(0.5, function()
+					stepLbl.BackgroundColor3 = Theme.C.Orange
+				end)
+				if prev == 3 then
+					-- first harvest: the first "wow"
+					Juice.banner(I18n.t("tut.wow"), "", Theme.C.Gold, 1)
+					Juice.confetti(10)
+				end
+			end
+		end
+		-- text follows the sub-state (pick a seed / tap a tile / growing / ripe)
+		I18n.set(text, "Text", L(Onboarding.textKey(step, facts, State.selectedSeed ~= nil)))
+
+		-- stuck on one step for a while: the Skip button pulses and a hint shows
+		local isStuck = Onboarding.stuck(os.clock() - stepSince)
+		stuckLbl.Visible = isStuck
+		if not isStuck then
+			skipGlow.Thickness = 0
 		end
 
+		local function pick(preferred: Instance?, fallback: Instance?): Instance?
+			local mode = Onboarding.targetFallback(preferred ~= nil, fallback ~= nil)
+			return if mode == 1 then preferred elseif mode == 2 then fallback else nil
+		end
+		local anyOwn = findTile(function()
+			return true
+		end)
 		if step == 1 then
 			setGuiTarget(refs.shopButton, "right")
-			setWorldTarget(Teleport.hubPart("SeedShop"))
+			setWorldTarget(pick(Teleport.hubPart("SeedShop"), nil))
 		elseif step == 2 then
 			setGuiTarget(if State.selectedSeed then nil else refs.hotbar, "top")
-			setWorldTarget(findTile(function(t)
+			local free = findTile(function(t)
 				return t:GetAttribute("Unlocked") == true and not t:GetAttribute("HasCrop")
-			end))
+			end)
+			setWorldTarget(pick(free, anyOwn))
 		elseif step == 3 then
 			setGuiTarget(nil)
-			setWorldTarget(findTile(function(t)
-				return t:GetAttribute("Ripe") == true
-			end) or anyCrop)
+			setWorldTarget(pick(ripeTile, anyCrop))
 		elseif step == 4 then
 			setGuiTarget(refs.sellButton, "top")
-			setWorldTarget(Teleport.hubPart("SellStand"))
+			setWorldTarget(pick(Teleport.hubPart("SellStand"), nil))
 		end
 	end
 
-	-- bounce animation
+	-- bounce + pulse animation
 	RunService.RenderStepped:Connect(function()
 		if not active then
 			return
 		end
-		local b = math.abs(math.sin(os.clock() * 5))
+		local t = os.clock()
+		local b = math.abs(math.sin(t * 5))
+		local pulse = 0.5 + 0.5 * math.sin(t * 6)
 		if guiTarget then
 			if guiSide == "right" then
 				guiArrow.Position = UDim2.new(1, 6 + b * 14, 0.5, 0)
 			else
 				guiArrow.Position = UDim2.new(0.5, 0, 0, -4 - b * 14)
 			end
+			glow.Thickness = 3 + pulse * 3
+			glow.Transparency = 0.1 + (1 - pulse) * 0.5
 		end
 		if worldArrow.Adornee then
 			worldArrow.StudsOffsetWorldSpace = Vector3.new(0, arrowBaseY + b * 1.2, 0)
+		end
+		if worldGlow and worldGlow.Parent then
+			worldGlow.FillTransparency = 0.55 + (1 - pulse) * 0.35
+		end
+		if stuckLbl.Visible then
+			skipGlow.Thickness = 2 + pulse * 4
 		end
 	end)
 
@@ -286,7 +388,11 @@ function Tutorial.init(root: Instance, refs: Refs)
 	end)
 	task.spawn(function()
 		while not finished do
-			evaluate()
+			-- a bad frame (missing part, destroyed target) must never kill the loop
+			local ok, err = pcall(evaluate)
+			if not ok then
+				warn("[Tutorial]", err)
+			end
 			task.wait(0.5)
 		end
 	end)

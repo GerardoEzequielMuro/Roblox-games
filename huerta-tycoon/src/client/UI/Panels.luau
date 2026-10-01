@@ -9,6 +9,8 @@ local L = I18n.L
 local State = require(script.Parent.State)
 local DailyPanel = require(script.Parent.DailyPanel)
 local Layout = require(script.Parent.Layout)
+local Juice = require(script.Parent.Juice)
+local Onboarding = require(game:GetService("ReplicatedStorage").Shared.Onboarding)
 
 local Panels = {}
 Panels.current = nil :: string?
@@ -242,13 +244,15 @@ function Panels.build(root: Instance)
 			Panels.setMenuExpanded(not expanded)
 		end,
 	})
+	-- Progressive menu: a new player sees Shop + Daily; the rest appears as they earn it (Onboarding.menuTier).
+	local menuTier = 0
 	local function layoutMenu()
 		local compact = Layout.compact
 		moreBtn.Visible = compact
 		for i, m in MENU do
 			local b = Panels.menuButtons[m.name]
 			if b then
-				b.Visible = not compact or expanded or i == 1
+				b.Visible = Onboarding.menuVisible(m.name, menuTier) and (not compact or expanded or i == 1)
 			end
 		end
 		menu.ZIndex = if compact and expanded then 7 else 1
@@ -306,6 +310,46 @@ function Panels.build(root: Instance)
 		Panels.menuButtons[m.name] = btn
 	end
 	Layout.onChanged(layoutMenu)
+	local tierKnown = false
+	local function refreshTier()
+		local d = State.data
+		if not d then
+			return
+		end
+		local t = Onboarding.menuTier(d.totalEarned or 0, d.rebirths or 0, d.tutorialDone == true)
+		if t == menuTier then
+			tierKnown = true
+			return
+		end
+		if tierKnown and t < menuTier then
+			return -- never take a button back
+		end
+		local old = menuTier
+		menuTier = t
+		layoutMenu()
+		if tierKnown then
+			-- something new: pop the fresh buttons and celebrate once
+			local first = nil
+			for _, m in MENU do
+				local b = Panels.menuButtons[m.name]
+				local need = Onboarding.MENU_TIER[m.name]
+				if b and need and need > old and need <= t then
+					first = first or m
+					Juice.pop(b, 1.35)
+				end
+			end
+			if first then
+				Juice.unlock(I18n.t("fx.unlock", { name = { key = first.caption } }), "")
+			end
+		end
+		tierKnown = true
+	end
+	State.onChanged(function(kind)
+		if kind == "state" then
+			refreshTier()
+		end
+	end)
+	task.defer(refreshTier)
 	moreBadge = C.badge(moreBtn)
 	local dailyBadge = C.badge(Panels.menuButtons.Daily)
 	local giftsBadge = C.badge(Panels.menuButtons.Gifts)
