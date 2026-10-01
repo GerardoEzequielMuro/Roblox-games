@@ -1,5 +1,7 @@
 # Handoff: sesión en la nube del 30/09 (tarde) — COMPLETA
 
+> **Para retomar con otra sesión de Claude Code, leé primero `CONTINUAR.md`** (estado al cierre, rondas 7-10 y pendientes).
+
 Leé esto antes de retomar con la sesión local. El detalle por juego está en `docs/handoff/<juego>.md`.
 
 ## 1. Cambió dónde vive el código (importante)
