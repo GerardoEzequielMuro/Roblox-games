@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Rebirth {n} kali untuk membuka Auto Rebirth (atau dapatkan pass Auto Rebirth)",
 	["rewards.streak"] = "Streak: {n} hari",
 	["event.next"] = "{event} dalam {time}",
+
+	-- first session
+	["ftue.tap"] = "Ketuk untuk dapat Tap!",
+	["ftue.tap_help"] = "Ketuk tombol besar!",
+	["ftue.walk"] = "Jalan ke telur",
+	["ftue.find_egg"] = "Cari telurnya",
+	["ftue.hatch"] = "Tetaskan telurmu!",
+	["ftue.more"] = "Tetaskan lagi! {have}/{n}",
+	["ftue.skip"] = "Lewati",
+	["ftue.unlocked"] = "Baru: {names}!",
 }

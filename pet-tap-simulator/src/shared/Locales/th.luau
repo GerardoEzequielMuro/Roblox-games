@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "เกิดใหม่ {n} ครั้งเพื่อปลดล็อกเกิดใหม่อัตโนมัติ (หรือซื้อพาสเกิดใหม่อัตโนมัติ)",
 	["rewards.streak"] = "ต่อเนื่อง {n} วัน",
 	["event.next"] = "{event} ในอีก {time}",
+
+	-- first session
+	["ftue.tap"] = "แตะเพื่อรับ Tap!",
+	["ftue.tap_help"] = "แตะปุ่มใหญ่!",
+	["ftue.walk"] = "เดินไปที่ไข่",
+	["ftue.find_egg"] = "หาไข่ให้เจอ",
+	["ftue.hatch"] = "ฟักไข่ของคุณ!",
+	["ftue.more"] = "ฟักไข่เพิ่ม! {have}/{n}",
+	["ftue.skip"] = "ข้าม",
+	["ftue.unlocked"] = "ใหม่: {names}!",
 }

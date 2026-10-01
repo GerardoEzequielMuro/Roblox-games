@@ -409,3 +409,33 @@ Conteo: 4 altas, 5 medias, 5 bajas (14). Lo que ya estaba bien y quedó igual: t
 
 ### Verificación
 `rojo build` OK, `luau-lsp analyze` sin salida, `security_test` 68/68 y el resto de los tests puros y sims en verde (locale, model_slots, passes_pricing, policy_hud, unit_p0 60, pacing_targets 34, check_config, format_check). Preview `--state mid --screen pc`: 0 hallazgos, 0 errores de runtime.
+
+## Ronda 8: primera sesión y game feel
+
+### Recorrido de los primeros 2 minutos
+**Antes:** spawn -> HUD ya mínimo (Rewards / TAP / Pets / Store) -> cartel "Tap anywhere" y objetivo "Earn 200 Taps" con barra -> a los 200 Taps aparece el rayo hacia el huevo -> el prompt del huevo abre el panel -> cinemática de eclosión -> se destraban Upgrades/Quests/AutoTap con un pop mudo. Problemas: no había pantalla de carga propia, el botón TAP no llamaba la atención, si el jugador se quedaba parado no pasaba nada, no se podía saltar la guía, y desbloquear botones no se celebraba. Los golpes grandes (combo 25/50/100, legendarias) no movían la cámara.
+
+**Después:** pantalla de carga de marca (máx 6 s) -> HUD mínimo + anillo que pulsa en el botón TAP -> si pasan 14 s sin avanzar, el anillo crece y el texto pasa a "Tap the big button!" -> al juntar los 200 el objetivo cambia a "Walk to the egg" con rayo -> cerca del huevo "Hatch your egg!" -> primer pet -> "Hatch more eggs! 1/5" -> a los 5 vuelve el objetivo normal de siempre. Al destrabarse botones nuevos hay banner "New: Upgrades, Quests, Auto Tap!", sonido, micro-shake y ráfaga de destellos.
+
+### Qué agregué
+- `src/shared/Onboarding.luau` (puro): máquina de pasos tap / walk / find / hatch / more / done, tracker de inactividad (`idle`, `progressOf`) y `newlyUnlocked`. No guarda nada: el paso sale de contadores que ya persisten (hatches, taps, zonas, rebirths), así que **se retoma solo al reentrar** y un veterano nunca lo ve. Sin soft-lock: botón **Skip** (por sesión), si falta el personaje/destino cae a texto "Find the egg" sin rayo, y nunca exige caminar para seguir jugando.
+- `src/shared/Juice.luau` (puro): envolvente y offset del shake, amplitud con reduced-motion/lite, tope de partículas concurrentes, roll-up, squash.
+- `tests/onboarding.luau`: 55 checks (pasos, skip, veterano, destino faltante, idle, unlocks, shake, topes). Corre con `luau tests/onboarding.luau`.
+- `src/client/Onboarding.luau`: evalúa el paso, anillo pulsante en TAP, botón Skip (zona táctil de 120x56 bajo la barra del objetivo), celebración de desbloqueos (la primera snapshot de la sesión solo fija la base: no repite al reentrar).
+- `src/client/Shake.luau`: micro-shake con `Humanoid.CameraOffset` (no toca la cámara). Se apaga con el atributo `ReducedMotion = true` en Workspace/Player o con el setting de Roblox si existe; en lite es 40% más suave. `Shake.reduced()` también lo usa el flash de la cinemática (arranca al 70% de transparencia en vez de blanco pleno).
+- `src/client/Celebrate.luau`: ráfaga de destellos con `rbxasset://textures/particles/sparkles_main.dds`, un solo pool de 24 labels máx, cantidad escalada por `Quality.particles`; banner de desbloqueo. Sonidos por `Theme.play` (sin ids nuevos).
+- Hooks: squash/stretch del botón TAP en cada toque (`Tapper.setTapHook`, máx ~12/s), shake + destellos en hitos de combo, shake en eclosiones Legendary+ (`HatchCinematic`), destellos al abrir zona.
+- `src/loading/Loading.client.luau` (ReplicatedFirst, agregado a `default.project.json`): nombre del juego, tip (es/en según locale), barra con señales reales (juego cargado, Remotes, HUD creado) + tiempo. Mínimo 1,2 s, tope duro 6 s, watchdog a 9 s; todo en pcall, si algo falla se destruye. No está en `test.project.json` ni `showcase_low.project.json` para no tapar capturas/tests.
+- 8 claves `ftue.*` en los 12 idiomas (`locale_check` pasa, 428/428).
+- Ya existían y no los toqué: HUD progresivo (`HudUnlock`), count-up de contadores, pops con Back, cinemática con rareza por color.
+
+### Qué mirar en Studio
+- Entrar con perfil nuevo: la carga debería durar ~1-2 s y no tapar el HUD; probar con red lenta (que no pase de 6 s).
+- El anillo del botón TAP pulsa; esperar 14 s sin tocar y ver que crece. Skip lo apaga y el objetivo normal sigue.
+- Con 200 Taps: texto "Walk to the egg" y rayo; al llegar al huevo "Hatch your egg!". Reentrar a mitad de tutorial: debe retomar en el paso correcto.
+- Comprar el primer huevo: banner de desbloqueo + shake leve; en celular el shake debe sentirse más suave. Poner `workspace:SetAttribute("ReducedMotion", true)` y confirmar que no hay shake.
+- Combo 25/50/100 y un huevo Legendary+: shake corto, sin mareo; el botón TAP se aplasta en cada toque sin lag en celu.
+- El tamaño real del botón Skip y la posición del anillo (el preview es aproximado).
+
+### Verificación
+`rojo build default.project.json` OK, `luau-lsp analyze` sin salida, todos los tests/sims puros en verde (onboarding 55, locale, model_slots, pacing 34, passes 117, policy_hud 192, security 68, unit_p0 60, check_config, format_check). Previews `new` pc y phone: 0 hallazgos, 0 errores de runtime (antes/después en `docs/previews/pet-tap-simulator/new-*-before-r8.png` vs `new-*.png`; la carga y los efectos animados no se ven en el preview estático).

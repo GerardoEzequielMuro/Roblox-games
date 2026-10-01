@@ -26,6 +26,7 @@ local QuestsWindow = require(UI.QuestsWindow)
 local InviteWindow = require(UI.InviteWindow)
 local Popups = require(UI.Popups)
 local Ads = require(script.Parent.Ads)
+local Onboarding = require(script.Parent.Onboarding)
 
 Purchase.setNotifier(Toasts.show)
 Ads.setNotifier(Toasts.show)
@@ -41,6 +42,7 @@ InviteWindow.init()
 Popups.init()
 EggPanel.init()
 Tapper.init()
+Onboarding.init()
 PetFollow.init()
 WorldFx.init()
 WorldText.init()
@@ -54,6 +56,19 @@ if Hud.tapsPill then
 	local pill = Hud.tapsPill
 	Tapper.setCounter(pill, function()
 		Theme.pop(pill, 1.07)
+	end)
+end
+
+if Hud.tapButton then
+	local btn = Hud.tapButton
+	local lastSquash = 0
+	-- squash and stretch on every tap (at most ~12 times a second; the tween is tiny)
+	Tapper.setTapHook(function()
+		local now = os.clock()
+		if now - lastSquash > 0.08 then
+			lastSquash = now
+			Theme.pop(btn, 0.9)
+		end
 	end)
 end
 

@@ -18,6 +18,7 @@ local Root = require(script.Parent.Root)
 local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
 local Quality = require(script.Parent.Parent.Quality)
+local Shake = require(script.Parent.Parent.Shake)
 
 local HatchCinematic = {}
 
@@ -373,7 +374,7 @@ local function playJob(job: Job)
 	-- Burst
 	---------------------------------------------------------------------------
 	local flashColor = if best >= 5 then Theme.lighten(bestColor, 0.55) else Color3.new(1, 1, 1)
-	local flash = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = flashColor, BackgroundTransparency = if auto then 0.35 else 0, ZIndex = 50, Parent = overlay })
+	local flash = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = flashColor, BackgroundTransparency = if Shake.reduced() then 0.7 elseif auto then 0.35 else 0, ZIndex = 50, Parent = overlay })
 	TweenService:Create(flash, TweenInfo.new(if best >= 5 then 0.7 else 0.4), { BackgroundTransparency = 1 }):Play()
 	if best >= 5 and not auto then
 		local sun = rays(overlay, 1700, 9, 150, Theme.lighten(bestColor, 0.3), 0.72, 1)
@@ -381,6 +382,9 @@ local function playJob(job: Job)
 		TweenService:Create(overlay, TweenInfo.new(0.4), { BackgroundColor3 = Theme.darken(bestColor, 0.82), BackgroundTransparency = 0.18 }):Play()
 	end
 	onBurst(job.egg)
+	if best >= 5 then
+		Shake.kick(if best >= 6 then 1 else 0.7, 0.4)
+	end
 
 	local eggDef = Formulas.EggById[job.egg]
 	local shellColor, spotColor = Palette.rgb(eggDef.color), Palette.rgb(eggDef.spots)

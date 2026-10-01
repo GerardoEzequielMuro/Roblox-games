@@ -33,6 +33,11 @@ local function gatePosition(zone: number): Vector3
 	return Vector3.new(0, 6, (zone - 1) * Config.ZoneLength - Config.ZoneLength / 2)
 end
 
+-- Where the first egg stands (the tutorial's walk target and "am I close" check).
+function Guide.firstEggPosition(): Vector3
+	return eggPosition(FIRST_EGG)
+end
+
 function Guide.current(s: { [string]: any }): Objective
 	local hatched = s.totalHatched or 0
 	local taps = s.taps or 0

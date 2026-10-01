@@ -14,15 +14,193 @@
       <bool name="CharacterAutoLoads">true</bool>
     </Properties>
   </Item>
-  <Item class="ReplicatedStorage" referent="2">
+  <Item class="ReplicatedFirst" referent="2">
     <Properties>
-      <string name="Name">ReplicatedStorage</string>
+      <string name="Name">ReplicatedFirst</string>
     </Properties>
     <Item class="Folder" referent="3">
       <Properties>
+        <string name="Name">Loading</string>
+      </Properties>
+      <Item class="LocalScript" referent="4">
+        <Properties>
+          <string name="Name">Loading</string>
+          <string name="Source"><![CDATA[--!strict
+-- Short branded loading screen (ReplicatedFirst, so it shows before anything else loads).
+-- Game name, a tip and a progress bar. It never traps the player: it closes as soon as the game
+-- is loaded and the game's own UI exists (minimum ~1.2 s so it does not flash), with a hard cap
+-- of 6 s, and a watchdog removes it at 9 s even if everything else here fails.
+-- Self-contained on purpose (ReplicatedStorage may not have replicated yet).
+local LocalizationService = game:GetService("LocalizationService")
+local Players = game:GetService("Players")
+local ReplicatedFirst = game:GetService("ReplicatedFirst")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+
+local NAME = "Tap Pets Simulator"
+local MIN_TIME, MAX_TIME, WATCHDOG = 1.2, 6, 9
+
+local TIPS = {
+	en = { "Tap anywhere to earn Taps!", "Hatch eggs to find rare pets!", "Rebirth for a permanent Taps boost.", "Equip your best pets to tap faster." },
+	es = { "¡Tocá donde sea para ganar Taps!", "¡Abrí huevos para encontrar mascotas raras!", "Renacé para un bonus permanente de Taps.", "Equipá tus mejores mascotas para tapear más rápido." },
+}
+
+pcall(function()
+	ReplicatedFirst:RemoveDefaultLoadingScreen()
+end)
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui", 5)
+if not playerGui then
+	return
+end
+
+local gui = Instance.new("ScreenGui")
+gui.Name = "TapPetsLoading"
+gui.ResetOnSpawn = false
+gui.IgnoreGuiInset = true
+gui.DisplayOrder = 100
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+gui.Parent = playerGui
+
+local function fail()
+	pcall(function()
+		gui:Destroy()
+	end)
+end
+-- last resort, whatever happens below
+task.delay(WATCHDOG, fail)
+
+local ok = pcall(function()
+	local lang = if string.sub(LocalizationService.RobloxLocaleId, 1, 2) == "es" then "es" else "en"
+	local tips = TIPS[lang]
+
+	local bg = Instance.new("Frame")
+	bg.Size = UDim2.fromScale(1, 1)
+	bg.BackgroundColor3 = Color3.fromRGB(86, 60, 150)
+	bg.BorderSizePixel = 0
+	bg.Active = true -- swallows clicks while it is up
+	bg.Parent = gui
+	local grad = Instance.new("UIGradient")
+	grad.Color = ColorSequence.new(Color3.fromRGB(120, 90, 200), Color3.fromRGB(52, 36, 100))
+	grad.Rotation = 90
+	grad.Parent = bg
+
+	local function label(text: string, size: number, y: number, color: Color3): TextLabel
+		local l = Instance.new("TextLabel")
+		l.BackgroundTransparency = 1
+		l.AnchorPoint = Vector2.new(0.5, 0.5)
+		l.Position = UDim2.fromScale(0.5, y)
+		l.Size = UDim2.new(0.9, 0, 0, size + 10)
+		l.Font = Enum.Font.FredokaOne
+		l.Text = text
+		l.TextSize = size
+		l.TextScaled = false
+		l.TextWrapped = true
+		l.TextColor3 = color
+		l.Parent = bg
+		local st = Instance.new("UIStroke")
+		st.Thickness = 3
+		st.Color = Color3.fromRGB(43, 33, 64)
+		st.Parent = l
+		return l
+	end
+
+	local title = label(NAME, 56, 0.36, Color3.fromRGB(255, 210, 63))
+	local titleScale = Instance.new("UIScale")
+	titleScale.Parent = title
+	TweenService:Create(titleScale, TweenInfo.new(1.1, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Scale = 1.06 }):Play()
+	label("🐾 🥚 🐾", 36, 0.2, Color3.new(1, 1, 1))
+	label(tips[math.random(1, #tips)], 24, 0.62, Color3.new(1, 1, 1))
+
+	local barBg = Instance.new("Frame")
+	barBg.AnchorPoint = Vector2.new(0.5, 0.5)
+	barBg.Position = UDim2.fromScale(0.5, 0.5)
+	barBg.Size = UDim2.new(0.5, 0, 0, 22)
+	barBg.BackgroundColor3 = Color3.fromRGB(43, 33, 64)
+	barBg.Parent = bg
+	local sizeLimit = Instance.new("UISizeConstraint")
+	sizeLimit.MaxSize = Vector2.new(520, 22)
+	sizeLimit.MinSize = Vector2.new(200, 22)
+	sizeLimit.Parent = barBg
+	local bc = Instance.new("UICorner")
+	bc.CornerRadius = UDim.new(0, 11)
+	bc.Parent = barBg
+	local bs = Instance.new("UIStroke")
+	bs.Thickness = 3
+	bs.Color = Color3.new(1, 1, 1)
+	bs.Transparency = 0.5
+	bs.Parent = barBg
+	local fill = Instance.new("Frame")
+	fill.Size = UDim2.fromScale(0.04, 1)
+	fill.BackgroundColor3 = Color3.fromRGB(110, 225, 120)
+	fill.BorderSizePixel = 0
+	fill.Parent = barBg
+	local fc = Instance.new("UICorner")
+	fc.CornerRadius = UDim.new(0, 11)
+	fc.Parent = fill
+
+	-- Real signals: the engine finished loading, the remotes exist, the game's HUD was built.
+	-- Time keeps the bar moving so it never looks stuck.
+	local t0 = os.clock()
+	local shown = 0.04
+	local closing = false
+	local conn: RBXScriptConnection
+	conn = RunService.RenderStepped:Connect(function(dt: number)
+		local elapsed = os.clock() - t0
+		local real = 0.15
+		if game:IsLoaded() then
+			real += 0.35
+		end
+		if game:GetService("ReplicatedStorage"):FindFirstChild("Remotes") then
+			real += 0.15
+		end
+		if playerGui:FindFirstChild("TapPetsUI") then
+			real += 0.35
+		end
+		local ready = real >= 0.999 and elapsed >= MIN_TIME
+		local timeout = elapsed >= MAX_TIME
+		local want = if ready or timeout then 1 else math.min(real, 0.2 + elapsed / MAX_TIME * 0.7)
+		shown += (want - shown) * math.min(1, dt * 6)
+		fill.Size = UDim2.fromScale(math.clamp(shown, 0.04, 1), 1)
+		if (ready or timeout) and not closing then
+			closing = true
+			conn:Disconnect()
+			fill.Size = UDim2.fromScale(1, 1)
+			task.delay(0.15, function()
+				local info = TweenInfo.new(0.35)
+				for _, d in gui:GetDescendants() do
+					if d:IsA("TextLabel") then
+						TweenService:Create(d, info, { TextTransparency = 1 }):Play()
+					elseif d:IsA("UIStroke") then
+						TweenService:Create(d, info, { Transparency = 1 }):Play()
+					elseif d:IsA("Frame") then
+						TweenService:Create(d, info, { BackgroundTransparency = 1 }):Play()
+					end
+				end
+				task.delay(0.4, fail)
+			end)
+		end
+	end)
+end)
+
+if not ok then
+	fail()
+end
+]]></string>
+        </Properties>
+      </Item>
+    </Item>
+  </Item>
+  <Item class="ReplicatedStorage" referent="5">
+    <Properties>
+      <string name="Name">ReplicatedStorage</string>
+    </Properties>
+    <Item class="Folder" referent="6">
+      <Properties>
         <string name="Name">Shared</string>
       </Properties>
-      <Item class="ModuleScript" referent="4">
+      <Item class="ModuleScript" referent="7">
         <Properties>
           <string name="Name">Config</string>
           <string name="Source"><![CDATA[--!strict
@@ -584,7 +762,7 @@ return Config
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="5">
+      <Item class="ModuleScript" referent="8">
         <Properties>
           <string name="Name">Format</string>
           <string name="Source"><![CDATA[--!strict
@@ -664,7 +842,7 @@ return Format
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="6">
+      <Item class="ModuleScript" referent="9">
         <Properties>
           <string name="Name">Formulas</string>
           <string name="Source"><![CDATA[--!strict
@@ -1104,7 +1282,7 @@ return Formulas
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="7">
+      <Item class="ModuleScript" referent="10">
         <Properties>
           <string name="Name">HudUnlock</string>
           <string name="Source"><![CDATA[--!strict
@@ -1166,7 +1344,7 @@ return HudUnlock
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="8">
+      <Item class="ModuleScript" referent="11">
         <Properties>
           <string name="Name">Icons</string>
           <string name="Source"><![CDATA[--!strict
@@ -1240,7 +1418,77 @@ return Icons
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="9">
+      <Item class="ModuleScript" referent="12">
+        <Properties>
+          <string name="Name">Juice</string>
+          <string name="Source"><![CDATA[--!strict
+-- Pure helpers behind the "game feel" effects (camera micro-shake, capped bursts, number
+-- roll-ups). The client modules do the Roblox side; the rules live here so tests/juice.luau
+-- can check them. No Roblox APIs in here.
+local Juice = {}
+
+Juice.MAX_SHAKE = 0.45 -- studs of camera offset, the most any shake can ever move the view
+Juice.MAX_BURST_PARTS = 24 -- UI particles alive at once (all bursts together)
+
+-- 1 at t = 0 easing out to 0 at t = dur.
+function Juice.envelope(t: number, dur: number): number
+	if dur <= 0 or t >= dur then
+		return 0
+	end
+	local k = 1 - math.max(t, 0) / dur
+	return k * k
+end
+
+-- Final amplitude (studs) for a requested strength 0..1. Reduced motion turns it off,
+-- lite devices get a calmer one.
+function Juice.shakeAmplitude(strength: number, reducedMotion: boolean, lite: boolean): number
+	if reducedMotion then
+		return 0
+	end
+	local a = math.clamp(strength, 0, 1) * Juice.MAX_SHAKE
+	if lite then
+		a *= 0.6
+	end
+	return a
+end
+
+-- Offset (x, y) at time t of a shake of amplitude amp lasting dur. Deterministic.
+function Juice.shakeOffset(t: number, dur: number, amp: number, seed: number): (number, number)
+	local e = Juice.envelope(t, dur) * amp
+	if e <= 0 then
+		return 0, 0
+	end
+	return math.sin(t * 61 + seed) * e, math.cos(t * 53 + seed * 1.7) * e * 0.8
+end
+
+-- How many of `want` particles may spawn now, given how many are alive and the global cap.
+function Juice.allowBurst(want: number, alive: number, cap: number, mult: number): number
+	local scaled = math.floor(want * math.clamp(mult, 0, 1) + 0.5)
+	return math.max(0, math.min(scaled, cap - alive))
+end
+
+-- Exponential approach used by the counters that roll up: moves cur toward target.
+function Juice.roll(cur: number, target: number, dt: number, rate: number?): number
+	if math.abs(target - cur) < 1 then
+		return target
+	end
+	return cur + (target - cur) * math.min(1, dt * (rate or 9))
+end
+
+-- Scale for the squash of a button hit: >1 stretch up, <1 squash, settles on 1.
+-- t in 0..1 is the progress of the animation (damped spring look without a spring).
+function Juice.squash(t: number, amount: number): number
+	if t >= 1 then
+		return 1
+	end
+	return 1 + math.sin(t * math.pi * 3) * amount * (1 - t) * (1 - t)
+end
+
+return Juice
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="13">
         <Properties>
           <string name="Name">LiveEvents</string>
           <string name="Source"><![CDATA[--!strict
@@ -1331,7 +1579,7 @@ return LiveEvents
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="10">
+      <Item class="ModuleScript" referent="14">
         <Properties>
           <string name="Name">Locale</string>
           <string name="Source"><![CDATA[--!strict
@@ -1441,11 +1689,11 @@ return Locale
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="11">
+      <Item class="Folder" referent="15">
         <Properties>
           <string name="Name">Locales</string>
         </Properties>
-        <Item class="ModuleScript" referent="12">
+        <Item class="ModuleScript" referent="16">
           <Properties>
             <string name="Name">de</string>
             <string name="Source"><![CDATA[-- German (de). Keys must match en.luau; keep {placeholders}.
@@ -1917,11 +2165,21 @@ return {
 	["msg.autorebirth_locked"] = "Werde {n} Mal wiedergeboren, um Auto-Wiedergeburt freizuschalten (oder hol dir den Auto-Wiedergeburt-Pass)",
 	["rewards.streak"] = "Serie: {n} Tage",
 	["event.next"] = "{event} in {time}",
+
+	-- first session
+	["ftue.tap"] = "Tippe für Taps!",
+	["ftue.tap_help"] = "Tippe den großen Knopf!",
+	["ftue.walk"] = "Geh zum Ei",
+	["ftue.find_egg"] = "Finde das Ei",
+	["ftue.hatch"] = "Brüte dein Ei aus!",
+	["ftue.more"] = "Mehr Eier! {have}/{n}",
+	["ftue.skip"] = "Weiter",
+	["ftue.unlocked"] = "Neu: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="13">
+        <Item class="ModuleScript" referent="17">
           <Properties>
             <string name="Name">en</string>
             <string name="Source"><![CDATA[-- English (default). Keys are stable; {name} placeholders must survive translation.
@@ -2393,11 +2651,21 @@ return {
 	["msg.autorebirth_locked"] = "Rebirth {n} times to unlock Auto Rebirth (or get the Auto Rebirth pass)",
 	["rewards.streak"] = "Streak: {n} days",
 	["event.next"] = "{event} in {time}",
+
+	-- first session
+	["ftue.tap"] = "Tap to earn Taps!",
+	["ftue.tap_help"] = "Tap the big button!",
+	["ftue.walk"] = "Walk to the egg",
+	["ftue.find_egg"] = "Find the egg",
+	["ftue.hatch"] = "Hatch your egg!",
+	["ftue.more"] = "Hatch more eggs! {have}/{n}",
+	["ftue.skip"] = "Skip",
+	["ftue.unlocked"] = "New: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="14">
+        <Item class="ModuleScript" referent="18">
           <Properties>
             <string name="Name">es</string>
             <string name="Source"><![CDATA[-- Spanish (es). Keys must match en.luau; keep {placeholders}.
@@ -2869,11 +3137,21 @@ return {
 	["msg.autorebirth_locked"] = "Renace {n} veces para desbloquear Auto Renacer (o consigue el pase Auto Renacer)",
 	["rewards.streak"] = "Racha: {n} días",
 	["event.next"] = "{event} en {time}",
+
+	-- first session
+	["ftue.tap"] = "¡Tocá para ganar Taps!",
+	["ftue.tap_help"] = "¡Tocá el botón grande!",
+	["ftue.walk"] = "Caminá hasta el huevo",
+	["ftue.find_egg"] = "Buscá el huevo",
+	["ftue.hatch"] = "¡Abrí tu huevo!",
+	["ftue.more"] = "¡Abrí más huevos! {have}/{n}",
+	["ftue.skip"] = "Saltar",
+	["ftue.unlocked"] = "¡Nuevo: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="15">
+        <Item class="ModuleScript" referent="19">
           <Properties>
             <string name="Name">fr</string>
             <string name="Source"><![CDATA[-- French (fr). Keys must match en.luau; keep {placeholders}.
@@ -3345,11 +3623,21 @@ return {
 	["msg.autorebirth_locked"] = "Renais {n} fois pour débloquer Auto Renaissance (ou obtiens le pass Auto Renaissance)",
 	["rewards.streak"] = "Série : {n} jours",
 	["event.next"] = "{event} dans {time}",
+
+	-- first session
+	["ftue.tap"] = "Tape pour gagner des Taps !",
+	["ftue.tap_help"] = "Tape le gros bouton !",
+	["ftue.walk"] = "Va vers l'œuf",
+	["ftue.find_egg"] = "Trouve l'œuf",
+	["ftue.hatch"] = "Fais éclore ton œuf !",
+	["ftue.more"] = "Plus d'œufs ! {have}/{n}",
+	["ftue.skip"] = "Passer",
+	["ftue.unlocked"] = "Nouveau : {names} !",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="16">
+        <Item class="ModuleScript" referent="20">
           <Properties>
             <string name="Name">id</string>
             <string name="Source"><![CDATA[-- Indonesian (id). Keys must match en.luau; keep {placeholders}.
@@ -3821,11 +4109,21 @@ return {
 	["msg.autorebirth_locked"] = "Rebirth {n} kali untuk membuka Auto Rebirth (atau dapatkan pass Auto Rebirth)",
 	["rewards.streak"] = "Streak: {n} hari",
 	["event.next"] = "{event} dalam {time}",
+
+	-- first session
+	["ftue.tap"] = "Ketuk untuk dapat Tap!",
+	["ftue.tap_help"] = "Ketuk tombol besar!",
+	["ftue.walk"] = "Jalan ke telur",
+	["ftue.find_egg"] = "Cari telurnya",
+	["ftue.hatch"] = "Tetaskan telurmu!",
+	["ftue.more"] = "Tetaskan lagi! {have}/{n}",
+	["ftue.skip"] = "Lewati",
+	["ftue.unlocked"] = "Baru: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="17">
+        <Item class="ModuleScript" referent="21">
           <Properties>
             <string name="Name">ja</string>
             <string name="Source"><![CDATA[-- Japanese (ja). Keys must match en.luau; keep {placeholders}.
@@ -4297,11 +4595,21 @@ return {
 	["msg.autorebirth_locked"] = "オート転生を解放するには{n}回転生しよう（またはオート転生パスを入手）",
 	["rewards.streak"] = "連続：{n}日",
 	["event.next"] = "{event}まであと{time}",
+
+	-- first session
+	["ftue.tap"] = "タップしてタップを集めよう!",
+	["ftue.tap_help"] = "大きなボタンをタップ!",
+	["ftue.walk"] = "たまごまで歩こう",
+	["ftue.find_egg"] = "たまごを探そう",
+	["ftue.hatch"] = "たまごをかえそう!",
+	["ftue.more"] = "もっとかえそう! {have}/{n}",
+	["ftue.skip"] = "スキップ",
+	["ftue.unlocked"] = "新機能: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="18">
+        <Item class="ModuleScript" referent="22">
           <Properties>
             <string name="Name">ko</string>
             <string name="Source"><![CDATA[-- Korean (ko). Keys must match en.luau; keep {placeholders}.
@@ -4773,11 +5081,21 @@ return {
 	["msg.autorebirth_locked"] = "오토 환생을 열려면 {n}번 환생하세요 (또는 오토 환생 패스 구매)",
 	["rewards.streak"] = "연속 {n}일",
 	["event.next"] = "{event}까지 {time}",
+
+	-- first session
+	["ftue.tap"] = "탭해서 탭을 모아요!",
+	["ftue.tap_help"] = "큰 버튼을 탭!",
+	["ftue.walk"] = "알까지 걸어가요",
+	["ftue.find_egg"] = "알을 찾아요",
+	["ftue.hatch"] = "알을 부화시켜요!",
+	["ftue.more"] = "알을 더 부화! {have}/{n}",
+	["ftue.skip"] = "건너뛰기",
+	["ftue.unlocked"] = "새로운 기능: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="19">
+        <Item class="ModuleScript" referent="23">
           <Properties>
             <string name="Name">pt</string>
             <string name="Source"><![CDATA[-- Brazilian Portuguese (pt). Keys must match en.luau; keep {placeholders}.
@@ -5249,11 +5567,21 @@ return {
 	["msg.autorebirth_locked"] = "Renasça {n} vezes para liberar o Auto Renascer (ou consiga o passe Auto Renascer)",
 	["rewards.streak"] = "Sequência: {n} dias",
 	["event.next"] = "{event} em {time}",
+
+	-- first session
+	["ftue.tap"] = "Toque para ganhar Taps!",
+	["ftue.tap_help"] = "Toque no botão grande!",
+	["ftue.walk"] = "Vá até o ovo",
+	["ftue.find_egg"] = "Encontre o ovo",
+	["ftue.hatch"] = "Choque seu ovo!",
+	["ftue.more"] = "Choque mais ovos! {have}/{n}",
+	["ftue.skip"] = "Pular",
+	["ftue.unlocked"] = "Novo: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="20">
+        <Item class="ModuleScript" referent="24">
           <Properties>
             <string name="Name">ru</string>
             <string name="Source"><![CDATA[-- Russian (ru). Keys must match en.luau; keep {placeholders}.
@@ -5725,11 +6053,21 @@ return {
 	["msg.autorebirth_locked"] = "Перерожди себя {n} раз, чтобы открыть авто-перерождение (или купи пропуск «Авто-перерождение»)",
 	["rewards.streak"] = "Серия: {n} дн.",
 	["event.next"] = "{event} через {time}",
+
+	-- first session
+	["ftue.tap"] = "Жми, чтобы получить Тапы!",
+	["ftue.tap_help"] = "Жми на большую кнопку!",
+	["ftue.walk"] = "Иди к яйцу",
+	["ftue.find_egg"] = "Найди яйцо",
+	["ftue.hatch"] = "Открой яйцо!",
+	["ftue.more"] = "Ещё яйца! {have}/{n}",
+	["ftue.skip"] = "Пропустить",
+	["ftue.unlocked"] = "Новое: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="21">
+        <Item class="ModuleScript" referent="25">
           <Properties>
             <string name="Name">th</string>
             <string name="Source"><![CDATA[-- Thai (th). Keys must match en.luau; keep {placeholders}.
@@ -6201,11 +6539,21 @@ return {
 	["msg.autorebirth_locked"] = "เกิดใหม่ {n} ครั้งเพื่อปลดล็อกเกิดใหม่อัตโนมัติ (หรือซื้อพาสเกิดใหม่อัตโนมัติ)",
 	["rewards.streak"] = "ต่อเนื่อง {n} วัน",
 	["event.next"] = "{event} ในอีก {time}",
+
+	-- first session
+	["ftue.tap"] = "แตะเพื่อรับ Tap!",
+	["ftue.tap_help"] = "แตะปุ่มใหญ่!",
+	["ftue.walk"] = "เดินไปที่ไข่",
+	["ftue.find_egg"] = "หาไข่ให้เจอ",
+	["ftue.hatch"] = "ฟักไข่ของคุณ!",
+	["ftue.more"] = "ฟักไข่เพิ่ม! {have}/{n}",
+	["ftue.skip"] = "ข้าม",
+	["ftue.unlocked"] = "ใหม่: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="22">
+        <Item class="ModuleScript" referent="26">
           <Properties>
             <string name="Name">tr</string>
             <string name="Source"><![CDATA[-- Turkish (tr). Keys must match en.luau; keep {placeholders}.
@@ -6677,11 +7025,21 @@ return {
 	["msg.autorebirth_locked"] = "Oto Yeniden Doğuşu açmak için {n} kez yeniden doğ (ya da Oto Yeniden Doğuş paketini al)",
 	["rewards.streak"] = "Seri: {n} gün",
 	["event.next"] = "{event} {time} sonra",
+
+	-- first session
+	["ftue.tap"] = "Dokun, Tap kazan!",
+	["ftue.tap_help"] = "Büyük düğmeye dokun!",
+	["ftue.walk"] = "Yumurtaya yürü",
+	["ftue.find_egg"] = "Yumurtayı bul",
+	["ftue.hatch"] = "Yumurtanı çıkar!",
+	["ftue.more"] = "Daha çok yumurta! {have}/{n}",
+	["ftue.skip"] = "Geç",
+	["ftue.unlocked"] = "Yeni: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="23">
+        <Item class="ModuleScript" referent="27">
           <Properties>
             <string name="Name">vi</string>
             <string name="Source"><![CDATA[-- Vietnamese (vi). Keys must match en.luau; keep {placeholders}.
@@ -7153,12 +7511,162 @@ return {
 	["msg.autorebirth_locked"] = "Hãy tái sinh {n} lần để mở Tự Động Tái Sinh (hoặc mua vé Tự Động Tái Sinh)",
 	["rewards.streak"] = "Chuỗi: {n} ngày",
 	["event.next"] = "{event} sau {time}",
+
+	-- first session
+	["ftue.tap"] = "Chạm để nhận Tap!",
+	["ftue.tap_help"] = "Chạm nút to!",
+	["ftue.walk"] = "Đi tới quả trứng",
+	["ftue.find_egg"] = "Tìm quả trứng",
+	["ftue.hatch"] = "Ấp trứng của bạn!",
+	["ftue.more"] = "Ấp thêm trứng! {have}/{n}",
+	["ftue.skip"] = "Bỏ qua",
+	["ftue.unlocked"] = "Mới: {names}!",
 }
 ]]></string>
           </Properties>
         </Item>
       </Item>
-      <Item class="ModuleScript" referent="24">
+      <Item class="ModuleScript" referent="28">
+        <Properties>
+          <string name="Name">Onboarding</string>
+          <string name="Source"><![CDATA[--!strict
+-- First-session tutorial as a pure step machine: (profile snapshot, context) -> the one thing
+-- the player should do right now. Nothing is stored: the step is derived from counters that
+-- are saved with the profile (hatches, zones, rebirths, taps), so it resumes by itself after a
+-- rejoin and a veteran never sees it. It cannot soft-lock:
+--   * "skipped" (the Skip button) ends it at any time,
+--   * the first egg is never required to walk anywhere: if the beam target is missing
+--     (targetOk == false) the step falls back to a text-only "find the egg",
+--   * a player who stays idle on a step gets the "help" variant (bigger pulse, clearer text).
+-- Used by src/client/Onboarding.luau; tests/onboarding.luau checks it. No Roblox APIs here.
+local Config: typeof(require(script.Parent.Config)) = if script then require(script.Parent.Config) :: any else (require :: any)("./Config")
+local HudUnlock: typeof(require(script.Parent.HudUnlock)) = if script then require(script.Parent.HudUnlock) :: any else (require :: any)("./HudUnlock")
+
+local Onboarding = {}
+
+Onboarding.HATCH_GOAL = 5 -- eggs hatched before the tutorial hands over to the normal objectives
+Onboarding.HELP_AFTER = 14 -- seconds without progress on a step before the help variant shows
+
+export type Snapshot = {
+	totalHatched: number?,
+	zones: { number }?,
+	rebirths: number?,
+	taps: number?,
+}
+
+export type Context = {
+	skipped: boolean?, -- the player pressed Skip this session
+	nearEgg: boolean?, -- the player is within reach of the first egg
+	targetOk: boolean?, -- the first egg's position is known (false = it could not be found)
+	idle: number?, -- seconds without progress on the current step
+}
+
+export type Step = {
+	id: string, -- "tap" | "walk" | "find" | "hatch" | "more" | "done"
+	key: string, -- translation key (3-6 words)
+	args: { [string]: any },
+	pulse: string, -- "tap" (pulse the TAP button) | "egg" (pulse the egg prompt) | "none"
+	beam: boolean, -- show the beam to the first egg
+	help: boolean,
+	skippable: boolean,
+}
+
+local function done(): Step
+	return { id = "done", key = "", args = {}, pulse = "none", beam = false, help = false, skippable = false }
+end
+
+function Onboarding.price(): number
+	return Config.Eggs[1].price
+end
+
+function Onboarding.isVeteran(s: Snapshot): boolean
+	return (s.rebirths or 0) > 0 or (if s.zones then #s.zones else 1) >= 2
+end
+
+function Onboarding.step(s: Snapshot, ctx: Context?): Step
+	local c: Context = ctx or {}
+	local hatched = s.totalHatched or 0
+	if c.skipped or Onboarding.isVeteran(s) or hatched >= Onboarding.HATCH_GOAL then
+		return done()
+	end
+	local taps = s.taps or 0
+	local help = (c.idle or 0) >= Onboarding.HELP_AFTER
+	local canBuy = taps >= Onboarding.price()
+	if hatched < 1 then
+		if not canBuy then
+			return { id = "tap", key = if help then "ftue.tap_help" else "ftue.tap", args = {}, pulse = "tap", beam = false, help = help, skippable = true }
+		end
+		if c.nearEgg then
+			return { id = "hatch", key = "ftue.hatch", args = {}, pulse = "egg", beam = false, help = help, skippable = true }
+		end
+		if c.targetOk == false then
+			return { id = "find", key = "ftue.find_egg", args = {}, pulse = "none", beam = false, help = help, skippable = true }
+		end
+		return { id = "walk", key = "ftue.walk", args = {}, pulse = "none", beam = true, help = help, skippable = true }
+	end
+	-- first pet owned: a few more hatches, then the normal objectives take over
+	local beam = canBuy and not c.nearEgg and c.targetOk ~= false
+	return {
+		id = "more",
+		key = "ftue.more",
+		args = { have = hatched, n = Onboarding.HATCH_GOAL },
+		pulse = if canBuy and c.nearEgg then "egg" else "none",
+		beam = beam,
+		help = help,
+		skippable = true,
+	}
+end
+
+---------------------------------------------------------------------------
+-- Idle tracker: seconds since the step or its progress last changed
+---------------------------------------------------------------------------
+export type Tracker = { id: string, progress: number, since: number }
+
+function Onboarding.newTracker(now: number): Tracker
+	return { id = "", progress = -1, since = now }
+end
+
+-- Call every refresh; returns the idle seconds. Any change of step or progress resets it.
+function Onboarding.idle(t: Tracker, id: string, progress: number, now: number): number
+	if t.id ~= id or t.progress ~= progress then
+		t.id, t.progress, t.since = id, progress, now
+		return 0
+	end
+	return math.max(0, now - t.since)
+end
+
+-- Progress number to feed Onboarding.idle for the current step: taps while tapping, hatches after.
+function Onboarding.progressOf(s: Snapshot): number
+	local hatched = s.totalHatched or 0
+	if hatched < 1 then
+		return (s.taps or 0) + hatched * 1e9
+	end
+	return hatched * 1e9
+end
+
+---------------------------------------------------------------------------
+-- HUD unlock moments
+---------------------------------------------------------------------------
+-- Names that became visible between two HudUnlock.visible() results, in HUD order.
+-- prev == nil is the first snapshot of the session: nothing is "new" then (no replay on rejoin).
+function Onboarding.newlyUnlocked(prev: { [string]: boolean }?, now: { [string]: boolean }): { string }
+	local out: { string } = {}
+	if not prev then
+		return out
+	end
+	for _, name in HudUnlock.NAMES do
+		if now[name] and not prev[name] then
+			table.insert(out, name)
+		end
+	end
+	return out
+end
+
+return Onboarding
+]]></string>
+        </Properties>
+      </Item>
+      <Item class="ModuleScript" referent="29">
         <Properties>
           <string name="Name">Palette</string>
           <string name="Source"><![CDATA[--!strict
@@ -7202,7 +7710,7 @@ return Palette
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="25">
+      <Item class="ModuleScript" referent="30">
         <Properties>
           <string name="Name">PetModel</string>
           <string name="Source"><![CDATA[--!strict
@@ -8032,7 +8540,7 @@ return PetModel
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="26">
+      <Item class="ModuleScript" referent="31">
         <Properties>
           <string name="Name">Quests</string>
           <string name="Source"><![CDATA[--!strict
@@ -8082,7 +8590,7 @@ return Quests
 ]]></string>
         </Properties>
       </Item>
-      <Item class="ModuleScript" referent="27">
+      <Item class="ModuleScript" referent="32">
         <Properties>
           <string name="Name">Referral</string>
           <string name="Source"><![CDATA[--!strict
@@ -8112,15 +8620,15 @@ return Referral
       </Item>
     </Item>
   </Item>
-  <Item class="ServerScriptService" referent="28">
+  <Item class="ServerScriptService" referent="33">
     <Properties>
       <string name="Name">ServerScriptService</string>
     </Properties>
-    <Item class="Folder" referent="29">
+    <Item class="Folder" referent="34">
       <Properties>
         <string name="Name">Server</string>
       </Properties>
-      <Item class="Script" referent="30">
+      <Item class="Script" referent="35">
         <Properties>
           <string name="Name">Main</string>
           <token name="RunContext">0</token>
@@ -8330,11 +8838,11 @@ end
 ]]></string>
         </Properties>
       </Item>
-      <Item class="Folder" referent="31">
+      <Item class="Folder" referent="36">
         <Properties>
           <string name="Name">Services</string>
         </Properties>
-        <Item class="ModuleScript" referent="32">
+        <Item class="ModuleScript" referent="37">
           <Properties>
             <string name="Name">Auto</string>
             <string name="Source"><![CDATA[--!strict
@@ -8432,7 +8940,7 @@ return Auto
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="33">
+        <Item class="ModuleScript" referent="38">
           <Properties>
             <string name="Name">Data</string>
             <string name="Source"><![CDATA[--!strict
@@ -8844,7 +9352,7 @@ return Data
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="34">
+        <Item class="ModuleScript" referent="39">
           <Properties>
             <string name="Name">Eggs</string>
             <string name="Source"><![CDATA[--!strict
@@ -9026,7 +9534,7 @@ return Eggs
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="35">
+        <Item class="ModuleScript" referent="40">
           <Properties>
             <string name="Name">Guard</string>
             <string name="Source"><![CDATA[--!strict
@@ -9239,7 +9747,7 @@ return Guard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="36">
+        <Item class="ModuleScript" referent="41">
           <Properties>
             <string name="Name">Hooks</string>
             <string name="Source"><![CDATA[--!strict
@@ -9276,7 +9784,7 @@ return Hooks
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="37">
+        <Item class="ModuleScript" referent="42">
           <Properties>
             <string name="Name">Leaderboard</string>
             <string name="Source"><![CDATA[--!strict
@@ -9493,7 +10001,7 @@ return Leaderboard
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="38">
+        <Item class="ModuleScript" referent="43">
           <Properties>
             <string name="Name">LiveEventService</string>
             <string name="Source"><![CDATA[--!strict
@@ -9636,7 +10144,7 @@ return LiveEventService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="39">
+        <Item class="ModuleScript" referent="44">
           <Properties>
             <string name="Name">Monetization</string>
             <string name="Source"><![CDATA[--!strict
@@ -9913,7 +10421,7 @@ return Monetization
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="40">
+        <Item class="ModuleScript" referent="45">
           <Properties>
             <string name="Name">Offline</string>
             <string name="Source"><![CDATA[--!strict
@@ -9988,7 +10496,7 @@ return Offline
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="41">
+        <Item class="ModuleScript" referent="46">
           <Properties>
             <string name="Name">Pets</string>
             <string name="Source"><![CDATA[--!strict
@@ -10257,7 +10765,7 @@ return Pets
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="42">
+        <Item class="ModuleScript" referent="47">
           <Properties>
             <string name="Name">Plots</string>
             <string name="Source"><![CDATA[--!strict
@@ -10370,7 +10878,7 @@ return Plots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="43">
+        <Item class="ModuleScript" referent="48">
           <Properties>
             <string name="Name">Progression</string>
             <string name="Source"><![CDATA[--!strict
@@ -10545,7 +11053,7 @@ return Progression
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="44">
+        <Item class="ModuleScript" referent="49">
           <Properties>
             <string name="Name">QuestService</string>
             <string name="Source"><![CDATA[--!strict
@@ -10735,7 +11243,7 @@ return QuestService
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="45">
+        <Item class="ModuleScript" referent="50">
           <Properties>
             <string name="Name">Remotes</string>
             <string name="Source"><![CDATA[--!strict
@@ -10869,7 +11377,7 @@ return Remotes
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="46">
+        <Item class="ModuleScript" referent="51">
           <Properties>
             <string name="Name">Rewards</string>
             <string name="Source"><![CDATA[--!strict
@@ -11075,7 +11583,7 @@ return Rewards
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="47">
+        <Item class="ModuleScript" referent="52">
           <Properties>
             <string name="Name">Social</string>
             <string name="Source"><![CDATA[--!strict
@@ -11375,7 +11883,7 @@ return Social
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="48">
+        <Item class="ModuleScript" referent="53">
           <Properties>
             <string name="Name">State</string>
             <string name="Source"><![CDATA[--!strict
@@ -11692,7 +12200,7 @@ return State
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="49">
+        <Item class="ModuleScript" referent="54">
           <Properties>
             <string name="Name">Tapping</string>
             <string name="Source"><![CDATA[--!strict
@@ -11859,11 +12367,11 @@ return Tapping
           </Properties>
         </Item>
       </Item>
-      <Item class="Folder" referent="50">
+      <Item class="Folder" referent="55">
         <Properties>
           <string name="Name">World</string>
         </Properties>
-        <Item class="ModuleScript" referent="51">
+        <Item class="ModuleScript" referent="56">
           <Properties>
             <string name="Name">ModelSlots</string>
             <string name="Source"><![CDATA[--!strict
@@ -12035,7 +12543,7 @@ return ModelSlots
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="52">
+        <Item class="ModuleScript" referent="57">
           <Properties>
             <string name="Name">ModelSlotsMath</string>
             <string name="Source"><![CDATA[--!strict
@@ -12098,7 +12606,7 @@ return M
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="53">
+        <Item class="ModuleScript" referent="58">
           <Properties>
             <string name="Name">WorldBuilder</string>
             <string name="Source"><![CDATA[--!strict
@@ -13800,30 +14308,30 @@ return WorldBuilder
       </Item>
     </Item>
   </Item>
-  <Item class="ServerStorage" referent="54">
+  <Item class="ServerStorage" referent="59">
     <Properties>
       <string name="Name">ServerStorage</string>
     </Properties>
-    <Item class="Folder" referent="55">
+    <Item class="Folder" referent="60">
       <Properties>
         <string name="Name">ModelLibrary</string>
       </Properties>
     </Item>
   </Item>
-  <Item class="StarterPlayer" referent="56">
+  <Item class="StarterPlayer" referent="61">
     <Properties>
       <string name="Name">StarterPlayer</string>
       <float name="CameraMaxZoomDistance">90</float>
     </Properties>
-    <Item class="StarterPlayerScripts" referent="57">
+    <Item class="StarterPlayerScripts" referent="62">
       <Properties>
         <string name="Name">StarterPlayerScripts</string>
       </Properties>
-      <Item class="Folder" referent="58">
+      <Item class="Folder" referent="63">
         <Properties>
           <string name="Name">Client</string>
         </Properties>
-        <Item class="ModuleScript" referent="59">
+        <Item class="ModuleScript" referent="64">
           <Properties>
             <string name="Name">Ads</string>
             <string name="Source"><![CDATA[--!strict
@@ -13895,7 +14403,114 @@ return Ads
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="60">
+        <Item class="ModuleScript" referent="65">
+          <Properties>
+            <string name="Name">Celebrate</string>
+            <string name="Source"><![CDATA[--!strict
+-- Code-only celebration effects: a pooled burst of sparkles (built-in rbxasset:// texture),
+-- the "new button unlocked" moment and the level-up style banner. Cheap on purpose: one pool
+-- of at most Juice.MAX_BURST_PARTS image labels shared by every burst, counts scaled by the
+-- graphics profile (Quality.particles), nothing flashes, and it all goes through the existing
+-- Theme.play sound hooks (no sound ids invented here).
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Juice = require(ReplicatedStorage.Shared.Juice)
+local Quality = require(script.Parent.Quality)
+local Shake = require(script.Parent.Shake)
+local Lang = require(script.Parent.Lang)
+local Theme = require(script.Parent.UI.Theme)
+local Root = require(script.Parent.UI.Root)
+local Toasts = require(script.Parent.UI.Toasts)
+
+local Celebrate = {}
+
+local TEXTURE = "rbxasset://textures/particles/sparkles_main.dds"
+
+local gui = Theme.new("ScreenGui", {
+	Name = "CelebrateFx",
+	ResetOnSpawn = false,
+	ScreenInsets = Enum.ScreenInsets.None,
+	DisplayOrder = 6,
+	Parent = Players.LocalPlayer:WaitForChild("PlayerGui"),
+}) :: ScreenGui
+
+local free: { ImageLabel } = {}
+local alive = 0
+
+local function take(): ImageLabel
+	local p = table.remove(free)
+	if p then
+		p.Visible = true
+		return p
+	end
+	return Theme.new("ImageLabel", {
+		Image = TEXTURE,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		ZIndex = 2,
+		Parent = gui,
+	}) :: ImageLabel
+end
+
+-- pos: screen pixels (nil = a bit above the middle of the screen). color: tint of the sparkles.
+function Celebrate.burst(pos: Vector2?, color: Color3, want: number?)
+	local n = Juice.allowBurst(want or 12, alive, Juice.MAX_BURST_PARTS, Quality.particles)
+	if n <= 0 then
+		return
+	end
+	local origin = pos or (gui.AbsoluteSize * Vector2.new(0.5, 0.4))
+	local s = Root.scale
+	for i = 1, n do
+		local p = take()
+		alive += 1
+		local a = (i / n + math.random() * 0.15) * math.pi * 2
+		local dist = (70 + math.random() * 70) * s
+		local size = (26 + math.random() * 22) * s
+		p.ImageColor3 = if i % 3 == 0 then Color3.new(1, 1, 1) else color
+		p.ImageTransparency = 0
+		p.Rotation = math.random(0, 180)
+		p.Size = UDim2.fromOffset(size * 0.3, size * 0.3)
+		p.Position = UDim2.fromOffset(origin.X, origin.Y)
+		TweenService:Create(p, TweenInfo.new(0.55, Enum.EasingStyle.Cubic, Enum.EasingDirection.Out), {
+			Size = UDim2.fromOffset(size, size),
+			Position = UDim2.fromOffset(origin.X + math.cos(a) * dist, origin.Y + math.sin(a) * dist),
+			Rotation = p.Rotation + 120,
+		}):Play()
+		TweenService:Create(p, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.28), { ImageTransparency = 1 }):Play()
+		task.delay(0.62, function()
+			p.Visible = false
+			alive -= 1
+			table.insert(free, p)
+		end)
+	end
+end
+
+-- The "you unlocked something" moment: names are HudUnlock names (menu.<Name> translations).
+function Celebrate.unlock(names: { string })
+	if #names == 0 then
+		return
+	end
+	local labels: { string } = {}
+	for i, name in names do
+		if i > 3 then
+			break
+		end
+		table.insert(labels, Lang.t("menu." .. name))
+	end
+	Toasts.banner("✨ " .. Lang.t("ftue.unlocked", { names = table.concat(labels, ", ") }), Theme.Purple)
+	Theme.play("open", 0.4, 1.4)
+	Theme.play("buy", 0.35, 1.5)
+	Shake.kick(0.35, 0.25)
+	Celebrate.burst(nil, Theme.Yellow, 14)
+end
+
+return Celebrate
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="66">
           <Properties>
             <string name="Name">Guide</string>
             <string name="Source"><![CDATA[--!strict
@@ -13931,6 +14546,11 @@ end
 
 local function gatePosition(zone: number): Vector3
 	return Vector3.new(0, 6, (zone - 1) * Config.ZoneLength - Config.ZoneLength / 2)
+end
+
+-- Where the first egg stands (the tutorial's walk target and "am I close" check).
+function Guide.firstEggPosition(): Vector3
+	return eggPosition(FIRST_EGG)
 end
 
 function Guide.current(s: { [string]: any }): Objective
@@ -14031,7 +14651,7 @@ return Guide
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="61">
+        <Item class="ModuleScript" referent="67">
           <Properties>
             <string name="Name">Lang</string>
             <string name="Source"><![CDATA[--!strict
@@ -14149,7 +14769,7 @@ return Lang
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="62">
+        <Item class="ModuleScript" referent="68">
           <Properties>
             <string name="Name">LiveEventClient</string>
             <string name="Source"><![CDATA[--!strict
@@ -14197,7 +14817,7 @@ return LiveEventClient
 ]]></string>
           </Properties>
         </Item>
-        <Item class="LocalScript" referent="63">
+        <Item class="LocalScript" referent="69">
           <Properties>
             <string name="Name">Main</string>
             <string name="Source"><![CDATA[--!strict
@@ -14228,6 +14848,7 @@ local QuestsWindow = require(UI.QuestsWindow)
 local InviteWindow = require(UI.InviteWindow)
 local Popups = require(UI.Popups)
 local Ads = require(script.Parent.Ads)
+local Onboarding = require(script.Parent.Onboarding)
 
 Purchase.setNotifier(Toasts.show)
 Ads.setNotifier(Toasts.show)
@@ -14243,6 +14864,7 @@ InviteWindow.init()
 Popups.init()
 EggPanel.init()
 Tapper.init()
+Onboarding.init()
 PetFollow.init()
 WorldFx.init()
 WorldText.init()
@@ -14259,13 +14881,26 @@ if Hud.tapsPill then
 	end)
 end
 
+if Hud.tapButton then
+	local btn = Hud.tapButton
+	local lastSquash = 0
+	-- squash and stretch on every tap (at most ~12 times a second; the tween is tiny)
+	Tapper.setTapHook(function()
+		local now = os.clock()
+		if now - lastSquash > 0.08 then
+			lastSquash = now
+			Theme.pop(btn, 0.9)
+		end
+	end)
+end
+
 Net.event("Hatched").OnClientEvent:Connect(function(data)
 	HatchCinematic.play(data.egg, data.results, data.auto)
 end)
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="64">
+        <Item class="ModuleScript" referent="70">
           <Properties>
             <string name="Name">Net</string>
             <string name="Source"><![CDATA[--!strict
@@ -14357,7 +14992,200 @@ return Net
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="65">
+        <Item class="ModuleScript" referent="71">
+          <Properties>
+            <string name="Name">Onboarding</string>
+            <string name="Source"><![CDATA[--!strict
+-- Client side of the first-session tutorial (pure rules: shared/Onboarding.luau).
+--  * Onboarding.evaluate(state): the current step for the HUD objective (text, beam, pulse)
+--  * a pulsing ring on the TAP button while the step is "tap"; wider and faster when idle
+--  * a Skip button next to the objective (session only: the step is derived from the saved
+--    profile, so rejoining resumes by itself and a skipped tutorial never traps anybody)
+--  * the "new buttons unlocked" celebration when a HudUnlock button appears for the first time
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local TweenService = game:GetService("TweenService")
+
+local Config = require(ReplicatedStorage.Shared.Config)
+local HudUnlock = require(ReplicatedStorage.Shared.HudUnlock)
+local Core = require(ReplicatedStorage.Shared.Onboarding)
+local Net = require(script.Parent.Net)
+local Lang = require(script.Parent.Lang)
+local Celebrate = require(script.Parent.Celebrate)
+local Guide = require(script.Parent.Guide)
+local Theme = require(script.Parent.UI.Theme)
+
+local Onboarding = {}
+
+local skipped = false
+local tracker = Core.newTracker(os.clock())
+local ring: Frame? = nil
+local ringStroke: UIStroke? = nil
+local ringTween: Tween? = nil
+local skipButton: TextButton? = nil
+local ringMode = "" -- "", "tap", "help"
+local changedHooks: { () -> () } = {}
+local setRing: (mode: string) -> ()
+
+local function rootPart(): BasePart?
+	local char = Players.LocalPlayer.Character
+	return char and char:FindFirstChild("HumanoidRootPart") :: BasePart?
+end
+
+-- The step for this snapshot. Safe to call every refresh.
+function Onboarding.evaluate(s: { [string]: any }): Core.Step
+	local root = rootPart()
+	local egg = Guide.firstEggPosition()
+	local near = root ~= nil and (Vector3.new(root.Position.X, 0, root.Position.Z) - Vector3.new(egg.X, 0, egg.Z)).Magnitude <= Config.EggRange + 2
+	local base = Core.step(s, { skipped = skipped, nearEgg = near, targetOk = root ~= nil })
+	local idle = Core.idle(tracker, base.id, Core.progressOf(s), os.clock())
+	local step = if idle >= Core.HELP_AFTER then Core.step(s, { skipped = skipped, nearEgg = near, targetOk = root ~= nil, idle = idle }) else base
+	Onboarding.syncUi(step)
+	return step
+end
+
+function Onboarding.skip()
+	skipped = true
+	setRing("")
+	if skipButton then
+		skipButton.Visible = false
+	end
+	for _, f in changedHooks do
+		f()
+	end
+end
+
+function Onboarding.onChanged(f: () -> ())
+	table.insert(changedHooks, f)
+end
+
+function Onboarding.skipped(): boolean
+	return skipped
+end
+
+---------------------------------------------------------------------------
+-- UI: pulse ring on the TAP button, Skip button
+---------------------------------------------------------------------------
+function Onboarding.attach(tapB: GuiObject, objective: GuiObject)
+	local r = Theme.new("Frame", {
+		Name = "TutorialRing",
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.new(1, 8, 1, 8),
+		BackgroundTransparency = 1,
+		Visible = false,
+		ZIndex = (tapB.ZIndex or 1) + 4,
+		Parent = tapB,
+	}, { Theme.corner(34) }) :: Frame
+	ringStroke = Theme.new("UIStroke", { Color = Theme.Yellow, Thickness = 5, Transparency = 0.1, Parent = r }) :: UIStroke
+	ring = r
+
+	-- 120x56 hit area (>=44 px after the phone UIScale) (touch friendly) with a small chip drawn inside it, under the bar
+	local b = Theme.new("TextButton", {
+		Name = "SkipTutorial",
+		Text = "",
+		AutoButtonColor = false,
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0),
+		Position = UDim2.new(0.5, 0, 0, 56),
+		Size = UDim2.fromOffset(120, 56),
+		Visible = false,
+		ZIndex = 6,
+		Parent = objective,
+	}) :: TextButton
+	local chip = Theme.new("Frame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Position = UDim2.fromScale(0.5, 0.5),
+		Size = UDim2.fromOffset(72, 26),
+		BackgroundColor3 = Theme.Ink,
+		BackgroundTransparency = 0.4,
+		ZIndex = 6,
+		Parent = b,
+	}, { Theme.corner(13), Theme.stroke(2) })
+	local label = Theme.text({ Text = "", Size = UDim2.new(1, -8, 1, -4), Position = UDim2.fromOffset(4, 2), MaxTextSize = 16, Parent = chip })
+	label.ZIndex = 7
+	Lang.bind(label, "ftue.skip")
+	b.Activated:Connect(function()
+		Theme.play("click", 0.3, 1)
+		Onboarding.skip()
+	end)
+	skipButton = b
+end
+
+setRing = function(mode: string)
+	if mode == ringMode then
+		return
+	end
+	ringMode = mode
+	if ringTween then
+		ringTween:Cancel()
+		ringTween = nil
+	end
+	local r, st = ring, ringStroke
+	if not r or not st then
+		return
+	end
+	if mode == "" then
+		r.Visible = false
+		return
+	end
+	r.Visible = true
+	local big = mode == "help"
+	r.Size = UDim2.new(1, 8, 1, 8)
+	st.Transparency = 0.1
+	-- one looping tween on the ring size; the stroke fades with the same timing
+	local info = TweenInfo.new(if big then 0.55 else 0.9, Enum.EasingStyle.Sine, Enum.EasingDirection.Out, -1, false)
+	local grow = if big then 34 else 20
+	ringTween = TweenService:Create(r, info, { Size = UDim2.new(1, 8 + grow, 1, 8 + grow) })
+	;(ringTween :: Tween):Play()
+	TweenService:Create(st, info, { Transparency = 0.95 }):Play()
+end
+
+function Onboarding.syncUi(step: Core.Step)
+	setRing(if step.pulse == "tap" then (if step.help then "help" else "tap") else "")
+	if skipButton then
+		skipButton.Visible = step.skippable
+	end
+end
+
+---------------------------------------------------------------------------
+-- Unlock celebration
+---------------------------------------------------------------------------
+local prevVisible: { [string]: boolean }? = nil
+local prevZones = 0
+
+function Onboarding.init()
+	Net.Changed:Connect(function(kind)
+		local s = Net.state
+		if not s or kind ~= "full" then
+			return
+		end
+		local vis = HudUnlock.visible(s)
+		-- the first snapshot of a session only sets the baseline (no replay on rejoin)
+		local new = Core.newlyUnlocked(prevVisible, vis)
+		local latched = prevVisible or {}
+		for k, v in vis do
+			if v then
+				latched[k] = true
+			end
+		end
+		prevVisible = latched
+		if #new > 0 then
+			Celebrate.unlock(new)
+		end
+		local zones = #(s.zones or { 1 })
+		if prevZones > 0 and zones > prevZones then
+			Celebrate.burst(nil, Theme.Teal, 16)
+		end
+		prevZones = zones
+	end)
+end
+
+return Onboarding
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="72">
           <Properties>
             <string name="Name">ParkFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -14528,7 +15356,7 @@ return ParkFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="66">
+        <Item class="ModuleScript" referent="73">
           <Properties>
             <string name="Name">PetFollow</string>
             <string name="Source"><![CDATA[--!strict
@@ -14894,7 +15722,7 @@ return PetFollow
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="67">
+        <Item class="ModuleScript" referent="74">
           <Properties>
             <string name="Name">Purchase</string>
             <string name="Source"><![CDATA[--!strict
@@ -15036,7 +15864,7 @@ return Purchase
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="68">
+        <Item class="ModuleScript" referent="75">
           <Properties>
             <string name="Name">Quality</string>
             <string name="Source"><![CDATA[--!strict
@@ -15127,7 +15955,89 @@ return Quality
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="69">
+        <Item class="ModuleScript" referent="76">
+          <Properties>
+            <string name="Name">Shake</string>
+            <string name="Source"><![CDATA[--!strict
+-- Camera micro-shake through Humanoid.CameraOffset (never touches the camera itself, so it
+-- cannot fight the default camera scripts). Strength 0..1; short; stops by itself.
+-- Reduced motion (workspace/player attribute ReducedMotion = true, or the Roblox setting when
+-- it exists) turns it off completely, and lite devices get a calmer shake.
+-- Shake.reduced() is also what the flash effects check.
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+
+local Juice = require(ReplicatedStorage.Shared.Juice)
+local Quality = require(script.Parent.Quality)
+
+local Shake = {}
+
+function Shake.reduced(): boolean
+	local player = Players.LocalPlayer
+	if Workspace:GetAttribute("ReducedMotion") == true or (player and player:GetAttribute("ReducedMotion") == true) then
+		return true
+	end
+	local ok, v = pcall(function()
+		return (UserSettings():GetService("UserGameSettings") :: any).ReducedMotion
+	end)
+	return ok and v == true
+end
+
+local conn: RBXScriptConnection? = nil
+local startT, dur, amp, seed = 0, 0, 0, 0
+local lastHum: Humanoid? = nil
+
+local function humanoid(): Humanoid?
+	local char = Players.LocalPlayer.Character
+	return char and char:FindFirstChildOfClass("Humanoid")
+end
+
+local function stop()
+	if conn then
+		conn:Disconnect()
+		conn = nil
+	end
+	if lastHum and lastHum.Parent then
+		lastHum.CameraOffset = Vector3.zero
+	end
+	lastHum = nil
+end
+
+function Shake.kick(strength: number, duration: number?)
+	local a = Juice.shakeAmplitude(strength, Shake.reduced(), Quality.lite)
+	local hum = humanoid()
+	if a <= 0 or not hum then
+		return
+	end
+	local now = os.clock()
+	-- a weaker shake never cuts a stronger one that is still running
+	if conn and a < amp * Juice.envelope(now - startT, dur) then
+		return
+	end
+	startT, dur, amp, seed = now, duration or 0.28, a, math.random() * 6
+	lastHum = hum
+	if conn then
+		return
+	end
+	conn = RunService.RenderStepped:Connect(function()
+		local h = lastHum
+		local t = os.clock() - startT
+		if not h or not h.Parent or t >= dur then
+			stop()
+			return
+		end
+		local x, y = Juice.shakeOffset(t, dur, amp, seed)
+		h.CameraOffset = Vector3.new(x, y, 0)
+	end)
+end
+
+return Shake
+]]></string>
+          </Properties>
+        </Item>
+        <Item class="ModuleScript" referent="77">
           <Properties>
             <string name="Name">Tapper</string>
             <string name="Source"><![CDATA[--!strict
@@ -15152,6 +16062,8 @@ local Net = require(script.Parent.Net)
 local Lang = require(script.Parent.Lang)
 local PetFollow = require(script.Parent.PetFollow)
 local Quality = require(script.Parent.Quality)
+local Shake = require(script.Parent.Shake)
+local Celebrate = require(script.Parent.Celebrate)
 local Theme = require(script.Parent.UI.Theme)
 local Root = require(script.Parent.UI.Root)
 
@@ -15178,6 +16090,12 @@ local enabled = true
 -- where flying tokens land (the HUD sets it)
 local counter: GuiObject? = nil
 local onCounterHit: () -> () = function() end
+local onTapHook: () -> () = function() end
+
+-- Called on every accepted tap (the HUD squashes the TAP button with it).
+function Tapper.setTapHook(f: () -> ())
+	onTapHook = f
+end
 
 function Tapper.setEnabled(on: boolean)
 	enabled = on
@@ -15381,6 +16299,9 @@ local function milestone(key: string, color: Color3)
 	TweenService:Create(shout, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.7), { TextTransparency = 1 }):Play()
 	TweenService:Create(shoutStroke, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.7), { Transparency = 1 }):Play()
 	Theme.play("buy", 0.4, 1.3)
+	-- big hit: camera micro-shake (off with reduced motion) and a sparkle burst
+	Shake.kick(if combo >= 100 then 0.8 elseif combo >= 50 then 0.55 else 0.35, 0.3)
+	Celebrate.burst(Vector2.new(shout.AbsolutePosition.X + shout.AbsoluteSize.X / 2, shout.AbsolutePosition.Y + shout.AbsoluteSize.Y / 2), color, 12)
 end
 
 local function bumpCombo(pos: Vector2): number
@@ -15438,6 +16359,7 @@ local function tap(inputPos: Vector2)
 	local n = bumpCombo(pos)
 	fx(pos, value, n)
 	PetFollow.pulse()
+	onTapHook()
 	Theme.play("tap", 0.18, 0.9 + math.min(n, 40) * 0.012 + math.random() * 0.08)
 end
 
@@ -15574,11 +16496,11 @@ return Tapper
 ]]></string>
           </Properties>
         </Item>
-        <Item class="Folder" referent="70">
+        <Item class="Folder" referent="78">
           <Properties>
             <string name="Name">UI</string>
           </Properties>
-          <Item class="ModuleScript" referent="71">
+          <Item class="ModuleScript" referent="79">
             <Properties>
               <string name="Name">EggPanel</string>
               <string name="Source"><![CDATA[--!strict
@@ -15947,7 +16869,7 @@ return EggPanel
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="72">
+          <Item class="ModuleScript" referent="80">
             <Properties>
               <string name="Name">HatchCinematic</string>
               <string name="Source"><![CDATA[--!strict
@@ -15970,6 +16892,7 @@ local Root = require(script.Parent.Root)
 local Net = require(script.Parent.Parent.Net)
 local Lang = require(script.Parent.Parent.Lang)
 local Quality = require(script.Parent.Parent.Quality)
+local Shake = require(script.Parent.Parent.Shake)
 
 local HatchCinematic = {}
 
@@ -16325,7 +17248,7 @@ local function playJob(job: Job)
 	-- Burst
 	---------------------------------------------------------------------------
 	local flashColor = if best >= 5 then Theme.lighten(bestColor, 0.55) else Color3.new(1, 1, 1)
-	local flash = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = flashColor, BackgroundTransparency = if auto then 0.35 else 0, ZIndex = 50, Parent = overlay })
+	local flash = Theme.new("Frame", { Size = UDim2.fromScale(1, 1), BackgroundColor3 = flashColor, BackgroundTransparency = if Shake.reduced() then 0.7 elseif auto then 0.35 else 0, ZIndex = 50, Parent = overlay })
 	TweenService:Create(flash, TweenInfo.new(if best >= 5 then 0.7 else 0.4), { BackgroundTransparency = 1 }):Play()
 	if best >= 5 and not auto then
 		local sun = rays(overlay, 1700, 9, 150, Theme.lighten(bestColor, 0.3), 0.72, 1)
@@ -16333,6 +17256,9 @@ local function playJob(job: Job)
 		TweenService:Create(overlay, TweenInfo.new(0.4), { BackgroundColor3 = Theme.darken(bestColor, 0.82), BackgroundTransparency = 0.18 }):Play()
 	end
 	onBurst(job.egg)
+	if best >= 5 then
+		Shake.kick(if best >= 6 then 1 else 0.7, 0.4)
+	end
 
 	local eggDef = Formulas.EggById[job.egg]
 	local shellColor, spotColor = Palette.rgb(eggDef.color), Palette.rgb(eggDef.spots)
@@ -16505,7 +17431,7 @@ return HatchCinematic
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="73">
+          <Item class="ModuleScript" referent="81">
             <Properties>
               <string name="Name">Hud</string>
               <string name="Source"><![CDATA[--!strict
@@ -16534,6 +17460,7 @@ local Lang = require(script.Parent.Parent.Lang)
 local LiveEventClient = require(script.Parent.Parent.LiveEventClient)
 local Ads = require(script.Parent.Parent.Ads)
 local Guide = require(script.Parent.Parent.Guide)
+local Onboarding = require(script.Parent.Parent.Onboarding)
 local Tapper = require(script.Parent.Parent.Tapper)
 
 local Hud = {}
@@ -16567,6 +17494,7 @@ local function pill(parent: Instance, icon: string, iconName: string, color: Col
 end
 
 Hud.tapsPill = nil :: Frame?
+Hud.tapButton = nil :: GuiObject?
 local sides: { GuiObject } = {}
 local dockHolder: GuiObject? = nil
 
@@ -16739,6 +17667,7 @@ function Hud.init()
 	if tapIconStroke then
 		tapIconStroke.Enabled = false
 	end
+	Hud.tapButton = tapB
 	tapB.Activated:Connect(function()
 		Tapper.simulate(tapB.AbsolutePosition + Vector2.new(tapB.AbsoluteSize.X / 2, -6 * Root.scale))
 	end)
@@ -16806,6 +17735,7 @@ function Hud.init()
 	local objBar = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = objBarBg }, { Theme.corner(10), Theme.gradient(Theme.lighten(Theme.Green, 0.35), Theme.Green) })
 	local objPct = Theme.text({ Name = "Pct", Text = "", Size = UDim2.new(1, 0, 1, -2), Position = UDim2.fromOffset(0, 1), MaxTextSize = 16, Parent = objBarBg })
 	objPct.AutoLocalize = false
+	Onboarding.attach(tapB, objective)
 	local objWindow: string? = nil
 	objective.Activated:Connect(function()
 		if objWindow then
@@ -16818,6 +17748,13 @@ function Hud.init()
 			return
 		end
 		local o = Guide.current(s)
+		-- first session: the tutorial step (short text, beam, pulse) replaces the objective
+		-- until the first eggs are hatched, the player skips it, or they are a veteran
+		local step = Onboarding.evaluate(s)
+		-- (while tapping, the objective keeps the goal line with its bar; the ring and the hint say "tap")
+		if step.id ~= "done" and (step.id ~= "tap" or step.help) then
+			o = { key = step.key, args = step.args, progress = o.progress, target = if step.beam then Guide.firstEggPosition() else nil }
+		end
 		local args = table.clone(o.args)
 		if o.zoneArg then
 			args.zone = Lang.zone(o.zoneArg)
@@ -16837,6 +17774,10 @@ function Hud.init()
 		objWindow = o.window
 		Guide.point(o.target)
 	end
+
+	Onboarding.onChanged(function()
+		refreshObjective()
+	end)
 
 	---------------------------------------------------------------------------
 	-- Right column: gift timer, live event, offers, boosts, auto toggles
@@ -17280,7 +18221,7 @@ return Hud
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="74">
+          <Item class="ModuleScript" referent="82">
             <Properties>
               <string name="Name">IndexWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -17456,7 +18397,7 @@ return IndexWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="75">
+          <Item class="ModuleScript" referent="83">
             <Properties>
               <string name="Name">InviteWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -17561,7 +18502,7 @@ return InviteWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="76">
+          <Item class="ModuleScript" referent="84">
             <Properties>
               <string name="Name">PetIcon</string>
               <string name="Source"><![CDATA[--!strict
@@ -17608,7 +18549,7 @@ return PetIcon
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="77">
+          <Item class="ModuleScript" referent="85">
             <Properties>
               <string name="Name">PetsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18077,7 +19018,7 @@ return PetsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="78">
+          <Item class="ModuleScript" referent="86">
             <Properties>
               <string name="Name">Popups</string>
               <string name="Source"><![CDATA[--!strict
@@ -18308,7 +19249,7 @@ return Popups
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="79">
+          <Item class="ModuleScript" referent="87">
             <Properties>
               <string name="Name">ProgressWindows</string>
               <string name="Source"><![CDATA[--!strict
@@ -18638,7 +19579,7 @@ return ProgressWindows
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="80">
+          <Item class="ModuleScript" referent="88">
             <Properties>
               <string name="Name">QuestsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18769,7 +19710,7 @@ return QuestsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="81">
+          <Item class="ModuleScript" referent="89">
             <Properties>
               <string name="Name">RewardsWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -18912,7 +19853,7 @@ return RewardsWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="82">
+          <Item class="ModuleScript" referent="90">
             <Properties>
               <string name="Name">Root</string>
               <string name="Source"><![CDATA[--!strict
@@ -19033,7 +19974,7 @@ return Root
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="83">
+          <Item class="ModuleScript" referent="91">
             <Properties>
               <string name="Name">StoreWindow</string>
               <string name="Source"><![CDATA[--!strict
@@ -19215,7 +20156,7 @@ return StoreWindow
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="84">
+          <Item class="ModuleScript" referent="92">
             <Properties>
               <string name="Name">Theme</string>
               <string name="Source"><![CDATA[--!strict
@@ -19692,7 +20633,7 @@ return Theme
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="85">
+          <Item class="ModuleScript" referent="93">
             <Properties>
               <string name="Name">Toasts</string>
               <string name="Source"><![CDATA[--!strict
@@ -19845,7 +20786,7 @@ return Toasts
 ]]></string>
             </Properties>
           </Item>
-          <Item class="ModuleScript" referent="86">
+          <Item class="ModuleScript" referent="94">
             <Properties>
               <string name="Name">Windows</string>
               <string name="Source"><![CDATA[--!strict
@@ -20104,7 +21045,7 @@ return Windows
             </Properties>
           </Item>
         </Item>
-        <Item class="ModuleScript" referent="87">
+        <Item class="ModuleScript" referent="95">
           <Properties>
             <string name="Name">WorldFx</string>
             <string name="Source"><![CDATA[--!strict
@@ -20607,7 +21548,7 @@ return WorldFx
 ]]></string>
           </Properties>
         </Item>
-        <Item class="ModuleScript" referent="88">
+        <Item class="ModuleScript" referent="96">
           <Properties>
             <string name="Name">WorldText</string>
             <string name="Source"><![CDATA[--!strict
@@ -20701,7 +21642,7 @@ return WorldText
       </Item>
     </Item>
   </Item>
-  <Item class="Workspace" referent="89">
+  <Item class="Workspace" referent="97">
     <Properties>
       <string name="Name">Workspace</string>
       <float name="Gravity">196.2</float>

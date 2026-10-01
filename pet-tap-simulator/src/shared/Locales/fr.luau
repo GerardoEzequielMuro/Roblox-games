@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Renais {n} fois pour débloquer Auto Renaissance (ou obtiens le pass Auto Renaissance)",
 	["rewards.streak"] = "Série : {n} jours",
 	["event.next"] = "{event} dans {time}",
+
+	-- first session
+	["ftue.tap"] = "Tape pour gagner des Taps !",
+	["ftue.tap_help"] = "Tape le gros bouton !",
+	["ftue.walk"] = "Va vers l'œuf",
+	["ftue.find_egg"] = "Trouve l'œuf",
+	["ftue.hatch"] = "Fais éclore ton œuf !",
+	["ftue.more"] = "Plus d'œufs ! {have}/{n}",
+	["ftue.skip"] = "Passer",
+	["ftue.unlocked"] = "Nouveau : {names} !",
 }

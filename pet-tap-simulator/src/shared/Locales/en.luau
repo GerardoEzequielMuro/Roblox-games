@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Rebirth {n} times to unlock Auto Rebirth (or get the Auto Rebirth pass)",
 	["rewards.streak"] = "Streak: {n} days",
 	["event.next"] = "{event} in {time}",
+
+	-- first session
+	["ftue.tap"] = "Tap to earn Taps!",
+	["ftue.tap_help"] = "Tap the big button!",
+	["ftue.walk"] = "Walk to the egg",
+	["ftue.find_egg"] = "Find the egg",
+	["ftue.hatch"] = "Hatch your egg!",
+	["ftue.more"] = "Hatch more eggs! {have}/{n}",
+	["ftue.skip"] = "Skip",
+	["ftue.unlocked"] = "New: {names}!",
 }

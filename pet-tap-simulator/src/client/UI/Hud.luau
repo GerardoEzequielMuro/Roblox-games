@@ -24,6 +24,7 @@ local Lang = require(script.Parent.Parent.Lang)
 local LiveEventClient = require(script.Parent.Parent.LiveEventClient)
 local Ads = require(script.Parent.Parent.Ads)
 local Guide = require(script.Parent.Parent.Guide)
+local Onboarding = require(script.Parent.Parent.Onboarding)
 local Tapper = require(script.Parent.Parent.Tapper)
 
 local Hud = {}
@@ -57,6 +58,7 @@ local function pill(parent: Instance, icon: string, iconName: string, color: Col
 end
 
 Hud.tapsPill = nil :: Frame?
+Hud.tapButton = nil :: GuiObject?
 local sides: { GuiObject } = {}
 local dockHolder: GuiObject? = nil
 
@@ -229,6 +231,7 @@ function Hud.init()
 	if tapIconStroke then
 		tapIconStroke.Enabled = false
 	end
+	Hud.tapButton = tapB
 	tapB.Activated:Connect(function()
 		Tapper.simulate(tapB.AbsolutePosition + Vector2.new(tapB.AbsoluteSize.X / 2, -6 * Root.scale))
 	end)
@@ -296,6 +299,7 @@ function Hud.init()
 	local objBar = Theme.new("Frame", { Name = "Fill", Size = UDim2.fromScale(0, 1), BackgroundColor3 = Color3.new(1, 1, 1), Parent = objBarBg }, { Theme.corner(10), Theme.gradient(Theme.lighten(Theme.Green, 0.35), Theme.Green) })
 	local objPct = Theme.text({ Name = "Pct", Text = "", Size = UDim2.new(1, 0, 1, -2), Position = UDim2.fromOffset(0, 1), MaxTextSize = 16, Parent = objBarBg })
 	objPct.AutoLocalize = false
+	Onboarding.attach(tapB, objective)
 	local objWindow: string? = nil
 	objective.Activated:Connect(function()
 		if objWindow then
@@ -308,6 +312,13 @@ function Hud.init()
 			return
 		end
 		local o = Guide.current(s)
+		-- first session: the tutorial step (short text, beam, pulse) replaces the objective
+		-- until the first eggs are hatched, the player skips it, or they are a veteran
+		local step = Onboarding.evaluate(s)
+		-- (while tapping, the objective keeps the goal line with its bar; the ring and the hint say "tap")
+		if step.id ~= "done" and (step.id ~= "tap" or step.help) then
+			o = { key = step.key, args = step.args, progress = o.progress, target = if step.beam then Guide.firstEggPosition() else nil }
+		end
 		local args = table.clone(o.args)
 		if o.zoneArg then
 			args.zone = Lang.zone(o.zoneArg)
@@ -327,6 +338,10 @@ function Hud.init()
 		objWindow = o.window
 		Guide.point(o.target)
 	end
+
+	Onboarding.onChanged(function()
+		refreshObjective()
+	end)
 
 	---------------------------------------------------------------------------
 	-- Right column: gift timer, live event, offers, boosts, auto toggles

@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Перерожди себя {n} раз, чтобы открыть авто-перерождение (или купи пропуск «Авто-перерождение»)",
 	["rewards.streak"] = "Серия: {n} дн.",
 	["event.next"] = "{event} через {time}",
+
+	-- first session
+	["ftue.tap"] = "Жми, чтобы получить Тапы!",
+	["ftue.tap_help"] = "Жми на большую кнопку!",
+	["ftue.walk"] = "Иди к яйцу",
+	["ftue.find_egg"] = "Найди яйцо",
+	["ftue.hatch"] = "Открой яйцо!",
+	["ftue.more"] = "Ещё яйца! {have}/{n}",
+	["ftue.skip"] = "Пропустить",
+	["ftue.unlocked"] = "Новое: {names}!",
 }

@@ -20,6 +20,8 @@ local Net = require(script.Parent.Net)
 local Lang = require(script.Parent.Lang)
 local PetFollow = require(script.Parent.PetFollow)
 local Quality = require(script.Parent.Quality)
+local Shake = require(script.Parent.Shake)
+local Celebrate = require(script.Parent.Celebrate)
 local Theme = require(script.Parent.UI.Theme)
 local Root = require(script.Parent.UI.Root)
 
@@ -46,6 +48,12 @@ local enabled = true
 -- where flying tokens land (the HUD sets it)
 local counter: GuiObject? = nil
 local onCounterHit: () -> () = function() end
+local onTapHook: () -> () = function() end
+
+-- Called on every accepted tap (the HUD squashes the TAP button with it).
+function Tapper.setTapHook(f: () -> ())
+	onTapHook = f
+end
 
 function Tapper.setEnabled(on: boolean)
 	enabled = on
@@ -249,6 +257,9 @@ local function milestone(key: string, color: Color3)
 	TweenService:Create(shout, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.7), { TextTransparency = 1 }):Play()
 	TweenService:Create(shoutStroke, TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In, 0, false, 0.7), { Transparency = 1 }):Play()
 	Theme.play("buy", 0.4, 1.3)
+	-- big hit: camera micro-shake (off with reduced motion) and a sparkle burst
+	Shake.kick(if combo >= 100 then 0.8 elseif combo >= 50 then 0.55 else 0.35, 0.3)
+	Celebrate.burst(Vector2.new(shout.AbsolutePosition.X + shout.AbsoluteSize.X / 2, shout.AbsolutePosition.Y + shout.AbsoluteSize.Y / 2), color, 12)
 end
 
 local function bumpCombo(pos: Vector2): number
@@ -306,6 +317,7 @@ local function tap(inputPos: Vector2)
 	local n = bumpCombo(pos)
 	fx(pos, value, n)
 	PetFollow.pulse()
+	onTapHook()
 	Theme.play("tap", 0.18, 0.9 + math.min(n, 40) * 0.012 + math.random() * 0.08)
 end
 

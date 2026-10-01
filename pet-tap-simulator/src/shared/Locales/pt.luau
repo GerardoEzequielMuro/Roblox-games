@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Renasça {n} vezes para liberar o Auto Renascer (ou consiga o passe Auto Renascer)",
 	["rewards.streak"] = "Sequência: {n} dias",
 	["event.next"] = "{event} em {time}",
+
+	-- first session
+	["ftue.tap"] = "Toque para ganhar Taps!",
+	["ftue.tap_help"] = "Toque no botão grande!",
+	["ftue.walk"] = "Vá até o ovo",
+	["ftue.find_egg"] = "Encontre o ovo",
+	["ftue.hatch"] = "Choque seu ovo!",
+	["ftue.more"] = "Choque mais ovos! {have}/{n}",
+	["ftue.skip"] = "Pular",
+	["ftue.unlocked"] = "Novo: {names}!",
 }

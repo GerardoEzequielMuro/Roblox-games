@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Hãy tái sinh {n} lần để mở Tự Động Tái Sinh (hoặc mua vé Tự Động Tái Sinh)",
 	["rewards.streak"] = "Chuỗi: {n} ngày",
 	["event.next"] = "{event} sau {time}",
+
+	-- first session
+	["ftue.tap"] = "Chạm để nhận Tap!",
+	["ftue.tap_help"] = "Chạm nút to!",
+	["ftue.walk"] = "Đi tới quả trứng",
+	["ftue.find_egg"] = "Tìm quả trứng",
+	["ftue.hatch"] = "Ấp trứng của bạn!",
+	["ftue.more"] = "Ấp thêm trứng! {have}/{n}",
+	["ftue.skip"] = "Bỏ qua",
+	["ftue.unlocked"] = "Mới: {names}!",
 }

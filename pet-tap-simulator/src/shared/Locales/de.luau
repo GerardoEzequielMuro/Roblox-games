@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Werde {n} Mal wiedergeboren, um Auto-Wiedergeburt freizuschalten (oder hol dir den Auto-Wiedergeburt-Pass)",
 	["rewards.streak"] = "Serie: {n} Tage",
 	["event.next"] = "{event} in {time}",
+
+	-- first session
+	["ftue.tap"] = "Tippe für Taps!",
+	["ftue.tap_help"] = "Tippe den großen Knopf!",
+	["ftue.walk"] = "Geh zum Ei",
+	["ftue.find_egg"] = "Finde das Ei",
+	["ftue.hatch"] = "Brüte dein Ei aus!",
+	["ftue.more"] = "Mehr Eier! {have}/{n}",
+	["ftue.skip"] = "Weiter",
+	["ftue.unlocked"] = "Neu: {names}!",
 }

@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "오토 환생을 열려면 {n}번 환생하세요 (또는 오토 환생 패스 구매)",
 	["rewards.streak"] = "연속 {n}일",
 	["event.next"] = "{event}까지 {time}",
+
+	-- first session
+	["ftue.tap"] = "탭해서 탭을 모아요!",
+	["ftue.tap_help"] = "큰 버튼을 탭!",
+	["ftue.walk"] = "알까지 걸어가요",
+	["ftue.find_egg"] = "알을 찾아요",
+	["ftue.hatch"] = "알을 부화시켜요!",
+	["ftue.more"] = "알을 더 부화! {have}/{n}",
+	["ftue.skip"] = "건너뛰기",
+	["ftue.unlocked"] = "새로운 기능: {names}!",
 }

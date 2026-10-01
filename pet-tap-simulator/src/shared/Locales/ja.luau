@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "オート転生を解放するには{n}回転生しよう（またはオート転生パスを入手）",
 	["rewards.streak"] = "連続：{n}日",
 	["event.next"] = "{event}まであと{time}",
+
+	-- first session
+	["ftue.tap"] = "タップしてタップを集めよう!",
+	["ftue.tap_help"] = "大きなボタンをタップ!",
+	["ftue.walk"] = "たまごまで歩こう",
+	["ftue.find_egg"] = "たまごを探そう",
+	["ftue.hatch"] = "たまごをかえそう!",
+	["ftue.more"] = "もっとかえそう! {have}/{n}",
+	["ftue.skip"] = "スキップ",
+	["ftue.unlocked"] = "新機能: {names}!",
 }

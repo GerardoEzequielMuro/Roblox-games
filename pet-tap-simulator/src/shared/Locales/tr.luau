@@ -467,4 +467,14 @@ return {
 	["msg.autorebirth_locked"] = "Oto Yeniden Doğuşu açmak için {n} kez yeniden doğ (ya da Oto Yeniden Doğuş paketini al)",
 	["rewards.streak"] = "Seri: {n} gün",
 	["event.next"] = "{event} {time} sonra",
+
+	-- first session
+	["ftue.tap"] = "Dokun, Tap kazan!",
+	["ftue.tap_help"] = "Büyük düğmeye dokun!",
+	["ftue.walk"] = "Yumurtaya yürü",
+	["ftue.find_egg"] = "Yumurtayı bul",
+	["ftue.hatch"] = "Yumurtanı çıkar!",
+	["ftue.more"] = "Daha çok yumurta! {have}/{n}",
+	["ftue.skip"] = "Geç",
+	["ftue.unlocked"] = "Yeni: {names}!",
 }
