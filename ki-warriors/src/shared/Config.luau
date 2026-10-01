@@ -141,7 +141,7 @@ for index, a in ARCS do
 		theme = a.theme,
 		zones = {
 			{ id = a.zones[1][1], style = a.zones[1][2], mult = math.max(4, math.floor(a.zoneB / 3)), reqPower = if first then 150 else a.power, offset = polar(200, 170), radius = 38 },
-			{ id = a.zones[2][1], style = a.zones[2][2], mult = a.zoneB, reqPower = if first then 5_000 else a.power * 6, offset = polar(340, 175), radius = 38 },
+			{ id = a.zones[2][1], style = a.zones[2][2], mult = a.zoneB, reqPower = if first then 3_000 else a.power * 6, offset = polar(340, 175), radius = 38 },
 		},
 		camps = {
 			{ npc = small.id, offset = polar(150, if first then 235 else 225), radius = 46, count = 6 },

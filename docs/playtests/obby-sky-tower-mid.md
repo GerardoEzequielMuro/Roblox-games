@@ -1,12 +1,14 @@
 # Playtest de obby-sky-tower
 
 - Comando: `python3 tools/uipreview/preview.py obby-sky-tower --playtest --minutes 10 --seed 1 --state mid`
-- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 10.2 min | reales: 395 s | rejoins del bot: 1
+- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 10.2 min | reales: 402 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)
 
-**Veredicto: ERRORES**
+**Veredicto: ERRORES (BOT INCOMPLETO)**
+
+> ATENCION: el script del bot fallo y dejo de jugar en t=10:10; el resultado es parcial. bot script error: playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23 function at playtests/obby-sky-tower.luau:280 function run /home/user/Roblox-games/tools/uipreview/runtime/playtest:151
 
 - Errores de Luau unicos (del juego): **0**
 - Warnings unicos: **0**
@@ -16,8 +18,9 @@
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
 - Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **0**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 14845 (t=0:39) -> 14634 (t=10:09); partes 10445 -> 10168; GUI 1103 -> 1147
-- Acciones del bot: deaths=0, falls=0, padsReached=192, panels=8, retries=0, shopBuys=52, skipsOffered=1, skipsUsed=1, towerBest=0, walkFails=0, walks=193
+- Observaciones del bot / herramienta (no son del juego): 1
+- Instancias vivas en el DataModel: 14847 (t=0:39) -> 14625 (t=10:09); partes 10445 -> 10168; GUI 1103 -> 1136
+- Acciones del bot: deaths=0, falls=0, padsReached=192, panels=8, retries=1, shopBuys=52, skipsOffered=1, skipsUsed=1, towerBest=0, walkFails=0, walks=193
 
 ## Analisis del revisor (a mano)
 
@@ -44,12 +47,12 @@
 | 4:39 | 327 | 327 | 768 | 0 | 326 | 12043 | 2 | 309 |
 | 5:09 | 344 | 344 | 2204 | 0 | 343 | 16519 | 2 | 488 |
 | 6:09 | 367 | 367 | 4303 | 0 | 366 | 18708 | 2 | 741 |
-| 6:39 | 367 | 369 | 4582 | 0 | 367 | 18987 | 2 | 712 |
-| 7:39 | 383 | 383 | 5965 | 0 | 383 | 20470 | 2 | 891 |
-| 8:09 | 394 | 394 | 988 | 0 | 393 | 21533 | 2 | 1031 |
-| 9:09 | 414 | 414 | 3103 | 0 | 413 | 23768 | 2 | 168 |
-| 9:39 | 426 | 426 | 4114 | 0 | 426 | 24879 | 2 | 292 |
-| 10:09 (end) | 437 | 437 | 5062 | 0 | 436 | 25907 | 2 | 428 |
+| 6:39 | 367 | 369 | 4567 | 0 | 367 | 18972 | 2 | 712 |
+| 7:39 | 383 | 383 | 5935 | 0 | 383 | 20440 | 2 | 891 |
+| 8:09 | 394 | 394 | 928 | 0 | 393 | 21473 | 2 | 1034 |
+| 9:09 | 414 | 414 | 3043 | 0 | 413 | 23708 | 2 | 167 |
+| 9:39 | 426 | 426 | 4054 | 0 | 426 | 24819 | 2 | 299 |
+| 10:09 (end) | 437 | 437 | 5002 | 0 | 436 | 25847 | 2 | 430 |
 
 Hitos:
 
@@ -103,14 +106,14 @@ Hitos:
 - 7:18 bought power shield
 - 7:39 bought power shield
 - 8:00 bought trail rainbow
-- 8:21 bought power shield
+- 8:20 bought power shield
 - 8:23 WIN tower 4 runMs=nil
 - 8:23 summit of tower 4: entering the portal
-- 8:32 in tower 5 at stage 400
+- 8:31 in tower 5 at stage 400
 - 8:42 bought power shield
-- 9:03 bought power shield
+- 9:02 bought power shield
 - 9:23 bought power shield
-- 9:24 bought power speed
+- 9:23 bought power speed
 - 9:44 bought power shield
 - 10:05 bought power shield
 - ... (2 mas)
@@ -135,6 +138,10 @@ Ninguno (los rechazos que el bot provoco a proposito no cuentan).
 
 - **Posible bug del juego (detectado por el bot)** t=6:27: the play-time rewards (Config.PlaytimeRewards, 'minutes in this session') are not saved: after rejoining the 2 claimed rewards are claimable again (Session.playClaimed is per session, never in the profile) (`obby-sky-tower/src/server/Session.luau:55 < obby-sky-tower/src/server/Rewards.luau:127`)
 
+## Observaciones del bot (no son bugs del juego)
+
+- t=10:10 bot script error: playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23 function at playtests/obby-sky-tower.luau:280 function run /home/user/Roblox-games/tools/uipreview/runtime/playtest:151 function inCtx /home/user/Roblox-games/tools/uipreview/runtime/playtest:2000 
+
 ## Trafico de remotes
 
 | remote:accion | llamadas | ok | rechazos inesperados | rechazos provocados | max s |
@@ -143,14 +150,14 @@ Ninguno (los rechazos que el bot provoco a proposito no cuentan).
 | Request:BuyPower | 40 | 40 | 0 | 0 | 0 |
 | Request:BuyTrail | 8 | 8 | 0 | 0 | 0 |
 | Request:ClaimDaily | 1 | 1 | 0 | 0 | 0 |
-| Request:ClaimPlaytime | 3 | 3 | 0 | 0 | 0 |
+| Request:ClaimPlaytime | 2 | 2 | 0 | 0 | 0 |
 | Request:EnterPortal | 2 | 2 | 0 | 0 | 0 |
 | Request:GetState | 2 | 2 | 0 | 0 | 0 |
 | Request:SetLanguage | 3 | 3 | 0 | 0 | 0 |
 | Request:SetSetting | 5 | 4 | 0 | 1 | 0 |
 | Request:UseFreeSkip | 1 | 1 | 0 | 0 | 0 |
 
-RemoteEvents: Celebrate (srv->cli 193, cli->srv 0), CoinCollected (srv->cli 385, cli->srv 0), Gift (srv->cli 2, cli->srv 0), LiveEventUpdate (srv->cli 4, cli->srv 0), Notify (srv->cli 3, cli->srv 0), OfferSkip (srv->cli 1, cli->srv 0), Shield (srv->cli 18, cli->srv 0), State (srv->cli 682, cli->srv 0), TowerEnter (srv->cli 2, cli->srv 0), Win (srv->cli 2, cli->srv 0)
+RemoteEvents: Celebrate (srv->cli 193, cli->srv 0), CoinCollected (srv->cli 379, cli->srv 0), Gift (srv->cli 2, cli->srv 0), LiveEventUpdate (srv->cli 4, cli->srv 0), Notify (srv->cli 3, cli->srv 0), OfferSkip (srv->cli 1, cli->srv 0), Shield (srv->cli 18, cli->srv 0), State (srv->cli 675, cli->srv 0), TowerEnter (srv->cli 2, cli->srv 0), Win (srv->cli 2, cli->srv 0)
 
 Avisos del servidor al jugador (Notify/Toast): msg.coins_added [success] x2, msg.skipped_ahead [success] x1
 

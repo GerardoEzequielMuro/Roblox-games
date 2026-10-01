@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Format = require(ReplicatedStorage.Shared.Format)
+local PlayRewards = require(ReplicatedStorage.Shared.PlayRewards)
 local Data = require(script.Parent.Data)
 local Validate = require(script.Parent.Validate)
 local Remotes = require(script.Parent.Remotes)
@@ -141,20 +142,19 @@ function Rewards.init()
 	Remotes.handle("ClaimGift", function(player, payload)
 		local i = Validate.int(payload.index, 1, #Config.Gifts)
 		local gift = if i then Config.Gifts[i] else nil
-		local claimed = State.giftsClaimed[player]
-		if not i or not gift or not claimed then
+		local p = Data.get(player)
+		if not i or not gift or not p then
 			return false, M("msg.bad_request")
 		end
-		if claimed[i] then
-			return false, M("msg.already_claimed")
+		PlayRewards.tick(p.giftPlay, os.time(), 0) -- a new UTC day resets the claims before checking
+		-- the counter ticks once a second: 1 s of tolerance, as before
+		local ok, why = PlayRewards.claim(p.giftPlay, i, gift.minutes - 1 / 60)
+		if not ok then
+			return false, M(if why == "claimed" then "msg.already_claimed" else "msg.not_ready")
 		end
-		local elapsed = os.time() - (State.sessionStart[player] or os.time())
-		if elapsed + 1 < gift.minutes * 60 then
-			return false, M("msg.not_ready")
-		end
-		claimed[i] = true
 		local text = Rewards.grant(player, gift.reward)
 		State.dirty(player)
+		task.spawn(Data.save, player) -- the claim must not be lost to a crash before the next autosave
 		return true, text
 	end)
 

@@ -140,6 +140,8 @@ return {
 	["story.form"] = "Biến hình",
 	["story.beam"] = "Bắn {n} tia nạp đầy",
 	["story.technique"] = "Học một kỹ thuật",
+	["story.technique_power"] = "Đạt {n} sức mạnh để học một kỹ thuật ({cur}/{n})",
+	["story.zone_power"] = "Đạt {n} sức mạnh để vào {zone} ({cur}/{n})",
 	["story.boss"] = "Hạ trùm: {npc}",
 	["story.relic"] = "Tìm một Astral Seal",
 	["story.travel"] = "Du hành đến {planet}",

@@ -9,8 +9,43 @@ local Lang = require(script.Parent.Lang)
 
 local StoryText = {}
 
+-- Power the step still waits for: (current, needed) or nil when there is no power gate (or it is
+-- already met). "Learn a technique" needs the first technique's power; a zone step needs the
+-- zone's entry power. The tracker shows it so the player never hits a silent wall.
+function StoryText.requirement(step): (number?, number?)
+	local s = Net.state
+	if not s then
+		return nil, nil
+	end
+	local need = nil
+	if step.kind == "technique" then
+		for _, t in Config.Techniques do
+			if not t.special and not (s.techniques and s.techniques[t.id]) then
+				need = t.reqPower
+				break
+			end
+		end
+	elseif step.kind == "zone" then
+		local z = Config.ZoneById[step.zone]
+		need = z and z.reqPower
+	end
+	local cur = math.max(s.power or 0, s.bestPower or 0)
+	if need and cur < need then
+		return cur, need
+	end
+	return nil, nil
+end
+
 -- "Defeat 3 Thornlings", "Reach 150 power"...
 function StoryText.text(step): string
+	local cur, need = StoryText.requirement(step)
+	if cur and need then
+		local args: { [string]: any } = { n = Format.commas(need), cur = Format.commas(cur) }
+		if step.zone then
+			args.zone = Lang.t("zone." .. step.zone)
+		end
+		return Lang.t("story." .. step.kind .. "_power", args)
+	end
 	local args: { [string]: any } = { n = Format.abbrev(step.target) }
 	if step.npc then
 		args.npc = Lang.t("npc." .. step.npc)

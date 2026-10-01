@@ -141,6 +141,8 @@ return {
 	["story.form"] = "Transform",
 	["story.beam"] = "Fire {n} charged beams",
 	["story.technique"] = "Learn a technique",
+	["story.technique_power"] = "Reach {n} power to learn a technique ({cur}/{n})",
+	["story.zone_power"] = "Reach {n} power to enter the {zone} ({cur}/{n})",
 	["story.boss"] = "Defeat the boss: {npc}",
 	["story.relic"] = "Find an Astral Seal",
 	["story.travel"] = "Travel to {planet}",

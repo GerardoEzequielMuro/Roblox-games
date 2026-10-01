@@ -140,6 +140,8 @@ return {
 	["story.form"] = "Превратись",
 	["story.beam"] = "Выпусти {n} заряженных лучей",
 	["story.technique"] = "Выучи технику",
+	["story.technique_power"] = "Набери {n} силы, чтобы выучить технику ({cur}/{n})",
+	["story.zone_power"] = "Набери {n} силы, чтобы войти в зону: {zone} ({cur}/{n})",
 	["story.boss"] = "Победи босса: {npc}",
 	["story.relic"] = "Найди Astral Seal",
 	["story.travel"] = "Отправься на планету {planet}",

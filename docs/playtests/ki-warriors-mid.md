@@ -1,7 +1,7 @@
 # Playtest de ki-warriors
 
 - Comando: `python3 tools/uipreview/preview.py ki-warriors --playtest --minutes 10 --seed 1 --state mid`
-- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 10.2 min | reales: 122 s | rejoins del bot: 1
+- Fecha: 2026-10-01 | estado inicial: `mid` | tiempo virtual jugado: 10.2 min | reales: 116 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)
@@ -16,7 +16,7 @@
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
 - Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **0**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 18486 (t=0:39) -> 18459 (t=10:09); partes 13064 -> 13052; GUI 803 -> 801
+- Instancias vivas en el DataModel: 18487 (t=0:39) -> 18460 (t=10:09); partes 13064 -> 13052; GUI 803 -> 801
 - Acciones del bot: beams=0, blasts=22, charges=0, deaths=13, flights=0, forms=0, kills=16, punches=1307, relics=0, skipped=1, stepsDone=8, tech=0, walks=29, windows=16
 
 ## Analisis del revisor (a mano)

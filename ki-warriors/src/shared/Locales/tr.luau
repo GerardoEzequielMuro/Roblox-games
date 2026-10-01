@@ -140,6 +140,8 @@ return {
 	["story.form"] = "Dönüş yap",
 	["story.beam"] = "{n} şarjlı ışın at",
 	["story.technique"] = "Bir teknik öğren",
+	["story.technique_power"] = "Teknik öğrenmek için {n} güce ulaş ({cur}/{n})",
+	["story.zone_power"] = "{zone} bölgesine girmek için {n} güce ulaş ({cur}/{n})",
 	["story.boss"] = "Patronu yen: {npc}",
 	["story.relic"] = "Bir Astral Seal bul",
 	["story.travel"] = "{planet} gezegenine git",

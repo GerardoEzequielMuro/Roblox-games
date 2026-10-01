@@ -140,6 +140,8 @@ return {
 	["story.form"] = "Berubah wujud",
 	["story.beam"] = "Tembak {n} sinar berisi penuh",
 	["story.technique"] = "Pelajari sebuah teknik",
+	["story.technique_power"] = "Capai {n} power untuk mempelajari teknik ({cur}/{n})",
+	["story.zone_power"] = "Capai {n} power untuk masuk ke {zone} ({cur}/{n})",
 	["story.boss"] = "Kalahkan bos: {npc}",
 	["story.relic"] = "Temukan Astral Seal",
 	["story.travel"] = "Pergi ke {planet}",

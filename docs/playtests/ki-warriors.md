@@ -1,7 +1,7 @@
 # Playtest de ki-warriors
 
 - Comando: `python3 tools/uipreview/preview.py ki-warriors --playtest --minutes 10 --seed 1`
-- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 10.2 min | reales: 107 s | rejoins del bot: 1
+- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 10.2 min | reales: 109 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)
@@ -10,14 +10,14 @@
 
 - Errores de Luau unicos (del juego): **0**
 - Warnings unicos: **0**
-- Remotes rechazados por el servidor sin que el bot lo esperara: **6** llamadas en 2 acciones
+- Remotes rechazados por el servidor sin que el bot lo esperara: **30** llamadas en 4 acciones
 - Invariantes violados / problemas de guardado / recibos / DataStore: **0**
 - Estados trabados > 60 s virtuales: **0** (ademas 1 tramos de progreso muy lento donde el bot sigue avanzando)
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
-- Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **2**
+- Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **3**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 18161 (t=0:39) -> 18481 (t=10:09); partes 12958 -> 13073; GUI 774 -> 798
-- Acciones del bot: beams=3, blasts=7, charges=1, deaths=0, flights=1, forms=1, kills=9, punches=2404, relics=0, skipped=2, stepsDone=13, tech=1, walks=36, windows=16
+- Instancias vivas en el DataModel: 18162 (t=0:39) -> 18471 (t=10:09); partes 12958 -> 13070; GUI 774 -> 796
+- Acciones del bot: beams=3, blasts=9, charges=1, deaths=1, flights=1, forms=1, kills=10, punches=1806, relics=0, skipped=1, stepsDone=16, tech=1, walks=28, windows=16
 
 ## Analisis del revisor (a mano)
 
@@ -46,10 +46,10 @@
 | 6:09 | 1 | 2 | 31 | 26 | 1 | 2586 | 0 | 627 | 53654 | 14 |
 | 6:39 | 1 | 2 | 31 | 26 | 1 | 2674 | 0 | 666 | 53654 | 14 |
 | 7:39 | 1 | 2 | 31 | 26 | 1 | 2996 | 0 | 809 | 53654 | 14 |
-| 8:09 | 1 | 2 | 31 | 26 | 1 | 3180 | 0 | 891 | 53654 | 14 |
-| 9:09 | 1 | 2 | 31 | 26 | 1 | 3547 | 0 | 1054 | 53654 | 14 |
-| 9:39 | 1 | 2 | 31 | 26 | 1 | 3734 | 0 | 1137 | 53654 | 14 |
-| 10:09 (end) | 1 | 2 | 31 | 26 | 1 | 3916 | 0 | 1218 | 53654 | 14 |
+| 8:09 | 1 | 2 | 31 | 26 | 1 | 5160 | 80 | 891 | 53654 | 14 |
+| 9:09 | 1 | 2 | 41 | 26 | 1 | 5810 | 0 | 916 | 58154 | 16 |
+| 9:39 | 1 | 2 | 56 | 27 | 1 | 5815 | 0 | 918 | 63474 | 17 |
+| 10:09 (end) | 1 | 2 | 56 | 27 | 1 | 5815 | 0 | 918 | 63474 | 17 |
 
 Hitos:
 
@@ -72,8 +72,10 @@ Hitos:
 - 6:23 rejoin: leaves (mid)
 - 6:38 rejoin ok: profile reloaded identical
 - 6:38 pressing SKIP on story step 14
-- 9:09 pressing SKIP on story step 14
-- 10:09 bot script finished
+- 8:18 story step 15 (relic)
+- 8:31 story step 16 (boss)
+- 9:21 story step 17 (travel)
+- 10:11 bot script finished
 - 10:19 late receipt for a player that left -> NotProcessedYet
 
 ## Errores de Luau
@@ -93,16 +95,22 @@ Ninguno.
 | remote:accion | llamadas | ok | rechazos | motivos |
 |---|---|---|---|---|
 | Request:BuyTechnique | 5 | 1 | 4 | msg.need_power x4 |
-| Request:SkipStep | 2 | 0 | 2 | ? x2 |
+| Request:CollectRelic | 3 | 1 | 2 | msg.already_claimed x1, msg.too_far x1 |
+| Request:SkipStep | 1 | 0 | 1 | ? x1 |
+| Request:Travel | 23 | 0 | 23 | msg.need_power x20, msg.in_combat x3 |
 
 Ejemplos de `Request:BuyTechnique`: `t=182 BuyTechnique(id=pulse_volley) -> msg.need_power`; `t=201 BuyTechnique(id=pulse_volley) -> msg.need_power`; `t=211 BuyTechnique(id=pulse_volley) -> msg.need_power`; `t=231 BuyTechnique(id=pulse_volley) -> msg.need_power`
 
-Ejemplos de `Request:SkipStep`: `t=398 SkipStep() -> ?`; `t=549 SkipStep() -> ?`
+Ejemplos de `Request:CollectRelic`: `t=509 CollectRelic(i=1) -> msg.too_far`; `t=511 CollectRelic(i=1) -> msg.already_claimed`
+
+Ejemplos de `Request:SkipStep`: `t=398 SkipStep() -> ?`
+
+Ejemplos de `Request:Travel`: `t=561 Travel(planet=2) -> msg.in_combat`; `t=563 Travel(planet=2) -> msg.in_combat`; `t=565 Travel(planet=2) -> msg.need_power`; `t=567 Travel(planet=2) -> msg.need_power`; `t=570 Travel(planet=2) -> msg.need_power`; `t=572 Travel(planet=2) -> msg.need_power`
 
 
 ## Invariantes, trabas, guardado, recibos
 
-- **Progreso muy lento (no es una traba: el bot sigue avanzando)** t=5:35: 'story step progress' did not progress for 90 s of virtual time (state: 14:0) \| step 14 (zone): power 2379 / needs 5000 \| the bot kept making measurable progress toward it (a long grind, not a freeze)
+- **Progreso muy lento (no es una traba: el bot sigue avanzando)** t=5:35: 'story step progress' did not progress for 90 s of virtual time (state: 14:0) \| step 14 (zone): power 2379 / needs 3000 \| the bot kept making measurable progress toward it (a long grind, not a freeze)
 
 ## Trafico de remotes
 
@@ -112,17 +120,19 @@ Ejemplos de `Request:SkipStep`: `t=398 SkipStep() -> ?`; `t=549 SkipStep() -> ?`
 | Request:BuyTechnique | 5 | 1 | 4 | 0 | 0 |
 | Request:ClaimDaily | 1 | 1 | 0 | 0 | 0 |
 | Request:ClaimQuest | 2 | 2 | 0 | 0 | 0 |
+| Request:CollectRelic | 3 | 1 | 2 | 0 | 0 |
 | Request:GetBoards | 1 | 1 | 0 | 0 | 0 |
 | Request:GetState | 2 | 2 | 0 | 0 | 0 |
 | Request:SetLanguage | 3 | 3 | 0 | 0 | 0 |
 | Request:SetSetting | 6 | 6 | 0 | 0 | 0 |
 | Request:SetStat | 5 | 5 | 0 | 0 | 0 |
-| Request:SkipStep | 2 | 0 | 2 | 0 | 0 |
+| Request:SkipStep | 1 | 0 | 1 | 0 | 0 |
 | Request:SpinAura | 6 | 2 | 0 | 4 | 0 |
+| Request:Travel | 23 | 0 | 23 | 0 | 0 |
 
-RemoteEvents: Act (srv->cli 0, cli->srv 1232), Arena (srv->cli 3, cli->srv 0), Combat (srv->cli 52, cli->srv 0), Fx (srv->cli 1315, cli->srv 0), Knock (srv->cli 16, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Notify (srv->cli 7, cli->srv 0), Numbers (srv->cli 1207, cli->srv 0), Quests (srv->cli 289, cli->srv 0), Reward (srv->cli 6, cli->srv 0), State (srv->cli 45, cli->srv 0), Toast (srv->cli 1, cli->srv 0), WorldBoss (srv->cli 2, cli->srv 0)
+RemoteEvents: Act (srv->cli 0, cli->srv 934), Arena (srv->cli 3, cli->srv 0), Combat (srv->cli 56, cli->srv 0), Fx (srv->cli 1045, cli->srv 0), Knock (srv->cli 21, cli->srv 0), LiveEventUpdate (srv->cli 2, cli->srv 0), Notify (srv->cli 12, cli->srv 0), Numbers (srv->cli 906, cli->srv 0), Quests (srv->cli 367, cli->srv 0), Reward (srv->cli 6, cli->srv 0), State (srv->cli 52, cli->srv 0), Toast (srv->cli 1, cli->srv 0), WorldBoss (srv->cli 2, cli->srv 0)
 
-Avisos del servidor al jugador (Notify/Toast): msg.thanks [success] x3, msg.zone_locked [error] x2, msg.pass_unlocked [success] x1, msg.bp_firstwin [success] x1, toast.rush_start [info] x1
+Avisos del servidor al jugador (Notify/Toast): msg.thanks [success] x3, msg.zone_locked [error] x2, msg.cosmetic_unlocked [success] x2, msg.bp_firstwin [success] x1, toast.rush_start [info] x1, msg.pass_unlocked [success] x1, msg.arena_fair [info] x1, msg.arena_enter [error] x1, msg.arena_leave [success] x1
 
 DataStore: KiWarriors_Power_v1/90000001 (lecturas 5, escrituras 5), KiWarriors_Profiles_v1/u_90000001 (lecturas 17, escrituras 17), KiWarriors_Referrals_v1/90000001 (lecturas 7, escrituras 0)
 

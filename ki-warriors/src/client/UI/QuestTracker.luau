@@ -169,6 +169,8 @@ local function updatePointer()
 	pointerArrow.AnchorPoint = if below then Vector2.new(0.5, 0) else Vector2.new(0.5, 1)
 end
 
+local lastPowerRefresh = 0
+
 local function refresh()
 	local s = Net.state
 	if not s or not s.story then
@@ -191,7 +193,12 @@ local function refresh()
 	end
 	panel.Visible = true
 	title.Text = StoryText.text(step)
-	setBar(s.story.progress / step.target, Format.abbrev(math.floor(s.story.progress)) .. " / " .. Format.abbrev(step.target))
+	local cur, need = StoryText.requirement(step)
+	if cur and need then
+		setBar(cur / need, Format.commas(cur) .. " / " .. Format.commas(need)) -- power still missing for this step
+	else
+		setBar(s.story.progress / step.target, Format.abbrev(math.floor(s.story.progress)) .. " / " .. Format.abbrev(step.target))
+	end
 	local parts = {}
 	if step.sparks and step.sparks > 0 then
 		table.insert(parts, "⚡" .. Format.abbrev(step.sparks))
@@ -266,6 +273,14 @@ function QuestTracker.init()
 	Net.Changed:Connect(function(kind)
 		if kind == "full" then
 			refresh()
+		elseif kind == "currency" and os.clock() - lastPowerRefresh > 0.5 then
+			-- power ticks live: keep "(1,240 / 2,000)" current while a step waits for power
+			local s = Net.state
+			local step = s and s.story and Config.Story[s.story.step]
+			if step and StoryText.requirement(step) then
+				lastPowerRefresh = os.clock()
+				refresh()
+			end
 		end
 	end)
 	Lang.Changed:Connect(refresh)

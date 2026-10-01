@@ -313,7 +313,7 @@ rf.OnServerInvoke = function(plr, cmd, a, b, c)
 		State.dirty(plr)
 		return true
 	elseif cmd == "skipSession" then
-		State.sessionStart[plr] -= a
+		prof.giftPlay.secs += a
 		prof.playTime += a
 		State.dirty(plr)
 		return true

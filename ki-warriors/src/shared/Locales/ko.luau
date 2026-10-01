@@ -140,6 +140,8 @@ return {
 	["story.form"] = "변신하기",
 	["story.beam"] = "충전 빔 {n}번 쏘기",
 	["story.technique"] = "필살기 배우기",
+	["story.technique_power"] = "필살기를 배우려면 파워 {n} 달성 ({cur}/{n})",
+	["story.zone_power"] = "{zone}에 들어가려면 파워 {n} 달성 ({cur}/{n})",
 	["story.boss"] = "보스를 쓰러뜨려라: {npc}",
 	["story.relic"] = "Astral Seal 찾기",
 	["story.travel"] = "{planet}(으)로 이동하기",

@@ -140,6 +140,8 @@ return {
 	["story.form"] = "Verwandle dich",
 	["story.beam"] = "Feuere {n} aufgeladene Strahlen ab",
 	["story.technique"] = "Lerne eine Technik",
+	["story.technique_power"] = "Erreiche {n} Kraft, um eine Technik zu lernen ({cur}/{n})",
+	["story.zone_power"] = "Erreiche {n} Kraft, um {zone} zu betreten ({cur}/{n})",
 	["story.boss"] = "Besiege den Boss: {npc}",
 	["story.relic"] = "Finde ein Astral Seal",
 	["story.travel"] = "Reise nach {planet}",

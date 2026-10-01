@@ -1,23 +1,26 @@
 # Playtest de obby-sky-tower
 
-- Comando: `python3 tools/uipreview/preview.py obby-sky-tower --playtest --minutes 10 --seed 1`
-- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 10.2 min | reales: 237 s | rejoins del bot: 1
+- Comando: `python3 tools/uipreview/preview.py obby-sky-tower --playtest --minutes 4 --seed 1`
+- Fecha: 2026-10-01 | estado inicial: `new` | tiempo virtual jugado: 4.2 min | reales: 65 s | rejoins del bot: 1
 - El tiempo es virtual (scheduler propio de la herramienta); el bot juega por los remotes/funciones cliente reales del juego. Es una **aproximacion** de Roblox: ver "Que simula la herramienta" al final.
 
 ## Resumen (espanol)
 
-**Veredicto: ERRORES**
+**Veredicto: OK (BOT INCOMPLETO)**
+
+> ATENCION: el script del bot fallo y dejo de jugar en t=4:10; el resultado es parcial. bot script error: playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23 function at playtests/obby-sky-tower.luau:280 function run /home/user/Roblox-games/tools/uipreview/runtime/playtest:151
 
 - Errores de Luau unicos (del juego): **0**
 - Warnings unicos: **0**
 - Remotes rechazados por el servidor sin que el bot lo esperara: **0** llamadas en 0 acciones
-- Invariantes violados / problemas de guardado / recibos / DataStore: **1**
+- Invariantes violados / problemas de guardado / recibos / DataStore: **0**
 - Estados trabados > 60 s virtuales: **0**
 - Hilos que quedaron esperando para siempre (WaitForChild sin hijo, etc.): **0**
 - Avisos de error que el servidor le mostro al jugador (Notify/Toast kind=error): **0**
 - APIs de Roblox que el simulador no implementa y otros avisos del motor simulado: **0** (ver seccion "Avisos del simulador")
-- Instancias vivas en el DataModel: 8785 (t=0:39) -> 15062 (t=10:09); partes 5674 -> 10675; GUI 795 -> 1115
-- Acciones del bot: deaths=3, falls=0, padsReached=152, panels=8, retries=1, shopBuys=40, skipsOffered=0, skipsUsed=0, towerBest=0, walkFails=0, walks=157
+- Observaciones del bot / herramienta (no son del juego): 1
+- Instancias vivas en el DataModel: 8787 (t=0:39) -> 8770 (t=4:09); partes 5674 -> 5671; GUI 795 -> 764
+- Acciones del bot: deaths=3, falls=0, padsReached=52, panels=8, retries=1, shopBuys=23, skipsOffered=1, skipsUsed=0, towerBest=0, walkFails=0, walks=56
 
 ## Analisis del revisor (a mano)
 
@@ -37,70 +40,44 @@
 |---|---|---|---|---|---|---|---|---|
 | 0:09 (start) | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 4 |
 | 0:39 | 7 | 7 | 55 | 0 | 7 | 75 | 0 | 80 |
-| 1:39 | 18 | 18 | 36 | 3 | 18 | 186 | 0 | 205 |
-| 2:09 | 25 | 25 | 60 | 3 | 25 | 250 | 0 | 261 |
-| 3:09 | 38 | 38 | 55 | 3 | 38 | 415 | 0 | 420 |
-| 3:39 | 44 | 44 | 111 | 3 | 44 | 521 | 0 | 489 |
-| 4:39 | 64 | 64 | 64 | 3 | 64 | 944 | 0 | 726 |
-| 5:09 | 80 | 80 | 2232 | 3 | 80 | 4282 | 0 | 896 |
-| 6:09 | 100 | 100 | 1510 | 3 | 100 | 5120 | 1 | 5 |
-| 6:39 | 100 | 101 | 247 | 3 | 100 | 5157 | 1 | 14 |
-| 7:39 | 105 | 105 | 336 | 3 | 104 | 5306 | 1 | 59 |
-| 8:09 | 116 | 116 | 607 | 3 | 116 | 5687 | 1 | 178 |
-| 9:09 | 139 | 139 | 1263 | 3 | 138 | 6503 | 1 | 427 |
-| 9:39 | 151 | 151 | 1652 | 3 | 150 | 6972 | 1 | 558 |
-| 10:09 (end) | 162 | 162 | 2075 | 3 | 162 | 7435 | 1 | 683 |
+| 1:09 | 9 | 9 | 68 | 2 | 9 | 88 | 0 | 106 |
+| 1:39 | 14 | 14 | 2 | 3 | 14 | 152 | 0 | 169 |
+| 2:09 | 30 | 30 | 644 | 3 | 30 | 794 | 0 | 320 |
+| 2:50 | 37 | 37 | 2832 | 3 | 37 | 3392 | 0 | 4 |
+| 3:20 | 44 | 44 | 1558 | 3 | 44 | 3518 | 0 | 488 |
+| 3:50 | 55 | 55 | 466 | 3 | 54 | 3736 | 0 | 615 |
+| 4:09 (end) | 62 | 62 | 512 | 3 | 62 | 3892 | 0 | 707 |
 
 Hitos:
 
 - 0:09 session started at stage 0
 - 0:16 bought trail white
-- 0:59 bought power shield
-- 1:21 bought power shield
-- 1:21 bought trail mint
-- 2:04 bought power shield
-- 2:24 bought power shield
-- 2:48 bought power shield
-- 2:48 bought power magnet
-- 3:08 bought power shield
-- 3:31 bought power magnet
-- 3:54 bought power magnet
-- 3:55 bought power speed
-- 4:15 bought power magnet
-- 4:16 bought power speed
-- 4:37 bought power shield
-- 4:37 bought power magnet
-- 4:38 bought power speed
-- 4:56 store: clicked 4 buy buttons
-- 4:59 bought power magnet
-- 4:59 bought power speed
-- 4:59 bought trail fire
-- 5:21 bought power speed
-- 5:21 bought trail ocean
-- 5:42 bought power shield
-- 5:42 bought power speed
-- 5:43 bought trail candy
-- 6:00 WIN tower 1 runMs=nil
-- 6:00 summit of tower 1: entering the portal
-- 6:09 in tower 2 at stage 100
-- 6:09 bought power shield
-- 6:10 bought power speed
-- 6:10 bought trail toxic
-- 6:12 rejoin (save + reload)
-- 6:12 rejoin: leaves (midclimb)
-- 6:27 rejoin ok: profile reloaded identical
-- 6:27 back at stage 100
-- 7:29 bought power speed
-- 7:50 bought power magnet
-- 7:51 bought power speed
-- 8:11 bought power speed
-- 8:32 bought power speed
-- 8:52 bought power shield
-- 9:13 bought power shield
-- 9:34 bought power shield
-- 9:54 bought power shield
-- 10:09 bot script finished
-- 10:19 late receipt for a player that left -> NotProcessedYet
+- 1:10 bought power shield
+- 1:38 bought power shield
+- 1:38 bought trail mint
+- 2:15 store: clicked 4 buy buttons
+- 2:19 bought power shield
+- 2:19 bought power magnet
+- 2:20 bought power speed
+- 2:20 bought trail fire
+- 2:36 rejoin (save + reload)
+- 2:36 rejoin: leaves (midclimb)
+- 2:50 rejoin ok: profile reloaded identical
+- 2:50 back at stage 37
+- 3:02 bought power shield
+- 3:02 bought power magnet
+- 3:02 bought power speed
+- 3:03 bought trail ocean
+- 3:24 bought power shield
+- 3:24 bought power magnet
+- 3:25 bought power speed
+- 3:25 bought trail candy
+- 3:46 bought power magnet
+- 3:46 bought power speed
+- 4:07 bought power magnet
+- 4:07 bought power speed
+- 4:10 bot script finished
+- 4:19 late receipt for a player that left -> NotProcessedYet
 
 ## Errores de Luau
 
@@ -120,27 +97,30 @@ Ninguno (los rechazos que el bot provoco a proposito no cuentan).
 
 ## Invariantes, trabas, guardado, recibos
 
-- **Posible bug del juego (detectado por el bot)** t=6:27: the play-time rewards (Config.PlaytimeRewards, 'minutes in this session') are not saved: after rejoining the 2 claimed rewards are claimable again (Session.playClaimed is per session, never in the profile) (`obby-sky-tower/src/server/Session.luau:55 < obby-sky-tower/src/server/Rewards.luau:127`)
+Ninguno.
+
+## Observaciones del bot (no son bugs del juego)
+
+- t=4:10 bot script error: playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23: attempt to index nil with 'at' playtests/obby-sky-tower.luau:23 function at playtests/obby-sky-tower.luau:280 function run /home/user/Roblox-games/tools/uipreview/runtime/playtest:151 function inCtx /home/user/Roblox-games/tools/uipreview/runtime/playtest:2000 
 
 ## Trafico de remotes
 
 | remote:accion | llamadas | ok | rechazos inesperados | rechazos provocados | max s |
 |---|---|---|---|---|---|
 | Request:BuyEffect | 3 | 3 | 0 | 0 | 0 |
-| Request:BuyPower | 31 | 31 | 0 | 0 | 0 |
-| Request:BuyTrail | 6 | 6 | 0 | 0 | 0 |
+| Request:BuyPower | 15 | 15 | 0 | 0 | 0 |
+| Request:BuyTrail | 5 | 5 | 0 | 0 | 0 |
 | Request:ClaimDaily | 1 | 1 | 0 | 0 | 0 |
-| Request:ClaimPlaytime | 3 | 3 | 0 | 0 | 0 |
-| Request:EnterPortal | 1 | 1 | 0 | 0 | 0 |
+| Request:ClaimPlaytime | 1 | 1 | 0 | 0 | 0 |
 | Request:GetState | 2 | 2 | 0 | 0 | 0 |
 | Request:SetLanguage | 3 | 3 | 0 | 0 | 0 |
 | Request:SetSetting | 5 | 4 | 0 | 1 | 0 |
 
-RemoteEvents: AskNotifications (srv->cli 1, cli->srv 0), Celebrate (srv->cli 154, cli->srv 0), CoinCollected (srv->cli 253, cli->srv 0), Gift (srv->cli 1, cli->srv 0), LiveEventUpdate (srv->cli 4, cli->srv 0), Notify (srv->cli 3, cli->srv 0), Shield (srv->cli 12, cli->srv 0), State (srv->cli 498, cli->srv 0), TowerEnter (srv->cli 1, cli->srv 0), Win (srv->cli 1, cli->srv 0)
+RemoteEvents: AskNotifications (srv->cli 1, cli->srv 0), Celebrate (srv->cli 53, cli->srv 0), CoinCollected (srv->cli 67, cli->srv 0), LiveEventUpdate (srv->cli 4, cli->srv 0), Notify (srv->cli 3, cli->srv 0), OfferSkip (srv->cli 1, cli->srv 0), Shield (srv->cli 2, cli->srv 0), State (srv->cli 175, cli->srv 0)
 
 Avisos del servidor al jugador (Notify/Toast): msg.coins_added [success] x2, msg.skipped_ahead [success] x1
 
-DataStore: SkyTowerObby_Referrals_v1/90000001 (lecturas 7, escrituras 0), SkyTowerObby_Stage_v1/90000001 (lecturas 12, escrituras 12), SkyTowerObby_Wins_v1/90000001 (lecturas 3, escrituras 1), SkyTowerObby_v1/u_90000001 (lecturas 17, escrituras 17)
+DataStore: SkyTowerObby_Referrals_v1/90000001 (lecturas 4, escrituras 0), SkyTowerObby_Stage_v1/90000001 (lecturas 7, escrituras 7), SkyTowerObby_v1/u_90000001 (lecturas 12, escrituras 12)
 
 Compras simuladas: prompt producto 8006 (grant); recibo producto 8006 -> PurchaseGranted; prompt producto 8003 (grant); recibo producto 8003 -> PurchaseGranted; prompt producto 8002 (grant); recibo producto 8002 -> PurchaseGranted; prompt producto 8004 (cancel)
 
@@ -159,8 +139,8 @@ Recibos concedidos: 3; reenviados con el mismo PurchaseId: 3.
 ## Log crudo (extracto)
 
 ```
-[info] t=4:44 MarketplaceService:PromptProductPurchase(8006) mode=grant
-[info] t=4:47 MarketplaceService:PromptProductPurchase(8003) mode=grant
-[info] t=4:50 MarketplaceService:PromptProductPurchase(8002) mode=grant
-[info] t=4:53 MarketplaceService:PromptProductPurchase(8004) mode=cancel
+[info] t=2:03 MarketplaceService:PromptProductPurchase(8006) mode=grant
+[info] t=2:06 MarketplaceService:PromptProductPurchase(8003) mode=grant
+[info] t=2:09 MarketplaceService:PromptProductPurchase(8002) mode=grant
+[info] t=2:12 MarketplaceService:PromptProductPurchase(8004) mode=cancel
 ```

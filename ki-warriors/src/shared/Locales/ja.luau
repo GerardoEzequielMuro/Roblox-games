@@ -140,6 +140,8 @@ return {
 	["story.form"] = "変身しよう",
 	["story.beam"] = "チャージビームを{n}回撃とう",
 	["story.technique"] = "必殺技を覚えよう",
+	["story.technique_power"] = "必殺技を覚えるにはパワー{n}が必要 ({cur}/{n})",
+	["story.zone_power"] = "{zone}に入るにはパワー{n}が必要 ({cur}/{n})",
 	["story.boss"] = "ボスをたおせ: {npc}",
 	["story.relic"] = "Astral Sealを見つけよう",
 	["story.travel"] = "{planet}へ行こう",

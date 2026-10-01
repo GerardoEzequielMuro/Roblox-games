@@ -140,6 +140,8 @@ return {
 	["story.form"] = "แปลงร่าง",
 	["story.beam"] = "ยิงลำแสงชาร์จ {n} ครั้ง",
 	["story.technique"] = "เรียนท่าไม้ตาย",
+	["story.technique_power"] = "ให้ถึงพลัง {n} เพื่อเรียนท่าไม้ตาย ({cur}/{n})",
+	["story.zone_power"] = "ให้ถึงพลัง {n} เพื่อเข้า{zone} ({cur}/{n})",
 	["story.boss"] = "ล้มบอส: {npc}",
 	["story.relic"] = "หา Astral Seal",
 	["story.travel"] = "เดินทางไป {planet}",

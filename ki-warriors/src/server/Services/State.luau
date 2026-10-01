@@ -8,6 +8,7 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Config = require(ReplicatedStorage.Shared.Config)
 local Formulas = require(ReplicatedStorage.Shared.Formulas)
 local Collection = require(ReplicatedStorage.Shared.Collection)
+local PlayRewards = require(ReplicatedStorage.Shared.PlayRewards)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 
@@ -16,7 +17,6 @@ local State = {}
 State.ready = {} :: { [Player]: boolean }
 State.passes = {} :: { [Player]: { [string]: boolean } }
 State.sessionStart = {} :: { [Player]: number }
-State.giftsClaimed = {} :: { [Player]: { [number]: boolean } }
 State.zone = {} :: { [Player]: { id: string, mult: number, locked: boolean }? }
 State.friendBonus = {} :: { [Player]: number }
 State.groupMember = {} :: { [Player]: boolean }
@@ -28,10 +28,18 @@ State.extras = {} :: { [string]: (Player, Data.Profile) -> any }
 local fullDirty: { [Player]: boolean } = {}
 local lightDirty: { [Player]: boolean } = {}
 
+-- Claimed session gifts as { [index] = true } for the client.
+function State.giftsClaimedMap(p: Data.Profile): { [number]: boolean }
+	local out = {}
+	for _, i in PlayRewards.list(p.giftPlay) do
+		out[i] = true
+	end
+	return out
+end
+
 function State.init(player: Player)
 	State.passes[player] = {}
 	State.sessionStart[player] = os.time()
-	State.giftsClaimed[player] = {}
 	State.friendBonus[player] = 0
 end
 
@@ -39,7 +47,6 @@ function State.cleanup(player: Player)
 	State.ready[player] = nil
 	State.passes[player] = nil
 	State.sessionStart[player] = nil
-	State.giftsClaimed[player] = nil
 	State.zone[player] = nil
 	State.friendBonus[player] = nil
 	State.groupMember[player] = nil
@@ -237,8 +244,8 @@ function State.snapshot(player: Player): { [string]: any }
 		daily = p.daily,
 		codes = p.codes,
 		playTime = p.playTime,
-		sessionStart = State.sessionStart[player],
-		giftsClaimed = State.giftsClaimed[player],
+		sessionStart = os.time() - math.floor(p.giftPlay.secs), -- "started playing today" as if it were one session: the client counts from here
+		giftsClaimed = State.giftsClaimedMap(p),
 		wishes = p.wishes,
 		wishPower = p.wishPower,
 		pvp = p.pvp,
@@ -306,6 +313,7 @@ function State.start()
 				local p = Data.get(player)
 				if p and State.ready[player] then
 					p.playTime += 1
+					PlayRewards.tick(p.giftPlay, os.time(), 1)
 					if p.boostLeft > 0 then
 						p.boostLeft = math.max(0, p.boostLeft - 1)
 						if p.boostLeft == 0 then

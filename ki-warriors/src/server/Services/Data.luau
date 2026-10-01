@@ -7,6 +7,7 @@ local RunService = game:GetService("RunService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local PlayRewards = require(ReplicatedStorage.Shared.PlayRewards)
 local Validate = require(script.Parent.Validate)
 
 local Data = {}
@@ -72,6 +73,7 @@ export type Profile = {
 	savedAt: number,
 	firstJoin: number,
 	playTime: number,
+	giftPlay: PlayRewards.Play, -- session gifts: UTC day, minutes played that day, claims (resets daily)
 	lock: { job: string, t: number }?,
 }
 
@@ -166,6 +168,7 @@ local function defaultProfile(): Profile
 		savedAt = os.time(),
 		firstJoin = os.time(),
 		playTime = 0,
+		giftPlay = PlayRewards.default(),
 	}
 	return p
 end
@@ -203,6 +206,7 @@ Data.migrate = migrate
 local function reconcile(p: any): Profile
 	migrate(p)
 	local def = defaultProfile() :: any
+	p.giftPlay = PlayRewards.sanitize(p.giftPlay) -- old saves have none
 	for k, v in def do
 		if p[k] == nil then
 			p[k] = v
