@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local SeasonPass = require(ReplicatedStorage.Shared.SeasonPass)
@@ -126,7 +127,7 @@ function SeasonService.init()
 		return SeasonService.snapshot(p)
 	end
 	Remotes.handle("ClaimSeason", function(player, payload)
-		if type(payload.track) ~= "string" or type(payload.tier) ~= "number" then
+		if not Guard.isString(payload.track, 16) or not Guard.isInt(payload.tier, 1, Config.SeasonPass.tiers) then
 			return false, M("msg.bad_request")
 		end
 		return SeasonService.claim(player, payload.track, payload.tier)

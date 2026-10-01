@@ -322,10 +322,11 @@ rf.OnServerInvoke = function(plr, cmd, a, b)
 	elseif cmd == "coreRange" then
 		return CoreService.inRange(plr)
 	elseif cmd == "boards" then
+		prof.pvpWins = math.max(prof.pvpWins, 1) -- the boards list wins against people only
 		Leaderboard.refresh()
 		return Leaderboard.rows
 	elseif cmd == "stats" then
-		return { out = Remotes.stats.out, requestIn = Remotes.stats.requestIn, tracked = State.tracked(plr), tablesTracked = Tables.tracked(plr) }
+		return { out = Remotes.stats.out, requestIn = Remotes.stats.requestIn, tracked = State.tracked(plr), tablesTracked = Tables.tracked(plr), remotesTracked = Remotes.tracked(plr), dataTracked = Data.tracked(plr), coreTracked = CoreService.tracked(plr) }
 	elseif cmd == "yesterdayDaily" then
 		prof.daily.last = os.time() // 86400 - 1
 		State.dirty(plr)

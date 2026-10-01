@@ -7,6 +7,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local State = require(script.Parent.State)
@@ -17,7 +18,7 @@ local CoreService = {}
 
 local C = Config.Core
 local corePos = Vector3.zero
-local bucket: { [Player]: { tokens: number, t: number } } = {}
+local bucket: { [Player]: Guard.Bucket } = {}
 -- Is the player sitting at a table? (set by Tables; the core is a lobby activity)
 CoreService.isSeated = function(_player: Player): boolean
 	return false
@@ -66,6 +67,10 @@ function CoreService.forget(player: Player)
 	bucket[player] = nil
 end
 
+function CoreService.tracked(player: Player): number
+	return if bucket[player] then 1 else 0
+end
+
 function CoreService.init(position: Vector3)
 	corePos = position
 
@@ -74,25 +79,24 @@ function CoreService.init(position: Vector3)
 	end
 
 	Remotes.TapEvent.OnServerEvent:Connect(function(player: Player, count: any)
-		if type(count) ~= "number" or count ~= count or count < 1 then
+		if not Guard.isNumber(count) or count < 1 then
 			return
 		end
-		if not State.ready[player] or CoreService.isSeated(player) or not CoreService.inRange(player) then
+		if not player.Parent or not State.ready[player] or CoreService.isSeated(player) or not CoreService.inRange(player) then
 			return
 		end
+		-- plausibility: no more than the best a hand can do (C.maxTapsPerSecond, small burst);
+		-- the rest of a batch is dropped, not queued
 		local now = os.clock()
 		local b = bucket[player]
 		if not b then
-			b = { tokens = C.burst, t = now }
+			b = Guard.newBucket(C.maxTapsPerSecond, C.burst, now)
 			bucket[player] = b
 		end
-		b.tokens = math.min(C.burst, b.tokens + (now - b.t) * C.maxTapsPerSecond)
-		b.t = now
-		local accepted = math.min(math.floor(count), math.floor(b.tokens))
+		local accepted = Guard.takeUpTo(b, now, count)
 		if accepted < 1 then
 			return
 		end
-		b.tokens -= accepted
 		CoreService.apply(player, accepted, false)
 	end)
 

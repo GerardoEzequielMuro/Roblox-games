@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Locale = require(ReplicatedStorage.Shared.Locale)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 
 local Services = script.Parent.Services
 local LobbyBuilder = require(script.Parent.World.LobbyBuilder)
@@ -47,7 +48,7 @@ end)
 Remotes.handle("SetLanguage", function(player, payload)
 	local p = Data.get(player)
 	local code = payload.lang
-	if not p or type(code) ~= "string" or (code ~= "" and not Locale.Supported[code]) then
+	if not p or not Guard.isString(code, 8, true) or (code ~= "" and not Locale.Supported[code]) then
 		return false, Locale.m("msg.unknown_language")
 	end
 	p.lang = code
@@ -81,11 +82,12 @@ local function onPlayerAdded(player: Player)
 end
 
 local function onPlayerRemoving(player: Player)
-	Data.release(player)
+	-- free the per-player tables first: the final save below can take a few retries
 	State.cleanup(player)
 	Remotes.forget(player)
 	Cosmetics.forget(player)
 	CoreService.forget(player)
+	Data.release(player)
 end
 
 Players.PlayerAdded:Connect(onPlayerAdded)

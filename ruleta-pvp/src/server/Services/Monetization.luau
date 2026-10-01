@@ -58,9 +58,17 @@ function Monetization.loadPasses(player: Player)
 		if grantAll then
 			owned[pass.key] = true
 		elseif pass.id ~= 0 then
-			local ok, has = pcall(function()
-				return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.id)
-			end)
+			-- the web call can fail: try a few times before assuming "not owned"
+			local ok, has = false, false
+			for attempt = 1, 3 do
+				ok, has = pcall(function()
+					return MarketplaceService:UserOwnsGamePassAsync(player.UserId, pass.id)
+				end)
+				if ok or not player.Parent then
+					break
+				end
+				task.wait(attempt)
+			end
 			if ok and has then
 				owned[pass.key] = true
 			end
@@ -114,9 +122,23 @@ function Monetization.processReceipt(receipt: any): Enum.ProductPurchaseDecision
 	if not p or not State.ready[player] then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
+	-- Only a profile that can be saved may take a purchase: granting into a session that
+	-- will not persist would lose what the player paid for. (Studio has no DataStore.)
+	local persistent = Data.isPersistent(player)
+	if not persistent and not RunService:IsStudio() then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
+	if type(receipt.PurchaseId) ~= "string" and type(receipt.PurchaseId) ~= "number" then
+		return Enum.ProductPurchaseDecision.NotProcessedYet
+	end
 	local purchaseId = tostring(receipt.PurchaseId)
 	if table.find(p.purchases, purchaseId) then
-		return Enum.ProductPurchaseDecision.PurchaseGranted -- already granted earlier
+		-- Granted earlier in this session, but only acknowledge once it is really saved (the
+		-- first save may have failed and Roblox is asking again).
+		if persistent and not Data.save(player, false, true) then
+			return Enum.ProductPurchaseDecision.NotProcessedYet
+		end
+		return Enum.ProductPurchaseDecision.PurchaseGranted
 	end
 	local product = productForId(receipt.ProductId)
 	if not product then
@@ -133,7 +155,7 @@ function Monetization.processReceipt(receipt: any): Enum.ProductPurchaseDecision
 		table.remove(p.purchases, 1)
 	end
 	-- Persist before acknowledging, so a crash can't grant twice or lose the purchase.
-	if Data.isPersistent(player) and not Data.save(player) then
+	if persistent and not Data.save(player, false, true) then
 		return Enum.ProductPurchaseDecision.NotProcessedYet
 	end
 	Remotes.notify(player, M("msg.thanks", { item = M("product." .. product.key .. ".name") }), "success")
@@ -152,9 +174,11 @@ function Monetization.init()
 			return
 		end
 		local pass = passByGamepassId[gamePassId]
-		if pass then
-			State.passes[player] = State.passes[player] or {}
-			State.passes[player][pass.key] = true
+		-- the event comes from Roblox, not from the client; still ignore it for a player who
+		-- is gone or not loaded (would re-create their tables)
+		local owned = State.passes[player]
+		if pass and player.Parent and owned ~= nil then
+			owned[pass.key] = true
 			onPassChanged(player)
 			Remotes.notify(player, M("msg.pass_unlocked", { item = M("pass." .. pass.key .. ".name") }), "success")
 		end

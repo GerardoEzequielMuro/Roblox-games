@@ -6,6 +6,7 @@ local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Layout = require(ReplicatedStorage.Shared.Layout)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local MatchCore = require(ReplicatedStorage.Shared.MatchCore)
@@ -311,7 +312,7 @@ local function moveSeat(tbl: Table, id: string, bench: boolean)
 	end
 end
 
-local function finishMatch(tbl: Table)
+local function finishMatch(tbl: Table, runner: any?)
 	tbl.runner = nil
 	tbl.status = "open"
 	tbl.countdownEnds = 0
@@ -324,6 +325,9 @@ local function finishMatch(tbl: Table)
 		if player and player.Parent then
 			local p = Data.get(player)
 			local fate = MatchFlow.afterMatch(where[player] ~= nil and where[player].tbl == tbl, tbl.private ~= nil, tbl.duel, p ~= nil and p.settings.autoQueue == true)
+			if fate == "stay" and runner and runner.abandoned and runner.abandoned[seat.id] then
+				fate = "leave" -- walked away mid-match: no parking a seat for the next one
+			end
 			if fate == "gone" then
 				tbl.seats[index] = nil -- no longer really here
 			elseif fate == "stay" then
@@ -353,6 +357,11 @@ function Tables.startMatch(tbl: Table): boolean
 		return false
 	end
 	local mode = Config.ModeById[tbl.mode]
+	-- a challenge duel needs both people: if one left during the countdown there is no match
+	-- (private tables in duel mode are the explicit practice-against-a-bot option)
+	if tbl.duel and #hs < 2 then
+		return false
+	end
 	local fill = not tbl.duel and (tbl.private == nil or tbl.private.fill)
 	local want = MatchFlow.entrants(#hs, mode, fill)
 	if want > #hs then
@@ -384,8 +393,8 @@ function Tables.startMatch(tbl: Table): boolean
 	local runner = Runner.new(tbl :: any, entrants, humanMap, {
 		info = info,
 		tutorial = tutorial,
-		onFinished = function()
-			finishMatch(tbl)
+		onFinished = function(r: any)
+			finishMatch(tbl, r)
 		end,
 		onEliminated = function(id: string)
 			task.delay(Config.Timing.elimination * 0.85 / Runner.timeScale, function()
@@ -540,7 +549,7 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 			return false, M("msg.loading")
 		end
 		local modeId = payload.mode
-		if modeId ~= nil and (type(modeId) ~= "string" or not Config.ModeById[modeId] or modeId == "duel") then
+		if modeId ~= nil and (not Guard.isString(modeId, 16) or not Config.ModeById[modeId] or modeId == "duel") then
 			return false, M("msg.bad_request")
 		end
 		if not p.tutorialDone then
@@ -555,7 +564,7 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 	end)
 
 	Remotes.handle("JoinTable", function(player, payload)
-		local tbl = if type(payload.table) == "string" then Tables.byId[payload.table] else nil
+		local tbl = if Guard.isString(payload.table, 16) then Tables.byId[payload.table] else nil
 		if not tbl or tbl.kind ~= "public" then
 			return false, M("msg.bad_request")
 		end
@@ -573,8 +582,11 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 
 	Remotes.handle("CreatePrivate", function(player, payload)
 		local modeId = payload.mode
-		if type(modeId) ~= "string" or not Config.ModeById[modeId] then
+		if not Guard.isString(modeId, 16) or not Config.ModeById[modeId] then
 			return false, M("msg.bad_request")
+		end
+		if not State.ready[player] then
+			return false, M("msg.loading")
 		end
 		if where[player] then
 			return false, M("msg.already_seated")
@@ -596,10 +608,13 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 
 	Remotes.handle("JoinPrivate", function(player, payload)
 		local code = payload.code
-		if type(code) ~= "string" or #code > 8 then
+		if not Guard.isString(code, 8) then
 			return false, M("msg.code_invalid")
 		end
 		code = code:upper():gsub("%s", "")
+		if #code ~= 4 then
+			return false, M("msg.code_invalid")
+		end
 		for _, tbl in Tables.list do
 			if tbl.private and tbl.private.code == code then
 				local ok, err = Tables.sit(player, tbl)
@@ -616,7 +631,7 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 			return false, M("msg.host_only")
 		end
 		if payload.mode ~= nil then
-			local mode = if type(payload.mode) == "string" then Config.ModeById[payload.mode] else nil
+			local mode = if Guard.isString(payload.mode, 16) then Config.ModeById[payload.mode] else nil
 			if not mode or #humans(tbl) > mode.maxPlayers then
 				return false, M("msg.bad_request")
 			end
@@ -652,8 +667,8 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 
 	-- 1v1 duels: challenge someone in the lobby; they get 20 s to answer.
 	Remotes.handle("Challenge", function(player, payload)
-		local target = if type(payload.userId) == "number" then Players:GetPlayerByUserId(payload.userId) else nil
-		if not target or target == player or not State.ready[target] then
+		local target = if Guard.isUserId(payload.userId) then Players:GetPlayerByUserId(payload.userId) else nil
+		if not target or target == player or not State.ready[target] or not State.ready[player] then
 			return false, M("msg.bad_target")
 		end
 		if where[player] then
@@ -674,7 +689,7 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 	Remotes.handle("AnswerChallenge", function(player, payload)
 		local pending = challenges[player]
 		challenges[player] = nil
-		if not pending or pending.expires < os.clock() or not pending.from.Parent then
+		if not pending or pending.expires < os.clock() or not pending.from.Parent or not State.ready[pending.from] then
 			return false, M("msg.challenge_expired")
 		end
 		if payload.accept ~= true then
@@ -692,7 +707,7 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 	Remotes.handle("Act", function(player, payload)
 		local w = where[player]
 		local runner = w and w.tbl.runner
-		if not runner or type(payload.kind) ~= "string" then
+		if not runner or not Guard.isString(payload.kind, 16) then
 			return false, M("msg.not_in_match")
 		end
 		local ok, err = runner:act(player, payload.kind, payload)
@@ -704,7 +719,7 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 
 	-- Spectators (and late joiners) ask for the current state of a table's match.
 	Remotes.handle("GetMatch", function(_player, payload)
-		local tbl = if type(payload.table) == "string" then Tables.byId[payload.table] else nil
+		local tbl = if Guard.isString(payload.table, 16) then Tables.byId[payload.table] else nil
 		if not tbl or not tbl.runner then
 			return false, M("msg.not_in_match")
 		end
@@ -749,6 +764,18 @@ function Tables.init(world: { tables: { [string]: { origin: CFrame, folder: Fold
 							end
 							releaseIfEmpty(tbl)
 						elseif not started then
+							if tbl.duel then
+								-- the other duelist left during the countdown
+								for _, seat in humans(tbl) do
+									if seat.player then
+										Tables.leave(seat.player)
+									end
+								end
+							elseif tbl.status == "countdown" and tbl.private then
+								tbl.status = "open"
+								tbl.countdownEnds = 0
+								markDirty()
+							end
 							releaseIfEmpty(tbl)
 						end
 					end

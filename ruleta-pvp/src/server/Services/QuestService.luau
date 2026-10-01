@@ -4,6 +4,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Quests = require(ReplicatedStorage.Shared.Quests)
 local Data = require(script.Parent.Data)
@@ -65,7 +66,7 @@ function QuestService.init()
 	Remotes.handle("ClaimQuest", function(player, payload)
 		local p = Data.get(player)
 		local i = payload.index
-		if not p or type(i) ~= "number" then
+		if not p or not Guard.isInt(i, 1, 16) then
 			return false, M("msg.bad_request")
 		end
 		QuestService.ensure(player)

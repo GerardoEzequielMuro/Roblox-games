@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -26,7 +27,27 @@ export type Info = {
 	stats: { zaps: number, elims: number, cards: number, spins: number, taken: number },
 	tutorial: boolean,
 	tableId: string,
+	repeatGroup: boolean?, -- same humans have already played each other a lot lately
 }
+
+-- The same group of humans playing each other over and over (two accounts feeding wins):
+-- the first matches of the hour / day count in full, the rest pay as practice.
+local REPEAT_PER_HOUR = 8
+local REPEAT_PER_DAY = 40
+local REPEAT_COIN_XP = 0.25
+local repeats = Guard.newRepeatLimiter(REPEAT_PER_HOUR, REPEAT_PER_DAY)
+
+-- Records one finished match of this group. True = it counts in full.
+function MatchRewards.countGroup(userIds: { number }): boolean
+	return Guard.countMatch(repeats, Guard.groupKey(userIds), os.time())
+end
+
+task.spawn(function()
+	while true do
+		task.wait(600)
+		Guard.prune(repeats, os.time())
+	end
+end)
 
 function MatchRewards.pay(player: Player, info: Info): { [string]: any }?
 	local p = Data.get(player)
@@ -36,12 +57,19 @@ function MatchRewards.pay(player: Player, info: Info): { [string]: any }?
 	local won = info.place == 1
 	local event = LiveEventService.effects(info.mode)
 	local streakBefore = p.streak
+	local repeatGroup = info.repeatGroup == true
+	local practice = info.humans <= 1 or repeatGroup
 	local r = Progression.matchRewards(info.mode, info.place, info.n, {
-		coin = State.coinMult(player) * event.coinMult,
-		xp = State.xpMult(player) * event.xpMult,
+		coin = State.coinMult(player) * event.coinMult * (if repeatGroup then REPEAT_COIN_XP else 1),
+		xp = State.xpMult(player) * event.xpMult * (if repeatGroup then REPEAT_COIN_XP else 1),
 		streak = if won then streakBefore else 0,
-		humans = info.humans,
+		humans = if repeatGroup then 1 else info.humans,
 	})
+	-- Bot tables are practice: they stop pushing trophies once past the cap, so the top
+	-- leagues need real opponents.
+	if practice then
+		r.trophies = math.clamp(Config.PracticeTrophyCap - p.trophies, 0, r.trophies)
+	end
 	local levelBefore = p.level
 	p.matches += 1
 	p.elims += info.stats.elims
@@ -49,11 +77,15 @@ function MatchRewards.pay(player: Player, info: Info): { [string]: any }?
 		p.wins += 1
 		p.streak += 1
 		p.bestStreak = math.max(p.bestStreak, p.streak)
-		local week = Leaderboard.week(os.time())
-		if p.weekly.week ~= week then
-			p.weekly = { week = week, wins = 0 }
+		-- the boards only count wins against other people
+		if not practice then
+			p.pvpWins += 1
+			local week = Leaderboard.week(os.time())
+			if p.weekly.week ~= week then
+				p.weekly = { week = week, wins = 0 }
+			end
+			p.weekly.wins += 1
 		end
-		p.weekly.wins += 1
 	else
 		p.streak = 0
 	end
@@ -61,7 +93,7 @@ function MatchRewards.pay(player: Player, info: Info): { [string]: any }?
 	State.addXp(player, r.xp)
 	State.addTrophies(player, r.trophies)
 
-	local seasonPoints = SeasonService.onMatch(player, info.place, info.n, info.humans)
+	local seasonPoints = SeasonService.onMatch(player, info.place, info.n, if repeatGroup then 1 else info.humans)
 	QuestService.add(player, "play", 1)
 	if won then
 		QuestService.add(player, "win", 1)

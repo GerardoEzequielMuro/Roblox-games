@@ -186,6 +186,7 @@ Config.Leagues = {
 	{ id = "champion", icon = "👑", trophies = 1500, color = { 255, 105, 180 } },
 }
 Config.MaxLevel = 100
+Config.PracticeTrophyCap = 500 -- tables of bots stop giving trophies from here (platinum); real opponents go on
 Config.LevelCoins = 60 -- coins on every level up (+10 per level)
 Config.StreakBonus = 0.1 -- +10% coins per consecutive win, capped below
 Config.StreakBonusCap = 5
@@ -389,7 +390,7 @@ Config.QuestPool = {
 }
 
 Config.Tutorial = { coins = 200, item = "ti_graduate" }
-Config.Referral = { invitedCoins = 300, inviterCoins = 500, maxRewards = 25 }
+Config.Referral = { invitedCoins = 300, inviterCoins = 500, maxRewards = 25, matchesToCredit = 3 } -- the inviter is credited once the invitee has finished this many matches (one throwaway bot match is not enough)
 Config.GroupGift = { coins = 400 }
 
 ---------------------------------------------------------------------------

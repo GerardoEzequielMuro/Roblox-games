@@ -1,6 +1,6 @@
 --!strict
 -- Social features:
---   * referrals: invitee gift on join, inviter credited once the invitee finishes a match
+--   * referrals: invitee gift on join, inviter credited once the invitee finishes a few matches
 --     (DataStore keyed by inviter, drained on join and every 120 s)
 --   * share-link prompt, group-join gift, notification opt-in ask (after the first win)
 local DataStoreService = game:GetService("DataStoreService")
@@ -46,10 +46,10 @@ function Social.applyReferral(player: Player, launchData: any): boolean
 	return true
 end
 
--- Invitee side: after the first finished match, credit the inviter once.
+-- Invitee side: after Config.Referral.matchesToCredit finished matches, credit the inviter once.
 function Social.onMatchFinished(player: Player)
 	local p = Data.get(player)
-	if not p or p.referredBy == 0 or p.referralPaid then
+	if not p or p.referredBy == 0 or p.referralPaid or p.matches < Config.Referral.matchesToCredit then
 		return
 	end
 	p.referralPaid = true

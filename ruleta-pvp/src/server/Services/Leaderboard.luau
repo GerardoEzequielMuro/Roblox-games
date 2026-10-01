@@ -35,15 +35,21 @@ local function storeFor(kind: string): OrderedDataStore?
 end
 
 local nameCache: { [number]: string } = {}
+local nameCacheSize = 0
+local NAME_CACHE_MAX = 500
 local function nameOf(userId: number): string
 	if nameCache[userId] then
 		return nameCache[userId]
+	end
+	if nameCacheSize >= NAME_CACHE_MAX then
+		nameCache, nameCacheSize = {}, 0 -- bounded: boards change slowly, a refill is cheap
 	end
 	local ok, name = pcall(function()
 		return Players:GetNameFromUserIdAsync(userId)
 	end)
 	local n = if ok and name then name else ("#" .. userId)
 	nameCache[userId] = n
+	nameCacheSize += 1
 	return n
 end
 
@@ -80,7 +86,14 @@ local function values(p: Data.Profile): { [string]: number }
 	local weekly = if p.weekly.week == Leaderboard.week(now) then p.weekly.wins else 0
 	-- trophies only count on this season's board once the profile has rolled into it
 	local season = if p.season == Progression.season(now) then p.trophies else 0
-	return { wins = p.wins, season = season, weekly = weekly }
+	return { wins = p.pvpWins, season = season, weekly = weekly }
+end
+
+local function budgetOk(): boolean
+	local ok, n = pcall(function()
+		return DataStoreService:GetRequestBudgetForRequestType(Enum.DataStoreRequestType.UpdateAsync)
+	end)
+	return not ok or type(n) ~= "number" or n >= 5
 end
 
 local function pushScores()
@@ -93,9 +106,17 @@ local function pushScores()
 		if p and Data.isPersistent(player) then
 			for kind, value in values(p) do
 				local store = storeFor(kind)
-				if store and value > 0 then
+				value = math.floor(value)
+				-- only sane numbers, and only while there is request budget left
+				if store and value > 0 and value < 1e9 and budgetOk() then
+					-- never lower a stored score: another server (or a stale push) may be ahead
 					pcall(function()
-						store:SetAsync(tostring(player.UserId), value)
+						store:UpdateAsync(tostring(player.UserId), function(old: any)
+							if type(old) == "number" and old >= value then
+								return nil :: any
+							end
+							return value
+						end)
 					end)
 				end
 			end

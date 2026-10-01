@@ -12,6 +12,7 @@ local MatchCore = require(ReplicatedStorage.Shared.MatchCore)
 local BotBrain = require(ReplicatedStorage.Shared.BotBrain)
 local MatchFlow = require(ReplicatedStorage.Shared.MatchFlow)
 local Rng = require(ReplicatedStorage.Shared.Rng)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
 local MatchRewards = require(script.Parent.MatchRewards)
@@ -56,6 +57,9 @@ function Runner.new(tbl: TableRef, entrants: { MatchCore.Entrant }, humans: { [s
 	self.afk = MatchFlow.newAfk()
 	self.forfeit = {} :: { [string]: boolean }
 	self.paid = {} :: { [string]: boolean }
+	self.abandoned = {} :: { [string]: boolean } -- humans the server had to play for (AFK)
+	self.repeatChecked = false
+	self.repeatFull = true
 	self.results = {} :: { [string]: any }
 	self.aborted = false
 	self.done = false
@@ -106,6 +110,21 @@ function Runner:isAuto(player: Player, id: string): boolean
 	return MatchFlow.isAuto(self.afk, id, p ~= nil and p.settings.autoPlay == true)
 end
 
+-- Humans of this match that did not forfeit (they played it, even if they were eliminated
+-- and walked off): the ones who count as "other humans" for a reward. Returns user ids.
+function Runner:countedHumans(): { number }
+	local ids = {}
+	for id in self.payable do
+		if not self.forfeit[id] then
+			local info = self.opts.info and self.opts.info[id]
+			if info and info.userId and info.userId > 0 then
+				table.insert(ids, info.userId)
+			end
+		end
+	end
+	return ids
+end
+
 function Runner:pay(id: string)
 	if self.paid[id] or self.forfeit[id] then
 		return
@@ -117,16 +136,40 @@ function Runner:pay(id: string)
 		return
 	end
 	self.paid[id] = true
-	local st = m.players[idx]
-	local place = if st.place > 0 then st.place else 2
+	-- Abandoned: the server has been playing this seat because the player stopped
+	-- answering (two timed-out turns, not their own Auto-play toggle). Nothing is paid, so a
+	-- parked character cannot farm; they are stood up after the match (see Tables).
+	local profile = Data.get(player)
+	if MatchFlow.isAuto(self.afk, id, false) and not (profile ~= nil and profile.settings.autoPlay == true) then
+		self.abandoned[id] = true
+		return
+	end
+	local counted = self:countedHumans()
+	-- A match against nobody but people who all left but one is no contest: no pay for the
+	-- walkover (this is what two accounts feeding each other duels would farm).
+	if self.humanCount >= 2 and self.startCount == self.humanCount and #counted <= 1 then
+		return
+	end
+	-- The same group of humans finishing again and again counts in full only so often.
+	local isRepeat = false
+	if #counted >= 2 then
+		if not self.repeatChecked then
+			self.repeatChecked = true
+			self.repeatFull = MatchRewards.countGroup(counted)
+		end
+		isRepeat = not self.repeatFull
+	end
+	local st = m.players[idx].stats
+	local place = if m.players[idx].place > 0 then m.players[idx].place else 2
 	self.results[id] = MatchRewards.pay(player, {
 		mode = m.mode.id,
 		place = place,
 		n = self.startCount,
-		humans = self.humanCount,
-		stats = st.stats,
+		humans = math.max(1, #counted), -- who really played it, not who sat down at the start
+		stats = st,
 		tutorial = self.opts.tutorial,
 		tableId = self.tbl.id,
+		repeatGroup = isRepeat,
 	})
 end
 
@@ -266,6 +309,9 @@ local function idOf(self: any, player: Player): string?
 end
 
 function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
+	if type(payload) ~= "table" or not Guard.isString(kind, 16) then
+		return false, "msg.bad_request"
+	end
 	local m = self.m
 	local id = idOf(self, player)
 	if not id or m.phase == "ended" or self.aborted then
@@ -292,7 +338,7 @@ function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
 		-- small latency allowance: the client says when the button went down
 		local tb = now
 		local at = payload.at
-		if type(at) == "number" and at == at then
+		if Guard.isNumber(at) then
 			tb = math.clamp(at, math.max(now - 0.2, earliest), now)
 		end
 		MatchFlow.active(self.afk, id)
@@ -302,7 +348,7 @@ function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
 		return false, "msg.not_your_turn"
 	end
 	if kind == "card" then
-		if type(payload.card) ~= "string" or (payload.target ~= nil and type(payload.target) ~= "string") then
+		if not Guard.isString(payload.card, 32) or (payload.target ~= nil and not Guard.isString(payload.target, 32)) then
 			return false, "msg.bad_request"
 		end
 		local ok, ev = MatchCore.playCard(m, id, payload.card, payload.target)
@@ -314,7 +360,7 @@ function Runner:act(player: Player, kind: string, payload: any): (boolean, any)
 		self:sendHands()
 		return true, nil
 	elseif kind == "target" then
-		if type(payload.target) ~= "string" then
+		if not Guard.isString(payload.target, 32) then
 			return false, "msg.bad_request"
 		end
 		local ok, ev = MatchCore.setTarget(m, id, payload.target)

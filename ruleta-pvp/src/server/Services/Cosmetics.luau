@@ -5,6 +5,7 @@
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Progression = require(ReplicatedStorage.Shared.Progression)
 local Data = require(script.Parent.Data)
@@ -137,7 +138,7 @@ function Cosmetics.init()
 	Remotes.handle("SetEmotes", function(player, payload)
 		local p = Data.get(player)
 		local list = payload.ids
-		if not p or type(list) ~= "table" then
+		if not p or not Guard.isList(list, 16) then
 			return false, M("msg.bad_request")
 		end
 		local slots = if State.owns(player, "EmotePack") then Config.EmoteSlotsPack else Config.EmoteSlots

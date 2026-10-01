@@ -66,11 +66,20 @@ local myId = "u" .. player.UserId
 
 local function req(action, payload)
 	task.wait(0.1) -- stay under the Request rate limit
-	local ok, a, b = pcall(function()
-		return Request:InvokeServer(action, payload)
-	end)
-	if not ok then
-		return false, a
+	local ok, a, b
+	-- the server also has per-action cooldowns: wait them out (except where a test wants the
+	-- cooldown itself, like the emote one)
+	for _ = 1, 4 do
+		ok, a, b = pcall(function()
+			return Request:InvokeServer(action, payload)
+		end)
+		if not ok then
+			return false, a
+		end
+		if a == true or action == "Emote" or type(b) ~= "table" or b.key ~= "msg.slow_down" then
+			break
+		end
+		task.wait(1.6)
 	end
 	return a == true, b
 end

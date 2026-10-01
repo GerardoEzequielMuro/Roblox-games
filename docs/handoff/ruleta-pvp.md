@@ -222,3 +222,48 @@ Armé `sim/pacing_sim.luau` (modelo en `sim/PacingModel.luau`, se corre con `lua
 - Sin eventos en vivo (DoubleXP), códigos ni Starter Pack: es el peor caso free. Power Core: 4 toques/s a mano y solo en el lobby.
 - Los "hitos" se cuentan al final de cada partida (el jugador mira el HUD entre partidas), por eso el tramo máximo sin novedades tiene granularidad de ~3,4 min; con partidas así, "nunca más de 10 min" equivale a 3 partidas seguidas sin nada y el piso realista es ~11-12 min en mediana. Quedan huecos hacia el minuto 55-75 (se acaban los regalos y los niveles se espacian); si se quiere más densidad ahí, el palanca es un 7º regalo (la fila de regalos de `MenuWindows` hoy entra con 6) o tiers más baratos al principio del pase (requiere curva no lineal en `SeasonPass`).
 - Sin ramas de tienda elegidas por gusto: el jugador compra siempre lo más barato (maximiza la cadencia). Sin reset mensual del pase en el sim (asume instalación a principio de mes). Sin nivel 100 (~meses) ni trofeos de liga campeón.
+
+## Ronda 7: seguridad
+
+Auditoría de todos los `Remotes.handle`, el `CoreTap`, compras, DataStore y fugas, asumiendo un cliente exploiter. Helper nuevo y puro: `src/shared/Guard.luau` (validadores, token bucket, cooldowns, lockout por fallos, `sanitize` de NaN/inf, `RepeatLimiter`). Tests: `tests/security_test.luau` (60 checks). Comportamiento del jugador legítimo igual, salvo lo marcado como "cambio visible".
+
+### Vulnerabilidades
+
+| Sev. | Dónde | Cómo se explotaba | Cómo se arregló |
+|---|---|---|---|
+| Alta | `Monetization.luau` `processReceipt` (~110-160) | Con el perfil no persistente (DataStore caído) devolvía `PurchaseGranted` sin guardar: Robux cobrados y compra perdida. Y si el primer save fallaba, el reintento de Roblox encontraba el PurchaseId en memoria y devolvía `PurchaseGranted` sin haber guardado nunca | Perfil no persistente => `NotProcessedYet` (salvo Studio). El reintento también guarda (con reintentos y backoff) y solo confirma si guardó. PurchaseId validado |
+| Alta | `MatchRunner.luau` `pay` (~120-175) | Se pagaba con `humanCount` del arranque: una cuenta alt que se sienta y se va dejaba al principal con trofeos/puntos de pase "con humanos" completos. En duelo entre dos cuentas, el que se iba regalaba la victoria: 80 monedas, 80 xp y 18 trofeos cada ~20 s | `humans` = humanos que no abandonaron. Victoria por abandono sin bots ("no contest") no paga. Mismo grupo de humanos más de 8 partidas/hora o 40/día paga como práctica (monedas/xp x0,25, trofeos y pase a la mitad, no cuenta para el tablero) |
+| Alta | `Data.luau` `save`/`release` | Un solo intento: un error transitorio al salir o en `BindToClose` perdía el progreso, y `release` tiraba el perfil igual. Perder el lock (otro server) fallaba en silencio y se seguía jugando sin guardar | Guardados críticos (salida, compras, cierre) con 4 intentos, backoff, esperan presupuesto y un guardado por jugador a la vez. Lock perdido => se deja de escribir y se expulsa con mensaje para reentrar |
+| Alta | `MatchRunner.luau` `pay` + `Tables.luau` `finishMatch` | Un personaje parado en una mesa con Auto-cola: el server jugaba por él (AFK) y le pagaba y lo dejaba sentado para la siguiente, indefinido | Seat que el server tuvo que jugar por AFK (2 turnos vencidos, no el toggle propio) no cobra y se levanta al terminar. **Cambio visible** (jugador AFK real) |
+| Media | `Remotes.luau` (todo `Request`) | Sin cooldown por acción: `RedeemCode` y `JoinPrivate` (4 letras) se podían adivinar a 12 req/s; `Challenge` spameaba popups; `ClaimGroupGift`/`ShareLink` (web call, prompt) a ritmo máximo | Cooldown por acción y jugador (`cooldowns` en Remotes). `RedeemCode`: 6 fallos en 60 s bloquean 2 min. `JoinPrivate` exige 4 letras |
+| Media | `Remotes.luau` | Payloads con strings enormes, NaN/inf, tablas gigantes o anidadas llegaban a los handlers | `payloadOk`: tope de strings (128), entradas (64), sin NaN/inf, sin Instances ni funciones. Handlers con `Guard.isInt/isString/isList/isUserId` (Act, ClaimSeason, ClaimQuest, ClaimGift, Challenge, SetEmotes, SetSetting, SetLanguage, JoinTable, GetMatch...) |
+| Media | `MatchRewards.luau`, `Leaderboard.luau` | Ranking de victorias (histórico y semanal) farmeable contra bots, 24/7 | `pvpWins`: solo cuentan victorias contra otros humanos (migración v1->v2 la inicializa con las victorias actuales, nadie baja). `wins` sigue contando para desbloqueos y quests. **Cambio visible** (tablero) |
+| Media | `MatchRewards.luau` | Trofeos ilimitados contra bots (la mitad, pero sin techo) | `Config.PracticeTrophyCap = 500`: mesas de bots no suben trofeos más allá de platino |
+| Media | `Leaderboard.luau` `pushScores` | `SetAsync` ciego: un push viejo o de otro server bajaba el puntaje; sin chequeo de presupuesto | `UpdateAsync` que solo sube, valores acotados, salta si el presupuesto es bajo |
+| Media | `Data.luau` | Sin sanitizar al cargar/guardar (NaN/inf podían persistir); sin migración ni protección contra datos de una versión más nueva | `Guard.sanitize` en `reconcile` y antes de cada escritura; `CURRENT_VERSION = 2` con `migrate`; perfil de versión más nueva => sesión sin guardar (no se pisa) |
+| Media | `Social.luau` `onMatchFinished` | El invitador cobraba 500 monedas (x25) cuando el invitado terminaba una sola partida contra bots (cuentas alt) | Se acredita a las 3 partidas (`Config.Referral.matchesToCredit`) |
+| Media | `Data.luau` `startAutosave` | Todos los guardados en el mismo instante, sin mirar presupuesto | Escalonados, y se saltea el autosave si `GetRequestBudgetForRequestType` es bajo |
+| Baja | `Remotes.luau` | Un request que llegaba tras `PlayerRemoving` recreaba `budget` del jugador (fuga) | Chequeo `player.Parent` y tablas de claves débiles |
+| Baja | `Monetization.luau` `PromptGamePassPurchaseFinished` | Recreaba `State.passes[player]` de un jugador ya salido (fuga) | Solo si el jugador sigue y tiene sesión |
+| Baja | `Leaderboard.luau` | `nameCache` sin tope | Tope de 500 |
+| Baja | `Tables.luau` Challenge/AnswerChallenge/CreatePrivate | No exigía `State.ready` del que desafía ni validaba el userId; `CreatePrivate` sin ready | Validado (`isUserId`, ready en ambos lados) |
+| Baja | `Monetization.luau` `loadPasses` | Un fallo del web call dejaba al dueño del pase sin pase toda la sesión | 3 intentos con espera |
+| Baja | `Tables.luau` `startMatch` | En un duelo por desafío, si el rival se iba en la cuenta regresiva el otro jugaba el duelo contra un bot con premio de duelo | El duelo se cancela y se levanta a los presentes |
+| Baja | `CoreService.luau` | (Ya tenía bucket) | Pasado a `Guard.takeUpTo`: 8 taps/s, ráfaga 6, NaN/inf descartados; sigue exigiendo estar en el lobby y a rango |
+
+Total arreglado: 4 altas, 8 medias, 7 bajas.
+
+Revisado y sin cambios (estaba bien): `Act` (turno, mesa propia y fase vía `where[player]`, `m.spinner` y `awaiting`; objetivos con `validTarget`, mágnet/pase sobre vivos), el resultado de la ruleta (semilla del server; el cliente solo manda cuándo frenó, acotado a 0,2 s atrás y nunca antes de `minSpin`), mano e identidad (`Hand` solo al dueño, `draw`/`stolen` públicos sin la carta, el Oráculo solo a su dueño), compras de cosméticos y reclamos (marcan antes de pagar), `GetMatch` (solo info pública).
+
+### Tests / verificación
+- `luau tests/security_test.luau`: validadores (NaN/inf/huge/tipos), bucket (flood acotado a rate*T+burst, reloj hacia atrás), cooldown, lockout de adivinación, sanitize (NaN, inf, ciclos, profundidad), `RepeatLimiter` (colusión limitada, amigos y públicas no), economía de práctica.
+- `tests/AutoTestClient`: `req` espera y reintenta cuando el server responde `slow_down` (cooldowns nuevos); el comando `boards` del server de test fija `pvpWins >= 1`. No se pudo correr el playtest en Studio acá.
+
+### Lo que queda
+- Auto-jugar + Auto-cola con el toggle propio (no AFK) sigue pagando sin supervisión; lo frena el kick por inactividad de Roblox (bypasseable con input falso). Habría que poner un tope de partidas contra bots por hora si se quiere cerrar.
+- Colusión entre dos cuentas controladas por la misma persona queda limitada (8 partidas/h y 40/día a pago completo), no eliminada; no hay forma de saber que son la misma persona.
+- Duelo privado contra bot (`CreatePrivate` + modo duelo + bots) sigue permitido (lo usa el test y la UI): paga el premio de duelo con trofeos a la mitad.
+- `wins` (desbloqueos por victorias, quest "win") sigue contando victorias contra bots; solo los tableros usan `pvpWins`.
+- Los regalos de sesión se reinician por server (reentrar cada 3 min rinde parecido a una sesión larga, no se tocó).
+- Crédito de referido fire-and-forget: si falla el `UpdateAsync` del invitador el crédito se pierde (queda en el log).
+- `tests/unit_core.luau:761` tiene una advertencia de tipos previa (no afecta a `src`).

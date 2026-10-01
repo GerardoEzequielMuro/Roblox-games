@@ -1,9 +1,11 @@
 --!strict
 -- Rewards that don't come from a match: the 7-day calendar, session gifts, codes, settings.
 -- Every reward is fixed and shown before it is claimed; nothing here is random.
+local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 local Config = require(ReplicatedStorage.Shared.Config)
+local Guard = require(ReplicatedStorage.Shared.Guard)
 local Locale = require(ReplicatedStorage.Shared.Locale)
 local Data = require(script.Parent.Data)
 local Remotes = require(script.Parent.Remotes)
@@ -36,6 +38,12 @@ function Rewards.grant(player: Player, reward: Reward): Locale.Message
 end
 
 local DAY = 86400
+-- Wrong codes per player: 6 misses in a minute lock redeeming for 2 minutes (no guessing).
+local codeStrikes: { [Player]: Guard.Strikes } = {}
+
+function Rewards.tracked(player: Player): number
+	return if codeStrikes[player] then 1 else 0
+end
 
 function Rewards.dailyState(p: Data.Profile, now: number): { canClaim: boolean, day: number, streak: number }
 	local today = now // DAY
@@ -48,6 +56,10 @@ function Rewards.dailyState(p: Data.Profile, now: number): { canClaim: boolean, 
 end
 
 function Rewards.init()
+	Players.PlayerRemoving:Connect(function(player)
+		codeStrikes[player] = nil
+	end)
+
 	State.extras.dailyState = function(_player, p)
 		return Rewards.dailyState(p, os.time())
 	end
@@ -71,7 +83,7 @@ function Rewards.init()
 	Remotes.handle("ClaimGift", function(player, payload)
 		local p = Data.get(player)
 		local index = payload.index
-		local gift = if type(index) == "number" then Config.Gifts[index] else nil
+		local gift = if Guard.isInt(index, 1, #Config.Gifts) then Config.Gifts[index] else nil
 		local claimed = State.giftsClaimed[player]
 		if not p or not gift or not claimed then
 			return false, M("msg.bad_request")
@@ -92,12 +104,22 @@ function Rewards.init()
 	Remotes.handle("RedeemCode", function(player, payload)
 		local p = Data.get(player)
 		local code = payload.code
-		if not p or type(code) ~= "string" or #code > 24 then
+		if not p or not Guard.isString(code, 24) then
 			return false, M("msg.code_invalid")
+		end
+		local now = os.clock()
+		local strikes = codeStrikes[player]
+		if not strikes then
+			strikes = Guard.newStrikes()
+			codeStrikes[player] = strikes
+		end
+		if Guard.isLocked(strikes, now) then
+			return false, M("msg.slow_down")
 		end
 		code = code:upper():gsub("%s", "")
 		local reward = Config.Codes[code]
 		if not reward then
+			Guard.strike(strikes, now, 6, 60, 120)
 			return false, M("msg.code_invalid")
 		end
 		if p.codes[code] then
@@ -113,12 +135,12 @@ function Rewards.init()
 	Remotes.handle("SetSetting", function(player, payload)
 		local p = Data.get(player)
 		local key, value = payload.key, payload.value
-		if not p or type(key) ~= "string" then
+		if not p or not Guard.isString(key, 16) then
 			return false, M("msg.bad_request")
 		end
 		local s = p.settings :: any
 		if key == "music" or key == "sfx" then
-			if type(value) ~= "number" or value ~= value then
+			if not Guard.isNumber(value) then
 				return false, M("msg.bad_request")
 			end
 			s[key] = math.clamp(value, 0, 1)
