@@ -110,6 +110,59 @@ def run_runtime(game, state, screen, open_name, boot=None, locale="en-us", timeo
     return dump
 
 
+def parse_at(at):
+    """--at 'YYYY-MM-DDTHH:MM' (UTC) -> unix time. Default: a fixed Wednesday 10:00 UTC (no weekend / sale-hour events), so runs repeat."""
+    import datetime
+
+    if not at:
+        at = "2026-10-07T10:00"
+    dt = datetime.datetime.fromisoformat(at)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=datetime.timezone.utc)
+    return int(dt.timestamp())
+
+
+def run_playtest_runtime(game, state, screen, minutes, seed, at=None, timeout=3000):
+    """Runs runtime/main.luau in playtest mode and returns the result dict."""
+    api = build_data.build_api()
+    metrics = build_data.build_metrics()
+    sm = sourcemap(game)
+    fixture = os.path.join(HERE, "fixtures", f"{game}.luau")
+    if not os.path.exists(fixture):
+        fixture = os.path.join(HERE, "fixtures", "_empty.luau")
+    bot = os.environ.get("UIPREVIEW_BOT") or os.path.join(HERE, "playtests", f"{game}.luau")
+    if not os.path.exists(bot):
+        raise SystemExit(f"[uipreview] no hay bot en {os.path.relpath(bot, REPO)}")
+    tag = f"{game}-{state}-playtest"
+    if FROM_CACHE and os.path.exists(os.path.join(CACHE, tag + ".json")):
+        with open(os.path.join(CACHE, tag + ".json"), encoding="utf-8") as f:
+            dump = json.load(f)
+        dump["_elapsed"] = 0.0
+        return dump
+    cfg = {
+        "gameName": game, "repoRoot": REPO, "sourcemap": sm, "fixture": fixture, "state": state,
+        "screen": dict(SCREENS[screen], name=screen), "open": "", "out": os.path.join(CACHE, tag + ".json"),
+        "apiPath": api, "metricsPath": metrics, "locale": "en-us", "fakeIcons": False,
+        "playtest": True, "botPath": bot, "minutes": minutes, "seed": seed, "bootSeconds": 8,
+        "epoch": parse_at(at),
+    }
+    cfg_path = os.path.join(CACHE, tag + ".cfg.json")
+    with open(cfg_path, "w") as f:
+        json.dump(cfg, f)
+    if os.path.exists(cfg["out"]):
+        os.remove(cfg["out"])
+    t0 = time.time()
+    res = subprocess.run([find_tool("lune"), "run", os.path.join(HERE, "runtime", "main.luau"), "--", cfg_path],
+                         cwd=REPO, capture_output=True, text=True, timeout=timeout)
+    if res.returncode != 0 or not os.path.exists(cfg["out"]):
+        sys.stderr.write(res.stdout[-4000:] + "\n" + res.stderr[-6000:] + "\n")
+        raise SystemExit(f"[uipreview] el runtime del playtest fallo para {game}")
+    with open(cfg["out"], encoding="utf-8") as f:
+        dump = json.load(f)
+    dump["_elapsed"] = time.time() - t0
+    return dump
+
+
 def list_windows(game):
     """Window names declared in the fixture's `windows = { name = function(ctx) ... }` table."""
     import re
@@ -233,12 +286,20 @@ def main():
     ap.add_argument("--locale", default="en-us")
     ap.add_argument("--dump-json", action="store_true", help="keep the raw tree JSON next to the PNG")
     ap.add_argument("--from-cache", action="store_true", help="reuse the last runtime dump in .cache (only re-layout/render/check)")
+    ap.add_argument("--playtest", action="store_true", help="PLAYTEST mode: a bot plays N virtual minutes and reports errors/stuck/invariants (docs/playtests/<game>.md)")
+    ap.add_argument("--minutes", type=float, default=10.0, help="--playtest: virtual minutes (default 10)")
+    ap.add_argument("--seed", type=int, default=1, help="--playtest: seed for the bot and for Random.new()/math.random")
+    ap.add_argument("--at", default=None, help="--playtest: virtual UTC date/time to start at, 'YYYY-MM-DDTHH:MM' (default 2026-10-07T10:00, a Wednesday: no weekend events)")
     ap.add_argument("--icons", action="store_true", help="pretend assets/icons are uploaded (Icons.ids filled with fake ids)")
     a = ap.parse_args()
     global FROM_CACHE
     FROM_CACHE = a.from_cache
     games = GAMES if a.game == "all" else [a.game]
     for g in games:
+        if a.playtest:
+            import playtest as playtest_mod
+            playtest_mod.main(lambda *x: run_playtest_runtime(*x, at=a.at), g, a.state, a.screen, a.minutes, a.seed, a.outdir)
+            continue
         if a.list_windows:
             print(g + ": " + ", ".join(list_windows(g)))
             continue

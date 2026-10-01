@@ -123,7 +123,8 @@ function I.new(className: string, opts: any?)
 		callbacks = {},
 		waiters = {},
 		src = (opts and opts.src) or C.where(4),
-		ctx = C.currentCtx(),
+		-- the runtime's own main thread builds the static world ("main"); game threads are "server"/"client"
+		ctx = if coroutine.running() == C.mainThread and C.threadCtx[coroutine.running()] == nil then "main" else C.currentCtx(),
 		destroyed = false,
 		data = {},
 	}

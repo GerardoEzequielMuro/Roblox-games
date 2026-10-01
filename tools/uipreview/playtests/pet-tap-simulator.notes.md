@@ -1,0 +1,8 @@
+**Hallazgos reales**
+
+1. **Regalos por minutos de sesión farmeables reentrando** (diseño, severidad baja/media): `State.giftsClaimed` se crea al entrar (`src/server/Services/State.luau:39`) y se descarta al salir (`:47`); no está en el perfil (`Data.luau`). El regalo 2 de `Config.Gifts` (35 gemas a los 2 min, `src/shared/Config.luau:528-537`) se puede reclamar otra vez después de cada rejoin; con 35 gemas ya se compra el primer nivel de TapPower y WalkSpeed. El bot lo detecta solo (reclama, sale, entra y los vuelve a ver disponibles). Mismo patrón en los otros 5 juegos.
+2. Los 13 pases y 11 productos de `Config` tienen `id = 0` ("todavía no existen", `src/shared/Config.luau:387-433`): la tienda de Robux está apagada en el repo y `Purchase.pass/product` solo muestra "pronto". No es un bug; para poder probar el flujo de compra el playtest les pone ids falsos (`fixtures/pet-tap-simulator.luau`, `playtestPatches`). Con eso: 3 compras concedidas, 1 cancelada, recibos reenviados con el mismo `PurchaseId` sin conceder dos veces, y recibo tardío para un jugador que ya salió -> `NotProcessedYet`.
+
+**Sin errores de Luau ni advertencias** en 10 min (nuevo y mid). El perfil se guardó al salir (coincide con la memoria) y se recargó idéntico después del rejoin.
+
+**Ritmo**: en 10 min el bot (tocando ~6/s con los límites del cliente y del servidor) compra todas las mejoras de gemas que puede, desbloquea la zona 2 hacia el minuto 4, y eclosiona ~90 huevos. La rebirth cuesta 2.000 millones de taps (`Config.RebirthBaseCost`) y no se alcanza en 10 min, así que el flujo de rebirth solo se ejerce con el estado `mid`... que tampoco llega (taps del perfil `mid` < costo): ese camino no se ejercitó en el playtest.

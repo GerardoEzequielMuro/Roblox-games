@@ -131,9 +131,74 @@ Posibles artefactos de la herramienta que conviene confirmar en Studio antes de 
 - `offscreen` o `core-overlap` de elementos que el juego posiciona después según algo del mundo 3D.
 - `unknown_api`: casi siempre es una API que el simulador no implementa, no un bug del juego. Los `error` sí son errores reales de Luau (salvo que el mensaje venga de `tools/uipreview/runtime`, que sería un bug de la herramienta).
 
+## Modo PLAYTEST: un bot juega N minutos y busca errores y trabas
+
+Además de las capturas, la herramienta puede **jugar** cada juego con un bot, con el tiempo virtual corriendo rápido, para encontrar errores de runtime y estados trabados que solo aparecen después de los primeros segundos.
+
+```bash
+export PATH=/tmp/tools:$PATH
+python3 tools/uipreview/preview.py ki-warriors --playtest                      # 10 min virtuales, jugador nuevo, seed 1
+python3 tools/uipreview/preview.py ruleta-pvp --playtest --minutes 30          # varios partidos completos
+python3 tools/uipreview/preview.py obby-sky-tower --playtest --state mid --seed 7
+python3 tools/uipreview/preview.py all --playtest                              # los 6 juegos
+```
+
+| Opción | Qué hace |
+|---|---|
+| `--playtest` | Activa el modo (el resto de las opciones de captura no se usan). |
+| `--minutes N` | Minutos **virtuales** a jugar (por defecto 10). Cada juego tarda entre 20 s y 4 min reales en 10 min virtuales (obby es el más lento). |
+| `--seed S` | Semilla del bot, de `math.random` y de cada `Random.new()` sin semilla del juego. Misma semilla + mismo juego = misma corrida. |
+| `--state new\|mid` | Perfil inicial: jugador nuevo o el perfil `mid` del fixture. |
+| `--at YYYY-MM-DDTHH:MM` | Fecha UTC virtual de inicio (por defecto un miércoles 2026-10-07 10:00, sin eventos de fin de semana). Sirve para forzar eventos (`--at 2026-10-10T20:00`). |
+
+Salida: `docs/playtests/<juego>.md` (o `<juego>-mid.md`) con un **resumen en español arriba** (veredicto, conteos, qué logró el bot en una tabla de tiempo, hitos) y abajo los errores con su pila, los warnings, los remotes rechazados, las violaciones de invariantes, el tráfico de remotes y un extracto del log crudo. En la terminal imprime una línea de veredicto: `OK`, `ERRORES`, `TRABADO` o `ERRORES+TRABADO`.
+
+### Qué hace por dentro
+
+1. Arranca servidor + cliente igual que la captura estática (jugador nuevo o `mid`), pero con el reloj en 30 fps virtuales: `task.wait/delay/spawn`, `Heartbeat/RenderStepped`, `os.clock/os.time/tick` avanzan juntos y nada depende del reloj real.
+2. Corre `playtests/<juego>.luau`: un script por juego que juega por las **funciones y remotes reales del cliente** (por ejemplo `Controls.punch()`, `MatchHud.press()`, `Miner.simulate()`, `Net.request("Hatch", ...)`, o clicks sobre los botones de la UI), en un orden verosímil: tutorial, loop principal, gastar, reclamar regalos/misiones, abrir y cerrar cada ventana, ajustes, idiomas, intentar compras, **salir y volver a entrar**.
+3. Cada 5 s revisa invariantes (moneda NaN/negativa, perfil con NaN, contadores que bajan), cada 30 s toma una muestra para la tabla de progreso y las instancias vivas (para ver fugas), y vigila **"stuck"**: un estado que no cambia durante más de 60 s virtuales (según el juego: partido sin eventos, paso del tutorial, ingresos). Si el bot sigue avanzando pero la meta pide mucho grindeo, se reporta como `Progreso muy lento` y no cambia el veredicto.
+4. Al final el jugador se va (`PlayerRemoving`), se comprueba que **el perfil quedó guardado** en el DataStore y que no quedó estado por jugador colgado (`tracked()`), y corre `BindToClose` con 30 s de límite.
+
+### Qué simula (y qué no): leer antes de creerle a un hallazgo
+
+- **DataStore** en memoria con las reglas que Roblox aplica al guardar: claves de hasta 50 caracteres, tablas mixtas / con huecos / NaN / inf / cíclicas se rechazan, valores de hasta 4 MB. Presupuesto de requests (60 + 10 por jugador por minuto): solo se **reporta**, no frena.
+- **Salir y entrar**: `PlayerRemoving`, `Parent = nil` y destrucción del `Player` como el motor; después se entra con un cliente nuevo (módulos del cliente recargados, hilos y conexiones del cliente viejo muertos). El perfil se lee apenas el servidor lo termina de cargar y se compara con el de antes de salir.
+- **MarketplaceService**: `PromptProductPurchase` / `PromptGamePassPurchase` entregan un recibo falso a `ProcessReceipt` (un `PurchaseId` único), luego **lo reenvían con el mismo `PurchaseId`** para comprobar que no se concede dos veces ni se devuelve algo raro. Un prompt cancelado dispara `...Finished(false)`. Los ids de Robux del repo valen 0 ("todavía no existen"): durante el playtest los fixtures (`playtestPatches`) les ponen ids falsos solo para poder probar el flujo.
+- **Física mínima**: `CFrame` y `Position` de las partes están sincronizados; `PivotTo`/`MoveTo` de modelos; `Humanoid:MoveTo` camina en línea recta a `WalkSpeed` (se respeta la velocidad, por eso pasa los chequeos anti-teleport del obby); `Humanoid.Health = 0` dispara `Died` y respawnea (`Players.RespawnTime`) en el `SpawnLocation`; `Touched`/`TouchEnded` se disparan cuando la caja del personaje solapa la parte, con rotación (se revisa cada 0,1 s); `Workspace:Raycast` contra cajas de partes; `Camera:WorldToViewportPoint`; `PlayerGui:GetGuiObjectsAtPosition` aproximado. **No hay gravedad, colisiones, terreno, salto ni caída**: el bot es el responsable de ir a posiciones válidas, y los obstáculos del obby solo matan si el camino en línea recta cruza su caja. Los tweens saltan al final, así que los obstáculos que se mueven por tween no se mueven.
+- **GUI**: el layout en Luau ignora `UIListLayout/UIGridLayout`, así que `AbsolutePosition` es aproximado. Los clicks del bot disparan directamente `Activated`/`MouseButton1Click` del botón (y solo si está visible: si el jugador no podría apretarlo, queda anotado).
+- No hay latencia de red, ni otros jugadores reales (los bots de ruleta-pvp sí son los del servidor), ni físicas entre personajes, ni audio, ni render.
+
+Un error con archivo y línea del juego (`juego/src/...:123`) es un error de Luau real del código del juego. Un error sin archivo del juego, o que menciona `tools/uipreview/runtime`, es un hueco de la herramienta. Las observaciones del bot (`bot`/`tool`) nunca cuentan como bugs del juego. Los hallazgos con tipo `bug` los marca el propio script del bot cuando ve algo que ningún jugador debería ver (con archivo y línea).
+
+### Escribir o cambiar un bot (`playtests/<juego>.luau`)
+
+El archivo devuelve `function(bot) return { ... } end` con esta tabla (todo opcional salvo `run`):
+
+| Campo | Para qué |
+|---|---|
+| `run(bot)` | El juego del bot. Corre en un hilo del cliente hasta que `bot.alive()` da `false`. |
+| `profile()` | La tabla del perfil **del servidor** (para NaN/negativos y para comparar antes/después de salir). |
+| `dsStore`, `dsKey(userId)` | Nombre del DataStore y clave del perfil: se comprueba que se escribió al salir. |
+| `currencyKeys`, `nonDecreasing` | Campos del perfil que no pueden ser negativos / que nunca bajan. |
+| `clientState()` | El snapshot del cliente (se revisa NaN). |
+| `stats()` | Números para la tabla de progreso (moneda, nivel, etapa, partidos...). |
+| `stuck` | Lista de `{ name, secs, active(), sig(), proxy?(), detail?() }`: si `sig()` no cambia en `secs` s mientras `active()` es verdadero, se reporta traba. Con `proxy` que sí cambia, se reporta como progreso lento. |
+| `snapshot()` | Números que **no** deben cambiar al reenviar un recibo (para detectar "concedido dos veces"). |
+| `ready()` | Cuándo el cliente nuevo está listo después de volver a entrar. |
+| `summary()` | Contadores de lo que hizo el bot para el resumen. |
+
+API de `bot` (ver `runtime/playtest.luau`): `client(path)`, `shared(path)`, `server(path)` (requiere módulos), `request(...)`, `waitUntil(fn, s, etiqueta)`, `walkTo(pos)`, `pos()`, `char()`, `click(boton)`, `find(nombre)`, `findButton(texto)`, `buttonsMatching(raiz, patron)`, `openWindow(nombre)` (usa el fixture), `on(remote, fn)`, `fire(remote, ...)`, `expectFail(fn)` (un rechazo provocado a propósito no cuenta), `setPurchaseMode("grant"|"cancel")`, `rejoin()`, `every(clave, s)`, `log(texto)`, `bug(texto, clave, {archivo:linea})`, `rng`.
+
+Si querés agregar notas a mano que salgan en el informe (análisis de los hallazgos), ponelas en `playtests/<juego>.notes.md`: se insertan bajo "Análisis del revisor". No se tocan al volver a correr.
+
+Los fixtures pueden declarar `playtestPatches = { ["src/shared/Config.luau"] = function(Config) ... end }` para ajustar un módulo del juego **solo** en el playtest (ids de Robux falsos, por ejemplo).
+
+Archivos nuevos: `runtime/playtest.luau` (todo lo de arriba), `playtest.py` (informe en español), `playtests/` (un bot por juego y sus notas), `docs/playtests/` (resultados).
+
 ## Archivos
 
-- `preview.py`: CLI.
+- `preview.py`: CLI (capturas y `--playtest`).
 - `runtime/`: simulador de Roblox en Luau para Lune (`core.luau` scheduler, señales y datatypes; `instance.luau` instancias; `services.luau` servicios; `text.luau` medición de texto; `main.luau` arranque y volcado).
 - `layout.py`, `render.py`, `findings.py`, `fonts.py`, `build_data.py`.
 - `fixtures/`: estado mid y ventanas de cada juego.

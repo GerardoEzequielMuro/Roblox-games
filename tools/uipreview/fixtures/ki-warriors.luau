@@ -77,6 +77,17 @@ return {
 			playTime = 3 * 3600,
 		}
 	end,
+	-- PLAYTEST only: Robux ids are 0 in the repo ("not live yet"); fake ids let the purchase flow run.
+	playtestPatches = {
+		["src/shared/Config.luau"] = function(Config)
+			for i, p in Config.Passes do
+				p.id = 7000 + i
+			end
+			for i, p in Config.Products do
+				p.id = 8000 + i
+			end
+		end,
+	},
 	windows = {
 		warrior = W("Warrior"),
 		forms = W("Forms"),

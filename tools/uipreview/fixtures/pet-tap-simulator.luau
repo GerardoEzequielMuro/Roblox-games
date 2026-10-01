@@ -65,6 +65,18 @@ return {
 			playTime = 3 * 3600,
 		}
 	end,
+	-- PLAYTEST only: the repo ships every Robux id as 0 ("not live yet"); give them fake ids so
+	-- the purchase flow (prompt -> ProcessReceipt / gamepass finished) can be exercised.
+	playtestPatches = {
+		["src/shared/Config.luau"] = function(Config)
+			for i, p in Config.Passes do
+				p.id = 7000 + i
+			end
+			for i, p in Config.Products do
+				p.id = 8000 + i
+			end
+		end,
+	},
 	windows = {
 		pets = W("Pets"),
 		upgrades = W("Upgrades"),

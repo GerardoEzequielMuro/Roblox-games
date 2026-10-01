@@ -44,6 +44,23 @@ return {
 			playTime = 5 * 3600,
 		}
 	end,
+	-- PLAYTEST only: Robux ids are 0 in the repo ("not live yet"); fake ids let the purchase flow run.
+	playtestPatches = {
+		["src/shared/Config.luau"] = function(Config)
+			local function ids(map, base)
+				local keys = {}
+				for k in map do
+					table.insert(keys, k)
+				end
+				table.sort(keys)
+				for i, k in keys do
+					map[k] = base + i
+				end
+			end
+			ids(Config.Products, 8000)
+			ids(Config.Passes, 7000)
+		end,
+	},
 	-- window name -> how to open it (called in the client, after boot)
 	windows = {
 		menu = function(ctx)

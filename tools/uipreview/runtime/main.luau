@@ -10,6 +10,7 @@ local process = require("@lune/process")
 local luau = require("@lune/luau")
 
 local C = require("./core")
+C.mainThread = coroutine.running()
 local I = require("./instance")
 local T = require("./text")
 local roblox = C.roblox
@@ -19,10 +20,16 @@ local cfgPath = process.args[#process.args]
 assert(cfgPath, "usage: lune run main.luau -- <config.json>")
 local cfg = serde.decode("json", fs.readFile(cfgPath))
 
+local botSrc = cfg.botPath and fs.readFile(cfg.botPath) or nil
 C.loadApi(cfg.apiPath)
 T.load(cfg.metricsPath)
 C.gamePrefix = cfg.gameName .. "/"
 local Svc = require("./services")
+local PT = if cfg.playtest then require("./playtest") else nil
+local ptEnv = { C = C, I = I, S = S, Svc = Svc, T = T, cfg = cfg, roblox = roblox }
+if PT then
+	PT.install(ptEnv)
+end
 
 ------------------------------------------------------------------------------------------
 -- Enum wrapper: Lune's enum database can lag behind Roblox; missing enums/items come from
@@ -270,6 +277,13 @@ local function requireModule(target)
 		C.rterror("Module code did not return exactly one value")
 	end
 	local value = res[2]
+	if cfg.playtest and fixture.playtestPatches then
+		local rel = string.match(file, "^[^/]+/(.*)$")
+		local patch = rel and fixture.playtestPatches[rel]
+		if patch then
+			patch(value, ctx)
+		end
+	end
 	-- --icons: pretend the shared icon pack is uploaded (fake ids the renderer maps back)
 	if cfg.fakeIcons and string.match(file, "src/shared/Icons%.luau$") and type(value) == "table" and type(value.ids) == "table" then
 		local names = {}
@@ -609,76 +623,80 @@ if not skipServer then
 end
 C.run(fixture.serverBoot or 1.0)
 
--- the player joins
-local player = I.new("Player", { name = "PreviewPlayer", src = {} })
-Svc.player = player
-local playerGui = I.new("PlayerGui", { name = "PlayerGui", src = {} })
-I.setParent(playerGui, player)
-I.setParent(I.new("Backpack", { name = "Backpack", src = {} }), player)
-local playerScripts = I.new("PlayerScripts", { name = "PlayerScripts", src = {} })
-I.setParent(playerScripts, player)
-do
-	-- Roblox's default PlayerModule (controls + camera), as a stub
-	local pm = I.new("ModuleScript", { name = "PlayerModule", src = {} })
-	S[pm].data.builtin = function()
-		local controls = {
-			Enable = function() end,
-			Disable = function() end,
-			GetMoveVector = function()
-				return roblox.Vector3.zero
-			end,
-			GetActiveController = function()
-				return nil
-			end,
-			SelectComputerMovementModule = function() end,
-		}
-		return {
-			GetControls = function()
-				return controls
-			end,
-			GetCameras = function()
-				return {}
-			end,
-			GetClickToMoveController = function()
-				return nil
-			end,
-		}
-	end
-	I.setParent(pm, playerScripts)
-end
-I.setParent(player, Players)
-I.signal(Players, "PlayerAdded"):Fire(player)
-C.flushDeferred()
-C.run(0.2)
-
-for _, c in S[StarterGui].children do
-	local cl = I.clone(c)
-	if cl then
-		I.setParent(cl, playerGui)
-	end
-end
-local clientRun = {}
-for _, c in S[SPS].children do
-	local cl = I.clone(c)
-	if cl then
-		I.setParent(cl, playerScripts)
-		if S[cl].className == "LocalScript" then
-			table.insert(clientRun, cl)
+-- the player joins (also used by the playtest "rejoin": a fresh Player, a fresh client)
+local player, playerGui, playerScripts
+local function joinPlayer()
+	player = I.new("Player", { name = "PreviewPlayer", src = {} })
+	Svc.player = player
+	playerGui = I.new("PlayerGui", { name = "PlayerGui", src = {} })
+	I.setParent(playerGui, player)
+	I.setParent(I.new("Backpack", { name = "Backpack", src = {} }), player)
+	playerScripts = I.new("PlayerScripts", { name = "PlayerScripts", src = {} })
+	I.setParent(playerScripts, player)
+	do
+		-- Roblox's default PlayerModule (controls + camera), as a stub
+		local pm = I.new("ModuleScript", { name = "PlayerModule", src = {} })
+		S[pm].data.builtin = function()
+			local controls = {
+				Enable = function() end,
+				Disable = function() end,
+				GetMoveVector = function()
+					return roblox.Vector3.zero
+				end,
+				GetActiveController = function()
+					return nil
+				end,
+				SelectComputerMovementModule = function() end,
+			}
+			return {
+				GetControls = function()
+					return controls
+				end,
+				GetCameras = function()
+					return {}
+				end,
+				GetClickToMoveController = function()
+					return nil
+				end,
+			}
 		end
-		I.eachDescendant(cl, function(d)
-			if S[d].className == "LocalScript" then
-				table.insert(clientRun, d)
+		I.setParent(pm, playerScripts)
+	end
+	I.setParent(player, Players)
+	I.signal(Players, "PlayerAdded"):Fire(player)
+	C.flushDeferred()
+	C.run(0.2)
+
+	for _, c in S[StarterGui].children do
+		local cl = I.clone(c)
+		if cl then
+			I.setParent(cl, playerGui)
+		end
+	end
+	local clientRun = {}
+	for _, c in S[SPS].children do
+		local cl = I.clone(c)
+		if cl then
+			I.setParent(cl, playerScripts)
+			if S[cl].className == "LocalScript" then
+				table.insert(clientRun, cl)
 			end
-		end)
+			I.eachDescendant(cl, function(d)
+				if S[d].className == "LocalScript" then
+					table.insert(clientRun, d)
+				end
+			end)
+		end
+	end
+	C.threadCtx[coroutine.running()] = "client"
+	Svc.spawnCharacter(player)
+	for _, s in clientRun do
+		if not (fixture.skipScripts and fixture.skipScripts[S[s].data.file]) then
+			runScript(s, "client")
+		end
 	end
 end
-C.threadCtx[coroutine.running()] = "client"
-Svc.spawnCharacter(player)
-for _, s in clientRun do
-	if not (fixture.skipScripts and fixture.skipScripts[S[s].data.file]) then
-		runScript(s, "client")
-	end
-end
+joinPlayer()
 C.run(cfg.bootSeconds or fixture.boot or 8)
 
 -- open a window through the fixture
@@ -729,8 +747,11 @@ local function textOf(inst)
 	return t and tostring(t) or ""
 end
 -- first GuiButton whose own text / descendant label text / name matches the Lua pattern
-function ctxApi.findButton(pattern, root)
+function ctxApi.findButton(pattern, root, plain)
 	local found = nil
+	local function matches(str)
+		return string.find(str, pattern, 1, plain == true) ~= nil
+	end
 	I.eachDescendant(root or playerGui, function(d)
 		if found then
 			return
@@ -778,6 +799,51 @@ end
 ctxApi.wait = C.wait
 ctxApi.log = function(msg)
 	C.addLog("info", "[fixture] " .. tostring(msg), {})
+end
+
+if PT then
+	ptEnv.ctx = ctxApi
+	ptEnv.fixture = fixture
+	ptEnv.moduleCache = moduleCache
+	ptEnv.requireInCtx = function(target, ctxName)
+		local co = coroutine.running()
+		local old = C.threadCtx[co]
+		C.threadCtx[co] = ctxName
+		local ok, v = pcall(requireModule, target)
+		C.threadCtx[co] = old
+		if not ok then
+			error(v, 0)
+		end
+		return v
+	end
+	ptEnv.loadBot = function()
+		local benv = table.clone(baseGlobals.client)
+		local fn = luau.load(botSrc, { debugName = "@playtests/" .. cfg.gameName .. ".luau", environment = benv })
+		return fn()
+	end
+	ptEnv.rejoinClient = function()
+		moduleCache.client = {}
+		local kill = {}
+		for inst in I.all do
+			local st = S[inst]
+			if st.ctx == "client" and not st.destroyed and st.parent and not st.info.service then
+				local pst = S[st.parent]
+				if (pst.ctx ~= "client" or pst.info.service) and not pst.info.isA.Player then
+					table.insert(kill, inst)
+				end
+			end
+		end
+		for _, inst in kill do
+			I.destroy(inst)
+		end
+		joinPlayer()
+		ctxApi.player = player
+		ctxApi.gui = playerGui
+	end
+	local result = PT.run(ptEnv)
+	fs.writeFile(cfg.out, serde.encode("json", result))
+	print("playtest ok", #result.findings, "findings", #C.log, "log entries")
+	process.exit(0)
 end
 
 if cfg.open and cfg.open ~= "" then

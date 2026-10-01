@@ -74,8 +74,13 @@ C.frame = 0
 C.dt = 1 / 30
 
 local threadCtx = setmetatable({}, { __mode = "k" }) -- thread -> "server" | "client"
+-- playtest "rejoin": client threads/connections of an older client generation are dead
+C.clientGen = 0
+local threadGen = setmetatable({}, { __mode = "k" })
+C.threadGen = threadGen
 local threadLabel = setmetatable({}, { __mode = "k" })
 C.threadCtx = threadCtx
+
 
 function C.currentCtx(): string
 	local co = coroutine.running()
@@ -126,6 +131,10 @@ function C.resume(co, ...)
 	if cancelled[co] or coroutine.status(co) ~= "suspended" then
 		return
 	end
+	local g = threadGen[co]
+	if g and g ~= C.clientGen and threadCtx[co] == "client" then
+		return -- belongs to a client that has since "left" (rejoin)
+	end
 	C.blocked[co] = nil
 	local ok, err = coroutine.resume(co, ...)
 	if not ok then
@@ -137,6 +146,9 @@ function C.newThread(fn, label: string?, ctx: string?)
 	local co = coroutine.create(fn)
 	threadCtx[co] = ctx or C.currentCtx()
 	threadLabel[co] = label
+	if threadCtx[co] == "client" then
+		threadGen[co] = if C.keepAlive then nil else C.clientGen
+	end
 	return co
 end
 
@@ -272,6 +284,9 @@ function SignalMT:Connect(fn)
 		C.rterror("Attempt to connect failed: Passed value is not a function")
 	end
 	local c = setmetatable({ Connected = true, _fn = fn, _signal = self, _ctx = C.currentCtx() }, ConnMT)
+	if c._ctx == "client" and not C.keepAlive then
+		c._gen = C.clientGen
+	end
 	table.insert(self.conns, c)
 	if self.onConnect then
 		self.onConnect(c)
@@ -310,7 +325,7 @@ function SignalMT:Fire(...)
 	fireDepth += 1
 	local list = table.clone(self.conns)
 	for _, c in list do
-		if c.Connected then
+		if c.Connected and (c._gen == nil or c._gen == C.clientGen) then
 			local co = C.newThread(c._fn, self.name, c._ctx)
 			C.resume(co, ...)
 		end
@@ -557,8 +572,15 @@ end
 function RandomMT:Clone()
 	return setmetatable({ _s = self._s }, RandomMT)
 end
+C.randBase = 1234567
+C.randVaried = false -- playtest: every unseeded Random.new() gets its own seed (derived from --seed)
+local randCounter = 0
 DT.Random = {
 	new = function(seed)
+		if seed == nil and C.randVaried then
+			randCounter += 1
+			seed = C.randBase + randCounter * 7919
+		end
 		return setmetatable({ _s = math.floor(tonumber(seed) or 1234567) % 2147483648 }, RandomMT)
 	end,
 }
